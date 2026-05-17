@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
+import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
 import { inspectScaffold, parsePlanFile, planToJson } from './scaffold.js';
@@ -19,6 +20,8 @@ Usage:
   osc run <plan-path> [run binding options]
   osc review <plan-path> [run binding options]
   osc ultrareview <plan-path> [run binding options]
+  osc eval init <run-or-plan> [--out <path>]
+  osc eval check <evaluation-path>
   osc verify
   osc doctor
   osc runtimes list
@@ -303,6 +306,101 @@ function createArtifacts(args: string[], mode: ArtifactMode): void {
   console.log('  Note: generic open-scaffold did not spawn a runtime; dispatch via your coordinator or harness adapter.');
 }
 
+function printEvalUsage(): void {
+  console.error('Usage: osc eval init <run-or-plan> [--out <path>] | osc eval check <evaluation-path>');
+}
+
+function takeEvalValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${flag}`);
+    process.exit(2);
+  }
+  return value;
+}
+
+function evalCommand(args: string[]): void {
+  const [subcommand, sourceOrPath, ...rest] = args;
+  if (subcommand === 'init') {
+    if (!sourceOrPath) {
+      printEvalUsage();
+      process.exit(2);
+    }
+    let outPath: string | null = null;
+    let force = false;
+    for (let i = 0; i < rest.length; i += 1) {
+      const flag = rest[i];
+      switch (flag) {
+        case '--out':
+        case '--output':
+          outPath = takeEvalValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--force':
+          force = true;
+          break;
+        default:
+          console.error(`Unknown option for eval init: ${flag}`);
+          printEvalUsage();
+          process.exit(2);
+      }
+    }
+    try {
+      if (!outPath) {
+        const source = loadEvaluationSource(sourceOrPath, process.cwd());
+        process.stdout.write(renderEvaluationEnvelope(source));
+        return;
+      }
+      const absoluteOut = resolve(outPath);
+      if (existsSync(absoluteOut) && !force) {
+        console.error(`Refusing to overwrite existing evaluation envelope: ${absoluteOut}`);
+        process.exit(1);
+      }
+      if (force && existsSync(absoluteOut)) {
+        const source = loadEvaluationSource(sourceOrPath, process.cwd());
+        writeFileSync(absoluteOut, renderEvaluationEnvelope(source), 'utf8');
+      } else {
+        writeEvaluationEnvelope(sourceOrPath, absoluteOut, process.cwd());
+      }
+      console.log(`Created evaluation envelope: ${absoluteOut}`);
+      console.log('Note: this is a structure/coverage template only; fill evidence, evaluator, decision, and routing before check/close.');
+      return;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  }
+
+  if (subcommand === 'check') {
+    if (!sourceOrPath) {
+      printEvalUsage();
+      process.exit(2);
+    }
+    const envelopePath = resolve(sourceOrPath);
+    const result = validateEvaluationEnvelopeFile(envelopePath, process.cwd());
+    for (const failure of result.failures) {
+      console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
+    }
+    for (const warning of result.warnings) {
+      console.warn(`WARN ${warning.code}: ${warning.message}${warning.path ? ` (${warning.path})` : ''}`);
+    }
+    if (!result.ok) process.exit(1);
+    let criterionCount = 0;
+    try {
+      const parsed = JSON.parse(readFileSync(envelopePath, 'utf8')) as { acceptance_criteria?: unknown[] };
+      criterionCount = Array.isArray(parsed.acceptance_criteria) ? parsed.acceptance_criteria.length : 0;
+    } catch {
+      criterionCount = 0;
+    }
+    console.log(`PASS evaluation envelope structure valid; ${criterionCount} criterion evaluation(s); ${result.warnings.length} warning(s)`);
+    console.log('Note: this check validates schema/coverage/routing only; it does not judge correctness, compliance, production readiness, or model quality.');
+    return;
+  }
+
+  printEvalUsage();
+  process.exit(2);
+}
+
 function runtimes(args: string[]): void {
   const [subcommand, id] = args;
   if (subcommand === 'list') {
@@ -364,6 +462,9 @@ function main(): void {
     case 'review':
     case 'ultrareview':
       createArtifacts(args, command);
+      return;
+    case 'eval':
+      evalCommand(args);
       return;
     case 'verify': {
       const result = validateScaffold(process.cwd());

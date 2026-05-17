@@ -148,7 +148,7 @@ Those may become adapter, evaluator, runtime, ledger-anchor, or future-product w
 
 ## Follow-up candidates
 
-Structured evaluation mechanics, such as a future `osc eval` surface, should start as template generation and validation: create an evaluation envelope, check that every acceptance criterion has evidence/status/rationale, and require a correction route for non-pass outcomes. It should not automatically certify domain correctness, benchmark models, or replace human/product approval.
+Structured evaluation mechanics now start with `osc eval init` and `osc eval check`: generate a JSON evaluation envelope, check that every acceptance criterion has evidence/status/rationale/evaluator coverage, and require a correction route for non-pass outcomes. This still does not automatically certify domain correctness, benchmark models, or replace human/product approval.
 
 Tamper-evident audit mechanics should start with a vendor-neutral `open-scaffold.audit-envelope.v1` and `open-scaffold.anchor-receipt.v1` shape for promoted evidence artifacts: artifact digests, envelope digests, parent links, optional Merkle batch roots, and optional external-anchor receipts. Hedera Consensus Service, Sigstore/Rekor, RFC3161 timestamping, Git signed tags, or other ledgers/notaries belong in optional adapters, not Open Scaffold core.
 

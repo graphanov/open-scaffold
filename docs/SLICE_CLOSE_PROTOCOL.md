@@ -170,8 +170,14 @@ acceptance_criteria:
       kind: human | automated-check | adapter | domain-oracle | external-review
       name: "optional"
     evidence:
-      - path/or/link
+      - kind: path | url | command | pr | issue | ci | screenshot | manual-review | comment | other
+        ref: docs/evidence/example.md
+        summary: "What this evidence proves."
     rationale: "Why this status was assigned."
+    correction:
+      route: close | retry_run | amend_plan | create_next_slice | open_issue | update_roadmap | block
+      target: .osc/plans/backlog/002-next-slice.md
+      rationale: "How non-pass outcomes are routed, or why pass can close."
     confidence: high | medium | low
     gaps:
       - "Known limitation or uncertainty."
@@ -189,6 +195,15 @@ improvement:
 ```
 
 The evaluation envelope is a record of judgment and routing, not an automatic claim of correctness. Domain/business-rule evaluators, model benchmarks, production scoring, and compliance decisions can feed it, but they do not become Open Scaffold core by default.
+
+The v1 CLI surface emits and checks JSON envelopes so the first implementation can stay dependency-light and deterministic:
+
+```bash
+osc eval init <run-or-plan> [--out <path>]
+osc eval check <evaluation-path>
+```
+
+`osc eval init` drafts the envelope from plan acceptance criteria or a run packet. `osc eval check` validates schema, criterion coverage, evidence/rationale presence, evaluator source, decision consistency, and correction routing. It does not run verification commands, judge domain correctness, benchmark models, certify compliance, approve release/merge, spawn runtimes, or anchor evidence externally.
 
 ## Audit envelope
 
