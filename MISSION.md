@@ -28,6 +28,9 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-17: record full-history checkout for strict CI verification — see .osc/plans/done/045-github-actions-ci-amendment-2.md
+- 2026-05-17: record CI-exposed lifecycle timestamp flake fix — see .osc/plans/done/045-github-actions-ci-amendment-1.md
+- 2026-05-17: closed 045-github-actions-ci — GitHub Actions CI workflow added
 - 2026-05-17: closed 040-vocabulary-compression-v2 — compressed first-touch vocabulary while preserving runtime boundaries
 - 2026-05-17: closed 039-session-2-aha-walkthrough — session-2 aha walkthrough shipped
 - 2026-05-17: closed 038-first-run-adoption-hardening — first-run adoption hardening shipped and npm package published

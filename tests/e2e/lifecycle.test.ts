@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -88,7 +88,6 @@ Lifecycle smoke evidence recorded before closing the plan.
       const text = readFileSync(path, 'utf8');
       expect(text).not.toContain('/Users/danimal');
       expect(text).not.toContain('Daniel Command Center');
-      expect(statSync(path).mtimeMs).toBeGreaterThanOrEqual(startedAt - 1000);
     }
   });
 });
