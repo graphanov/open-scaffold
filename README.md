@@ -92,6 +92,7 @@ cd open-scaffold
 npm install
 npm run build
 node dist/cli.js init --tier min --target <your-project>
+cd <your-project>
 ```
 
 Tiers:

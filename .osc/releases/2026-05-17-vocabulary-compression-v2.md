@@ -10,7 +10,7 @@ Open Scaffold first-touch and runtime docs now lead with plain-language explanat
 - Branch: `docs/vocabulary-compression-v2`
 - Kanban: `t_323cabd0`
 - Primary docs: `README.md`, `docs/MINIMUM_VIABLE_SCAFFOLD.md`, `docs/WHY_OPEN_SCAFFOLD.md`, `docs/WORKFLOW.md`, `docs/RUNTIME_SELECTION.md`, `docs/RUNTIME_PROFILES.md`, `docs/RUNTIME_BINDING_CONTRACT.md`, `docs/SPAWNING_BOUNDARY.md`, `docs/examples/`
-- Audit artifacts: `/tmp/osc040_jargon_before.txt`, `/tmp/osc040_jargon_after.txt`
+- Audit artifacts: `/tmp/osc040_jargon_before.txt`, `/tmp/osc040_jargon_after.txt`, `/tmp/osc040_jargon_after_fix.txt`
 
 ## Vocabulary audit
 
@@ -29,7 +29,7 @@ First-touch scope: `README.md`, `docs/MINIMUM_VIABLE_SCAFFOLD.md`, `docs/WHY_OPE
 | `audit envelope` | 0 | 0 | 0 | No first-touch occurrence. |
 | `run packet` | 32 | 16 | -16 | Remaining occurrences are immediate aliases for ``run.json` work package` or schema/history context. |
 
-README size: `10448` bytes on `origin/main` → `10342` bytes after this slice. The slice is comprehension-first, so README reduction is evidence, not a hard byte gate.
+README size: `10448` bytes on `origin/main` → `10360` bytes after this slice. The slice is comprehension-first, so README reduction is evidence, not a hard byte gate.
 
 ## Outcome
 
@@ -42,7 +42,7 @@ README size: `10448` bytes on `origin/main` → `10342` bytes after this slice. 
 ## Verification
 
 - Jargon before/after audit for first-touch docs → pass; recorded above.
-- `wc -c README.md` → `10342 README.md`.
+- `wc -c README.md` → `10360 README.md`.
 - Manual README → Quickstart read-through anchors → pass; npx path, source fallback, optional runtime package, and non-spawning boundary remain visible.
 - `npm run build` → pass.
 - `npm test` → 14 files / 124 tests passed.
