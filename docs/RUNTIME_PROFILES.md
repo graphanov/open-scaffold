@@ -2,13 +2,13 @@
 
 Runtime profiles are the configuration layer behind `--runtime`. They make runtime selection declarative and extensible without making Open Scaffold core an installer, marketplace, or process supervisor.
 
-A profile is data. It tells Open Scaffold how a selected runtime lane should be recorded in a run packet. A coordinator or adapter may later consume that run packet and launch the real runtime outside core.
+A runtime profile is a data record behind `--runtime`. It tells Open Scaffold how a selected execution target, or lane, should be recorded in a `run.json` package (run packet). A coordinator or adapter may later consume that package and launch the real runtime outside core.
 
 ```text
-User selects runtime
-  -> Open Scaffold reads runtime profile
-  -> Open Scaffold creates the run packet
-  -> Adapter/coordinator launches the actual runtime
+User selects a runtime / outside tool
+  -> Open Scaffold reads its runtime profile
+  -> Open Scaffold creates the run.json work package (run packet)
+  -> Adapter/coordinator launches the actual runtime outside core
   -> Runtime does the work
   -> Evidence comes back into Open Scaffold
 ```
@@ -17,7 +17,7 @@ Layer map:
 
 - [`RUNTIME_SELECTION.md`](RUNTIME_SELECTION.md) — user-facing `--runtime` / `--workflow` choice.
 - `RUNTIME_PROFILES.md` — profile schema, built-ins, and project-local `.osc/runtimes/*.json`.
-- [`RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md) — adapter/coordinator responsibilities after the packet exists.
+- [`RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md) — adapter/coordinator responsibilities after the `run.json` package exists.
 
 ## Commands
 
@@ -99,12 +99,12 @@ Minimal project-local example:
 - `id`: lowercase profile id used by `--runtime <id>`.
 - `displayName`: human-readable name.
 - `lane`: one of `omc-claude`, `omx-codex`, `plain-agent`, `human`, or `custom`.
-- `status`: one of `builtin`, `adapter-candidate`, or `user-defined`.
+- `status`: one of `builtin`, `adapter-candidate` (possible external adapter, not certified core integration), or `user-defined`.
 - `description`: short public-safe description.
 
 ### Workflow mapping
 
-`workflows` maps Open Scaffold workflow names to the runtime/harness command token that an adapter should use.
+`workflows` maps Open Scaffold workflow names to the runtime/harness command token — the runtime command or mode — that an adapter should use.
 
 Supported workflow keys are:
 
@@ -132,13 +132,13 @@ In v0:
 - `launch.spawning` must be `false`.
 - Open Scaffold may display `install.humanHint` or `launch.commandTemplate`, but it does not execute them.
 - Profiles cannot grant commit, push, merge, or publish authority.
-- Runtime-local logs/session state are forensic until promoted into `.osc/runs`, tracked evidence docs, GitHub artifacts, or release notes.
+- Runtime-local logs/session state are forensic — useful for investigation, not durable project truth — until promoted into `.osc/runs`, tracked evidence docs, GitHub artifacts, or release notes.
 
 This is deliberate. Open Scaffold's job is to preserve the source-of-truth chain and package dispatchable intent. Runtime-specific adapters own installation, authentication, session lifecycle, tmux/process management, and provider-specific launch details.
 
 ## OMC, OMX, GSD, and custom runtimes
 
-OMC and OMX are built-in adapter-candidate profiles because Open Scaffold already has a run-packet selection surface and conformance fixture coverage for those lanes.
+OMC and OMX are built-in adapter-candidate profiles — selectable lanes with dry-run/conformance fixture coverage, not certified launch integrations — because Open Scaffold already has a run-packet selection surface and conformance fixture coverage for those lanes.
 
 GSD and other frameworks can be represented as project-local `user-defined` profiles today. They should not be described as certified or built-in integrations until an adapter has passed the conformance expectations and produced public evidence.
 

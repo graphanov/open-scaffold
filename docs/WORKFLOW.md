@@ -2,7 +2,7 @@
 
 A phase-to-tool reference for agent-orchestrated development. This file is the operational reference; `README.md` is the landing page. When in doubt about which tool to reach for, start here.
 
-Named coordinators, harnesses, and operator surfaces in this guide are examples. Use [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) to distinguish public examples, private deployment examples, runtime lanes, adapter candidates, and operator surfaces.
+Named coordinators, harnesses, and status/approval channels (operator surfaces) in this guide are examples. Use [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) to distinguish public examples, private deployment examples, runtime lanes, adapter candidates, and operator surfaces.
 
 ## Development phases
 
@@ -18,15 +18,15 @@ Ask structured questions until the goal, constraints, and acceptance criteria ar
 >
 > **With OMC harness:** use OMC `/deep-interview` from a Claude Code/OMC session, then promote the clarified result into the Open Scaffold plan/spec chain.
 >
-> **With OMX harness:** use OMX `$deep-interview` from a Codex/OMX session, then promote the clarified result into the Open Scaffold plan/spec chain. Runtime-only question/session state remains forensic until promoted.
+> **With OMX harness:** use OMX `$deep-interview` from a Codex/OMX session, then promote the clarified result into the Open Scaffold plan/spec chain. Runtime-only question/session state remains debug-only until promoted into repo evidence.
 
 ### 2. Plan (when the task is non-trivial)
 
 Write a plan file in `.osc/plans/active/` using the 7-section schema in `.osc/plans/handoff-template.md`. The plan must include acceptance criteria — testable bullets that define success. For risky or multi-file work, get the plan reviewed before executing. See `.osc/plans/WORKFLOW.md` for the stage-folder lifecycle and `.osc/RULES.md` for non-negotiable principles.
 
-> **With OMC harness:** Claude Code/OMC planning flows can use `/ralplan` against an Open Scaffold plan or run packet.
+> **With OMC harness:** Claude Code/OMC planning flows can use `/ralplan` against an Open Scaffold plan or `run.json` work package (run packet).
 >
-> **With OMX harness:** Codex/OMX planning flows can use `$ralplan` against an Open Scaffold plan or run packet.
+> **With OMX harness:** Codex/OMX planning flows can use `$ralplan` against an Open Scaffold plan or `run.json` work package (run packet).
 
 ### 3. Execute (build it)
 
@@ -48,7 +48,7 @@ Run `./verify.sh` for a zero-dependency methodology compliance report (mission d
 
 ### 5. Publish/review (when code or public docs change)
 
-Open a traceable GitHub PR for meaningful changes. The PR should link issue/task, plan/spec, run packet, verification, evidence, and review gates. If the Codex connector is enabled, trigger review by opening the PR for review, marking a draft ready, or commenting `@codex review`. See `docs/GITHUB_WORKFLOW.md`.
+Open a traceable GitHub PR for meaningful changes. The PR should link issue/task, plan/spec, `run.json` work package when delegated, verification, evidence, and review gates. If the Codex connector is enabled, trigger review by opening the PR for review, marking a draft ready, or commenting `@codex review`. See `docs/GITHUB_WORKFLOW.md`.
 
 ### 6. Capture amendments (when you "get smarter")
 
@@ -78,7 +78,7 @@ There is no automatic router between tools. You, the human, decide based on the 
 | Stuck or uncertain | Second opinion | A different model's perspective breaks deadlocks |
 | Public/versioned change | GitHub PR loop | CI, Codex review, and human approval gate merges |
 
-> **Runtime split:** Open Scaffold is the runtime-neutral contract. Hermes, Claw/OpenClaw, Claude Code, Codex, Gemini, or custom scripts can act as orchestrators/agents. OMC is a Claude Code harness; OMX is a Codex harness. Operator surfaces such as Discord are glass cockpits, not canonical state.
+> **Runtime split:** Open Scaffold is the runtime-neutral contract. Hermes, Claw/OpenClaw, Claude Code, Codex, Gemini, or custom scripts can act as orchestrators/agents. OMC is a Claude Code harness; OMX is a Codex harness. Status/approval channels such as Discord are operator surfaces — visible control rooms, not canonical state.
 
 ### Delegation decision tree
 
@@ -93,8 +93,8 @@ When your plan has multiple tasks, use this decision tree to decide how to execu
    - **No →** Safe to parallelize. Continue to step 3.
 
 3. **Do you have a capable runtime/agent?** (Can it read plan files and use tools?)
-   - **Yes, with OMC harness →** Use Claude Code/OMC-specific workflows such as `/team`, `/ultrawork`, or `/ralph` against the Open Scaffold plan/run packet.
-   - **Yes, with OMX harness →** Use Codex/OMX-specific workflows such as `$team`, `$ralph`, `$ultrawork`, or `$ralplan` against the Open Scaffold plan/run packet.
+   - **Yes, with OMC harness →** Use Claude Code/OMC-specific workflows such as `/team`, `/ultrawork`, or `/ralph` against the Open Scaffold plan or `run.json` work package.
+   - **Yes, with OMX harness →** Use Codex/OMX-specific workflows such as `$team`, `$ralph`, `$ultrawork`, or `$ralplan` against the Open Scaffold plan or `run.json` work package.
    - **Yes, plain Claude Code/Codex or similar →** The agent reads the Execution Strategy section and describes the parallelism opportunity. You decide how to act on it.
    - **No agent, or local LLM →** Run `./delegate.sh <plan-path>` to generate actionable prompts you can paste into separate terminal sessions.
 

@@ -1,6 +1,6 @@
 # Task, Run, and Operator-Surface Model
 
-Open Scaffold separates product intent, operational task state, execution attempts, runtime sessions, and chat/operator surfaces. This prevents a Discord thread, terminal transcript, or runtime state folder from becoming the only place the system remembers what is true.
+Open Scaffold separates product intent, operational task state, execution attempts, runtime sessions, and chat/operator surfaces — the chats, dashboards, comments, or CLIs where humans watch and reply. This prevents a Discord thread, terminal transcript, or runtime state folder from becoming the only place the system remembers what is true.
 
 ## Core rule
 
@@ -8,11 +8,11 @@ Open Scaffold separates product intent, operational task state, execution attemp
 Task owns intent/lifecycle.
 Run owns one execution attempt.
 Harness owns execution while alive.
-Operator surface: visibility/questions/approvals.
+Operator surface: visibility/questions/approvals in a chat, dashboard, comment thread, or CLI.
 Cockpit event: replaceable visible message that references task/run/question/evidence IDs.
 Evidence owns proof.
-Evaluation envelope owns AC-to-evidence judgment and improvement routing.
-Audit envelope owns integrity-oriented reconstruction.
+Evaluation envelope owns AC-to-evidence judgment and improvement routing — a post-run evidence-review record.
+Audit envelope owns integrity-oriented reconstruction — the evidence map needed to reconstruct what happened.
 ```
 
 A chat thread may be extremely useful. It is not the canonical task.
@@ -35,7 +35,7 @@ A task can have many runs.
 
 ### `run_id`
 
-One concrete execution attempt against a task or plan. In Open Scaffold core, a run packet lives under:
+One concrete execution attempt against a task or plan. In Open Scaffold core, a run packet — the `run.json` work package — lives under:
 
 ```text
 .osc/runs/<run_id>/
@@ -75,11 +75,11 @@ A thread can be replaced, deleted, or unavailable without destroying task/run re
 
 ### Runtime binding
 
-A runtime binding consumes `run.json`, validates package quality, launches or hands off to the selected lane outside Open Scaffold core, attaches runtime metadata, and returns evidence. The binding contract is documented in [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
+A runtime binding — external launch glue — consumes `run.json`, validates package quality, launches or hands off to the selected lane outside Open Scaffold core, attaches runtime metadata, and returns evidence. The binding contract is documented in [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
 
 ### Event / cockpit bindings
 
-Cockpit events are status, blocker, question, answer, approval, completion, evidence, PR, release, nudge, or cancellation messages posted to an operator surface. They should carry canonical IDs rather than becoming canonical themselves. See [`docs/GLASS_COCKPIT_PROTOCOL.md`](GLASS_COCKPIT_PROTOCOL.md).
+Cockpit events — operator-dashboard messages — are status, blocker, question, answer, approval, completion, evidence, PR, release, nudge, or cancellation messages posted to an operator surface. They should carry canonical IDs rather than becoming canonical themselves. See [`docs/GLASS_COCKPIT_PROTOCOL.md`](GLASS_COCKPIT_PROTOCOL.md).
 
 ### Runtime bindings
 
@@ -96,7 +96,7 @@ log_paths
 artifact_paths
 ```
 
-Runtime state is live/forensic until promoted into the run packet, evidence, docs, issue, PR, or release note. Bindings that launch OMC, OMX, plain-agent, or human lanes should follow [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
+Runtime state is live/forensic — useful for investigation, not durable project truth — until promoted into the run packet, evidence, docs, issue, PR, or release note. Bindings that launch OMC, OMX, plain-agent, or human lanes should follow [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
 
 ## Minimal run record
 
@@ -227,9 +227,9 @@ Kanban/GitHub/CLI/chat creates or selects task_id
 - Roadmap: direction and invariants.
 - Plan/spec/package: executable slice contract.
 - Task system: operational lifecycle.
-- Run packet: exact attempt contract and bindings.
+- Run packet: exact attempt contract and bindings, stored as a `run.json` work package.
 - Runtime harness: execution while alive.
-- Operator surface: visibility/questions/approvals.
+- Operator surface: visibility/questions/approvals in a chat, dashboard, comment thread, or CLI.
 - GitHub PR/release: versioned publication.
 - Evidence receipt / postflight: proof, approval strength, correction routing, and next-slice inheritance.
 - Evaluation envelope: per-acceptance-criterion judgment, feedback capture, confidence, and improvement route.

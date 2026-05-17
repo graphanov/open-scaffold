@@ -1,6 +1,6 @@
 # Runtime Harness Dispatch Pattern
 
-Open Scaffold core defines the portable contract for semi-autonomous work. It does **not** own the local control plane that launches agents. A coordinator or runtime-specific binding consumes `.osc/runs/<run_id>/run.json` and dispatches the selected harness.
+Open Scaffold core defines the portable contract for semi-autonomous work. It does **not** own the local launcher/controller that starts agents. A coordinator or runtime-specific binding — external launch glue — consumes `.osc/runs/<run_id>/run.json` and dispatches the selected harness, meaning the workflow wrapper around the chosen agent.
 
 This page captures a **private deployment example**: an owner-local Command Center used Hermes Kanban -> OMX `$ralplan` to prove the dispatch shape. It translates that private dogfood pattern into the public Open Scaffold model; the private deployment is not required to adopt Open Scaffold. The detailed adapter/binding responsibilities live in [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md), and reference labels live in [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md).
 
@@ -8,9 +8,9 @@ This page captures a **private deployment example**: an owner-local Command Cent
 
 ```text
 Open Scaffold packages.
-A task bridge coordinates.
-A harness executes.
-An operator surface observes.
+A task bridge — external work queue/status board — coordinates.
+A harness — workflow wrapper around an agent — executes.
+An operator surface — chat/dashboard for humans — observes.
 GitHub publishes.
 Evidence proves.
 ```
@@ -26,7 +26,7 @@ flowchart TD
     E --> F["6. Evidence + postflight\nlogs, outputs, verification, operator decision"]
     F --> G["7. Publication\nbranch / PR / CI / Codex review / release note"]
 
-    D -. "status/questions only" .-> H["Glass cockpit\nDiscord / Slack / Telegram / GitHub comments"]
+    D -. "status/questions only" .-> H["Glass cockpit / control room\nDiscord / Slack / Telegram / GitHub comments"]
     H -. "question_id -> run_id" .-> D
 
     X["Private deployment example\nowner-local bridge proved:\nKanban -> OMX -> run evidence"] --> Y["You are here in Open Scaffold\nproductizing the public contract/docs"]
@@ -51,10 +51,10 @@ Current state:
 
 | Layer | Owns | Examples | Must not own |
 |---|---|---|---|
-| Open Scaffold core | repo-native contract, run packet, evidence locations, task/run identity | `.osc/plans`, `.osc/runs`, `osc run`, docs, PR templates | live task lifecycle, runtime auth, agent spawning |
+| Open Scaffold core | repo-native contract, `run.json` work package (run packet), evidence locations, task/run identity | `.osc/plans`, `.osc/runs`, `osc run`, docs, PR templates | live task lifecycle, runtime auth, agent spawning |
 | Task bridge / coordinator | operational state and dispatch decision | Hermes Kanban, GitHub Issues bot, Linear/Jira bridge, local queue | final evidence or runtime internals |
 | Runtime harness | actual planning/build/review loop while alive | OMX, OMC, Claude Code, Codex CLI, human lane | canonical task database or commit authority |
-| Operator surface | visibility, questions, approvals | Discord, Slack, Telegram, GitHub comments, CLI dashboard | source of truth |
+| Operator surface — chat/dashboard for humans | visibility, questions, approvals | Discord, Slack, Telegram, GitHub comments, CLI dashboard | source of truth |
 | GitHub/publication | versioned implementation and review | branch, PR, CI, Codex connector review, release | runtime session truth |
 
 ## Canonical public flow
@@ -112,7 +112,7 @@ A coordinator or runtime-specific binding should follow the contract in [`docs/R
 
 1. Read `.osc/runs/<run_id>/run.json`.
 2. Refuse dispatch unless `packageQuality.executable` is true.
-3. Validate executor lane and harness skill.
+3. Validate executor lane and harness skill — runtime command/mode.
 4. Create an isolated runtime session or worktree when needed.
 5. Launch the selected harness with the generated prompt/artifact bundle.
 6. Attach runtime bindings back to the run record:
@@ -154,7 +154,7 @@ Avoid:
 - putting private deployment state, Hermes Kanban state, Discord bot state, or owner-specific auth setup inside Open Scaffold core;
 - making Discord the task database;
 - letting OMX/OMC runtime state replace `.osc/runs` evidence;
-- dispatching a harness from vague prose without a run packet;
+- dispatching a harness from vague prose without a `run.json` work package (run packet);
 - letting a chat reply answer a question without `question_id -> run_id` correlation;
 - treating `spawning: false` as a limitation instead of the core boundary.
 
@@ -166,6 +166,6 @@ Open Scaffold should productize the method, not any private cockpit. The public 
 Open Scaffold core = WHAT/WHERE/PROOF
 Coordinator/adapter = WHEN/WHO/LAUNCH
 Harness = HOW TO EXECUTE
-Operator surface = HUMAN CONTROL GLASS
+Operator surface = HUMAN CONTROL GLASS (chat/dashboard for status and approvals)
 GitHub = PUBLIC VERSIONED REVIEW
 ```

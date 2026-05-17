@@ -10,26 +10,15 @@
 
 </div>
 
-Open Scaffold gives solo developers and small teams a lightweight way to keep AI coding work traceable. It stores mission, roadmap, plans, run packets, evidence, decisions, and handoff notes in the repo so humans and agents can see what was asked, changed, verified, and approved.
+Open Scaffold gives solo devs and small teams repo files and rules for AI coding work. It stores the mission, roadmap, plans, evidence, decisions, and handoff notes where humans and agents can see what was asked, changed, verified, and approved.
 
-Use it when AI work spans sessions, PRs, agents, or review gates — especially when you need proof without a documentation swamp.
+Use it when AI work spans sessions, PRs, agents, or review gates — when you need proof without a documentation swamp.
 
-> **What it is:** a repo-native source-of-truth protocol that packages work for humans, agents, coordinators, and runtime adapters.
+> **What it is:** a repo-native source of truth: files and rules that package work for humans, agents, coordinators, and runtime adapters.
 >
 > **What it is not:** an agent runtime, Discord bot, daemon, task database, model ranker, or code reviewer. Those live in tools you choose; the scaffold is what they read and write.
 
-The runtime handoff is intentionally simple:
-
-```text
-User selects runtime
-  -> Open Scaffold reads runtime profile
-  -> Open Scaffold creates the run packet
-  -> Adapter/coordinator launches the actual runtime
-  -> Runtime does the work
-  -> Evidence comes back into Open Scaffold
-```
-
-Plain English: Open Scaffold keeps the work truth in the repo. You choose an agent runtime. Open Scaffold packages the work. A runtime adapter executes it outside core. Evidence comes back. Humans approve.
+Runtime handoff is optional: Open Scaffold writes a `run.json` work package, an external adapter/runtime works outside core, evidence comes back, and humans approve. See [Step 5](#5-optional-package-a-plan-for-an-agentruntime).
 
 ---
 
@@ -57,7 +46,7 @@ Want the loop before the theory? Read [`docs/EXAMPLES.md`](docs/EXAMPLES.md#60-s
 Mission -> plan -> verification -> evidence/status
 ```
 
-For a non-recursive version of the same loop, read the [downstream walkthrough](docs/examples/downstream-walkthrough.md): a tiny shell CLI carried through mission, plan, run packet, evidence, close, and a day-2 resume check from repo files alone. For broader usage shapes — solo developer, team control-room, GitHub-only workflow, and runtime harness handoff — see the [examples index](docs/examples/README.md).
+For a full non-recursive loop, read the [downstream walkthrough](docs/examples/downstream-walkthrough.md): mission, plan, optional `run.json` package, evidence, close, and day-2 resume. Broader shapes live in the [examples index](docs/examples/README.md).
 
 ---
 
@@ -66,7 +55,7 @@ For a non-recursive version of the same loop, read the [downstream walkthrough](
 - **Direction:** `MISSION.md` and `ROADMAP.md` keep intent visible.
 - **Work specs:** `.osc/plans/` holds small, immutable plans with acceptance criteria.
 - **Change history:** amendments record scope changes without rewriting the original plan.
-- **Run packets:** `.osc/runs/<run_id>/run.json` packages a plan for a chosen runtime lane.
+- **Work packages (run packets):** `.osc/runs/<run_id>/run.json` packages a plan for a chosen runtime lane.
 - **Evidence:** `.osc/releases/` records what shipped, how it was verified, and what follows.
 - **Checks:** `./verify.sh` and `osc verify` catch stale state, broken evidence, and plan drift.
 - **Agent entry points:** `AGENTS.md` and `CLAUDE.md` tell coding agents how to operate without fresh explanations.
@@ -76,7 +65,7 @@ The loop:
 ```text
 Roadmap or issue
   -> plan
-  -> run packet / task id
+  -> run.json package / task id
   -> branch / PR
   -> verification evidence
   -> approval / amendment / next slice
@@ -86,16 +75,16 @@ Roadmap or issue
 
 ## Quickstart
 
-### 1. Initialize the scaffold tier you need
+### 1. Choose how many Open Scaffold files to add
 
-Use npm for the normal first run:
+Use npm for the normal first run. Use `--target .` to add scaffold files to the current repo, or `--target my-app` to create/init a project folder named `my-app`:
 
 ```bash
 npx open-scaffold init --tier min --target <your-project>
 cd <your-project>
 ```
 
-If you want to run from a source checkout instead:
+Source checkout fallback:
 
 ```bash
 git clone https://github.com/graphanov/open-scaffold open-scaffold
@@ -103,25 +92,17 @@ cd open-scaffold
 npm install
 npm run build
 node dist/cli.js init --tier min --target <your-project>
-cd <your-project>
 ```
 
 Tiers:
 
-- `min` — mission, rules, plan workflow/template, release evidence folder, and shell helpers.
-- `standard` — `min` plus README/roadmap, agent instructions, amendment helper, and core docs.
-- `max` — `standard` plus GitHub/glass-cockpit/runtime docs, delegation helper, and advanced `.osc/` folders.
+- `min` — smallest useful setup: mission, rules, plan template/workflow, evidence folder, verification, and close helper.
+- `standard` — recommended starter: `min` plus README/roadmap, agent instructions, amendment helper, and core docs.
+- `max` — advanced/team setup: `standard` plus GitHub, runtime, status/control-room docs, delegation helper, and advanced `.osc/` folders.
 
 The initializer is local-only: it does not require network access after the package is present, does not call GitHub or agent services, and refuses to overwrite existing files unless `--force` is supplied.
 
-If you prefer GitHub's template flow:
-
-```bash
-gh repo create <your-project> --template graphanov/open-scaffold --clone
-cd <your-project>
-```
-
-Or use GitHub's **Use this template** button.
+Prefer the npm path above for first use. If you prefer GitHub's template flow, use GitHub's **Use this template** button or `gh repo create <your-project> --template graphanov/open-scaffold --clone`.
 
 ### 2. Bootstrap the mission
 
@@ -139,7 +120,7 @@ If the goal is clear, tell your agent:
 Write a plan in .osc/plans/active/ for <task> using .osc/plans/handoff-template.md.
 ```
 
-If the goal is fuzzy, ask the agent to interview you first, then write the plan. Or copy the template manually:
+If the goal is fuzzy, ask the agent to interview you first, then write the plan. Fill the template with short bullets; the important parts are goal, acceptance criteria, and verification. Or copy the template manually:
 
 ```bash
 cp .osc/plans/handoff-template.md .osc/plans/active/my-first-task.md
@@ -153,25 +134,14 @@ cp .osc/plans/handoff-template.md .osc/plans/active/my-first-task.md
 
 Use `./verify.sh --standard` before calling a meaningful slice done.
 
-### 5. Select a runtime and create a run packet
+### 5. Optional: package a plan for an agent/runtime
 
-Open Scaffold core does not spawn agents. It packages work so a coordinator, adapter, or human can dispatch it.
-
-The runtime flow is:
-
-```text
-User selects runtime
-  -> Open Scaffold reads runtime profile
-  -> Open Scaffold creates the run packet
-  -> Adapter/coordinator launches the actual runtime
-  -> Runtime does the work
-  -> Evidence comes back into Open Scaffold
-```
+You can stop after verification and evidence. Only create a `run.json` work package — the run packet — when another tool, adapter, or human needs a structured handoff file. Open Scaffold still does not spawn agents.
 
 Example:
 
 ```bash
-npm run osc -- run .osc/plans/active/my-first-task.md \
+npx open-scaffold run .osc/plans/active/my-first-task.md \
   --task-id TASK-001 \
   --runtime omx \
   --workflow plan \
@@ -179,11 +149,11 @@ npm run osc -- run .osc/plans/active/my-first-task.md \
   --repo "$PWD"
 ```
 
-For custom runtimes, add a project-local profile in `.osc/runtimes/<id>.json`, then use `--runtime <id>`. Read this in layers:
+Here `--operator-surface` means the place humans see status and approvals, such as GitHub comments, chat, or a CLI. For custom runtimes, add a project-local profile in `.osc/runtimes/<id>.json`, then use `--runtime <id>`. Read this in layers:
 
 1. [`docs/RUNTIME_SELECTION.md`](docs/RUNTIME_SELECTION.md) — choosing `--runtime` and `--workflow`;
 2. [`docs/RUNTIME_PROFILES.md`](docs/RUNTIME_PROFILES.md) — built-in and project-local runtime profiles;
-3. [`docs/RUNTIME_BINDING_CONTRACT.md`](docs/RUNTIME_BINDING_CONTRACT.md) — what an adapter/coordinator must do after the packet exists.
+3. [`docs/RUNTIME_BINDING_CONTRACT.md`](docs/RUNTIME_BINDING_CONTRACT.md) — what an adapter/coordinator must do after the `run.json` package exists.
 
 ---
 
@@ -193,8 +163,8 @@ Open Scaffold is not an agent runtime, Discord bot, PR reviewer, or task databas
 
 - **Coordinators / task state:** GitHub Issues, Linear/Jira, custom bots, or private deployment examples such as Hermes Kanban decide what should happen next.
 - **Runtime lanes:** Claude Code, Codex, Cursor, Gemini, OMC, OMX, Aider, or a human terminal can execute bounded work outside Open Scaffold core.
-- **Operator surfaces:** Discord, Slack, Telegram, GitHub comments, or CLI dashboards can show status and collect approvals.
-- **Core truth:** mission, plans, amendments, run packets, evidence, decisions, and release notes stay in the repo.
+- **Status / approval channels (operator surfaces):** Discord, Slack, Telegram, GitHub comments, or CLI dashboards can show status and collect approvals.
+- **Core truth:** mission, plans, amendments, `run.json` work packages, evidence, decisions, and release notes stay in the repo.
 
 Full map: [`docs/OPEN_SCAFFOLD_SYSTEM.md`](docs/OPEN_SCAFFOLD_SYSTEM.md), [`docs/TASK_RUN_MODEL.md`](docs/TASK_RUN_MODEL.md), [`docs/GITHUB_WORKFLOW.md`](docs/GITHUB_WORKFLOW.md), and [`docs/REFERENCE_TRUTH.md`](docs/REFERENCE_TRUTH.md).
 
@@ -210,7 +180,7 @@ Open Scaffold is useful when work needs to survive context loss:
 - multi-agent handoffs where chat history is not enough;
 - projects where "done" needs acceptance criteria and verification, not vibes.
 
-It is overkill for one-off scripts, disposable prototypes, or tasks that fit in a single clean session. The scaffold is the substrate; it does not replace SOC 2, ISO, or formal audit tooling — it gives those processes durable repo artifacts to point at.
+It is overkill for one-off scripts, disposable prototypes, or tasks that fit in a single clean session. The scaffold is the repo foundation; it does not replace SOC 2, ISO, or formal audit tooling — it gives those processes durable repo artifacts to point at.
 
 ---
 
@@ -233,8 +203,8 @@ Near-term roadmap work should improve clarity, adapter evidence, and validation.
 - [`.osc/RULES.md`](.osc/RULES.md) — compact operating rules.
 - [`.osc/plans/WORKFLOW.md`](.osc/plans/WORKFLOW.md) — how plans move through backlog, active, done, and blocked.
 - [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — phase-to-tool guide.
-- [`docs/SLICE_CLOSE_PROTOCOL.md`](docs/SLICE_CLOSE_PROTOCOL.md) — evidence-backed slice closure.
-- [`docs/GLASS_COCKPIT_PROTOCOL.md`](docs/GLASS_COCKPIT_PROTOCOL.md) — chat/control-room surfaces.
+- [`docs/SLICE_CLOSE_PROTOCOL.md`](docs/SLICE_CLOSE_PROTOCOL.md) — evidence-backed completion / slice closure.
+- [`docs/GLASS_COCKPIT_PROTOCOL.md`](docs/GLASS_COCKPIT_PROTOCOL.md) — chat/control-room status surfaces.
 - [`docs/FAQ.md`](docs/FAQ.md) — deeper explanations.
 - [`docs/REFERENCE_TRUTH.md`](docs/REFERENCE_TRUTH.md) — labels for public, private, future, and adapter tool references.
 

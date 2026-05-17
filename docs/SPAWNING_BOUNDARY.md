@@ -1,18 +1,18 @@
 # Spawning Boundary and Runtime Adapter Contract
 
-Open Scaffold Milestone 16 asks whether core should remain non-spawning, add thin adapter invocation, move execution into adapter packages, or eventually grow a native runtime. This document records the current boundary decision and the contract shape for the next safe step. Public/private tool labels are defined in [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md).
+Open Scaffold Milestone 16 asks whether core should remain non-spawning, add thin adapter invocation, move execution into adapter packages, or eventually grow a native runtime. Here, `spawning` means launching real agent/runtime processes. This document records the current boundary decision and the contract shape for the next safe step. Public/private tool labels are defined in [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md).
 
 ## Current decision
 
 Open Scaffold core should **not** implement real autonomous runtime spawning yet.
 
-Core should first define the adapter/runtime boundary, dispatch receipt, authority vocabulary, and evidence expectations. Real spawning belongs in runtime-specific adapters or a future explicitly governed runtime product.
+Core should first define the adapter/runtime boundary, dispatch receipt (handoff proof), authority vocabulary (permission words), and evidence expectations. Real spawning belongs in runtime-specific adapters or a future explicitly governed runtime product.
 
 ```text
 Open Scaffold core packages work.
 A coordinator chooses the execution lane.
-A bridge/binding translates the package.
-A runtime/harness executes in its own bounded environment.
+A bridge/binding — external translation/launch glue — translates the package.
+A runtime/harness — the agent environment or workflow wrapper — executes in its own bounded environment.
 Evidence returns to the repo/task/PR chain.
 Human approval and merge authority stay explicit.
 ```
@@ -40,11 +40,11 @@ If Open Scaffold core owns those too early, it becomes a runtime by drift. The c
 
 | Layer | Owns | Must not silently own |
 |---|---|---|
-| Open Scaffold core | mission, roadmap, plans, run packets, evidence schema, approval/commit policy, verification expectations | runtime-specific launch mechanics, provider auth, live process control |
+| Open Scaffold core | mission, roadmap, plans, `run.json` work packages (run packets), evidence schema, approval/commit policy, verification expectations | runtime-specific launch mechanics, provider auth, live process control |
 | Coordinator / task bridge | intake, task selection, operator Q&A, lane choice, retry/block/review state | final evidence by itself |
 | Runtime adapter / bridge | translating `.osc` run packets into runtime-specific invocation, returning status/artifacts/evidence | canonical project truth, uncontrolled repo mutation |
 | Runtime / harness | execution, local session state, tool use, local logs, generated artifacts | approval authority or canonical task state unless explicitly granted |
-| Operator surface | visible status, blockers, questions, approvals | source of truth |
+| Operator surface — chat/dashboard for status and approvals | visible status, blockers, questions, approvals | source of truth |
 | GitHub / repo evidence | durable review, CI, release, audit references | raw runtime transcript as canonical truth |
 
 ## Adapter/runtime contract vocabulary
@@ -69,7 +69,7 @@ commit_policy: string
 
 The adapter may attach runtime-specific metadata, but the portable contract should remain small enough that Claude Code, Codex, OpenCode, OMX, OMC, Ouroboros, GSD, human/manual lanes, or future runtimes can implement it without contaminating core.
 
-## Authority and sandbox vocabulary
+## Authority and sandbox vocabulary — permission/isolation words
 
 Open Scaffold should not adopt Claude, Codex, OpenCode, or OMX permission strings as its lingua franca. It should define its own small policy vocabulary and let adapters translate.
 
@@ -101,7 +101,7 @@ human_approval_required for publication
 
 ## Dispatch receipt
 
-A dispatch receipt proves what was invoked, with what authority, from what package.
+A dispatch receipt is repo-local proof of what was invoked, with what authority, from what package.
 
 Minimum receipt fields:
 

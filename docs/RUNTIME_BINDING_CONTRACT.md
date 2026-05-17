@@ -1,10 +1,10 @@
 # Runtime Binding Contract
 
-This is the execution boundary layer. Runtime selection chooses a lane; runtime profiles describe that lane; the binding contract says what an external adapter/coordinator must do with the run packet.
+This is the execution boundary layer: the rules for what external launchers may do after Open Scaffold creates a package. Runtime selection chooses a lane; runtime profiles describe that lane; the binding contract says what an external adapter/coordinator must do with the `run.json` package (run packet).
 
 Named harnesses in this contract, including OMC and OMX, are runtime lanes or adapter candidates rather than Open Scaffold core dependencies. Use [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) for public/private/future reference labels.
 
-Open Scaffold core creates bounded run packages. Runtime bindings — execution adapters for a chosen lane — consume those packages and launch outside core. This document defines the contract between the repo-native Open Scaffold package and any coordinator, adapter, harness, agent, or human lane that executes it.
+Open Scaffold core creates bounded run packages. Runtime bindings — external launch glue/adapters for a chosen lane — consume those packages and launch outside core. This document defines the contract between the repo-native Open Scaffold package and any coordinator, adapter, harness, agent, or human lane that executes it.
 
 ## Executive rule
 
@@ -16,11 +16,11 @@ Evidence returns.
 Postflight closes.
 ```
 
-`spawning: false` in `run.json` is not a missing feature. It is the boundary that keeps generic Open Scaffold portable.
+`spawning: false` in `run.json` means core did not launch a real agent/process. It is not a missing feature. It is the boundary that keeps generic Open Scaffold portable.
 
 ## What is a runtime binding?
 
-A runtime binding is the glue that turns a run packet — a repo-written execution package — into a concrete execution attempt.
+A runtime binding is the external launch glue that turns a run packet — a repo-written `run.json` execution package — into a concrete execution attempt.
 
 Examples:
 
@@ -40,7 +40,7 @@ A binding is not the Open Scaffold core. It may be a separate repo, plugin, bot,
 | Coordinator/task bridge | selecting work, choosing lane, assigning owner, retry/block/review state | final evidence by itself |
 | Runtime binding | translating package to a specific launch, attaching runtime metadata, returning artifacts | project truth, merge authority unless granted |
 | Harness/agent/human lane | execution while alive | canonical task database, approval gate |
-| Operator surface | status/questions/approval messages | source of truth |
+| Operator surface — chat/dashboard for status, questions, and approvals | status/questions/approval messages | source of truth |
 | GitHub/evidence | public review, CI, release, proof | runtime session truth |
 
 ## Binding lifecycle
@@ -49,7 +49,7 @@ A binding is not the Open Scaffold core. It may be a separate repo, plugin, bot,
 1. Select task or plan
 2. Create or read .osc/runs/<run_id>/run.json
 3. Validate packageQuality.executable
-4. Validate executor lane and harness skill
+4. Validate executor lane and harness skill — runtime command/mode
 5. Check safety and isolation requirements
 6. Launch or hand off to selected lane outside core
 7. Attach runtime bindings back to run metadata/evidence
@@ -60,9 +60,9 @@ A binding is not the Open Scaffold core. It may be a separate repo, plugin, bot,
 12. Close, retry, amend, block, or create next slice
 ```
 
-## Required input: run packet
+## Required input: `run.json` package (run packet)
 
-A binding should expect a run packet like:
+A binding should expect a `run.json` package (run packet) like:
 
 ```json
 {
@@ -142,11 +142,11 @@ If the package is not executable, do not improvise implementation. Route to clar
 
 ## Binding responsibilities
 
-For the detailed spawning/adapter boundary, dispatch receipt shape, authority vocabulary, and OMX v0.17.0 Hermes MCP bridge evidence, see [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md). This contract remains the lifecycle-level agreement; the boundary document defines the safer next-step vocabulary before any real `osc spawn` implementation.
+For the detailed spawning/adapter boundary, dispatch receipt shape (handoff proof), authority vocabulary (permission words), and OMX v0.17.0 Hermes MCP bridge evidence, see [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md). This contract remains the lifecycle-level agreement; the boundary document defines the safer next-step vocabulary before any real `osc spawn` implementation.
 
 A binding should:
 
-1. Read the run packet and generated prompts.
+1. Read the `run.json` package (run packet) and generated prompts.
 2. Refuse unsupported lanes, unsafe packages, and blocking open questions.
 3. Preserve the commit policy.
 4. Create or select an isolated worktree/session when needed.
@@ -160,14 +160,14 @@ A binding should:
    - log path;
    - operator thread/comment ID;
    - PR number if opened.
-7. Emit glass-cockpit events for status, blockers, questions, approval requests, completion, and evidence receipts when an operator surface is bound.
+7. Emit glass-cockpit events — operator-dashboard/control-room messages — for status, blockers, questions, approval requests, completion, and evidence receipts when an operator surface is bound.
 8. Route human answers by `question_id -> run_id`.
 9. Promote final artifacts and evidence to `.osc/runs`, tracked evidence docs, PRs, issues, or release notes.
 10. Leave approval/merge/release to the configured gate.
 
 ## Audit and evaluation envelope responsibilities
 
-Open Scaffold core defines the audit/evaluation envelope shapes; runtime bindings and adapters fill the execution-specific parts of those envelopes.
+Open Scaffold core defines audit/evaluation envelope shapes — structured records for integrity reconstruction and acceptance-criteria evidence review; runtime bindings and adapters fill the execution-specific parts of those envelopes.
 
 A binding should return enough structured information for postflight to build evaluation and audit records:
 

@@ -1,17 +1,17 @@
 # Runtime selection
 
-Runtime selection is the user-facing layer of Open Scaffold's runtime story. It answers one question: **which lane should this run packet target?**
+Runtime selection is the user-facing layer for choosing an execution target. It answers one question: **which execution target should this `run.json` package — the run packet — be prepared for?**
 
 ```text
-User selects runtime
-  -> Open Scaffold reads runtime profile
-  -> Open Scaffold creates the run packet
-  -> Adapter/coordinator launches the actual runtime
+User selects a runtime / outside tool
+  -> Open Scaffold reads its runtime profile
+  -> Open Scaffold creates the run.json work package (run packet)
+  -> Adapter/coordinator launches the actual runtime outside core
   -> Runtime does the work
   -> Evidence comes back into Open Scaffold
 ```
 
-This page covers the first two Open Scaffold steps: `--runtime`, `--workflow`, and the run-packet fields they create. For profile schema and custom project-local runtimes, read [`RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md). For the external adapter/coordinator contract, read [`RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
+This page covers the first two Open Scaffold steps: choosing `--runtime` / `--workflow`, then writing those choices into the `run.json` package. For profile schema and custom project-local runtimes, read [`RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md). For the external adapter/coordinator contract, read [`RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
 
 ## Product intent
 
@@ -29,12 +29,12 @@ and get a concrete `.osc/runs/<run_id>/run.json` package that records:
 
 - selected runtime preset;
 - selected workflow;
-- executor lane;
-- harness skill;
-- repo/worktree/branch binding;
+- executor lane — the execution target;
+- harness skill — the runtime command or mode;
+- repo/worktree/branch binding — the checkout/branch the adapter may use;
 - package quality;
 - evidence/approval expectations;
-- `executor.spawning: false` until an external adapter/coordinator launches it.
+- `executor.spawning: false` — core will not launch the agent/process until an external adapter/coordinator launches it.
 
 The selected runtime is dispatchable by an adapter, but Open Scaffold core still does not launch Claude Code, Codex, OMC, OMX, tmux, or any provider process by itself.
 
@@ -64,13 +64,13 @@ For `omc` and `omx`, `--workflow` defaults to `plan` so `--runtime omx` and `--r
 ## Boundary
 
 ```text
-Open Scaffold core = select + package + prove
+Open Scaffold core = select + package + record evidence expectations
 Runtime adapter     = translate + launch + return receipt/evidence
 Runtime harness     = execute while alive
 Operator            = approve merge/publish gates
 ```
 
-Open Scaffold core owns the run-packet contract. Runtime-specific adapters own process launch, authentication, tmux/session lifecycle, hooks, and runtime logs. Runtime state is forensic until promoted into `.osc/runs`, tracked evidence docs, PRs, issues, or release notes. This boundary is the same one enforced by runtime profiles and the binding contract; this page only describes the selection surface.
+Open Scaffold core owns the run-packet contract. Runtime-specific adapters own process launch, authentication, tmux/session lifecycle, hooks, and runtime logs. Runtime state is forensic — useful for investigation, not durable project truth — until promoted into `.osc/runs`, tracked evidence docs, PRs, issues, or release notes. This boundary is the same one enforced by runtime profiles and the binding contract; this page only describes the selection surface.
 
 ## Adapter checklist
 
@@ -82,7 +82,7 @@ A runtime adapter that consumes Open Scaffold packages should:
 - reject packages where `packageQuality.executable !== true` or blockers are present;
 - preserve `commitPolicy` and human approval gates;
 - keep receipts, artifacts, and evidence repo-local;
-- write an `open-scaffold.dispatch-receipt.v1` dispatch receipt;
+- write an `open-scaffold.dispatch-receipt.v1` dispatch receipt — repo-local proof of handoff/invocation;
 - return completion, blocker, verification, and review evidence into the Open Scaffold/GitHub chain;
 - never claim completion from runtime-local state alone.
 

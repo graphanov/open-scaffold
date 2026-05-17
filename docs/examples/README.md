@@ -9,9 +9,9 @@ The four modes:
 3. [GitHub-only workflow](#3-github-only-workflow) — issue → plan → PR → evidence with no chat coordinator.
 4. [Runtime harness handoff](#4-runtime-harness-handoff) — packaging work for an external runtime lane to execute.
 
-If you want one complete non-recursive example first, start with [`downstream-walkthrough.md`](downstream-walkthrough.md). It shows the full mission → plan → run packet → evidence → close loop on a tiny shell CLI that is not Open Scaffold itself, then shows how a second session reconstructs the current state from files alone.
+If you want one complete non-recursive example first, start with [`downstream-walkthrough.md`](downstream-walkthrough.md). It shows the full mission → plan → optional `run.json` work package → evidence → close loop on a tiny shell CLI that is not Open Scaffold itself, then shows how a second session reconstructs the current state from files alone.
 
-Open Scaffold core ships the protocol, the run packet schema, the verification scripts, and dry-run/conformance examples. It does not spawn agents, run a coordinator daemon, or own runtime credentials. Each mode below stays inside that boundary.
+Open Scaffold core ships the protocol, the `run.json` work-package schema (run packet schema), the verification scripts, and dry-run/conformance examples. It does not spawn agents, run a coordinator daemon, or own runtime credentials. Each mode below stays inside that boundary.
 
 For the labels used when these examples mention external coordinators, harnesses, or surfaces, see [`REFERENCE_TRUTH.md`](../REFERENCE_TRUTH.md).
 
@@ -70,8 +70,8 @@ A team or solo operator who wants to keep all coordination on GitHub: Issues for
 
 Reading path:
 
-- [`docs/GITHUB_WORKFLOW.md`](../GITHUB_WORKFLOW.md) — canonical chain from `ROADMAP.md` item or Issue to plan, run packet, branch, PR, CI/review, merge, and release/evidence note.
-- [`docs/SLICE_CLOSE_PROTOCOL.md`](../SLICE_CLOSE_PROTOCOL.md) — evidence-backed slice closure when the only operator surface is a PR thread.
+- [`docs/GITHUB_WORKFLOW.md`](../GITHUB_WORKFLOW.md) — standard chain from `ROADMAP.md` item or Issue to plan, `run.json` work package when delegated, branch, PR, CI/review, merge, and release/evidence note.
+- [`docs/SLICE_CLOSE_PROTOCOL.md`](../SLICE_CLOSE_PROTOCOL.md) — evidence-backed completion / slice closure when the only status channel is a PR thread.
 
 Minimal chain:
 
@@ -86,7 +86,7 @@ GitHub Issue
 
 Acceptance criteria live in the plan; the PR description references the plan and the evidence note. CI runs `./verify.sh` so methodology drift is mechanical, not subjective.
 
-What this mode does **not** require: a chat operator surface, a coordinator service, or a runtime harness. An agent that opens PRs from a branch is one valid executor; a human terminal is another.
+What this mode does **not** require: a chat/status channel (operator surface), a coordinator service, or a runtime harness. An agent that opens PRs from a branch is one valid executor; a human terminal is another.
 
 ---
 
@@ -98,11 +98,11 @@ Reading path:
 
 - [`docs/RUNTIME_SELECTION.md`](../RUNTIME_SELECTION.md) — choosing `--runtime` and `--workflow`.
 - [`docs/RUNTIME_PROFILES.md`](../RUNTIME_PROFILES.md) — built-in and project-local runtime profile metadata.
-- [`docs/RUNTIME_BINDING_CONTRACT.md`](../RUNTIME_BINDING_CONTRACT.md) — lifecycle/responsibilities for any binding that consumes a run packet.
+- [`docs/RUNTIME_BINDING_CONTRACT.md`](../RUNTIME_BINDING_CONTRACT.md) — lifecycle/responsibilities for any binding that consumes a `run.json` work package (run packet).
 - [`runtime-profiles/company-review-bot.json`](runtime-profiles/company-review-bot.json) — example project-local profile.
 - [`runtime-binding-conformance/README.md`](runtime-binding-conformance/README.md) — fake/local adapter conformance fixture.
 
-### Generate a run packet
+### Generate a `run.json` work package (run packet)
 
 From a repository checkout with dependencies installed:
 
@@ -130,7 +130,7 @@ node docs/examples/runtime-binding-dry-run.mjs "$RUN_JSON"
 Expected result:
 
 - exits `0` for an executable package;
-- prints run id, plan path, executor lane, optional harness skill, operator surface, repo/worktree/branch, and commit policy;
+- prints run id, plan path, executor lane, optional runtime command/mode (`harness skill`), status channel (`operator surface`), repo/worktree/branch, and commit policy;
 - states that no runtime was launched;
 - exits nonzero if the packet is not executable, has blockers, requests unsupported lanes, or violates the `spawning: false` boundary.
 
@@ -153,6 +153,6 @@ Expected result:
 
 ### Boundary
 
-These examples are intentionally a **dry-run/conformance consumer**, not a launcher. Real runtime bindings, coordinators, bots, or humans may use the same `run.json` fields to launch work outside Open Scaffold core, attach runtime metadata, return evidence, and request approval.
+These examples are intentionally a **dry-run/conformance consumer**, not a launcher. Real runtime bindings — external launch glue — coordinators, bots, or humans may use the same `run.json` fields to launch work outside Open Scaffold core, attach runtime metadata, return evidence, and request approval.
 
 The fixtures are available from the repository checkout. They are not currently advertised as packaged npm executables or a stable adapter SDK.

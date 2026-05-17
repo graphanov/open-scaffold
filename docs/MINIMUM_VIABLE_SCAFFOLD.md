@@ -1,6 +1,6 @@
 # Minimum Viable Scaffold
 
-Open Scaffold can look larger than it is because this repository also contains the product's own roadmap, tests, examples, release notes, and dogfood history. A fresh downstream project does not need to understand or keep every product-repo artifact on day one.
+Open Scaffold can look larger than it is because this repository also contains the product's own roadmap, tests, examples, release notes, and dogfood history. A fresh project does not need to understand or keep every artifact from this Open Scaffold repo on day one.
 
 The minimum viable scaffold is the smallest repo state that lets a human and an agent answer:
 
@@ -13,7 +13,7 @@ What evidence proves it closed?
 
 ## The five-step adoption path
 
-Start by generating the tier that fits the repo with npm:
+Start by adding the amount of scaffold your repo needs with npm. Use `--target .` for the current repo, or `--target my-app` for a project folder:
 
 ```bash
 npx open-scaffold init --tier min --target <repo>
@@ -31,19 +31,21 @@ node dist/cli.js init --tier min --target <repo>
 # or: --tier standard / --tier max
 ```
 
-Use `min` for the smallest durable loop, `standard` for the recommended day-one repo, and `max` only when the project already needs GitHub/runtime/glass-cockpit protocol docs. The command writes only local files and refuses to overwrite existing files by default.
+Use `min` for the smallest durable loop, `standard` for the recommended day-one repo, and `max` only when the project already needs GitHub, runtime, or status/control-room protocol docs. The command writes only local files and refuses to overwrite existing files by default.
 
 Then follow the loop:
 
 1. **Define mission** — run `./bootstrap.sh` or edit `MISSION.md` until the project-specific mission is real.
-2. **Create one active plan** — copy `.osc/plans/handoff-template.md` into `.osc/plans/active/<slug>.md` and fill the seven sections.
+2. **Create one active plan** — copy `.osc/plans/handoff-template.md` into `.osc/plans/active/<slug>.md` and fill short bullets for goal, acceptance criteria, and verification.
 3. **Execute and verify** — make the change, run the project test/check, then run `./verify.sh --standard`.
-4. **Record evidence** — add a short `.osc/releases/<date>-<slug>.md` note with summary, traceability, verification, and outcome.
+4. **Record evidence** — add a short `.osc/releases/<date>-<slug>.md` note saying what changed, which plan it closed, what command/test ran, and the result.
 5. **Close the plan** — run `./close.sh <slug> --message "<what shipped>"` so the plan moves to `done/` and `MISSION.md` is stamped.
 
 The payoff appears in the next session. If someone opens the repo later with no chat history, they can read `MISSION.md`, `.osc/plans/active/`, `.osc/plans/done/`, and `.osc/releases/` to see what the project is, whether work is still active, what was verified, and whether the next action is to continue, stop, or write a new plan.
 
 Everything else is optional until the project needs it.
+
+For day one, keep five things in view: `MISSION.md`, one active plan in `.osc/plans/active/`, a verification command, one evidence note in `.osc/releases/`, and `close.sh` to move the plan to `done/`.
 
 ## Core vs optional artifacts
 
@@ -81,14 +83,14 @@ Everything else is optional until the project needs it.
 | `.osc/plans/handoff-template.md` | Required | Seven-section plan template. | Keep. |
 | `.osc/plans/WORKFLOW.md` | Required | Folder state machine. | Keep. |
 | `.osc/releases/` | Required | Evidence/release notes. | Keep `README.md`; add notes when slices close. |
-| `.osc/runs/` | Optional / forensic | Runtime/run packets and logs. | Usually ignored or empty until a run packet is created. Do not treat raw runs as public truth. |
+| `.osc/runs/` | Optional / debug-only until promoted | Runtime logs and `run.json` work packages (run packets). | Usually ignored or empty until a run package is created. Do not treat raw runs as public truth. |
 | `.osc/research/` | Optional / decision support | Research, drafts, issue imports, private-to-public staging. | Not required for first use; promote only curated conclusions. |
 | `.osc/specs/` | Optional | Larger specs before they become plans. | Use only when a plan is too small for the requirement shape. |
 | `.osc/state/` | Optional / local runtime state | Local state for tools. | Keep ignored unless explicitly promoted. |
 
-## Fresh downstream state vs maintainer repo state
+## Fresh project state vs Open Scaffold repo state
 
-A blank downstream project should not inherit Open Scaffold's own product history as if it were the user's project.
+A blank project should not inherit Open Scaffold's own product history as if it were the user's project.
 
 Use this rule:
 
@@ -97,11 +99,11 @@ Template structure can be copied.
 Product history must be reset, removed, or clearly labeled as example material.
 ```
 
-For a fresh downstream repo:
+For a fresh project:
 
-- `MISSION.md` should describe the downstream project.
+- `MISSION.md` should describe your project.
 - `.osc/plans/active/`, `done/`, `backlog/`, and `blocked/` should not contain Open Scaffold product plans unless they are explicitly examples.
-- `.osc/releases/` should not contain Open Scaffold's release history as live downstream truth.
+- `.osc/releases/` should not contain Open Scaffold's release history as live truth for your project.
 - `.osc-dev/` should not exist.
 - `examples/` may contain examples, but example artifacts must be clearly labeled and not confused with active project state.
 
@@ -112,10 +114,10 @@ The lifecycle smoke at `examples/lifecycle-e2e-smoke/` is intentionally an examp
 | Protocol or concept | Status | Use when |
 |---|---:|---|
 | Amendments | Recommended once plans are committed | New information changes scope or acceptance criteria. |
-| Run packets | Optional / advanced | A harness, coordinator, or human lane needs a bounded execution package. |
+| Work packages (run packets) | Optional / advanced | A harness, coordinator, or human lane needs a bounded `run.json` handoff package. |
 | Execution strategy in plans | Optional | Work can be decomposed into dependent/parallel groups. |
-| Glass cockpit events | Optional / integration | Discord/Slack/Telegram/GitHub comments need structured status and approval events. |
-| Runtime binding contract | Optional / adapter-specific | OMC, OMX, Claude Code, Codex, or another runtime consumes run packets. |
+| Status/control-room events (glass cockpit events) | Optional / integration | Discord/Slack/Telegram/GitHub comments need structured status and approval events. |
+| Runtime adapter contract (runtime binding contract) | Optional / adapter-specific | OMC, OMX, Claude Code, Codex, or another runtime consumes `run.json` work packages. |
 | GitHub issue/PR traceability | Recommended for public/versioned work | The work should be reviewed or reconstructed through GitHub. |
 | `osc` CLI | Optional / richer tooling | Node is available and the project wants parsed status/run artifacts or tiered initialization. Shell scripts remain the day-zero floor. |
 | `.osc/research/` | Optional / decision support | Research needs to be saved before a curated decision/release note exists. |

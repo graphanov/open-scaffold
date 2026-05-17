@@ -6,7 +6,7 @@ Questions that did not fit in the main README but are still worth answering.
 
 ### Is this useful for consulting, client delivery, or compliance/audit work?
 
-> Yes, with caveats. Consulting and client delivery benefit because the mission, plans, amendments, evidence receipts, and slice-close protocol make it possible to answer "what did you actually do, why, and how do you know it worked?" months later without reconstructing a chat log. Compliance and audit work benefit because every meaningful change traces back to a plan, acceptance criteria, verification commands, and an approval decision — all in version control. **What this is not:** a substitute for SOC 2, ISO 27001, HIPAA, GDPR, or any formal compliance regime. The scaffold gives those processes durable, reviewable repo artifacts to point at; it does not implement controls, encryption, access policy, or auditor relationships. Use it as evidence substrate, not as the compliance program.
+> Yes, with caveats. Consulting and client delivery benefit because the mission, plans, amendments, evidence receipts, and evidence-backed close protocol make it possible to answer "what did you actually do, why, and how do you know it worked?" months later without reconstructing a chat log. Compliance and audit work benefit because every meaningful change traces back to a plan, acceptance criteria, verification commands, and an approval decision — all in version control. **What this is not:** a substitute for SOC 2, ISO 27001, HIPAA, GDPR, or any formal compliance regime. The scaffold gives those processes durable, reviewable repo artifacts to point at; it does not implement controls, encryption, access policy, or auditor relationships. Use it as evidence substrate, not as the compliance program.
 
 ### When is Open Scaffold overkill?
 
@@ -14,7 +14,7 @@ Questions that did not fit in the main README but are still worth answering.
 
 ### Can I run this for 5 hours straight and come back to a finished product?
 
-> No. Anyone who says their framework does that is selling you something. What you *can* do: write a plan, hand it to an orchestrator or runtime harness — for example a private coordinator deployment such as Hermes/Claw, OMC with `/autopilot`/`/ralph` for Claude Code, or OMX with `$team`/`$ralph`/`$ultrawork` for Codex — and come back to mostly-done work that traces back to your acceptance criteria. These are runtime lanes or private deployment examples, not Open Scaffold dependencies; see [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md). The difference the scaffold makes is **recoverability** — because the plan is on disk, you can read what the agent did, compare against the ACs, and know exactly where to resume. Without it, a 5-hour run is a 5-hour black box.
+> No. Anyone who says their framework does that is selling you something. What you *can* do: write a plan, give it to an outside tool or runner, and come back to work that still traces back to your acceptance criteria. Examples include a private coordinator deployment such as Hermes/Claw, OMC with `/autopilot`/`/ralph` for Claude Code, or OMX with `$team`/`$ralph`/`$ultrawork` for Codex. These are runtime lanes or private deployment examples, not Open Scaffold dependencies; see [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md). The difference the scaffold makes is **recoverability** — because the plan is on disk, you can read what the agent did, compare against the ACs, and know exactly where to resume. Without it, a 5-hour run is a 5-hour black box.
 
 ### Does this reduce token usage / cost?
 

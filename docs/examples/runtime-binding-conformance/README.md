@@ -1,12 +1,12 @@
 # Runtime Binding Conformance Fixture
 
-This fixture demonstrates the smallest safe adapter contract: a fake/local adapter consumes a run packet, writes a dispatch receipt and evidence artifact, and exits without launching a real runtime.
+This fixture demonstrates the smallest safe adapter contract: a fake/local adapter consumes a `run.json` work package (run packet), writes an adapter receipt file (`dispatch-receipt.json`) and evidence artifact, and exits without launching a real runtime.
 
 It is not a production adapter SDK. It is a deterministic conformance target for future adapter packages.
 
 ## Run the fixture
 
-Given a run packet at `.osc/runs/<run_id>/run.json`:
+Given a `run.json` work package (run packet) at `.osc/runs/<run_id>/run.json`:
 
 ```bash
 node docs/examples/runtime-binding-conformance/fake-local-adapter.mjs \
@@ -36,8 +36,8 @@ Future adapters can use this fixture as a minimum behavior target before adding 
 
 Supported conformance lanes:
 
-- `plain-agent` with no harness skill;
-- `human` / `manual` with no harness skill;
+- `plain-agent` with no runtime command/mode (`harness skill`);
+- `human` / `manual` with no runtime command/mode (`harness skill`);
 - `omc-claude` with `/deep-interview`, `/ralplan`, `/team`, `/ralph`, or `/ultrawork`;
 - `omx-codex` with `$deep-interview`, `$ralplan`, `$team`, `$ralph`, `$ultrawork`, or `$ultragoal`.
 
