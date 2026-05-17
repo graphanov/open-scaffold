@@ -107,7 +107,7 @@ function isInsideRoot(root: string, candidate: string): boolean {
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
 }
 
-function normalizeRepoRelative(root: string, path: string): { relativePath: string; absolutePath: string } {
+function normalizeRepoRelative(root: string, path: string): { relativePath: string; canonicalRelativePath: string; absolutePath: string } {
   const realRoot = rootRealpath(root);
   const absolute = isAbsolute(path) ? path : resolve(realRoot, path);
   if (!isInsideRoot(realRoot, absolute)) {
@@ -123,7 +123,11 @@ function normalizeRepoRelative(root: string, path: string): { relativePath: stri
   if (!statSync(realArtifact).isFile()) {
     throw new Error(`Audit artifact path is not a file: ${path}`);
   }
-  return { relativePath: toPosix(relative(realRoot, absolute)), absolutePath: realArtifact };
+  return {
+    relativePath: toPosix(relative(realRoot, absolute)),
+    canonicalRelativePath: toPosix(relative(realRoot, realArtifact)),
+    absolutePath: realArtifact,
+  };
 }
 
 function pathRelativeToRoot(root: string, path: string): string {
@@ -197,9 +201,12 @@ function resolveArtifact(input: AuditArtifactInput, root: string): ResolvedArtif
   if (!meaningfulString(input.path)) {
     throw new Error('Audit artifact path is required.');
   }
-  const { relativePath, absolutePath } = normalizeRepoRelative(root, input.path);
+  const { relativePath, canonicalRelativePath, absolutePath } = normalizeRepoRelative(root, input.path);
   if (isPrivatePath(relativePath)) {
     throw new Error(`Audit artifact path points at private/internal workspace state: ${relativePath}`);
+  }
+  if (isPrivatePath(canonicalRelativePath)) {
+    throw new Error(`Audit artifact path points at private/internal workspace state: ${canonicalRelativePath}`);
   }
   return {
     id: input.id ?? `${input.role}:${relativePath}`,

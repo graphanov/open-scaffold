@@ -118,6 +118,18 @@ describe('audit manifest generation', () => {
     expect(validateAuditManifestText(JSON.stringify(manifest, null, 2), join(root, 'audit.json'), root).ok).toBe(true);
   });
 
+  it('rejects symlinked artifacts that resolve into private/internal workspace paths during generation', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    mkdirSync(join(root, '.osc-dev'), { recursive: true });
+    writeFileSync(join(root, '.osc-dev/private.md'), 'private draft\n');
+    symlinkSync('../../.osc-dev/private.md', join(root, 'docs/evidence/private-link.md'));
+
+    expect(() => renderAuditManifest(planPath, [
+      { role: 'evidence', path: 'docs/evidence/private-link.md' },
+    ], root, { now: new Date('2026-05-17T12:00:00.000Z') })).toThrow(/private\/internal workspace state: \.osc-dev\/private\.md/);
+  });
+
   it('renders a run-bound manifest without judging evaluation correctness', () => {
     const root = tempRepo();
     const { runPath } = writeRunPacket(root);

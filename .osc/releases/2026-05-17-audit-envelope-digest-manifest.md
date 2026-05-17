@@ -58,7 +58,7 @@ The command is intentionally structure-only and local. It does not judge domain 
 
 Completed verification for the PR branch:
 
-- `npm test` — passed, 12 files / 116 tests.
+- `npm test` — passed, 12 files / 117 tests.
 - `npm run build` — passed.
 - `npm run --silent osc -- audit init .osc/plans/done/037-audit-envelope-digest-manifest.md --artifact changed_file src/audit.ts --artifact changed_file src/cli.ts --artifact evidence tests/audit.test.ts --artifact evidence tests/cli-audit.test.ts --artifact evidence docs/SLICE_CLOSE_PROTOCOL.md --artifact release_note .osc/releases/2026-05-17-audit-envelope-digest-manifest.md --out /tmp/osc-037-audit-final.json --force` — passed after plan close; generated the structure-only local audit manifest.
 - `npm run --silent osc -- audit check /tmp/osc-037-audit-final.json` — passed, 7 artifacts / 0 warnings.
