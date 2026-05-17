@@ -38,7 +38,7 @@ For runtime lane labels and public/private reference wording, use `docs/REFERENC
 | Data access | out of scope / system-of-record-owned | Documentation boundaries and run-packet scope can state which data must not be touched. | Runtime row/field permissions, data warehouse access, secrets, customer data controls, and system-of-record authorization. |
 | Authority | partial / adapter-owned | Commit policy, approval gates, allowed paths, human-in-the-loop expectations, and plan constraints make authority visible. | Runtime sandbox enforcement, credential delegation, business-action approval, production rollback authority, and provider-specific permission models. |
 | Evaluation / feedback / improvement | owned for loop contract; external for domain judgment | Acceptance criteria, evaluation-envelope shape, evidence requirements, user/reviewer feedback capture, approval taxonomy, correction routing, and next-slice inheritance. | Domain/business-rule evaluators, model benchmarks, production-quality scoring, automated compliance judgment, and final taste/risk decisions. |
-| Audit trails | owned for repo work and envelope standards | Git history, plans, amendments, run packets, evidence notes, release notes, PR links, artifact digests, audit-envelope vocabulary, parent links, and optional anchor-receipt shape. | External ledger submission, provider SDKs, key custody, legal audit certification, runtime event capture from external systems, raw private/runtime log anchoring, and compliance attestation. |
+| Audit trails | owned for repo work and envelope standards | Git history, plans, amendments, run packets, evidence notes, release notes, PR links, artifact digests, local audit manifests, and audit-envelope vocabulary. Parent links, Merkle roots, and external-anchor receipt shapes are future extension points. | External ledger submission, provider SDKs, key custody, legal audit certification, runtime event capture from external systems, raw private/runtime log anchoring, and compliance attestation. |
 | Recovery / ownership | owned for project continuation | Agent-readable mission, roadmap, active plans, task/run identity, evidence, evaluation records, audit envelopes, and handoff files let a human or agent resume work without vanished chat context. | Runtime session replay, live process recovery, production incident reversal, and business transaction compensation. |
 
 ## Audit envelope
@@ -57,7 +57,9 @@ A minimal audit envelope should reference:
 - decision: `approved`, `weak_approved`, `rejected`, or `blocked`;
 - exclusions: secrets, customer data, raw private runtime transcripts, and external system audit logs unless deliberately promoted and safe.
 
-A future tamper-evident version can add artifact digests, envelope digests, parent links, Merkle batch roots, and external-anchor receipts. Core can define that portable shape. External notaries or ledger systems remain optional adapters.
+The first structure-only implementation is local and vendor-neutral: `osc audit init` / `osc audit check` can generate a JSON `open-scaffold.audit-envelope.v1` manifest for a plan or run packet plus explicitly supplied curated artifacts, then verify repo-relative paths and sha256 digest consistency. That proves byte-level local artifact integrity only. It does not certify correctness, compliance, approval, runtime execution, model quality, or external anchoring.
+
+Future tamper-evident versions can add envelope self-digests, parent links, Merkle batch roots, and external-anchor receipts. Core can define that portable shape. External notaries or ledger systems remain optional adapters.
 
 ## Evaluation envelope
 
@@ -148,8 +150,10 @@ Those may become adapter, evaluator, runtime, ledger-anchor, or future-product w
 
 ## Follow-up candidates
 
-Structured evaluation mechanics now start with `osc eval init` and `osc eval check`: generate a JSON evaluation envelope, check that every acceptance criterion has evidence/status/rationale/evaluator coverage, and require a correction route for non-pass outcomes. This still does not automatically certify domain correctness, benchmark models, or replace human/product approval.
+Structured evaluation mechanics start with `osc eval init` and `osc eval check`: generate a JSON evaluation envelope, check that every acceptance criterion has evidence/status/rationale/evaluator coverage, and require a correction route for non-pass outcomes. This still does not automatically certify domain correctness, benchmark models, or replace human/product approval.
 
-Tamper-evident audit mechanics should start with a vendor-neutral `open-scaffold.audit-envelope.v1` and `open-scaffold.anchor-receipt.v1` shape for promoted evidence artifacts: artifact digests, envelope digests, parent links, optional Merkle batch roots, and optional external-anchor receipts. Hedera Consensus Service, Sigstore/Rekor, RFC3161 timestamping, Git signed tags, or other ledgers/notaries belong in optional adapters, not Open Scaffold core.
+Local audit manifest mechanics start with `osc audit init` and `osc audit check`: generate a JSON audit-envelope digest manifest for curated local artifacts, then check repo-relative paths and sha256 digest consistency. This still does not certify compliance, approve release/merge, prove domain correctness, spawn runtimes, benchmark models, or anchor evidence externally.
+
+Future audit work can define envelope self-digests, parent links, optional Merkle batch roots, and optional external-anchor receipt shapes. Hedera Consensus Service, Sigstore/Rekor, RFC3161 timestamping, Git signed tags, or other ledgers/notaries belong in optional adapters, not Open Scaffold core.
 
 Related: [[source-of-truth-first-development]], [[evidence-first-development]], [[human-in-the-loop-governance]], [[run-packets]], [[agentic-orchestration]].

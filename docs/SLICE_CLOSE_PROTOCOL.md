@@ -209,37 +209,47 @@ osc eval check <evaluation-path>
 
 An audit envelope is the integrity-oriented companion to the evaluation envelope. It identifies the durable artifacts needed to reconstruct what was planned, run, evidenced, reviewed, approved, and carried forward.
 
-Minimum concepts:
+The v1 CLI surface starts with local digest manifests:
+
+```bash
+osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]
+osc audit check <audit-manifest-path>
+```
+
+`osc audit init` records a JSON `open-scaffold.audit-envelope.v1` manifest for a plan or run packet plus explicitly supplied curated artifacts. `osc audit check` validates the manifest shape, subject identity, artifact IDs/roles, repo-relative paths, local file presence, and sha256 digest consistency.
+
+Minimum manifest concepts:
 
 ```yaml
 schema: open-scaffold.audit-envelope.v1
-envelope_id: audit:20260512T090000Z-docs-runtime-dispatch
+audit_envelope_id: 20260517T120000Z-docs-runtime-dispatch-audit
 subject:
+  source: plan | run
   task_id: issue:42
   run_id: 20260512T090000Z-docs-runtime-dispatch
   plan: .osc/plans/done/001-example.md
-  evaluation: .osc/runs/20260512T090000Z-docs-runtime-dispatch/evaluation.md
-  evidence_receipt: .osc/runs/20260512T090000Z-docs-runtime-dispatch/evidence.md
-  pr: 12
+  plan_slug: 001-example
+  run_packet: .osc/runs/20260512T090000Z-docs-runtime-dispatch/run.json
 artifacts:
-  - path: docs/RUNTIME_HARNESS_DISPATCH.md
-    role: changed_file | evidence | release_note | postflight | dispatch_receipt
+  - id: plan:.osc/plans/done/001-example.md
+    role: plan | run_packet | evaluation | evidence | postflight | release_note | changed_file | verification | review | other
+    path: .osc/plans/done/001-example.md
     digest:
       alg: sha256
       value: "lowercase-hex"
-    privacy: public | redacted | private_not_anchored
-parents:
-  - envelope_digest: sha256:previous-envelope-digest
-    reason: previous_run | merge_parent | release_batch
-artifact_merkle:
-  alg: sha256
-  manifest_digest: sha256:manifest-digest
-  root: sha256:root-digest
-anchor_receipts:
-  - .osc/runs/<run_id>/anchors/provider-receipt.json
+boundary:
+  digest_integrity_only: true
+  local_files_only: true
+  compliance_certification: false
+  approval_or_release_decision: false
+  runtime_spawning: false
+  model_benchmarking: false
+  external_anchoring: false
 ```
 
-Core can define artifact digests, parent links, Merkle batch roots, and external-anchor receipt shape. Provider submission, key custody, network retries, legal attestation, runtime event capture, and systems-of-record audit logs belong to optional adapters or external systems.
+This check proves only local artifact presence and byte-level digest consistency at check time. It does not run verification commands, judge domain correctness, certify compliance, approve release/merge, spawn runtimes, benchmark models, or anchor evidence externally.
+
+Future work can define parent links, Merkle batch roots, envelope self-digests, and external-anchor receipt shape. Provider submission, key custody, network retries, legal attestation, runtime event capture, and systems-of-record audit logs belong to optional adapters or external systems.
 
 ## Postflight checklist
 

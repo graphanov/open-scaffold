@@ -3,6 +3,10 @@
 > Chronological record of project wiki actions. Append-only.
 > Format: `## [YYYY-MM-DD] action | subject`
 
+## [2026-05-17] implement | Audit envelope digest manifest
+- Added `osc audit init` / `osc audit check` as the first JSON-backed audit-envelope digest-manifest mechanics.
+- Kept the command local and structure-only: no domain correctness judgment, compliance certification, approval decision, model benchmarking, runtime spawning, or external anchoring.
+
 ## [2026-05-17] implement | Evaluation envelope CLI
 - Added `osc eval init` / `osc eval check` as the first JSON-backed evaluation-envelope mechanics.
 - Kept the command structure-only: no domain correctness judgment, compliance certification, model benchmarking, runtime spawning, or external anchoring.
