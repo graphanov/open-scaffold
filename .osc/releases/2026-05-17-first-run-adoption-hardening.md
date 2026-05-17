@@ -16,12 +16,12 @@ Open Scaffold's first-run path was hardened so the npm package and generated sta
 
 - `npm run build` → pass
 - `npm test` → 14 files / 124 tests passed
-- `npm pack --dry-run --json --ignore-scripts` → 82 files, forbidden product-history payload count `0`
+- `npm pack --dry-run --json` → 82 files, forbidden product-history payload count `0`
 - `node dist/cli.js init --tier standard --target <tmp>` plus leakage grep → pass
 - `./verify.sh --strict` → 10 pass / 0 fail / 0 warn
 - `git diff --check` → pass
-- `npm publish --dry-run --ignore-scripts` → pass
-- `npm publish --access public --ignore-scripts` → published `open-scaffold@0.4.1`
+- `npm publish --dry-run` → pass
+- `npm publish --access public --ignore-scripts` → published `open-scaffold@0.4.1` from a prebuilt local dist
 - `/tmp` smoke: `npx --yes --prefer-online open-scaffold@0.4.1 init --tier min --target <tmp>` → generated `MISSION.md` and `.osc/plans/handoff-template.md`
 
 ## Outcome

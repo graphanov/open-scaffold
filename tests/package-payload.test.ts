@@ -14,7 +14,7 @@ const repoRoot = resolve(process.cwd());
 
 describe('npm package payload', () => {
   it('ships package/template assets without product dogfood plan and release history', () => {
-    const output = execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], {
+    const output = execFileSync('npm', ['pack', '--dry-run', '--json'], {
       cwd: repoRoot,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
