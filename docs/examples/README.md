@@ -9,7 +9,7 @@ The four modes:
 3. [GitHub-only workflow](#3-github-only-workflow) — issue → plan → PR → evidence with no chat coordinator.
 4. [Runtime harness handoff](#4-runtime-harness-handoff) — packaging work for an external runtime lane to execute.
 
-If you want one complete non-recursive example first, start with [`downstream-walkthrough.md`](downstream-walkthrough.md). It shows the full mission → plan → run packet → evidence → close loop on a tiny shell CLI that is not Open Scaffold itself.
+If you want one complete non-recursive example first, start with [`downstream-walkthrough.md`](downstream-walkthrough.md). It shows the full mission → plan → run packet → evidence → close loop on a tiny shell CLI that is not Open Scaffold itself, then shows how a second session reconstructs the current state from files alone.
 
 Open Scaffold core ships the protocol, the run packet schema, the verification scripts, and dry-run/conformance examples. It does not spawn agents, run a coordinator daemon, or own runtime credentials. Each mode below stays inside that boundary.
 
@@ -25,7 +25,7 @@ Reading path:
 
 - [`README.md` Quickstart](../../README.md#quickstart) — initialize the scaffold, bootstrap a mission, write the first plan, run `./verify.sh`.
 - [`docs/EXAMPLES.md` 60-second viewer demo](../EXAMPLES.md#60-second-viewer-demo) — mission → plan → verification → evidence in four shell commands.
-- [`downstream-walkthrough.md`](downstream-walkthrough.md) — the same loop on Tiny Notes, a small non-Open-Scaffold project with concrete commands and expected outputs.
+- [`downstream-walkthrough.md`](downstream-walkthrough.md) — the same loop on Tiny Notes, a small non-Open-Scaffold project with concrete commands, expected outputs, and a day-2 resume check that works without chat history.
 - [`examples/lifecycle-e2e-smoke/`](../../examples/lifecycle-e2e-smoke/README.md) — boring downstream fixture that proves the loop on a non-Open-Scaffold project. Run it with `npm run smoke:e2e`.
 
 Loop in shell:

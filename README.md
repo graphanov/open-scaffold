@@ -57,7 +57,7 @@ Want the loop before the theory? Read [`docs/EXAMPLES.md`](docs/EXAMPLES.md#60-s
 Mission -> plan -> verification -> evidence/status
 ```
 
-For a non-recursive version of the same loop, read the [downstream walkthrough](docs/examples/downstream-walkthrough.md): a tiny shell CLI carried through mission, plan, run packet, evidence, and close. For broader usage shapes — solo developer, team control-room, GitHub-only workflow, and runtime harness handoff — see the [examples index](docs/examples/README.md).
+For a non-recursive version of the same loop, read the [downstream walkthrough](docs/examples/downstream-walkthrough.md): a tiny shell CLI carried through mission, plan, run packet, evidence, close, and a day-2 resume check from repo files alone. For broader usage shapes — solo developer, team control-room, GitHub-only workflow, and runtime harness handoff — see the [examples index](docs/examples/README.md).
 
 ---
 

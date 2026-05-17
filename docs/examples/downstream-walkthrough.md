@@ -2,6 +2,8 @@
 
 A fresh reader can clone Open Scaffold, read the protocol docs, and still walk away unsure whether the discipline is worth carrying into their own project. This page closes that gap on a project that is **not** Open Scaffold itself: a 20-line shell CLI called **Tiny Notes** that appends one note to a text file.
 
+The point is not the script. The point is the **second session**: a fresh human or agent can open the repo later, read the mission, plan folders, and evidence note, and know whether work is active, done, blocked, or ready for a new slice without asking for old chat history.
+
 The same fixture is exercised mechanically by `npm run smoke:e2e` (see [`E2E_SMOKE.md`](../E2E_SMOKE.md)). This page narrates the same lifecycle so a human can read it in one sitting, copy the artifacts, and decide whether Open Scaffold pays for itself on their next task.
 
 No private credentials, no private coordinator, no chat surface, no runtime harness, and no network access are required.
@@ -13,7 +15,7 @@ No private credentials, no private coordinator, no chat surface, no runtime harn
 The walkthrough moves through Open Scaffold's canonical identity chain on Tiny Notes:
 
 ```text
-mission -> plan -> implementation -> verification -> run packet -> evidence -> close -> final verify
+mission -> plan -> implementation -> verification -> run packet -> evidence -> close -> session-2 resume
 ```
 
 Every step has a concrete file, a concrete command, and an expected observable. The artifacts already live under `examples/lifecycle-e2e-smoke/` in this repo — you can read them in place, or copy them into a clean temp directory and run the loop yourself.
@@ -268,7 +270,7 @@ cd "$TMP"
 bash test.sh
 ./verify.sh --standard
 
-# Optional: write a one-line evidence note, then close the plan.
+# Write a short evidence note, then close the plan.
 mkdir -p .osc/releases
 cat > .osc/releases/$(date -u +%Y-%m-%d)-add-note-command.md <<'EOF'
 # Release / Evidence Note: tiny-notes add-note command
@@ -276,9 +278,19 @@ cat > .osc/releases/$(date -u +%Y-%m-%d)-add-note-command.md <<'EOF'
 ## Summary
 add-note works and is locally verified.
 
+## Traceability
+- Plan: `.osc/plans/active/001-add-note-command.md` before close.
+- Task: local walkthrough.
+
 ## Verification
 - `bash test.sh` -> `tiny-notes test passed`.
 - `./verify.sh --standard` -> `0 fail`.
+
+## Outcome
+The add-note command meets the plan acceptance criteria.
+
+## Follow-up
+None for this slice.
 EOF
 
 ./close.sh 001-add-note-command
@@ -288,6 +300,47 @@ EOF
 Expected: every command exits `0`. No network call, no private credential, no Hermes/OMC/OMX/Codex/Discord dependency.
 
 The mechanical version of these steps is exercised by `npm run smoke:e2e` from the Open Scaffold repo root.
+
+---
+
+## 9. Day 2: resume from repo truth, not memory
+
+Now pretend the first session is gone. No chat transcript, no terminal scrollback, no person explaining what happened. A fresh human or agent gets only the repo.
+
+From the temp Tiny Notes project after step 8, inspect the durable truth:
+
+```bash
+printf 'Mission:\n'
+sed -n '1,24p' MISSION.md
+
+printf '\nPlan folders:\n'
+for stage in active backlog blocked done; do
+  printf '%s:\n' "$stage"
+  find ".osc/plans/$stage" -maxdepth 1 -type f -name '*.md' -print | sort
+done
+
+printf '\nEvidence notes:\n'
+find .osc/releases -maxdepth 1 -type f -name '*.md' ! -name README.md -print -exec sed -n '1,80p' {} \;
+```
+
+Expected reading:
+
+- `MISSION.md` says Tiny Notes is a local shell CLI, with no web app, database, or hosted-service scope.
+- `.osc/plans/active/` is empty after close, so there is no hidden in-flight work.
+- `.osc/plans/done/001-add-note-command.md` exists, so the add-note slice is closed.
+- `.osc/releases/<date>-add-note-command.md` records the verification: `bash test.sh` and `./verify.sh --standard`.
+- The next action is not “continue whatever the chat was doing.” The next action is either **stop** or write a fresh plan for the next explicit slice, such as search, sync, or multi-file notes.
+
+That is the session-2 payoff. The repo answers the four recovery questions:
+
+```text
+What are we building?        -> MISSION.md
+What was the slice?          -> .osc/plans/done/001-add-note-command.md
+How was it verified?         -> .osc/releases/<date>-add-note-command.md
+What should happen next?     -> no active plan; create a new plan before new scope
+```
+
+If you stop before closing the slice, the same recovery check points at `.osc/plans/active/001-add-note-command.md` instead. That tells the next session the work is still active and lists the acceptance criteria and verification commands to finish it.
 
 ---
 
