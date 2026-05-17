@@ -88,10 +88,21 @@ Roadmap or issue
 
 ### 1. Initialize the scaffold tier you need
 
-Use the CLI when Node is available:
+Use npm for the normal first run:
 
 ```bash
 npx open-scaffold init --tier min --target <your-project>
+cd <your-project>
+```
+
+If you want to run from a source checkout instead:
+
+```bash
+git clone https://github.com/graphanov/open-scaffold open-scaffold
+cd open-scaffold
+npm install
+npm run build
+node dist/cli.js init --tier min --target <your-project>
 cd <your-project>
 ```
 

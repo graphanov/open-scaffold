@@ -1,11 +1,12 @@
 {
   "name": "open-scaffold",
-  "version": "0.3.0",
+  "version": "0.4.1",
   "description": "Runtime-neutral scaffold and prompt/artifact CLI for disciplined AI-agent development.",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "osc": "dist/cli.js"
+    "osc": "dist/cli.js",
+    "open-scaffold": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -17,17 +18,19 @@
   "files": [
     "dist",
     ".osc/RULES.md",
-    ".osc/plans",
-    ".osc/releases",
-    ".osc/specs",
+    ".osc/plans/WORKFLOW.md",
+    ".osc/plans/README.md",
+    ".osc/plans/handoff-template.md",
+    ".osc/releases/README.md",
+    ".osc/specs/.gitkeep",
     "docs",
-    "AGENTS.md",
-    "CLAUDE.md",
-    "MISSION.md",
-    "ROADMAP.md",
     "README.md",
     "LICENSE",
-    "*.sh"
+    "amend.sh",
+    "bootstrap.sh",
+    "close.sh",
+    "delegate.sh",
+    "verify.sh"
   ],
   "engines": {
     "node": "^20.19.0 || ^22.12.0 || >=24.0.0"

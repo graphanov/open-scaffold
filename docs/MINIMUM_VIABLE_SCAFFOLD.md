@@ -13,10 +13,21 @@ What evidence proves it closed?
 
 ## The five-step adoption path
 
-Start by generating the tier that fits the repo:
+Start by generating the tier that fits the repo with npm:
 
 ```bash
 npx open-scaffold init --tier min --target <repo>
+# or: --tier standard / --tier max
+```
+
+Source checkout fallback:
+
+```bash
+git clone https://github.com/graphanov/open-scaffold open-scaffold
+cd open-scaffold
+npm install
+npm run build
+node dist/cli.js init --tier min --target <repo>
 # or: --tier standard / --tier max
 ```
 
