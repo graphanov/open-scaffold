@@ -13,9 +13,16 @@ function tempRunPacket(overrides: Record<string, unknown> = {}) {
     schemaVersion: 'open-scaffold.run.v1',
     runId: 'demo-run',
     taskId: 'task:demo',
-    plan: { path: '.osc/plans/active/001-demo.md', goal: 'Prove adapter conformance.' },
+    plan: {
+      path: '.osc/plans/active/001-demo.md',
+      goal: 'Prove adapter conformance.',
+      acceptanceCriteria: ['Dispatch receipt is written.', 'Evidence artifact is written.'],
+      verificationSteps: ['Run fake/local adapter conformance fixture.'],
+      openQuestions: [],
+    },
     packageQuality: { executable: true, blockers: [] },
     executor: { lane: 'plain-agent', harnessSkill: null, spawning: false },
+    runtimeSelection: { runtime: null, workflow: null, profileId: null, profileSource: null },
     runtime: { repoPath: root, worktreePath: root, branch: 'main' },
     bindings: { operatorSurface: 'cli' },
     artifacts: { evidence: ['.osc/runs/demo/evidence.md'] },
@@ -59,7 +66,95 @@ describe('fake/local adapter conformance fixture', () => {
     });
     expect(typeof receipt.receipt_id).toBe('string');
     expect(normalize(receipt.run_packet_path)).toBe(normalize('.osc/runs/demo/run.json'));
+    expect(receipt.authority).toMatchObject({
+      sandbox_policy: ['write_artifacts_only', 'commit_forbidden', 'push_forbidden', 'merge_forbidden', 'human_approval_required'],
+      commit_policy: 'adapter fixture may write receipt only; no commit/push',
+      approval_policy: 'human_approval_required',
+    });
     expect(existsSync(join(root, '.osc/runs/demo/evidence.md'))).toBe(true);
+  });
+
+  it('records runtime selection in the dispatch receipt without launching the selected runtime', () => {
+    const { root, path } = tempRunPacket({
+      runtimeSelection: { runtime: 'omx', workflow: 'plan', profileId: 'omx', profileSource: 'builtin' },
+      executor: { lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false },
+    });
+    const receiptPath = join(root, '.osc/runs/demo/dispatch-receipt.json');
+
+    execFileSync('node', [adapter, path], { encoding: 'utf8' });
+    const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
+
+    expect(receipt.runtime_selection).toMatchObject({
+      runtime: 'omx',
+      workflow: 'plan',
+      profile_id: 'omx',
+      profile_source: 'builtin',
+    });
+    expect(receipt.spawned).toBe(false);
+    expect(receipt.runtime_backend).toBe('none');
+  });
+
+  it('refuses packets whose runtime selection workflow conflicts with the executor harness skill', () => {
+    const { path } = tempRunPacket({
+      runtimeSelection: { runtime: 'omx', workflow: 'plan', profileId: 'omx', profileSource: 'builtin' },
+      executor: { lane: 'omx-codex', harnessSkill: '$team', spawning: false },
+    });
+
+    try {
+      execFileSync('node', [adapter, path], { encoding: 'utf8', stdio: 'pipe' });
+      throw new Error('expected fake adapter to fail');
+    } catch (error: any) {
+      expect(error.status).toBe(1);
+      expect(String(error.stderr ?? '')).toContain('runtimeSelection.workflow plan requires executor.harnessSkill $ralplan');
+    }
+  });
+
+  it('refuses executable packets that omit acceptance criteria or verification steps', () => {
+    const { path } = tempRunPacket({
+      plan: {
+        path: '.osc/plans/active/001-demo.md',
+        goal: 'Prove adapter conformance.',
+        acceptanceCriteria: [],
+        verificationSteps: [],
+        openQuestions: [],
+      },
+    });
+
+    try {
+      execFileSync('node', [adapter, path], { encoding: 'utf8', stdio: 'pipe' });
+      throw new Error('expected fake adapter to fail');
+    } catch (error: any) {
+      expect(error.status).toBe(1);
+      expect(String(error.stderr ?? '')).toContain('plan.acceptanceCriteria must be a non-empty array');
+    }
+  });
+
+  it('refuses to write receipt and evidence to the same path', () => {
+    const collisionPath = '.osc/runs/demo/dispatch-receipt.json';
+    const { root, path } = tempRunPacket({ artifacts: { evidence: [collisionPath] } });
+
+    try {
+      execFileSync('node', [adapter, path, '--out', collisionPath], { encoding: 'utf8', stdio: 'pipe' });
+      throw new Error('expected fake adapter to fail');
+    } catch (error: any) {
+      expect(error.status).toBe(1);
+      expect(String(error.stderr ?? '')).toContain('dispatch receipt and evidence paths must be distinct');
+    }
+    expect(existsSync(join(root, collisionPath))).toBe(false);
+  });
+
+  it('writes deterministic evidence content linked to the receipt and no-spawn claim', () => {
+    const { root, path } = tempRunPacket();
+
+    execFileSync('node', [adapter, path], { encoding: 'utf8' });
+    const evidence = readFileSync(join(root, '.osc/runs/demo/evidence.md'), 'utf8');
+
+    expect(evidence).toContain('Schema: open-scaffold.adapter-evidence.v1');
+    expect(evidence).toContain('Dispatch receipt: .osc/runs/demo/dispatch-receipt.json');
+    expect(evidence).toContain('Adapter ID: fake-local');
+    expect(evidence).toContain('Runtime backend: none');
+    expect(evidence).toContain('Spawned: false');
+    expect(evidence).toContain('No runtime was launched.');
   });
 
   it('refuses packets that ask Open Scaffold core to spawn a runtime', () => {

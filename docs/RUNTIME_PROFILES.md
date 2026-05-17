@@ -19,6 +19,12 @@ Layer map:
 - `RUNTIME_PROFILES.md` — profile schema, built-ins, and project-local `.osc/runtimes/*.json`.
 - [`RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md) — adapter/coordinator responsibilities after the `run.json` package exists.
 
+Keep the roles separate:
+
+- **Profile** = declarative data that records a lane/workflow in a run packet.
+- **Adapter** = external consumer that may translate or launch that packet.
+- **Launch** = outside Open Scaffold core.
+
 ## Commands
 
 ```bash
@@ -138,7 +144,7 @@ This is deliberate. Open Scaffold's job is to preserve the source-of-truth chain
 
 ## OMC, OMX, GSD, and custom runtimes
 
-OMC and OMX are built-in adapter-candidate profiles — selectable lanes with dry-run/conformance fixture coverage, not certified launch integrations — because Open Scaffold already has a run-packet selection surface and conformance fixture coverage for those lanes.
+OMC and OMX are built-in adapter-candidate profiles — selectable lane metadata with fake/local fixture coverage for their lane tokens, not certified launch integrations and not evidence that OMC/OMX processes were run.
 
 GSD and other frameworks can be represented as project-local `user-defined` profiles today. They should not be described as certified or built-in integrations until an adapter has passed the conformance expectations and produced public evidence.
 

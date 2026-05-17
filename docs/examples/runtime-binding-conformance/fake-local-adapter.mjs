@@ -9,6 +9,25 @@ const SUPPORTED_LANES = new Map([
   ['omx-codex', { harnessSkills: ['$deep-interview', '$ralplan', '$team', '$ralph', '$ultrawork', '$ultragoal'] }],
 ]);
 
+const WORKFLOW_HARNESS_BY_LANE = {
+  'omc-claude': {
+    interview: '/deep-interview',
+    plan: '/ralplan',
+    team: '/team',
+    loop: '/ralph',
+    execute: '/ultrawork',
+    goal: '/ultrawork',
+  },
+  'omx-codex': {
+    interview: '$deep-interview',
+    plan: '$ralplan',
+    team: '$team',
+    loop: '$ralph',
+    execute: '$ultrawork',
+    goal: '$ultragoal',
+  },
+};
+
 function fail(message) {
   console.error(`Fake/local adapter refused package: ${message}`);
   process.exit(1);
@@ -17,6 +36,13 @@ function fail(message) {
 function requireString(value, label) {
   if (typeof value !== 'string' || value.trim() === '') {
     fail(`${label} must be a non-empty string`);
+  }
+  return value;
+}
+
+function requireNonEmptyArray(value, label) {
+  if (!Array.isArray(value) || value.length === 0 || value.some((item) => typeof item !== 'string' || item.trim() === '')) {
+    fail(`${label} must be a non-empty array`);
   }
   return value;
 }
@@ -156,6 +182,12 @@ function validateLaneAndHarness(manifest) {
     fail(`executor.harnessSkill ${skill} is not allowed for lane ${lane}`);
   }
 
+  const workflow = manifest?.runtimeSelection?.workflow ?? null;
+  const requiredSkill = WORKFLOW_HARNESS_BY_LANE[lane]?.[workflow];
+  if (requiredSkill && skill !== requiredSkill) {
+    fail(`runtimeSelection.workflow ${workflow} requires executor.harnessSkill ${requiredSkill}`);
+  }
+
   return { lane, skill };
 }
 
@@ -168,6 +200,7 @@ if (manifest.schemaVersion !== 'open-scaffold.run.v1') {
 
 const runId = requireString(manifest.runId, 'runId');
 const planPath = requireString(manifest?.plan?.path, 'plan.path');
+requireString(manifest?.plan?.goal, 'plan.goal');
 const repoPath = requireString(manifest?.runtime?.repoPath, 'runtime.repoPath');
 const commitPolicy = requireString(manifest.commitPolicy, 'commitPolicy');
 const worktreePath = manifest?.runtime?.worktreePath ?? null;
@@ -184,19 +217,25 @@ if (!Array.isArray(manifest?.packageQuality?.blockers) || manifest.packageQualit
 if (hasBlockingOpenQuestions(manifest?.plan?.openQuestions)) {
   fail('plan.openQuestions must not contain blocking questions before dispatch');
 }
+requireNonEmptyArray(manifest?.plan?.acceptanceCriteria, 'plan.acceptanceCriteria');
+requireNonEmptyArray(manifest?.plan?.verificationSteps, 'plan.verificationSteps');
 if (manifest?.executor?.spawning !== false) {
   fail('executor.spawning must be false; Open Scaffold core packages work while adapters own launch behavior');
 }
 
 const defaultReceiptPath = `${dirname(runPacketRelativePath)}/dispatch-receipt.json`;
-const { absolutePath: receiptPath } = prepareSafeArtifactPath(repoPath, outPath ?? defaultReceiptPath);
+const { raw: receiptRelativePath, absolutePath: receiptPath } = prepareSafeArtifactPath(repoPath, outPath ?? defaultReceiptPath);
 const fallbackEvidencePath = `.osc/runs/${runId}/fake-local-evidence.md`;
 const { raw: evidencePath, absolutePath: evidenceAbsolutePath } = prepareSafeArtifactPath(
   repoPath,
   manifest?.artifacts?.evidence?.[0] ?? fallbackEvidencePath,
 );
 
-const evidence = `# Fake/local adapter evidence\n\nRun ID: ${runId}\nTask ID: ${manifest.taskId ?? '(none)'}\nPlan: ${planPath}\nExecutor lane: ${lane}\nHarness skill: ${skill ?? '(none)'}\n\nThis evidence was written by the fake/local adapter conformance fixture.\nNo runtime was launched. No network access or credentials were required.\n`;
+if (resolve(receiptPath) === resolve(evidenceAbsolutePath)) {
+  fail('dispatch receipt and evidence paths must be distinct');
+}
+
+const evidence = `# Fake/local adapter evidence\n\nSchema: open-scaffold.adapter-evidence.v1\nRun ID: ${runId}\nTask ID: ${manifest.taskId ?? '(none)'}\nPlan: ${planPath}\nDispatch receipt: ${receiptRelativePath}\nAdapter ID: fake-local\nRuntime backend: none\nExecutor lane: ${lane}\nHarness skill: ${skill ?? '(none)'}\nSpawned: false\n\nThis evidence was written by the fake/local adapter conformance fixture.\nNo runtime was launched. No network access or credentials were required.\n`;
 writeFileSync(evidenceAbsolutePath, evidence);
 
 const receipt = {
@@ -213,6 +252,12 @@ const receipt = {
   branch,
   run_packet_path: runPacketRelativePath,
   prompt_or_package_path: null,
+  runtime_selection: {
+    runtime: manifest?.runtimeSelection?.runtime ?? null,
+    workflow: manifest?.runtimeSelection?.workflow ?? null,
+    profile_id: manifest?.runtimeSelection?.profileId ?? null,
+    profile_source: manifest?.runtimeSelection?.profileSource ?? null,
+  },
   authority: {
     sandbox_policy: ['write_artifacts_only', 'commit_forbidden', 'push_forbidden', 'merge_forbidden', 'human_approval_required'],
     commit_policy: commitPolicy,

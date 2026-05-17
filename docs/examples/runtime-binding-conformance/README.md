@@ -34,11 +34,22 @@ No Claude, Codex, OMC, OMX, GSD, or other runtime is launched.
 
 Future adapters can use this fixture as a minimum behavior target before adding runtime-specific launch mechanics.
 
-Supported conformance lanes:
+## What this proves / does not prove
+
+This fixture proves four structural facts only:
+
+- a valid `open-scaffold.run.v1` packet can be consumed;
+- `executor.spawning: false` is enforced;
+- an `open-scaffold.dispatch-receipt.v1` receipt is written;
+- deterministic evidence is written under the repository root.
+
+It does **not** prove real runtime launch, production adapter support, runtime-support endorsement, or task correctness. Postflight/evaluation still decides whether acceptance criteria passed.
+
+## Accepted fixture lane tokens
 
 - `plain-agent` with no runtime command/mode (`harness skill`);
 - `human` / `manual` with no runtime command/mode (`harness skill`);
 - `omc-claude` with `/deep-interview`, `/ralplan`, `/team`, `/ralph`, or `/ultrawork`;
 - `omx-codex` with `$deep-interview`, `$ralplan`, `$team`, `$ralph`, `$ultrawork`, or `$ultragoal`.
 
-Supporting a lane here means the fake adapter can validate the package and write a receipt/evidence artifact for that lane. It still does not launch Claude Code, Codex, OMC, or OMX.
+Accepted here means the fake/local adapter can validate the package and write receipt/evidence artifacts for that lane token. It does not mean the named runtime is installed, launched, certified, or production-supported.
