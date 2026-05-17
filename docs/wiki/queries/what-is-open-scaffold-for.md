@@ -1,7 +1,7 @@
 ---
 title: What is Open Scaffold for?
 created: 2026-05-15
-updated: 2026-05-15
+updated: 2026-05-17
 type: query
 tags: [open-scaffold, workflow, agent-orchestration, source-of-truth]
 sources: [MISSION.md, README.md, ROADMAP.md]
@@ -11,7 +11,7 @@ contested: false
 
 # What is Open Scaffold for?
 
-Open Scaffold is for projects where work must survive beyond a single chat, agent session, or developer's memory.
+Open Scaffold is for projects where work must survive beyond a single chat, agent session, or developer's memory. Its clearest payoff appears in the next session: someone can open the repository, read mission, plan folders, and evidence notes, and know whether to continue active work, trust a closed slice, or write a new plan.
 
 It is especially useful when a project has:
 

@@ -41,6 +41,8 @@ Then follow the loop:
 4. **Record evidence** — add a short `.osc/releases/<date>-<slug>.md` note with summary, traceability, verification, and outcome.
 5. **Close the plan** — run `./close.sh <slug> --message "<what shipped>"` so the plan moves to `done/` and `MISSION.md` is stamped.
 
+The payoff appears in the next session. If someone opens the repo later with no chat history, they can read `MISSION.md`, `.osc/plans/active/`, `.osc/plans/done/`, and `.osc/releases/` to see what the project is, whether work is still active, what was verified, and whether the next action is to continue, stop, or write a new plan.
+
 Everything else is optional until the project needs it.
 
 ## Core vs optional artifacts
