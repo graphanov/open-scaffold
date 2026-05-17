@@ -143,6 +143,19 @@ describe('audit manifest generation', () => {
     expect(manifest.artifacts.map((artifact: any) => artifact.role)).toEqual(['run_packet', 'evidence']);
     expect(manifest.boundary.approval_or_release_decision).toBe(false);
   });
+
+  it('rejects run packets without a concrete plan path during generation', () => {
+    const root = tempRepo();
+    const runPath = join(root, '.osc/runs/demo-run/run.json');
+    writeFileSync(runPath, JSON.stringify({
+      schemaVersion: 'open-scaffold.run.v1',
+      runId: 'demo-run',
+      taskId: 'task-123',
+      plan: { slug: '037-demo', acceptanceCriteria: ['Manifest records local artifact digests.'] },
+    }, null, 2));
+
+    expect(() => renderAuditManifest(runPath, [], root, { now: new Date('2026-05-17T12:00:00.000Z') })).toThrow(/plan\.path/);
+  });
 });
 
 describe('audit manifest validation', () => {
@@ -258,6 +271,24 @@ describe('audit manifest validation', () => {
 
     expect(result.ok).toBe(false);
     expect(failCodes(result)).toContain('audit.subject.missing_run_identity');
+  });
+
+  it('fails when a run-bound subject uses an unknown placeholder plan', () => {
+    const root = tempRepo();
+    const manifest = validManifest(root);
+    manifest.subject = {
+      source: 'run',
+      plan: '(unknown plan)',
+      plan_slug: '037-demo',
+      task_id: 'task-1',
+      run_id: 'demo-run',
+      run_packet: '.osc/runs/demo-run/run.json',
+    };
+
+    const result = validateAuditManifestText(JSON.stringify(manifest, null, 2), join(root, 'audit.json'), root);
+
+    expect(result.ok).toBe(false);
+    expect(failCodes(result)).toContain('audit.subject.missing_plan');
   });
 
   it('fails when generated timestamp or idempotency identity is missing', () => {

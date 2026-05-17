@@ -149,7 +149,10 @@ function sourceFromRunPacket(sourcePath: string, root: string): AuditSubject {
     throw new Error(`Run packet must declare schemaVersion: ${RUN_SCHEMA}`);
   }
   const plan = isRecord(packet.plan) ? packet.plan : {};
-  const planPath = asString(plan.path) ?? '(unknown plan)';
+  const planPath = asString(plan.path);
+  if (!meaningfulString(planPath) || planPath === '(unknown plan)') {
+    throw new Error('Run packet must include plan.path for audit traceability.');
+  }
   return {
     source: 'run',
     sourcePath: pathRelativeToRoot(root, sourcePath),
@@ -335,8 +338,9 @@ function validateSubject(parsed: Record<string, unknown>, failures: ValidationIs
   if (source !== 'plan' && source !== 'run') {
     failures.push(issue('fail', 'audit.subject.invalid_source', 'Audit subject source must be plan or run.', path));
   }
-  if (!meaningfulString(subject.plan)) {
-    failures.push(issue('fail', 'audit.subject.missing_plan', 'Audit subject must include a plan path.', path));
+  const planPath = asString(subject.plan);
+  if (!meaningfulString(planPath) || planPath === '(unknown plan)') {
+    failures.push(issue('fail', 'audit.subject.missing_plan', 'Audit subject must include a concrete plan path.', path));
   }
   if (!meaningfulString(subject.plan_slug)) {
     failures.push(issue('fail', 'audit.subject.missing_plan_slug', 'Audit subject must include plan_slug.', path));
