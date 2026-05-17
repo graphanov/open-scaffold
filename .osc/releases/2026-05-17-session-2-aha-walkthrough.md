@@ -6,7 +6,7 @@ The downstream Tiny Notes walkthrough now makes the Open Scaffold payoff explici
 
 ## Traceability
 
-- Plan: `.osc/plans/active/039-session-2-aha-walkthrough.md`
+- Plan: `.osc/plans/done/039-session-2-aha-walkthrough.md`
 - Branch: `docs/session-2-aha-walkthrough`
 - Kanban: `t_60a8f2b2`
 - Primary walkthrough: `docs/examples/downstream-walkthrough.md`
