@@ -36,7 +36,7 @@ and get a concrete `.osc/runs/<run_id>/run.json` package that records:
 - evidence/approval expectations;
 - `executor.spawning: false` — core will not launch the agent/process until an external adapter/coordinator launches it.
 
-The selected runtime is dispatchable by an adapter, but Open Scaffold core still does not launch Claude Code, Codex, OMC, OMX, tmux, or any provider process by itself.
+The selected runtime is dispatchable by an adapter, but Open Scaffold core still does not launch Claude Code, Codex, OMC, OMX, tmux, or any provider process by itself. Dispatchable means the `run.json` contains enough structured lane/workflow/profile data for an external adapter to consume if such an adapter exists; it does not mean the adapter is installed or certified.
 
 ## Runtime presets
 
@@ -47,6 +47,8 @@ The selected runtime is dispatchable by an adapter, but Open Scaffold core still
 | `plain` | `plain-agent` | Any capable agent or human-operated CLI | Runtime-neutral prompt package. |
 | `human` | `human` | Human/manual | Manual execution while preserving evidence gates. |
 | `custom` | `custom` | Adapter-defined | Future/private runtime adapter. |
+
+Built-in presets are profile IDs and lane targets, not installed adapters. `--runtime omx` records the OMX/Codex lane in `run.json`; it does not run OMX, Codex, or any provider process from core.
 
 ## Workflow presets
 
@@ -85,6 +87,8 @@ A runtime adapter that consumes Open Scaffold packages should:
 - write an `open-scaffold.dispatch-receipt.v1` dispatch receipt — repo-local proof of handoff/invocation;
 - return completion, blocker, verification, and review evidence into the Open Scaffold/GitHub chain;
 - never claim completion from runtime-local state alone.
+
+Passing this checklist proves structural adapter receipt/evidence conformance only. It does not prove task correctness, runtime quality, production adapter support, or runtime-support endorsement.
 
 ## Non-goals in core
 

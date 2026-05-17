@@ -26,9 +26,11 @@ Examples:
 
 - a coordinator script that reads `.osc/runs/<run_id>/run.json` and starts an OMX `$ralplan` session;
 - an OMC-specific command that turns a plan into a Claude Code `/team` handoff;
-- a project-local runtime profile in `.osc/runtimes/<id>.json` that tells an adapter which lane/workflow/evidence contract to use;
+- an adapter that reads a project-local runtime profile in `.osc/runtimes/<id>.json` and translates its lane/workflow/evidence contract;
 - a GitHub bot that assigns a plain agent to a branch and links the PR;
 - a human operator who reads the generated prompt package and performs the work manually.
+
+A project-local runtime profile is not itself a binding. It is declarative data that tells an external adapter which lane, workflow, command token, and evidence expectation to use.
 
 A binding is not the Open Scaffold core. It may be a separate repo, plugin, bot, shell script, GitHub Action, IDE extension, or manual procedure.
 
@@ -140,6 +142,19 @@ open_questions: no blocking questions
 
 If the package is not executable, do not improvise implementation. Route to clarification, deep-interview, plan amendment, blocker, or manual correction.
 
+## Minimum v1 adapter conformance contract
+
+A v1 adapter consumes one `open-scaffold.run.v1` run packet. It either refuses the packet with a clear failure code or writes repo-local handoff proof:
+
+1. an `open-scaffold.dispatch-receipt.v1` dispatch receipt, normally at `.osc/runs/<run_id>/dispatch-receipt.json`;
+2. one or more repo-local evidence artifacts cited by that receipt.
+
+The receipt records which adapter consumed which packet, the selected lane/workflow/profile, what authority was used, whether a real runtime was spawned, and where evidence/logs/artifacts live. The evidence artifact records factual handoff/result proof. Neither artifact proves that the task acceptance criteria passed; postflight/evaluation still decides correctness, approval, merge, and release.
+
+A no-spawn conformance adapter must refuse packets when required fields are missing, blockers/open questions remain, `executor.spawning` is not `false`, the lane/harness does not match the selected workflow, commit policy is absent, or receipt/evidence paths would leave `runtime.repoPath`.
+
+For the fake/local conformance fixture specifically, success means: packet consumed, `spawning: false` enforced, dispatch receipt written, evidence written, and no runtime, network, credentials, commit, push, merge, or publish authority used.
+
 ## Binding responsibilities
 
 For the detailed spawning/adapter boundary, dispatch receipt shape (handoff proof), authority vocabulary (permission words), and OMX v0.17.0 Hermes MCP bridge evidence, see [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md). This contract remains the lifecycle-level agreement; the boundary document defines the safer next-step vocabulary before any real `osc spawn` implementation.
@@ -198,7 +213,9 @@ Generic Open Scaffold core does not own:
 
 Runtime-specific projects or coordinators may own these, but must promote durable outcomes back into the Open Scaffold chain.
 
-## Supported lane examples
+## Example lane packet shapes, not certified launch support
+
+These examples document `run.json` packet shapes and external binding behavior. They do not certify that OMC, OMX, Claude Code, Codex, OpenCode, or any runtime is installed, launched, or endorsed by Open Scaffold core.
 
 ### OMC / Claude Code lane
 
@@ -409,6 +426,6 @@ For concrete, credential-free consumers of this contract, see [`docs/examples/ru
 
 The dry-run example reads a generated `.osc/runs/<run_id>/run.json`, validates the executable-package and `spawning: false` boundary, prints the handoff summary an external binding would use, and exits without launching any runtime.
 
-The fake/local adapter conformance fixture goes one step further: it consumes the same run packet, writes an `open-scaffold.dispatch-receipt.v1` receipt and a deterministic evidence artifact, and still exits without launching any runtime, reading credentials, or requiring network access.
+The fake/local adapter conformance fixture goes one step further: it consumes the same run packet, writes an `open-scaffold.dispatch-receipt.v1` receipt and a deterministic evidence artifact, and still exits without launching any runtime, reading credentials, or requiring network access. This proves structural handoff/evidence behavior only; task correctness, runtime availability, and adapter production support remain separate gates.
 
 These examples are intentionally not a supported adapter SDK and not Open Scaffold launchers. They are reference proofs that run packets are concrete enough for external coordinators, runtime bindings, or humans to consume while core remains runtime-neutral.

@@ -47,9 +47,9 @@ If Open Scaffold core owns those too early, it becomes a runtime by drift. The c
 | Operator surface — chat/dashboard for status and approvals | visible status, blockers, questions, approvals | source of truth |
 | GitHub / repo evidence | durable review, CI, release, audit references | raw runtime transcript as canonical truth |
 
-## Adapter/runtime contract vocabulary
+## Minimum v1 adapter conformance vocabulary
 
-A future adapter contract should use vendor-neutral fields before any provider-specific implementation exists.
+The adapter contract uses vendor-neutral fields before any provider-specific implementation exists.
 
 Minimum concepts:
 
@@ -101,7 +101,7 @@ human_approval_required for publication
 
 ## Dispatch receipt
 
-A dispatch receipt is repo-local proof of what was invoked, with what authority, from what package.
+A dispatch receipt is repo-local proof of what was invoked, with what authority, from what package. It proves handoff/dispatch facts; it is not approval, not a merge gate, and not proof that acceptance criteria passed.
 
 Minimum receipt fields:
 
@@ -119,6 +119,11 @@ worktree_path: string | null
 branch: string | null
 run_packet_path: string
 prompt_or_package_path: string | null
+runtime_selection:
+  runtime: string | null
+  workflow: string | null
+  profile_id: string | null
+  profile_source: string | null
 authority:
   sandbox_policy: string[]
   commit_policy: string
@@ -163,7 +168,7 @@ Adapters may add runtime-specific codes, but should map back to this portable se
 
 ## OMX v0.17.0 evidence: Hermes MCP bridge
 
-OMX `v0.17.0` is a concrete external validation of this boundary.
+OMX `v0.17.0` is a concrete external example of this boundary pattern. It is not Open Scaffold conformance evidence for an OMX adapter and not a certified launch integration.
 
 The release adds a bounded, opt-in Hermes MCP bridge:
 
@@ -210,9 +215,9 @@ This confirms the adapter/binding thesis: coordinators and project protocols do 
 Near-term:
 
 1. Keep core non-spawning.
-2. Extend `docs/RUNTIME_BINDING_CONTRACT.md` with this adapter/receipt vocabulary.
-3. Treat OMX v0.17.0 Hermes MCP as a reference pattern for coordinator-to-runtime bridges.
-4. Define fake/local `osc spawn` only as a dry-run dispatch receipt if prototyped.
+2. Keep `docs/RUNTIME_BINDING_CONTRACT.md` aligned with this adapter/receipt vocabulary.
+3. Treat OMX v0.17.0 Hermes MCP as a reference pattern for coordinator-to-runtime bridges, not as Open Scaffold adapter certification.
+4. Use the fake/local conformance fixture to prove run-packet consumption, dispatch receipt writing, evidence writing, and no-spawn behavior before any real runtime adapter package.
 5. Keep real Claude/Codex/OpenCode/OMX/Ouroboros spawning in adapter packages or external runtimes.
 
 Longer-term:
