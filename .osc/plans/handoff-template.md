@@ -61,6 +61,16 @@ active
 - <which groups are suitable for parallel agents or separate terminal sessions>
 - <which groups must wait for earlier groups to complete>
 
+## Implementation Architecture Coverage
+
+<!-- Optional. Include when the slice affects architecture, evidence, runtime boundaries, authority, or adoption trust. Keep this short. -->
+
+- Strengthens: <workflow design | data access | authority | evaluation | audit trails | recovery/ownership>
+- Audit envelope: <task/run/PR/evidence IDs or paths needed to reconstruct what happened>
+- Evaluation envelope: <how acceptance criteria will be checked; who/what evaluates; where evidence lands>
+- Feedback routing: <where failures, weak approvals, scope changes, or follow-ups should go>
+- Boundary: <what remains outside this slice: runtime enforcement, credentials, system-of-record permissions, compliance certification, model benchmarking, production rollback, etc.>
+
 ## Acceptance criteria
 
 - [ ] <testable bullet — something a verifier can check mechanically or with a clear yes/no>

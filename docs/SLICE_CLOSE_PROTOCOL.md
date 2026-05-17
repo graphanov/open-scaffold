@@ -136,6 +136,96 @@ next_action:
 
 The schema is intentionally plain text/YAML-friendly. Tools can validate it later, but humans should be able to write and review it today.
 
+## Evaluation envelope
+
+An evaluation envelope is the structured post-run record that turns acceptance criteria, evidence, verification, and user/reviewer feedback into a close decision and improvement route.
+
+Core owns this envelope shape. It does not own every evaluator. Humans, CI, review bots, runtime adapters, domain systems, and external evaluators can all supply evidence or feedback, but the durable Open Scaffold record should preserve how that input mapped to the slice criteria.
+
+Minimum shape:
+
+```yaml
+schema: open-scaffold.evaluation.v1
+evaluation_id: 20260512T090000Z-docs-runtime-dispatch-eval
+task_id: issue:42
+run_id: 20260512T090000Z-docs-runtime-dispatch
+plan: .osc/plans/active/001-example.md
+evaluated_at: 2026-05-12T09:30:00Z
+inputs:
+  run_packet: .osc/runs/20260512T090000Z-docs-runtime-dispatch/run.json
+  evidence:
+    - .osc/runs/20260512T090000Z-docs-runtime-dispatch/evidence.md
+  feedback:
+    - id: FB1
+      source: human | reviewer | user | ci | adapter | external-evaluator
+      kind: approval | defect | correction | preference | new_requirement | blocker
+      target: AC1
+      severity: blocker | major | minor | note
+      summary: "What the feedback says."
+acceptance_criteria:
+  - id: AC1
+    text: "Criterion text copied or referenced from the plan."
+    status: pass | partial | fail | blocked | not_evaluated
+    evaluator:
+      kind: human | automated-check | adapter | domain-oracle | external-review
+      name: "optional"
+    evidence:
+      - path/or/link
+    rationale: "Why this status was assigned."
+    confidence: high | medium | low
+    gaps:
+      - "Known limitation or uncertainty."
+decision:
+  status: approved | weak_approved | rejected | blocked
+  approver: human | maintainer | reviewer | automated-check
+  rationale: "Why this close decision was made."
+improvement:
+  route: close | retry_run | amend_plan | create_next_slice | open_issue | update_roadmap | block
+  target: .osc/plans/backlog/002-next-slice.md
+  carried_forward:
+    - "Specific learning or correction to inherit."
+  do_not_assume:
+    - "Weak approval is not proof of product quality."
+```
+
+The evaluation envelope is a record of judgment and routing, not an automatic claim of correctness. Domain/business-rule evaluators, model benchmarks, production scoring, and compliance decisions can feed it, but they do not become Open Scaffold core by default.
+
+## Audit envelope
+
+An audit envelope is the integrity-oriented companion to the evaluation envelope. It identifies the durable artifacts needed to reconstruct what was planned, run, evidenced, reviewed, approved, and carried forward.
+
+Minimum concepts:
+
+```yaml
+schema: open-scaffold.audit-envelope.v1
+envelope_id: audit:20260512T090000Z-docs-runtime-dispatch
+subject:
+  task_id: issue:42
+  run_id: 20260512T090000Z-docs-runtime-dispatch
+  plan: .osc/plans/done/001-example.md
+  evaluation: .osc/runs/20260512T090000Z-docs-runtime-dispatch/evaluation.md
+  evidence_receipt: .osc/runs/20260512T090000Z-docs-runtime-dispatch/evidence.md
+  pr: 12
+artifacts:
+  - path: docs/RUNTIME_HARNESS_DISPATCH.md
+    role: changed_file | evidence | release_note | postflight | dispatch_receipt
+    digest:
+      alg: sha256
+      value: "lowercase-hex"
+    privacy: public | redacted | private_not_anchored
+parents:
+  - envelope_digest: sha256:previous-envelope-digest
+    reason: previous_run | merge_parent | release_batch
+artifact_merkle:
+  alg: sha256
+  manifest_digest: sha256:manifest-digest
+  root: sha256:root-digest
+anchor_receipts:
+  - .osc/runs/<run_id>/anchors/provider-receipt.json
+```
+
+Core can define artifact digests, parent links, Merkle batch roots, and external-anchor receipt shape. Provider submission, key custody, network retries, legal attestation, runtime event capture, and systems-of-record audit logs belong to optional adapters or external systems.
+
 ## Postflight checklist
 
 Before a slice is called closed, answer these in writing:
@@ -218,9 +308,11 @@ When postflight finds new information, route it deliberately:
 | Public code/docs changed | branch / PR / release note |
 | Follow-up work is needed | new plan in `.osc/plans/backlog/` or issue/task |
 | Runtime failed or was blocked | new run record or blocker note; do not rewrite the failed run |
+| Evaluation found AC-specific gaps | evaluation envelope + retry/amend/next-slice route |
+| Audit/integrity requirement emerged | audit envelope / anchor-adapter follow-up plan |
 | Approval was weak | evidence receipt + next-slice caution |
 
-The rule: **promote the learning to the layer that will need it next**. Do not hide product corrections in chat. Do not turn every task comment into roadmap truth.
+The rule: **promote the learning to the layer that will need it next**. The loop improves the project only when findings become durable: amendment, retry run, next slice, adapter backlog, validation rule, roadmap update, blocker note, release evidence, or audit/evaluation envelope. Do not hide product corrections in chat. Do not turn every task comment into roadmap truth.
 
 ## Next-slice inheritance
 

@@ -3,6 +3,14 @@
 > Chronological record of project wiki actions. Append-only.
 > Format: `## [YYYY-MM-DD] action | subject`
 
+## [2026-05-17] amend | Implementation architecture envelopes
+- Expanded `docs/wiki/concepts/implementation-architecture-lens.md` with audit envelope, evaluation envelope, closed evaluation loop, and feedback-based improvement direction.
+- Cross-linked the direction to slice-close and runtime-binding boundaries without adding runtime spawning, compliance certification, or model-benchmarking claims.
+
+## [2026-05-17] capture | Implementation architecture lens
+- Added `docs/wiki/concepts/implementation-architecture-lens.md` to map Open Scaffold's build-time primitives to workflow design, data access, authority, evaluation, audit trails, and recovery/ownership.
+- Updated `docs/wiki/index.md` so the new concept is discoverable without adding live task, PR, or release state to the wiki.
+
 ## [2026-05-15] preserve | Runtime and orchestration sparring synthesis
 - Added `docs/wiki/summaries/runtime-orchestration-sparring-synthesis.md` to preserve durable findings from the runtime-selection and agentic-orchestration sparring reviews for future product-market verification.
 - Added `.osc/plans/backlog/032-adapter-conformance-fixture.md` as the recommended next implementation track after the capture PR: fake/local adapter plus conformance fixture before runtime picker, orchestration, or model-lab surfaces.

@@ -1,7 +1,7 @@
 # Open Scaffold Project Wiki Index
 
 > Public-safe compiled knowledge for Open Scaffold as a body of work. This is not the task board, release log, or product reference.
-> Last updated: 2026-05-15 | Total pages: 17
+> Last updated: 2026-05-17 | Total pages: 18
 
 ## Meta / Operating Contracts
 
@@ -16,6 +16,7 @@
 - [[evidence-first-development]] — Why verification artifacts are part of the work.
 - [[glass-cockpit]] — Operator visibility layer for agentic work.
 - [[human-in-the-loop-governance]] — Human gates for taste, risk, publication, and scope.
+- [[implementation-architecture-lens]] — How Open Scaffold maps workflow design, audit envelopes, evaluation envelopes, feedback routing, and runtime/system boundaries.
 - [[repo-native-agent-operating-system]] — The repository as the durable operating substrate.
 - [[run-packets]] — Bounded execution contracts for runtime attempts.
 - [[scaffold-tiers]] — Matching scaffold structure to project risk and coordination cost.

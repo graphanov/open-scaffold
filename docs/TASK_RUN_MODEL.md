@@ -11,6 +11,8 @@ Harness owns execution while alive.
 Operator surface: visibility/questions/approvals.
 Cockpit event: replaceable visible message that references task/run/question/evidence IDs.
 Evidence owns proof.
+Evaluation envelope owns AC-to-evidence judgment and improvement routing.
+Audit envelope owns integrity-oriented reconstruction.
 ```
 
 A chat thread may be extremely useful. It is not the canonical task.
@@ -42,6 +44,18 @@ One concrete execution attempt against a task or plan. In Open Scaffold core, a 
 ```
 
 A run can succeed, fail, block for a question, be cancelled, or be postflighted. A retry is a new run, not a rewrite of the old one. Slice closure is a separate evidence-backed decision: a postflight can produce `approved`, `weak_approved`, `rejected`, or `blocked` outcomes as defined in [`docs/SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md).
+
+### `evaluation_id`
+
+One post-run/postflight evaluation record that maps acceptance criteria to evidence, evaluator source, feedback, verdict, confidence, and improvement route.
+
+An evaluation can reference one or more runs, but it should not rewrite those runs. If feedback changes the outcome, create a new evaluation record or amend/route the next slice rather than editing history by implication.
+
+### `audit_envelope_id`
+
+One integrity-oriented envelope for reconstructing the slice/run evidence bundle. It can reference plan, run packet, evaluation, evidence receipt, changed files, PR, release note, artifact digests, parent envelopes, and optional external-anchor receipts.
+
+The audit envelope is not raw runtime state. It points to promoted artifacts and safe evidence, preserving privacy and source-of-truth boundaries.
 
 ### `question_id`
 
@@ -218,6 +232,8 @@ Kanban/GitHub/CLI/chat creates or selects task_id
 - Operator surface: visibility/questions/approvals.
 - GitHub PR/release: versioned publication.
 - Evidence receipt / postflight: proof, approval strength, correction routing, and next-slice inheritance.
+- Evaluation envelope: per-acceptance-criterion judgment, feedback capture, confidence, and improvement route.
+- Audit envelope: integrity-oriented reconstruction of promoted evidence, artifact digests, parent links, and optional anchors.
 - Evidence: proof of what happened.
 
 ## Anti-patterns
