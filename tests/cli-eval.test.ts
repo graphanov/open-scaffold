@@ -123,6 +123,18 @@ describe('osc eval CLI', () => {
     expect(output).toContain('does not judge correctness, compliance, production readiness, or model quality');
   });
 
+  it('checks envelopes from subdirectories using the repo root for local evidence paths', () => {
+    const { root } = tempRepo();
+    const evalPath = join(root, 'docs/evidence/evaluation.json');
+    const subdir = join(root, 'docs/subdir');
+    mkdirSync(subdir, { recursive: true });
+    writeFileSync(evalPath, JSON.stringify(validEnvelope(root), null, 2));
+
+    const output = execFileSync(tsx, [cli, 'eval', 'check', '../evidence/evaluation.json'], { cwd: subdir, encoding: 'utf8' });
+
+    expect(output).toContain('PASS evaluation envelope structure valid');
+  });
+
   it('reports structural evaluation failures with FAIL prefixes and exit 1', () => {
     const { root } = tempRepo();
     const evalPath = join(root, 'docs/evidence/evaluation.json');

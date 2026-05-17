@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { createRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
@@ -310,6 +310,20 @@ function printEvalUsage(): void {
   console.error('Usage: osc eval init <run-or-plan> [--out <path>] | osc eval check <evaluation-path>');
 }
 
+function findScaffoldRoot(start: string): string | null {
+  let current = resolve(start);
+  while (true) {
+    if (existsSync(join(current, '.osc')) || existsSync(join(current, '.git'))) return current;
+    const parent = dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
+function evaluationRootFor(envelopePath: string): string {
+  return findScaffoldRoot(dirname(envelopePath)) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
+}
+
 function takeEvalValue(args: string[], index: number, flag: string): string {
   const value = args[index + 1];
   if (!value || value.startsWith('--')) {
@@ -382,7 +396,7 @@ function evalCommand(args: string[]): void {
       process.exit(2);
     }
     const envelopePath = resolve(sourceOrPath);
-    const result = validateEvaluationEnvelopeFile(envelopePath, process.cwd());
+    const result = validateEvaluationEnvelopeFile(envelopePath, evaluationRootFor(envelopePath));
     for (const failure of result.failures) {
       console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
     }

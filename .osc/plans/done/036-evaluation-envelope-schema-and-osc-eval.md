@@ -2,7 +2,7 @@
 
 ## Status
 
-done — shipped in this slice with `osc eval init` / `osc eval check`, release evidence, and local verification.
+backlog — follow-up implementation candidate after PR #39's architecture-direction rescope. Do not start until the architecture direction is reviewed and approved.
 
 ## Context
 
@@ -38,13 +38,13 @@ Likely candidates:
 
 ## Acceptance criteria
 
-- [x] `osc eval init <run-or-plan>` or equivalent generates an evaluation-envelope template with acceptance criteria, evaluator placeholders, evidence placeholders, decision, and improvement routing.
-- [x] `osc eval check <evaluation-path>` or equivalent validates that every criterion has a status, evidence or rationale, evaluator source, and correction route when status is not `pass`.
-- [x] Validation distinguishes schema/coverage checks from domain correctness; it never claims the result is correct, compliant, or production-grade.
-- [x] The command works for plans without explicit AC IDs by generating stable display IDs for the envelope.
-- [x] Tests cover pass, partial, fail, blocked, and not-evaluated criteria; weak approval; missing evidence; and missing improvement route.
-- [x] Docs and CLI help use owner-neutral, public-safe wording and preserve runtime/adapters/human approval boundaries.
-- [x] Release evidence records verification, scope, non-goals, and follow-up work.
+- [ ] `osc eval init <run-or-plan>` or equivalent generates an evaluation-envelope template with acceptance criteria, evaluator placeholders, evidence placeholders, decision, and improvement routing.
+- [ ] `osc eval check <evaluation-path>` or equivalent validates that every criterion has a status, evidence or rationale, evaluator source, and correction route when status is not `pass`.
+- [ ] Validation distinguishes schema/coverage checks from domain correctness; it never claims the result is correct, compliant, or production-grade.
+- [ ] The command works for plans without explicit AC IDs by generating stable display IDs for the envelope.
+- [ ] Tests cover pass, partial, fail, blocked, and not-evaluated criteria; weak approval; missing evidence; and missing improvement route.
+- [ ] Docs and CLI help use owner-neutral, public-safe wording and preserve runtime/adapters/human approval boundaries.
+- [ ] Release evidence records verification, scope, non-goals, and follow-up work.
 
 ## Verification steps
 
