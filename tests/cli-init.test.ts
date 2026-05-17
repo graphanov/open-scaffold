@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -10,6 +10,19 @@ const cli = join(repoRoot, 'src/cli.ts');
 
 function tempTarget() {
   return mkdtempSync(join(tmpdir(), 'osc-cli-init-'));
+}
+
+function filesUnder(root: string): string[] {
+  const files: string[] = [];
+  function visit(dir: string): void {
+    for (const entry of readdirSync(dir)) {
+      const path = join(dir, entry);
+      if (statSync(path).isDirectory()) visit(path);
+      else files.push(path);
+    }
+  }
+  visit(root);
+  return files.sort();
 }
 
 function writeRuntimeSelectionPlan(target: string, goal = 'Demo runtime selection.') {
@@ -70,6 +83,37 @@ describe('osc init CLI', () => {
 
     expect(existsSync(join(target, 'README.md'))).toBe(true);
     expect(existsSync(join(target, 'docs/SLICE_CLOSE_PROTOCOL.md'))).toBe(true);
+  });
+
+  it('generates standard-tier root docs as neutral downstream starter files', () => {
+    const target = tempTarget();
+
+    execFileSync(tsx, [cli, 'init', '--standard', '--target', target], { encoding: 'utf8' });
+
+    const checkedFiles = ['README.md', 'ROADMAP.md', 'AGENTS.md', 'CLAUDE.md'] as const;
+    for (const file of checkedFiles) {
+      const text = readFileSync(join(target, file), 'utf8');
+      expect(text, file).not.toContain('This project is [open-scaffold]');
+      expect(text, file).not.toContain('Open Scaffold is a runtime-neutral, repo-native operating system');
+      expect(text, file).not.toContain('graphanov/open-scaffold/generate');
+      expect(text, file).not.toContain('/Users/');
+      expect(text, file).not.toContain('Daniel');
+      expect(text, file).not.toContain('.osc-dev');
+    }
+
+    for (const path of filesUnder(target)) {
+      const text = readFileSync(path, 'utf8');
+      expect(text, path).not.toContain('/Users/');
+      expect(text, path).not.toContain('owner-local');
+      expect(text, path).not.toContain('private workspace');
+      expect(text, path).not.toContain('graphanov/open-scaffold/generate');
+      expect(text, path).not.toContain('Open Scaffold is a runtime-neutral, repo-native operating system');
+      expect(text, path).not.toContain('Daniel');
+      expect(text, path).not.toContain('.osc-dev');
+    }
+
+    expect(readFileSync(join(target, 'README.md'), 'utf8')).toContain('TODO: replace this with your project overview.');
+    expect(readFileSync(join(target, 'AGENTS.md'), 'utf8')).toContain('This repository uses Open Scaffold. It is not the Open Scaffold product repository.');
   });
 
   it('exits non-zero rather than overwriting an existing file', () => {
