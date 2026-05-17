@@ -376,6 +376,11 @@ function evalCommand(args: string[]): void {
       printEvalUsage();
       process.exit(2);
     }
+    if (rest.length > 0) {
+      console.error(`Unknown option for eval check: ${rest[0]}`);
+      printEvalUsage();
+      process.exit(2);
+    }
     const envelopePath = resolve(sourceOrPath);
     const result = validateEvaluationEnvelopeFile(envelopePath, process.cwd());
     for (const failure of result.failures) {

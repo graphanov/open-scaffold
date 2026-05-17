@@ -147,6 +147,18 @@ describe('osc eval CLI', () => {
     expect(result.stderr).not.toContain('at Object');
   });
 
+  it('rejects trailing arguments for eval check instead of silently ignoring them', () => {
+    const { root } = tempRepo();
+    const evalPath = join(root, 'docs/evidence/evaluation.json');
+    writeFileSync(evalPath, JSON.stringify(validEnvelope(root), null, 2));
+
+    const result = spawnSync(tsx, [cli, 'eval', 'check', evalPath, '--bogus'], { cwd: root, encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('Unknown option for eval check: --bogus');
+    expect(result.stderr).toContain('Usage: osc eval init');
+  });
+
   it('rejects unknown eval subcommands as argument errors', () => {
     const { root } = tempRepo();
 

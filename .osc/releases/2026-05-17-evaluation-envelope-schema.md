@@ -54,7 +54,7 @@ The command is intentionally structure-only. It does not judge domain correctnes
 
 Completed verification before PR creation:
 
-- `npm test` — passed, 10 files / 92 tests.
+- `npm test` — passed, 10 files / 93 tests.
 - `npm run build` — passed.
 - `npm run --silent osc -- eval init .osc/plans/done/036-evaluation-envelope-schema-and-osc-eval.md` — passed; generated the structure-only JSON envelope template.
 - `npm run --silent osc -- eval check /tmp/osc-036-evaluation.json` — passed after filling the generated template with local verification evidence; 7 criterion evaluations / 0 warnings.
