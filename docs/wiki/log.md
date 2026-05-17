@@ -3,6 +3,10 @@
 > Chronological record of project wiki actions. Append-only.
 > Format: `## [YYYY-MM-DD] action | subject`
 
+## [2026-05-17] amend | Implementation architecture envelopes
+- Expanded `docs/wiki/concepts/implementation-architecture-lens.md` with audit envelope, evaluation envelope, closed evaluation loop, and feedback-based improvement direction.
+- Cross-linked the direction to slice-close and runtime-binding boundaries without adding runtime spawning, compliance certification, or model-benchmarking claims.
+
 ## [2026-05-17] capture | Implementation architecture lens
 - Added `docs/wiki/concepts/implementation-architecture-lens.md` to map Open Scaffold's build-time primitives to workflow design, data access, authority, evaluation, audit trails, and recovery/ownership.
 - Updated `docs/wiki/index.md` so the new concept is discoverable without adding live task, PR, or release state to the wiki.

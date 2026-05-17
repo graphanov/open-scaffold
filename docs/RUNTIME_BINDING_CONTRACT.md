@@ -165,6 +165,25 @@ A binding should:
 9. Promote final artifacts and evidence to `.osc/runs`, tracked evidence docs, PRs, issues, or release notes.
 10. Leave approval/merge/release to the configured gate.
 
+## Audit and evaluation envelope responsibilities
+
+Open Scaffold core defines the audit/evaluation envelope shapes; runtime bindings and adapters fill the execution-specific parts of those envelopes.
+
+A binding should return enough structured information for postflight to build evaluation and audit records:
+
+- dispatch receipt path or runtime handoff reference;
+- selected lane, workflow, adapter, and runtime handle when available;
+- branch/worktree/session metadata;
+- authority actually used: edit, command, commit, push, approval, and sandbox posture;
+- changed files, outputs, promoted logs, screenshots, or generated artifacts;
+- verification commands and results;
+- blocker/failure code and `question_id` when blocked;
+- evidence paths that can be evaluated against acceptance criteria.
+
+A binding may also return evaluator output from CI, a review bot, a domain tool, or a human operator. That output is evidence for the Open Scaffold evaluation envelope; it is not final approval unless the run package explicitly grants that authority.
+
+Bindings must not claim completion from runtime-local state alone. They must promote durable artifacts back into the repo/task/PR/evidence chain and leave final approval, merge, release, legal compliance, and business-risk decisions to the configured gate.
+
 ## Explicit non-responsibilities
 
 Generic Open Scaffold core does not own:

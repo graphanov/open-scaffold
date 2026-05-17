@@ -13,6 +13,7 @@ Use these labels when public docs mention a tool whose availability or role coul
 | **Runtime lane** | A tool that can execute a bounded run packet outside Open Scaffold core. It is not canonical project truth. |
 | **Operator surface** | A chat, PR, CLI, dashboard, or notification layer that shows status or asks questions. It is not the source of truth. |
 | **Historical/unmigrated repository** | A public repository that exists under an older owner or namespace. Treat links as historical until an owner-approved migration happens. |
+| **External anchor adapter** | Optional future anchoring provider for audit-envelope roots or digests. Not required for core adoption and not a compliance certification claim. |
 
 ## Current public references
 
@@ -25,6 +26,7 @@ Use these labels when public docs mention a tool whose availability or role coul
 | OMC / oh-my-claudecode | Runtime lane / adapter candidate | Claude Code-oriented harness lane that can consume Open Scaffold run packets through an adapter outside core. |
 | OMX / oh-my-codex | Runtime lane / adapter candidate | Codex-oriented harness lane that can consume Open Scaffold run packets through an adapter outside core. |
 | Command Center / private cockpit examples | Private deployment example | Owner-local dogfood evidence only. Do not copy private state, auth assumptions, or project-specific machinery into public core. |
+| Hedera Consensus Service / Sigstore-Rekor / timestamping services | External anchor adapter | Possible future providers for anchoring audit-envelope roots or digests. They are not core dependencies, not required for adoption, and not proof of legal compliance by themselves. |
 
 ## Writing rule
 
