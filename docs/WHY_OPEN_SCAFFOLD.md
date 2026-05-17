@@ -29,7 +29,7 @@ Open Scaffold makes the repository the shared memory. Chat, terminals, agent ses
 ```mermaid
 flowchart LR
     M["MISSION.md\n(what we are building)"] --> P[".osc/plans/...\n(plan: goal, constraints,\nacceptance criteria,\nverification)"]
-    P --> R[".osc/runs/<run_id>/run.json\n(run packet: plan bound to\ntask, branch, surface,\nevidence path)"]
+    P --> R[".osc/runs/<run_id>/run.json\n(run packet: work package bound to\ntask, branch, status channel,\nevidence path)"]
     R --> X["Branch / PR\n(implementation)"]
     X --> V["./verify.sh\n(methodology check)"]
     V --> E[".osc/releases/...\n(release / evidence note)"]
@@ -44,21 +44,21 @@ Each artefact is a small file. Together they form a chain that survives context 
 
 ## Where the scaffold stops
 
-Open Scaffold is the substrate; it is not the runtime. Coordinators, runtimes, operator surfaces, and GitHub all sit around the substrate and read or write to it.
+Open Scaffold is the repo foundation; it is not the runtime. Coordinators, runtimes, status/approval channels, and GitHub all sit around that foundation and read or write to it.
 
 ```mermaid
 flowchart TB
     subgraph CORE["Open Scaffold core (this repo protocol)"]
         M2["mission / roadmap"]
         P2["plans / amendments"]
-        R2["run packets"]
+        R2["run.json work packages\n(run packets)"]
         V2["verification"]
         E2["evidence / releases"]
     end
 
-    COORD["Task bridges / coordinators\n(GitHub Issues, Linear/Jira,\ncustom bots, private examples)"] -. "writes plans, reads evidence" .-> CORE
-    RT["Runtime harnesses\n(Claude Code, Codex, Cursor,\nGemini, OMC, OMX, human)"] -. "executes bounded work" .-> CORE
-    GS["Operator surfaces\n(Discord, Slack, Telegram,\nGitHub comments, CLI)"] -. "shows status, asks questions" .-> CORE
+    COORD["Task trackers/coordinators\n(task bridges: GitHub Issues, Linear/Jira,\ncustom bots, private examples)"] -. "writes plans, reads evidence" .-> CORE
+    RT["Runtime wrappers / runners\n(Claude Code, Codex, Cursor,\nGemini, OMC, OMX, human)"] -. "executes bounded work" .-> CORE
+    GS["Status / approval channels\n(operator surfaces: Discord, Slack, Telegram,\nGitHub comments, CLI)"] -. "shows status, asks questions" .-> CORE
     GH["GitHub\n(issues, PRs, CI, releases)"] -. "publishes implementation" .-> CORE
 
     classDef core fill:#DBEAFE,stroke:#2563EB,color:#0f172a;

@@ -26,10 +26,10 @@ Open Scaffold core owns the portable project substrate:
 - `ROADMAP.md` — directional backlog and milestone story.
 - `.osc/plans/` — immutable plans, amendments, stage-folder status.
 - `.osc/specs/` — durable specs and context packs.
-- `.osc/runs/` — generated run packets, prompt bundles, execution evidence.
+- `.osc/runs/` — generated `run.json` work packages (run packets), prompt bundles, execution evidence.
 - `docs/` — decisions, workflow standards, examples, operator guidance.
 - `docs/GLASS_COCKPIT_PROTOCOL.md` — runtime-neutral event vocabulary for status, blockers, questions, approvals, evidence receipts, PR links, and build-in-public streams.
-- `docs/RUNTIME_BINDING_CONTRACT.md` — binding lifecycle and responsibilities for OMC/OMX/plain-agent/human lanes that consume run packets outside core.
+- `docs/RUNTIME_BINDING_CONTRACT.md` — binding lifecycle and responsibilities for OMC/OMX/plain-agent/human lanes that consume `run.json` work packages (run packets) outside core.
 - `docs/SLICE_CLOSE_PROTOCOL.md` — evidence receipts, postflight decisions, approval strength, correction routing, and next-slice inheritance.
 - `verify.sh` / `osc verify` — methodology compliance checks.
 - `.github/` templates — issue and PR traceability for GitHub-centered workflows.
@@ -53,9 +53,9 @@ These tools may read roadmap items, create plans, create/live-update tasks, choo
 
 A coordinator should dispatch **bounded packages** into execution lanes rather than letting multiple systems mutate the same worktree and truth state at once.
 
-### 3. Runtime harnesses
+### 3. Runtime harnesses — workflow wrappers around base agents
 
-Runtime harnesses extend a base agent with workflow modes, teams, persistence, planning, or verification. Bindings that launch those harnesses from Open Scaffold run packets are defined in [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
+Runtime harnesses extend a base agent with workflow modes, teams, persistence, planning, or verification. Bindings that launch those harnesses from Open Scaffold `run.json` work packages (run packets) are defined in [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
 
 They are not the same class as orchestrators like Hermes or Claw/OpenClaw.
 
@@ -90,7 +90,7 @@ It can provide Codex-native capabilities such as:
 
 Use OMX when the execution lane is Codex plus OMX-specific planning/execution workflows.
 
-### 4. Task and state bridges
+### 4. Task and state bridges — work queues/status boards
 
 Task systems hold live operational state: what is ready, running, blocked, under review, or done.
 
@@ -126,9 +126,9 @@ Examples:
 - gateway adapters
 - tmux/session notification hooks
 
-Transport can post active-session updates, blockers, and completion events into a glass cockpit. It should not become canonical task state or perform planning/execution itself.
+Transport can post active-session updates, blockers, and completion events into a glass cockpit — an operator dashboard/control room. It should not become canonical task state or perform planning/execution itself.
 
-### 6. Operator surfaces / glass cockpits
+### 6. Operator surfaces / glass cockpits — human dashboards/control rooms
 
 Operator surfaces let humans and teams see, steer, approve, or unblock work.
 
@@ -148,7 +148,7 @@ The glass cockpit can run in several modes:
 - **Build-in-public room:** public or semi-public devlog channel.
 - **Stakeholder room:** curated client/product updates.
 
-Operator surfaces are **not canonical truth**. They should link back to roadmap items, task IDs, run packets, evidence, issues, branches, and PRs. Their event vocabulary is documented in [`docs/GLASS_COCKPIT_PROTOCOL.md`](GLASS_COCKPIT_PROTOCOL.md).
+Operator surfaces are **not canonical truth**. They should link back to roadmap items, task IDs, `run.json` work packages (run packets), evidence, issues, branches, and PRs. Their event vocabulary is documented in [`docs/GLASS_COCKPIT_PROTOCOL.md`](GLASS_COCKPIT_PROTOCOL.md).
 
 ### 7. GitHub/public versioning layer
 
@@ -207,7 +207,7 @@ A clean coordinator-to-runtime flow looks like this:
 ```text
 User selects runtime
   -> Open Scaffold reads runtime profile
-  -> Open Scaffold creates the run packet
+  -> Open Scaffold creates the run.json work package (run packet)
   -> Adapter/coordinator launches the actual runtime
   -> Runtime does the work
   -> Evidence comes back into Open Scaffold
@@ -242,7 +242,7 @@ ROADMAP.md
   -> GitHub issue or live task
   -> .osc plan / amendment
   -> runtime/harness handoff when needed
-  -> .osc run packet / evidence
+  -> .osc run.json work package / evidence
   -> verification gate
   -> PR / release note
   -> roadmap update

@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-17: closed 040-vocabulary-compression-v2 — compressed first-touch vocabulary while preserving runtime boundaries
 - 2026-05-17: closed 039-session-2-aha-walkthrough — session-2 aha walkthrough shipped
 - 2026-05-17: closed 038-first-run-adoption-hardening — first-run adoption hardening shipped and npm package published
 - 2026-05-17: closed 037-audit-envelope-digest-manifest — added structure-only audit envelope digest manifest CLI mechanics

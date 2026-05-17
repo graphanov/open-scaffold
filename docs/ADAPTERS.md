@@ -6,11 +6,11 @@ For the current OMC/OMX runtime selection surface and the minimum refreshed-adap
 
 This page uses precise language:
 
-- **Coordinators/orchestrators** decide what should happen next and may maintain or bridge package/task state.
+- **Coordinators/orchestrators** — controllers/deciders — decide what should happen next and may maintain or bridge package/task state.
 - **Agents** perform work directly when bounded by the Open Scaffold contract.
-- **Runtime harnesses** extend a base agent with workflow modes such as teams, planning, persistence, and verification.
-- **Task/state bridges** track live operational state.
-- **Operator surfaces** expose status and human interaction.
+- **Runtime harnesses** — workflow wrappers around agents — extend a base agent with workflow modes such as teams, planning, persistence, and verification.
+- **Task/state bridges** — work queues/status boards — track live operational state.
+- **Operator surfaces** — chats/dashboards for human interaction — expose status and approvals.
 
 For the full taxonomy, see [`docs/OPEN_SCAFFOLD_SYSTEM.md`](OPEN_SCAFFOLD_SYSTEM.md). For public/private/future tool availability labels, see [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md).
 
@@ -50,9 +50,9 @@ OMC is a **runtime lane / adapter candidate** for Claude Code execution/orchestr
 
 Responsibilities when used with Open Scaffold:
 
-- Execute Claude Code-native workflows against a bounded Open Scaffold plan or run packet.
+- Execute Claude Code-native workflows against a bounded Open Scaffold plan or `run.json` work package (run packet).
 - Use workflows such as `/deep-interview`, `/ralplan`, `/team`, `/ralph`, and `/ultrawork` where appropriate.
-- Keep OMC runtime state forensic unless promoted into `.osc/runs/`, docs, issues, or PRs.
+- Keep OMC runtime state forensic — useful for investigation, not durable project truth — unless promoted into `.osc/runs/`, docs, issues, or PRs.
 - Return evidence and status back to the Open Scaffold source-of-truth chain.
 
 Use OMC when the chosen execution lane is Claude Code plus OMC workflow skills.
@@ -66,9 +66,9 @@ OMX is a **runtime lane / adapter candidate** for Codex execution/orchestration.
 
 Responsibilities when used with Open Scaffold:
 
-- Execute Codex-native planning, team, persistence, and verification workflows against a bounded Open Scaffold plan or run packet.
+- Execute Codex-native planning, team, persistence, and verification workflows against a bounded Open Scaffold plan or `run.json` work package (run packet).
 - Use workflows such as `$deep-interview`, `$ralplan`, `$team`, `$ralph`, `$ultrawork`, and `$ultragoal` where appropriate.
-- Keep OMX runtime state forensic unless promoted into `.osc/runs/`, docs, issues, or PRs.
+- Keep OMX runtime state forensic — useful for investigation, not durable project truth — unless promoted into `.osc/runs/`, docs, issues, or PRs.
 - Return evidence and status back to the Open Scaffold source-of-truth chain.
 
 Use OMX when the chosen execution lane is Codex plus OMX workflow skills.
@@ -91,12 +91,12 @@ The preferred bridge is a task/run split:
 
 ```text
 Task system owns task_id and live lifecycle.
-Open Scaffold run packet owns run_id, executor choice, context package, bindings, and evidence paths.
+Open Scaffold `run.json` work package owns run_id, executor choice, context package, bindings, and evidence paths.
 Harness/runtime owns execution while alive.
 Operator surface mirrors/questions/approves through a binding.
 ```
 
-Use `osc run <plan> --task-id <id> --executor <lane> --harness-skill <skill> ...` to create a runtime-neutral `.osc/runs/<run_id>/run.json` package. The core still does not spawn; adapters/coordinators consume that package according to the runtime binding contract. See [`docs/TASK_RUN_MODEL.md`](TASK_RUN_MODEL.md) and [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
+Use `osc run <plan> --task-id <id> --executor <lane> --harness-skill <skill> ...` to create a runtime-neutral `.osc/runs/<run_id>/run.json` package. The core still does not spawn; adapters/coordinators consume that package according to the runtime adapter contract (runtime binding contract). See [`docs/TASK_RUN_MODEL.md`](TASK_RUN_MODEL.md) and [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
 
 ## Event/session routing glue
 
@@ -107,7 +107,7 @@ It may:
 - bind a chat thread or session id to a canonical `run_id`
 - forward active-session and completion events
 - route blockers/questions to Discord or another cockpit
-- attach session/log/status metadata to a task or run packet
+- attach session/log/status metadata to a task or `run.json` work package
 
 It should not:
 
@@ -118,7 +118,7 @@ It should not:
 - become the task database
 - replace Open Scaffold/GitHub/task-system evidence
 
-## Operator surfaces / glass cockpits
+## Operator surfaces / glass cockpits — human dashboards/control rooms
 
 Operator surfaces display and route human interaction:
 
@@ -156,7 +156,7 @@ OMC = Claude Code execution/orchestration lane.
 OMX = Codex execution/orchestration lane.
 Event routers = session/status transport.
 Task bridges = live operational state.
-Operator surfaces = glass cockpit.
+Operator surfaces = glass cockpit / human control room.
 GitHub = public/versioned implementation layer.
 ```
 

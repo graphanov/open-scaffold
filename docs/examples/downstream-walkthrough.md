@@ -15,7 +15,7 @@ No private credentials, no private coordinator, no chat surface, no runtime harn
 The walkthrough moves through Open Scaffold's canonical identity chain on Tiny Notes:
 
 ```text
-mission -> plan -> implementation -> verification -> run packet -> evidence -> close -> session-2 resume
+mission -> plan -> implementation -> verification -> optional run.json work package -> evidence -> close -> session-2 resume
 ```
 
 Every step has a concrete file, a concrete command, and an expected observable. The artifacts already live under `examples/lifecycle-e2e-smoke/` in this repo — you can read them in place, or copy them into a clean temp directory and run the loop yourself.
@@ -173,9 +173,9 @@ Expected: exit `0`, `0 fail`.
 
 ---
 
-## 5. Run packet — bind the plan to a specific execution attempt
+## 5. Optional `run.json` work package — bind the plan to one execution attempt
 
-A run packet is the optional record that says "this plan, this attempt, this lane." On Tiny Notes, where the work is one human in one terminal, the run packet may feel ceremonial. Generate it once anyway so you can see the shape — the same shape is what an external coordinator, bot, or harness adapter consumes when work spans agents and surfaces.
+A run packet is the optional `run.json` handoff file that says "this plan, this attempt, this lane." On Tiny Notes, where the work is one human in one terminal, the run packet may feel ceremonial. Generate it once anyway so you can see the shape — the same shape is what an external coordinator, bot, or harness adapter consumes when work spans agents and surfaces.
 
 From the Open Scaffold repo root, generate a packet for the in-repo Tiny Notes fixture:
 
@@ -219,7 +219,7 @@ verify the behavior with a local shell test.
 ## Traceability
 - Plan: `.osc/plans/active/001-add-note-command.md` (moves to `done/` on close).
 - Task: `tiny-notes:001-add-note-command`.
-- Run packet: `.osc/runs/<run_id>/run.json` (optional for solo work).
+- `run.json` work package / run packet: `.osc/runs/<run_id>/run.json` (optional for solo work).
 - Branch / PR: <link if applicable>.
 
 ## Verification
@@ -350,7 +350,7 @@ Open Scaffold is genuinely useful when work needs to outlive a single session:
 
 - **Multi-session AI-assisted development.** The plan/evidence trail survives context loss, so the next agent or human can pick up without renegotiating intent.
 - **Small-team or client delivery.** "What was the goal, how was it verified, who approved it?" is answered in files instead of chat history.
-- **Multi-agent handoff.** A plan plus run packet plus evidence note is enough for a second lane to continue work without inheriting hallucinated assumptions.
+- **Multi-agent handoff.** A plan plus optional `run.json` work package plus evidence note is enough for a second lane to continue work without inheriting hallucinated assumptions.
 - **Light audit and compliance contexts.** Mission, plans, amendments, and evidence give an auditor a readable trail without standing up heavier tooling.
 - **AI work that needs "done" to mean something.** Acceptance criteria + verification + evidence is harder to fake than "looks good."
 
@@ -373,4 +373,4 @@ A reasonable rule of thumb: adopt Open Scaffold when at least one of {multi-sess
 - [`docs/E2E_SMOKE.md`](../E2E_SMOKE.md) — the automated smoke that exercises this fixture mechanically.
 - [`docs/RUNTIME_BINDING_CONTRACT.md`](../RUNTIME_BINDING_CONTRACT.md) — the contract any external runtime, coordinator, or harness uses when consuming `.osc/runs/<run_id>/run.json`.
 - [`docs/WORKFLOW.md`](../WORKFLOW.md) — phase-to-tool guide.
-- [`docs/SLICE_CLOSE_PROTOCOL.md`](../SLICE_CLOSE_PROTOCOL.md) — what makes a slice closed instead of merely merged.
+- [`docs/SLICE_CLOSE_PROTOCOL.md`](../SLICE_CLOSE_PROTOCOL.md) — what makes a work slice truly closed instead of merely merged.
