@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-17: closed 037-audit-envelope-digest-manifest — added structure-only audit envelope digest manifest CLI mechanics
 - 2026-05-17: closed 036-evaluation-envelope-schema-and-osc-eval — added structure-only evaluation envelope schema and osc eval init/check mechanics
 - 2026-05-17: rescope PR39 around evaluation and audit envelope standards — see .osc/plans/done/033-implementation-architecture-evaluation-lens-amendment-1.md
 - 2026-05-17: closed 033-implementation-architecture-evaluation-lens — implementation architecture lens shipped

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
@@ -22,6 +23,8 @@ Usage:
   osc ultrareview <plan-path> [run binding options]
   osc eval init <run-or-plan> [--out <path>]
   osc eval check <evaluation-path>
+  osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]
+  osc audit check <audit-manifest-path>
   osc verify
   osc doctor
   osc runtimes list
@@ -306,6 +309,127 @@ function createArtifacts(args: string[], mode: ArtifactMode): void {
   console.log('  Note: generic open-scaffold did not spawn a runtime; dispatch via your coordinator or harness adapter.');
 }
 
+function printAuditUsage(): void {
+  console.error('Usage: osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>] | osc audit check <audit-manifest-path>');
+}
+
+function takeAuditValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${flag}`);
+    process.exit(2);
+  }
+  return value;
+}
+
+function auditRootFor(manifestPath: string): string {
+  return findScaffoldRoot(dirname(manifestPath)) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
+}
+
+function auditRootForSource(sourcePath: string): string {
+  const resolvedSource = resolve(sourcePath);
+  return findScaffoldRoot(dirname(resolvedSource)) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
+}
+
+function auditCommand(args: string[]): void {
+  const [subcommand, sourceOrPath, ...rest] = args;
+  if (subcommand === 'init') {
+    if (!sourceOrPath) {
+      printAuditUsage();
+      process.exit(2);
+    }
+    let outPath: string | null = null;
+    let force = false;
+    const artifacts: AuditArtifactInput[] = [];
+    for (let i = 0; i < rest.length; i += 1) {
+      const flag = rest[i];
+      switch (flag) {
+        case '--artifact': {
+          const role = takeAuditValue(rest, i, flag);
+          const path = rest[i + 2];
+          if (!path || path.startsWith('--')) {
+            console.error('Missing path for --artifact <role> <path>');
+            process.exit(2);
+          }
+          artifacts.push({ role, path });
+          i += 2;
+          break;
+        }
+        case '--out':
+        case '--output':
+          outPath = takeAuditValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--force':
+          force = true;
+          break;
+        default:
+          console.error(`Unknown option for audit init: ${flag}`);
+          printAuditUsage();
+          process.exit(2);
+      }
+    }
+    const auditRoot = auditRootForSource(sourceOrPath);
+    const auditSource = resolve(sourceOrPath);
+    try {
+      if (!outPath) {
+        process.stdout.write(renderAuditManifest(auditSource, artifacts, auditRoot));
+        return;
+      }
+      const absoluteOut = resolve(outPath);
+      if (existsSync(absoluteOut) && !force) {
+        console.error(`Refusing to overwrite existing audit manifest: ${absoluteOut}`);
+        process.exit(1);
+      }
+      if (force && existsSync(absoluteOut)) {
+        writeFileSync(absoluteOut, renderAuditManifest(auditSource, artifacts, auditRoot), 'utf8');
+      } else {
+        writeAuditManifest(auditSource, artifacts, absoluteOut, auditRoot);
+      }
+      console.log(`Created audit manifest: ${absoluteOut}`);
+      console.log('Note: this is a local digest-integrity manifest only; it does not certify correctness, compliance, approval, runtime execution, model quality, or external anchoring.');
+      return;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  }
+
+  if (subcommand === 'check') {
+    if (!sourceOrPath) {
+      printAuditUsage();
+      process.exit(2);
+    }
+    if (rest.length > 0) {
+      console.error(`Unknown option for audit check: ${rest[0]}`);
+      printAuditUsage();
+      process.exit(2);
+    }
+    const manifestPath = resolve(sourceOrPath);
+    const result = validateAuditManifestFile(manifestPath, auditRootFor(manifestPath));
+    for (const failure of result.failures) {
+      console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
+    }
+    for (const warning of result.warnings) {
+      console.warn(`WARN ${warning.code}: ${warning.message}${warning.path ? ` (${warning.path})` : ''}`);
+    }
+    if (!result.ok) process.exit(1);
+    let artifactCount = 0;
+    try {
+      const parsed = JSON.parse(readFileSync(manifestPath, 'utf8')) as { artifacts?: unknown[] };
+      artifactCount = Array.isArray(parsed.artifacts) ? parsed.artifacts.length : 0;
+    } catch {
+      artifactCount = 0;
+    }
+    console.log(`PASS audit manifest structure/digests valid; ${artifactCount} artifact(s); ${result.warnings.length} warning(s)`);
+    console.log('Note: this check validates local artifact presence and sha256 digest consistency only; it does not judge correctness, compliance, approval, runtime execution, model quality, or external anchoring.');
+    return;
+  }
+
+  printAuditUsage();
+  process.exit(2);
+}
+
 function printEvalUsage(): void {
   console.error('Usage: osc eval init <run-or-plan> [--out <path>] | osc eval check <evaluation-path>');
 }
@@ -484,6 +608,9 @@ function main(): void {
       return;
     case 'eval':
       evalCommand(args);
+      return;
+    case 'audit':
+      auditCommand(args);
       return;
     case 'verify': {
       const result = validateScaffold(process.cwd());
