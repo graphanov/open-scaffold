@@ -8,6 +8,7 @@ Open Scaffold now has a small GitHub Actions workflow for pull requests and push
 
 - Plan: `.osc/plans/done/045-github-actions-ci.md`
 - Branch: `ci/github-actions-workflow`
+- PR: `#46` — https://github.com/graphanov/open-scaffold/pull/46
 - Kanban: `t_44c1b9b1`
 - Workflow: `.github/workflows/ci.yml`
 
