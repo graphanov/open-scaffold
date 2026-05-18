@@ -121,19 +121,28 @@ If the goal is clear, tell your agent:
 Write a plan in .osc/plans/active/ for <task> using .osc/plans/handoff-template.md.
 ```
 
-If the goal is fuzzy, ask the agent to interview you first, then write the plan. Fill the template with short bullets; the important parts are goal, acceptance criteria, and verification. Or copy the template manually:
+If the goal is fuzzy, ask the agent to interview you first, then write the plan. Fill the template with short bullets; the important parts are goal, acceptance criteria, and verification. The helper creates the file and TODO prompts; it does **not** invent acceptance criteria for you:
+
+```bash
+osc plan new my-first-task --stage active
+# or, without local install: npx open-scaffold plan new my-first-task --stage active
+```
+
+Shell fallback remains supported:
 
 ```bash
 cp .osc/plans/handoff-template.md .osc/plans/active/my-first-task.md
 ```
 
-### 4. Verify the scaffold
+### 4. Verify and record evidence
 
 ```bash
 ./verify.sh
+osc evidence new my-first-task
+# or, without local install: npx open-scaffold evidence new my-first-task
 ```
 
-Use `./verify.sh --standard` before calling a meaningful slice done.
+Use `./verify.sh --standard` before calling a meaningful slice done. The evidence helper creates `.osc/releases/<date>-my-first-task.md` with TODO prompts; replace them with real commands, results, PR links, and follow-up before closing the plan.
 
 ### 5. Optional: package a plan for an agent/runtime
 

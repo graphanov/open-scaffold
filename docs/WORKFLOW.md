@@ -24,6 +24,14 @@ Ask structured questions until the goal, constraints, and acceptance criteria ar
 
 Write a plan file in `.osc/plans/active/` using the 7-section schema in `.osc/plans/handoff-template.md`. The plan must include acceptance criteria — testable bullets that define success. For risky or multi-file work, get the plan reviewed before executing. See `.osc/plans/WORKFLOW.md` for the stage-folder lifecycle and `.osc/RULES.md` for non-negotiable principles.
 
+Use the helper when the repo has the `osc` CLI available:
+
+```bash
+osc plan new <slug> --stage active
+```
+
+Then fill every TODO before implementation. The helper creates structure only; it does not invent acceptance criteria. Shell fallback remains the day-zero floor: copy `.osc/plans/handoff-template.md` into `.osc/plans/active/<slug>.md` and fill it manually.
+
 > **With OMC harness:** Claude Code/OMC planning flows can use `/ralplan` against an Open Scaffold plan or `run.json` work package (run packet).
 >
 > **With OMX harness:** Codex/OMX planning flows can use `$ralplan` against an Open Scaffold plan or `run.json` work package (run packet).
@@ -42,7 +50,7 @@ Implement what the plan says. Independent tasks can run in parallel. Every chang
 
 Check the plan's acceptance criteria one by one. Run tests. Read the diff. Verification traces to criteria, not vibes.
 
-Run `./verify.sh` for a zero-dependency methodology compliance report (mission defined, plans exist, amendments sequential, changelog coverage). Use `./verify.sh --strict` for full checks including plan schema validation and paired-view drift detection. `osc verify` performs the generic CLI check; adapter repos keep their own namespace-specific verify behavior. Shell scripts are the day-zero floor; `osc` is the canonical tested path for richer run/package behavior.
+Run `./verify.sh` for a zero-dependency methodology compliance report (mission defined, plans exist, amendments sequential, changelog coverage). Use `./verify.sh --strict` for full checks including plan schema validation and paired-view drift detection. `osc verify` performs the generic CLI check; adapter repos keep their own namespace-specific verify behavior. Use `osc evidence new <slug>` to scaffold a `.osc/releases/<date>-<slug>.md` evidence note after verification, then replace every TODO with real commands and results. Shell scripts remain the day-zero floor; `osc` is the canonical tested path for richer run/package behavior.
 
 > **With adapters:** OMC/OMX handoffs should still end by running the repo-local `./verify.sh` plus acceptance-criteria checks. Runtime-native verify commands are wrappers around this evidence, not replacements for it.
 

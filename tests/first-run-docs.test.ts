@@ -32,6 +32,22 @@ describe('first-run documentation truth', () => {
     }
   });
 
+  it('documents plan and evidence helper commands without removing shell fallbacks', () => {
+    const docs = [
+      ['README.md', read('README.md')],
+      ['docs/MINIMUM_VIABLE_SCAFFOLD.md', read('docs/MINIMUM_VIABLE_SCAFFOLD.md')],
+      ['docs/WORKFLOW.md', read('docs/WORKFLOW.md')],
+    ] as const;
+
+    for (const [path, text] of docs) {
+      expect(text, path).toContain('osc plan new');
+      expect(text, path).toContain('osc evidence new');
+    }
+    expect(read('README.md')).toContain('cp .osc/plans/handoff-template.md');
+    expect(read('docs/MINIMUM_VIABLE_SCAFFOLD.md')).toContain('copy `.osc/plans/handoff-template.md`');
+    expect(read('docs/WORKFLOW.md')).toContain('Shell scripts remain the day-zero floor');
+  });
+
   it('exposes a package-name binary alias so npx open-scaffold runs the CLI', () => {
     const packageJson = JSON.parse(read('package.json')) as { bin?: Record<string, string> };
 
