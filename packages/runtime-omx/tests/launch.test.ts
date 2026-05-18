@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { CommandRunner } from '../src/index.js';
 import { runOmxRalplan } from '../src/index.js';
 import { tempRunPacket, readJson } from './fixtures.js';
@@ -90,6 +92,18 @@ describe('runtime-omx explicit launch path', () => {
     expect(calls).toEqual([]);
   });
 
+  it('refuses explicit launch when the worktree path is outside runtime.repoPath', () => {
+    const outside = mkdtempSync(join(tmpdir(), 'runtime-omx-outside-worktree-'));
+    const { path } = tempRunPacket({ runtime: { repoPath: '.', worktreePath: outside, branch: 'runtime/omx-ralplan-adapter-spike', tmuxSession: null, processId: null } });
+    const { runner, calls } = runnerFrom([{ status: 0, stdout: 'runtime/omx-ralplan-adapter-spike\n' }]);
+
+    const result = runOmxRalplan(path, { allowSpawn: true, commandRunner: runner, invokedAt: '2026-05-18T00:00:00.000Z' });
+
+    expect(result.receipt.status).toBe('refused');
+    expect(result.receipt.failure.code).toBe('worktree_outside_repo');
+    expect(calls).toEqual([]);
+  });
+
   it('refuses explicit launch when OMX is missing', () => {
     const missing: NodeJS.ErrnoException = new Error('spawn omx ENOENT');
     missing.code = 'ENOENT';
@@ -119,6 +133,21 @@ describe('runtime-omx explicit launch path', () => {
     expect(result.receipt.status).toBe('refused');
     expect(result.receipt.failure.code).toBe('omx_version_too_old');
     expect(result.receipt.runtime_version?.detected_version).toBe('0.16.3');
+    expect(calls).toHaveLength(2);
+  });
+
+  it('refuses prerelease OMX versions at the minimum boundary before launch', () => {
+    const { path } = tempRunPacket({ runtime: { repoPath: '.', worktreePath: '.', branch: 'runtime/omx-ralplan-adapter-spike', tmuxSession: null, processId: null } });
+    const { runner, calls } = runnerFrom([
+      { status: 0, stdout: 'runtime/omx-ralplan-adapter-spike\n' },
+      { status: 0, stdout: 'oh-my-codex v0.17.3-beta.1\n' },
+    ]);
+
+    const result = runOmxRalplan(path, { allowSpawn: true, commandRunner: runner, invokedAt: '2026-05-18T00:00:00.000Z' });
+
+    expect(result.receipt.status).toBe('refused');
+    expect(result.receipt.failure.code).toBe('omx_version_too_old');
+    expect(result.receipt.runtime_version?.detected_version).toBe('0.17.3-beta.1');
     expect(calls).toHaveLength(2);
   });
 

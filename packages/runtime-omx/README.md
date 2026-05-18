@@ -54,7 +54,7 @@ Launch safety checks:
 - `--allow-spawn` must be present;
 - `omx --version` must report `oh-my-codex >= 0.17.3`;
 - `runtime.branch` must be a non-main disposable branch such as `runtime/<slug>`;
-- `runtime.worktreePath` must be set;
+- `runtime.worktreePath` must exist and resolve inside `runtime.repoPath`;
 - the generated command requests Codex `--sandbox read-only`;
 - receipts/logs/evidence stay under `.osc/runs/<run_id>/`;
 - commit, push, merge, publish, credential-management, destructive filesystem authority, tmux management, and runtime certification stay out of scope.

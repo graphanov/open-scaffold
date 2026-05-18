@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, realpathSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { isAbsolute, resolve } from 'node:path';
+import { isAbsolute, relative, resolve } from 'node:path';
 import { assertRunPacketInputPath, safeOutputPaths } from './safe-paths.js';
 import type { CommandRunner, CommandRunnerResult, RuntimeOmxOptions, RuntimeOmxOutcome, RuntimeOmxResult, RuntimeOmxStatus, RuntimeVersionInfo, ValidatedRunPacket } from './types.js';
 import { validateRunPacket } from './validation.js';
@@ -28,7 +28,7 @@ const defaultCommandRunner: CommandRunner = (command, args, options) => {
 };
 
 function semverParts(version: string): [number, number, number] | null {
-  const match = version.match(/^(\d+)\.(\d+)\.(\d+)/);
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:\+[0-9A-Za-z.-]+)?$/);
   if (!match) return null;
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
@@ -45,7 +45,7 @@ function compareSemver(a: string, b: string): number {
 }
 
 function parseOmxVersion(output: string): string | null {
-  const match = output.match(/oh-my-codex\s+v?(\d+\.\d+\.\d+)/i) ?? output.match(/\bv?(\d+\.\d+\.\d+)\b/);
+  const match = output.match(/oh-my-codex\s+v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)/i) ?? output.match(/\bv?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)\b/);
   return match ? match[1] : null;
 }
 
@@ -101,6 +101,11 @@ function safeBranch(branch: string | null): boolean {
   return /^(runtime|feat|feature|fix|docs|chore|test|spike)\//.test(branch);
 }
 
+function isInside(parent: string, child: string): boolean {
+  const rel = relative(parent, child);
+  return rel === '' || rel === '.' || (!rel.startsWith('..') && !isAbsolute(rel));
+}
+
 function resolveWorktreePath(packet: ValidatedRunPacket, repoRoot: string): { path: string | null; failureCode: string | null; failureMessage: string | null } {
   if (!packet.runtime.worktreePath) {
     return { path: null, failureCode: 'missing_worktree', failureMessage: 'runtime.worktreePath must be set before OMX launch' };
@@ -109,7 +114,11 @@ function resolveWorktreePath(packet: ValidatedRunPacket, repoRoot: string): { pa
   if (!existsSync(candidate)) {
     return { path: null, failureCode: 'missing_worktree', failureMessage: `runtime.worktreePath does not exist: ${packet.runtime.worktreePath}` };
   }
-  return { path: realpathSync.native(candidate), failureCode: null, failureMessage: null };
+  const resolved = realpathSync.native(candidate);
+  if (!isInside(repoRoot, resolved)) {
+    return { path: null, failureCode: 'worktree_outside_repo', failureMessage: 'runtime.worktreePath must resolve inside runtime.repoPath before OMX launch' };
+  }
+  return { path: resolved, failureCode: null, failureMessage: null };
 }
 
 function checkActualBranch(expectedBranch: string, worktreePath: string, runner: CommandRunner): { failureCode: string | null; failureMessage: string | null } {

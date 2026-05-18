@@ -46,12 +46,13 @@ This does not make Open Scaffold core spawn runtimes and does not claim full OMX
 - `omx --version` → `oh-my-codex v0.17.3`.
 - `codex --version` → `codex-cli 0.130.0`.
 - `npm run build:runtime-omx` → pass.
-- `npm run test:runtime-omx` → 5 files / 41 tests passed.
+- `npm run test:runtime-omx` → 5 files / 43 tests passed.
 - `npm run build` → pass.
-- `npm test` → 19 files / 170 tests passed.
+- `npm test` → 19 files / 172 tests passed.
 - Run packet generated through `npm run osc -- run .osc/plans/active/043-one-real-runtime-adapter-spike.md --runtime omx --workflow plan --repo . --worktree . --branch runtime/omx-ralplan-adapter-spike --operator-surface cli --task-id t_15d93ad5 --commit-policy 'no commit/push/merge/publish; human approval required'`.
 - Default package invocation wrote no-spawn receipt/evidence.
 - Explicit package invocation `node packages/runtime-omx/dist/cli.js <run.json> --allow-spawn` completed with `status=completed`, `spawned=true`, `oh-my-codex v0.17.3`, log path recorded, and no receipt failure.
+- Codex review round 1 findings fixed before retrigger: worktree paths outside `runtime.repoPath` are refused, and prerelease OMX versions such as `0.17.3-beta.1` are rejected before launch.
 - `./verify.sh --strict` → 10 pass / 0 fail / 0 warn after PR URL patch.
 - `npm run osc -- verify` → pass after PR URL patch.
 - `git diff --check` → pass.
