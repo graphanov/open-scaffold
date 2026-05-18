@@ -28,7 +28,8 @@ function isBlockingQuestion(value: unknown): boolean {
   if (typeof value === 'string') {
     const normalized = value.trim();
     if (/^(none|n\/a|no open questions|no blocking questions)\.?$/i.test(normalized)) return false;
-    return /\bblocking\b/i.test(normalized);
+    if (/^non[-\s]?blocking\b/i.test(normalized)) return false;
+    return /(^|[\s[(:;])blocking\b/i.test(normalized);
   }
   if (!isRecord(value)) return false;
   if (value.blocking === true || value.required === true) return true;

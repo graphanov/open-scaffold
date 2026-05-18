@@ -130,6 +130,19 @@ describe('runtime-omx validation and no-spawn receipt', () => {
     expect(() => runNoSpawnOmx(path)).not.toThrow();
   });
 
+  it('allows non-blocking follow-up notes', () => {
+    const { path } = tempRunPacket({
+      plan: {
+        path: '.osc/plans/active/042.md',
+        goal: 'Preview.',
+        acceptanceCriteria: ['ok'],
+        verificationSteps: ['verify'],
+        openQuestions: ['Non-blocking: follow-up later'],
+      },
+    });
+    expect(() => runNoSpawnOmx(path)).not.toThrow();
+  });
+
   it('rejects non-OMX runtime selection', () => {
     const { path } = tempRunPacket({ runtimeSelection: { runtime: 'omc', workflow: 'plan', profileId: 'omc', profileSource: 'builtin' } });
     expectValidationError(() => runNoSpawnOmx(path), 'runtimeSelection.runtime must be omx');
