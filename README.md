@@ -121,12 +121,17 @@ If the goal is clear, tell your agent:
 Write a plan in .osc/plans/active/ for <task> using .osc/plans/handoff-template.md.
 ```
 
-If the goal is fuzzy, ask the agent to interview you first, then write the plan. Fill the template with short bullets; the important parts are goal, acceptance criteria, and verification. The helper creates the file and TODO prompts; it does **not** invent acceptance criteria for you:
+If the goal is fuzzy, park the plan in backlog first, then move it to active when it becomes the work you are actually doing. Fill the template with short bullets; the important parts are goal, acceptance criteria, and verification. The helpers create files and TODO prompts; they do **not** invent acceptance criteria for you:
 
 ```bash
-osc plan new my-first-task --stage active
-# or, without local install: npx open-scaffold plan new my-first-task --stage active
+osc plan new my-first-task --stage backlog
+osc plan move my-first-task --to active
+# or, without local install:
+npx open-scaffold plan new my-first-task --stage backlog
+npx open-scaffold plan move my-first-task --to active
 ```
+
+Use `--to blocked` when a plan needs to wait for input, credentials, or a product decision.
 
 Shell fallback remains supported:
 

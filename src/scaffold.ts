@@ -52,6 +52,15 @@ export interface ClosedPlanResult {
   alreadyDone: boolean;
 }
 
+export interface MovedPlanResult {
+  root: string;
+  slug: string;
+  fromStage: PlanStage | 'root';
+  toStage: PlanCreationStage;
+  movedFiles: string[];
+  alreadyInStage: boolean;
+}
+
 export interface ExecutionGroup {
   name: string;
   rationale: string;
@@ -340,6 +349,56 @@ export function createEvidenceNoteSkeleton(slug: string, start = process.cwd(), 
   mkdirSync(releasesDir, { recursive: true });
   writeFileSync(path, renderEvidenceSkeleton(safeSlug), 'utf8');
   return { root, path, relativePath, slug: safeSlug };
+}
+
+function updatePlanStatus(markdown: string, stage: PlanCreationStage): string {
+  const statusPattern = /(## Status\r?\n\r?\n)([\s\S]*?)(?=\r?\n##\s+|$)/;
+  if (!statusPattern.test(markdown)) {
+    throw new Error('Plan is missing a ## Status section. Refusing to move without a status to update.');
+  }
+  return markdown.replace(statusPattern, `$1${stage}\n`);
+}
+
+export function movePlan(slug: string, toStage: PlanCreationStage, start = process.cwd()): MovedPlanResult {
+  if (!PLAN_CREATION_STAGES.includes(toStage)) {
+    throw new Error(`Invalid plan stage: ${toStage}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
+  }
+  const safeSlug = normalizeLifecyclePlanSlug(slug);
+  const root = requireScaffoldRoot(start);
+  const parent = findPlanBySlug(root, safeSlug, ['active', 'backlog', 'blocked']);
+  if (!parent) {
+    const donePlan = findPlanBySlug(root, safeSlug, ['done']);
+    if (donePlan) {
+      throw new Error(`Plan is already done: ${safeSlug}.md. Done plans are immutable; create a follow-up plan instead.`);
+    }
+    throw new Error(`Plan not found: ${safeSlug}.md in .osc/plans/{active,backlog,blocked}.`);
+  }
+
+  const parentPath = join(parent.dir, `${safeSlug}.md`);
+  const updatedParentText = updatePlanStatus(readText(parentPath), toStage);
+  if (parent.stage === toStage) {
+    writeFileSync(parentPath, updatedParentText, 'utf8');
+    return { root, slug: safeSlug, fromStage: parent.stage, toStage, movedFiles: [], alreadyInStage: true };
+  }
+
+  const targetDir = join(root, OSC_NAMESPACE, 'plans', toStage);
+  mkdirSync(targetDir, { recursive: true });
+  const amendmentPattern = new RegExp(`^${escapeRegex(safeSlug)}-amendment-\\d+\\.md$`);
+  const filesToMove = [
+    `${safeSlug}.md`,
+    ...readdirSync(parent.dir).filter((file) => amendmentPattern.test(file)).sort(),
+  ];
+  for (const file of filesToMove) {
+    const destination = join(targetDir, file);
+    if (existsSync(destination)) {
+      throw new Error(`Refusing to overwrite existing plan file: ${relative(root, destination)}`);
+    }
+  }
+  for (const file of filesToMove) {
+    renameSync(join(parent.dir, file), join(targetDir, file));
+  }
+  writeFileSync(join(targetDir, `${safeSlug}.md`), updatedParentText, 'utf8');
+  return { root, slug: safeSlug, fromStage: parent.stage, toStage, movedFiles: filesToMove, alreadyInStage: false };
 }
 
 export function createPlanAmendment(slug: string, start = process.cwd(), message = '', date = new Date()): CreatedPlanAmendment {

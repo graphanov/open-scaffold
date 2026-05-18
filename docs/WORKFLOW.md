@@ -27,10 +27,18 @@ Write a plan file in `.osc/plans/active/` using the 7-section schema in `.osc/pl
 Use the helper when the repo has the `osc` CLI available:
 
 ```bash
-osc plan new <slug> --stage active
+osc plan new <slug> --stage backlog
+osc plan move <slug> --to active
 ```
 
-Then fill every TODO before implementation. The helper creates structure only; it does not invent acceptance criteria. Shell fallback remains the day-zero floor: copy `.osc/plans/handoff-template.md` into `.osc/plans/active/<slug>.md` and fill it manually.
+Use `active` directly when execution is immediate. Use `blocked` or `backlog` when you need to park work without deleting the plan:
+
+```bash
+osc plan move <slug> --to blocked
+osc plan move <slug> --to backlog
+```
+
+Then fill every TODO before implementation. The helpers create and move structure only; they do not invent acceptance criteria. Shell fallback remains the day-zero floor: copy `.osc/plans/handoff-template.md` into the right stage folder and move files manually when needed.
 
 > **With OMC harness:** Claude Code/OMC planning flows can use `/ralplan` against an Open Scaffold plan or `run.json` work package (run packet).
 >

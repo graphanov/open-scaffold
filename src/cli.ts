@@ -6,7 +6,7 @@ import { createRunArtifacts, type ArtifactMode, type ExecutorLane, type Operator
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
-import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
+import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
 import { validateScaffold } from './validation.js';
 
 function printHelp(): void {
@@ -18,6 +18,7 @@ Usage:
   osc status [--json]
   osc plan <plan-path>
   osc plan new <slug> --stage <active|backlog|blocked>
+  osc plan move <slug> --to <active|backlog|blocked>
   osc amend <plan-slug> [--message <text>]
   osc evidence new <slug>
   osc close <plan-slug> [--message <text>]
@@ -333,6 +334,39 @@ function parsePlanStage(args: string[]): PlanCreationStage {
   return stage;
 }
 
+function parsePlanMoveDestination(args: string[]): PlanCreationStage {
+  let toStage: PlanCreationStage | undefined;
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    if (flag === '--to') {
+      const value = args[i + 1];
+      if (!value || value.startsWith('--')) {
+        console.error('Missing value for --to');
+        process.exit(2);
+      }
+      if (value === 'done') {
+        console.error('Use osc close <plan-slug> [--message <text>] to move a plan to done.');
+        process.exit(2);
+      }
+      if (!(PLAN_CREATION_STAGES as readonly string[]).includes(value)) {
+        console.error(`Invalid value for --to: ${value}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
+        process.exit(2);
+      }
+      toStage = value as PlanCreationStage;
+      i += 1;
+    } else {
+      console.error(`Unknown option for plan move: ${flag}`);
+      console.error('Usage: osc plan move <slug> --to <active|backlog|blocked>');
+      process.exit(2);
+    }
+  }
+  if (!toStage) {
+    console.error('Missing required option: --to <active|backlog|blocked>');
+    process.exit(2);
+  }
+  return toStage;
+}
+
 function planCommand(args: string[]): void {
   if (args[0] === 'new') {
     const slug = requireArg(args.slice(1), 'slug');
@@ -341,6 +375,24 @@ function planCommand(args: string[]): void {
       const result = createPlanSkeleton(slug, stage, process.cwd());
       console.log(`Created plan: ${result.relativePath}`);
       console.log('Next: fill the TODO prompts before implementation; do not treat the skeleton as acceptance criteria.');
+      return;
+    } catch (error) {
+      exitForScaffoldHelperError(error);
+    }
+  }
+  if (args[0] === 'move') {
+    const slug = requireArg(args.slice(1), 'slug');
+    const toStage = parsePlanMoveDestination(args.slice(2));
+    try {
+      const result = movePlan(slug, toStage, process.cwd());
+      if (result.alreadyInStage) {
+        console.log(`Plan ${result.slug}.md is already in ${result.toStage}/; status aligned.`);
+        return;
+      }
+      console.log(`Moved plan: ${result.slug}`);
+      console.log(`From: ${result.fromStage}`);
+      console.log(`To: ${result.toStage}`);
+      console.log(`Moved files: ${result.movedFiles.join(', ')}`);
       return;
     } catch (error) {
       exitForScaffoldHelperError(error);
