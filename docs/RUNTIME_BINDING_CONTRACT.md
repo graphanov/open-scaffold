@@ -27,7 +27,7 @@ A runtime binding is the external launch glue that turns a run packet — a repo
 Examples:
 
 - a coordinator script that reads `.osc/runs/<run_id>/run.json` and starts an OMX `$ralplan` session;
-- an in-repo agentic runtime package such as `packages/runtime-omx/` that first validates and previews an OMX `$ralplan` handoff without spawning;
+- an in-repo agentic runtime package such as `packages/runtime-omx/` that validates an OMX `$ralplan` handoff by default and launches only behind an explicit package-level allow-spawn gate;
 - an OMC-specific command that turns a plan into a Claude Code `/team` handoff;
 - an adapter that reads a project-local runtime profile in `.osc/runtimes/<id>.json` and translates its lane/workflow/evidence contract;
 - a GitHub bot that assigns a plain agent to a branch and links the PR;
@@ -158,7 +158,7 @@ A no-spawn conformance adapter must refuse packets when required fields are miss
 
 For the fake/local conformance fixture specifically, success means: packet consumed, `spawning: false` enforced, dispatch receipt written, evidence written, and no runtime, network, credentials, commit, push, merge, or publish authority used.
 
-For the OMX track, [`packages/runtime-omx/`](../packages/runtime-omx/) is the first no-spawn agentic runtime package scaffold. It consumes a run packet, validates the OMX `$ralplan` lane/workflow (`runtimeSelection.runtime=omx`, `runtimeSelection.workflow=plan`, `executor.lane=omx-codex`, `executor.harnessSkill=$ralplan`, `executor.spawning=false`), and writes deterministic receipt/evidence artifacts before any explicit real-runtime launch path is added.
+For the OMX track, [`packages/runtime-omx/`](../packages/runtime-omx/) is the first explicit agentic runtime package. It consumes a run packet, validates the OMX `$ralplan` lane/workflow (`runtimeSelection.runtime=omx`, `runtimeSelection.workflow=plan`, `executor.lane=omx-codex`, `executor.harnessSkill=$ralplan`, `executor.spawning=false`), writes deterministic receipt/evidence artifacts by default without spawning, and can launch only behind its package-level `--allow-spawn` gate after branch/worktree/version checks.
 
 ## Binding responsibilities
 

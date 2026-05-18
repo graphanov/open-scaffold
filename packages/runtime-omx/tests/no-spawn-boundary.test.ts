@@ -2,10 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const srcRoot = new URL('../src/', import.meta.url);
-const forbiddenPatterns = [
+const coreSrcRoot = new URL('../../../src/', import.meta.url);
+const runtimeSrcRoot = new URL('../src/', import.meta.url);
+
+const coreForbiddenPatterns = [
   /node:child_process/,
   /from ['"]child_process['"]/,
+  /\bspawnSync\s*\(/,
+  /\bexecSync\s*\(/,
+];
+
+const runtimeForbiddenPatterns = [
   /node:http/,
   /node:https/,
   /node:net/,
@@ -14,6 +21,8 @@ const forbiddenPatterns = [
   /\bfetch\s*\(/,
   /process\.env/,
   /homedir\s*\(/,
+  /dangerously-bypass-approvals-and-sandbox/,
+  /--madmax/,
 ];
 
 function sourceFiles(dir: string): string[] {
@@ -24,14 +33,27 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-describe('runtime-omx no-spawn source boundary', () => {
-  it('package source does not import process spawning, network, env, or home credential APIs', () => {
-    const files = sourceFiles(srcRoot.pathname);
+describe('runtime-omx source boundary', () => {
+  it('Open Scaffold core source remains free of runtime process launching code', () => {
+    const files = sourceFiles(coreSrcRoot.pathname);
     expect(files.length).toBeGreaterThan(0);
     const violations: string[] = [];
     for (const file of files) {
       const content = readFileSync(file, 'utf8');
-      for (const pattern of forbiddenPatterns) {
+      for (const pattern of coreForbiddenPatterns) {
+        if (pattern.test(content)) violations.push(`${file}: ${pattern}`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it('runtime package source avoids network, env, home credential APIs, and bypass flags', () => {
+    const files = sourceFiles(runtimeSrcRoot.pathname);
+    expect(files.length).toBeGreaterThan(0);
+    const violations: string[] = [];
+    for (const file of files) {
+      const content = readFileSync(file, 'utf8');
+      for (const pattern of runtimeForbiddenPatterns) {
         if (pattern.test(content)) violations.push(`${file}: ${pattern}`);
       }
     }

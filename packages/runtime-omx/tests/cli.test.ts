@@ -7,7 +7,7 @@ import { runCli, isCliEntrypoint } from '../src/cli.js';
 import { tempRunPacket, readJson } from './fixtures.js';
 
 describe('runtime-omx CLI', () => {
-  it('consumes a valid run packet and reports no-spawn artifact paths', () => {
+  it('consumes a valid run packet and reports no-spawn artifact paths by default', () => {
     const { root, path } = tempRunPacket();
     const stdout: string[] = [];
     const stderr: string[] = [];
@@ -16,8 +16,9 @@ describe('runtime-omx CLI', () => {
 
     expect(exitCode).toBe(0);
     expect(stderr).toEqual([]);
-    expect(stdout.join('\n')).toContain('runtime-omx no-spawn preview complete');
+    expect(stdout.join('\n')).toContain('runtime-omx receipt written');
     expect(stdout.join('\n')).toContain('runtime-omx evidence written');
+    expect(stdout.join('\n')).toContain('runtime-omx no-spawn preview complete');
     expect(readJson(join(root, '.osc/runs/demo/dispatch-receipt.json')).spawned).toBe(false);
     expect(existsSync(join(root, '.osc/runs/demo/runtime-omx-evidence.md'))).toBe(true);
   });
@@ -49,10 +50,27 @@ describe('runtime-omx CLI', () => {
     const helpOut: string[] = [];
     expect(runCli(['--help'], { stdout: (message) => helpOut.push(message), stderr: () => undefined })).toBe(0);
     expect(helpOut.join('\n')).toContain('Usage: open-scaffold-runtime-omx');
+    expect(helpOut.join('\n')).toContain('--allow-spawn');
 
     const missingOut: string[] = [];
     expect(runCli([], { stdout: (message) => missingOut.push(message), stderr: () => undefined })).toBe(1);
     expect(missingOut.join('\n')).toContain('Usage: open-scaffold-runtime-omx');
+  });
+
+  it('rejects --allow-spawn safely when the run packet worktree is not a usable git branch', () => {
+    const { path } = tempRunPacket({ runtime: { repoPath: '.', worktreePath: '.', branch: 'runtime/omx-ralplan-adapter-spike', tmuxSession: null, processId: null } });
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+
+    const exitCode = runCli([path, '--allow-spawn', '--omx-command', 'definitely-missing-open-scaffold-omx'], {
+      stdout: (message) => stdout.push(message),
+      stderr: (message) => stderr.push(message),
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stdout.join('\n')).toContain('runtime-omx receipt written');
+    expect(stderr.join('\n')).toContain('runtime-omx launch refused');
+    expect(stderr.join('\n')).toContain('git_branch_check_failed');
   });
 
   it('detects CLI self-invocation only when the entrypoint matches this module', () => {

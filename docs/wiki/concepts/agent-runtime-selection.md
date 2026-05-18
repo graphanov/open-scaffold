@@ -72,7 +72,7 @@ runtime target: OMX / oh-my-codex
 first workflow: $ralplan
 ```
 
-This does not mean Open Scaffold core becomes a hidden runtime launcher. Core still creates the run packet and evidence expectations. The first no-spawn package scaffold now validates the OMX `$ralplan` handoff shape and writes receipt/evidence; real launch remains opt-in and separately verified.
+This does not mean Open Scaffold core becomes a hidden runtime launcher. Core still creates the run packet and evidence expectations. The OMX package validates the `$ralplan` handoff shape and writes receipt/evidence by default without spawning; explicit launch lives behind package-level `--allow-spawn` checks for branch, worktree, and OMX version.
 
 Later OMX workflows such as `$deep-interview`, `$ralph`, `$ultrawork`, and `$ultragoal` are support goals after `$ralplan` and the package boundary are proven.
 

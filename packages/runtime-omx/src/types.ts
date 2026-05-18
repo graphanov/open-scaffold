@@ -47,15 +47,44 @@ export interface ValidatedRunPacket {
   commitPolicy: string;
 }
 
+export interface CommandRunnerOptions {
+  cwd: string;
+}
+
+export interface CommandRunnerResult {
+  status: number | null;
+  signal?: string | null;
+  stdout?: string | Buffer | null;
+  stderr?: string | Buffer | null;
+  error?: NodeJS.ErrnoException | Error | null;
+}
+
+export type CommandRunner = (command: string, args: string[], options: CommandRunnerOptions) => CommandRunnerResult;
+
 export interface RuntimeOmxOptions {
   receiptPath?: string;
+  allowSpawn?: boolean;
+  omxCommand?: string;
+  commandRunner?: CommandRunner;
+  invokedAt?: string;
 }
 
 export interface RuntimeOmxResult {
   runId: string;
   receiptPath: string;
   evidencePath: string;
+  logPath: string | null;
   receipt: DispatchReceipt;
+}
+
+export type RuntimeOmxStatus = 'dry_run' | 'completed' | 'failed' | 'refused';
+
+export interface RuntimeVersionInfo {
+  command: string;
+  detected_version: string | null;
+  required_minimum: '0.17.3';
+  version_ok: boolean;
+  raw_output: string | null;
 }
 
 export interface DispatchReceipt {
@@ -66,7 +95,7 @@ export interface DispatchReceipt {
   adapter_id: 'runtime-omx';
   runtime_backend: 'omx';
   invoked_by: '@open-scaffold/runtime-omx';
-  invoked_at: '1970-01-01T00:00:00.000Z';
+  invoked_at: string;
   working_directory: string;
   worktree_path: string | null;
   branch: string | null;
@@ -83,15 +112,20 @@ export interface DispatchReceipt {
     commit_policy: string;
     approval_policy: 'human_approval_required';
   };
-  spawned: false;
-  spawn_command_redacted: null;
-  runtime_handle: null;
-  logs: [];
+  spawned: boolean;
+  spawn_command_redacted: string[] | null;
+  runtime_handle: {
+    kind: 'process';
+    command: string;
+    exit_status: number | null;
+    signal: string | null;
+  } | null;
+  logs: string[];
   artifacts: string[];
-  status: 'dry_run';
+  status: RuntimeOmxStatus;
   failure: {
-    code: null;
-    message: null;
+    code: string | null;
+    message: string | null;
   };
   official_continuity: {
     repo: 'https://github.com/Yeachan-Heo/oh-my-codex';
@@ -99,19 +133,35 @@ export interface DispatchReceipt {
     package: 'oh-my-codex';
     version: '0.17.3';
   };
+  runtime_version: RuntimeVersionInfo | null;
   command_preview: {
     argv: string[];
-    spawned: false;
-    attempted: false;
+    spawned: boolean;
+    attempted: boolean;
   };
   runtime_omx: {
-    kind: 'no-spawn-preview';
+    kind: 'no-spawn-preview' | 'explicit-launch';
     workflow: '$ralplan';
     canonical_equivalent: '$plan --consensus';
-    adapter_spawned_runtime: false;
-    network_required: false;
-    credentials_required: false;
-    tmux_used: false;
-    source_mutation: false;
+    adapter_spawned_runtime: boolean;
+    network_required: boolean;
+    credentials_required: boolean;
+    tmux_used: boolean;
+    source_mutation: boolean;
+    exit_status: number | null;
   };
+}
+
+export interface RuntimeOmxOutcome {
+  status: RuntimeOmxStatus;
+  commandArgv: string[];
+  attempted: boolean;
+  spawned: boolean;
+  exitStatus: number | null;
+  signal: string | null;
+  failureCode: string | null;
+  failureMessage: string | null;
+  logContent: string | null;
+  runtimeVersion: RuntimeVersionInfo | null;
+  invokedAt: string;
 }

@@ -3,6 +3,11 @@
 > Chronological record of project wiki actions. Append-only.
 > Format: `## [YYYY-MM-DD] action | subject`
 
+## [2026-05-18] implement | OMX $ralplan explicit launch gate
+- Extended `packages/runtime-omx/` from no-spawn receipt writing to an explicit `--allow-spawn` `$ralplan` launch path.
+- Kept Open Scaffold core non-spawning; the package checks branch/worktree safety and `oh-my-codex >= 0.17.3`, requests Codex `--sandbox read-only`, and records receipts/logs/evidence under `.osc/runs/<run_id>/`.
+- Still excludes commit, push, merge, publish, credential-management, runtime certification, and broader OMX workflow support.
+
 ## [2026-05-18] implement | OMX runtime package no-spawn scaffold
 - Added `packages/runtime-omx/` as the first no-spawn agentic runtime package scaffold.
 - It validates Open Scaffold `run.json` packets for OMX `$ralplan` and writes deterministic dispatch receipt/evidence artifacts without launching OMX/Codex.

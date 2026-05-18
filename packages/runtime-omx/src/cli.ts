@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { realpathSync } from 'node:fs';
-import { runNoSpawnOmx, ValidationError } from './index.js';
+import { runOmxRalplan, ValidationError } from './index.js';
 
 export interface CliIO {
   stdout?: (message: string) => void;
@@ -9,10 +9,11 @@ export interface CliIO {
 
 function usage(): string {
   return [
-    'Usage: open-scaffold-runtime-omx <path-to-run.json> [--out <dispatch-receipt.json>]',
+    'Usage: open-scaffold-runtime-omx <path-to-run.json> [--out <dispatch-receipt.json>] [--allow-spawn] [--omx-command <path>]',
     '',
-    'No-spawn OMX $ralplan runtime package scaffold for Open Scaffold run packets.',
-    'Validates the handoff shape and writes deterministic receipt/evidence artifacts without launching OMX or Codex.',
+    'OMX $ralplan runtime package for Open Scaffold run packets.',
+    'Default behavior validates the handoff shape and writes deterministic receipt/evidence artifacts without launching OMX or Codex.',
+    'Use --allow-spawn to launch OMX explicitly after package, branch, version, and safety checks pass.',
   ].join('\n');
 }
 
@@ -27,6 +28,8 @@ export function runCli(argv: string[], io: CliIO = {}): number {
 
   const runPacketPath = args.shift();
   let receiptPath: string | undefined;
+  let allowSpawn = false;
+  let omxCommand: string | undefined;
   while (args.length) {
     const arg = args.shift();
     if (arg === '--out') {
@@ -37,14 +40,37 @@ export function runCli(argv: string[], io: CliIO = {}): number {
       }
       continue;
     }
+    if (arg === '--allow-spawn') {
+      allowSpawn = true;
+      continue;
+    }
+    if (arg === '--omx-command') {
+      omxCommand = args.shift();
+      if (!omxCommand) {
+        stderr('runtime-omx error: --omx-command requires a path or command name');
+        return 1;
+      }
+      continue;
+    }
     stderr(`runtime-omx error: unknown argument ${arg}`);
     return 1;
   }
 
   try {
-    const result = runNoSpawnOmx(runPacketPath!, { receiptPath });
-    stdout(`runtime-omx no-spawn preview complete: ${result.receiptPath}`);
+    const result = runOmxRalplan(runPacketPath!, { receiptPath, allowSpawn, omxCommand });
+    stdout(`runtime-omx receipt written: ${result.receiptPath}`);
     stdout(`runtime-omx evidence written: ${result.evidencePath}`);
+    if (result.logPath) stdout(`runtime-omx log written: ${result.logPath}`);
+    if (result.receipt.status === 'dry_run') stdout('runtime-omx no-spawn preview complete');
+    if (result.receipt.status === 'completed') stdout('runtime-omx OMX $ralplan launch completed');
+    if (result.receipt.status === 'refused') {
+      stderr(`runtime-omx launch refused: ${result.receipt.failure.code}: ${result.receipt.failure.message}`);
+      return 1;
+    }
+    if (result.receipt.status === 'failed') {
+      stderr(`runtime-omx launch failed: ${result.receipt.failure.code}: ${result.receipt.failure.message}`);
+      return 1;
+    }
     return 0;
   } catch (error) {
     if (error instanceof ValidationError) {
