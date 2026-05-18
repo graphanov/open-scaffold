@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { runCli } from '../src/cli.js';
+import { runCli, isCliEntrypoint } from '../src/cli.js';
 import { tempRunPacket, readJson } from './fixtures.js';
 
 describe('runtime-omx CLI', () => {
@@ -51,5 +51,13 @@ describe('runtime-omx CLI', () => {
     const missingOut: string[] = [];
     expect(runCli([], { stdout: (message) => missingOut.push(message), stderr: () => undefined })).toBe(1);
     expect(missingOut.join('\n')).toContain('Usage: open-scaffold-runtime-omx');
+  });
+
+  it('detects CLI self-invocation across path separators', () => {
+    expect(isCliEntrypoint('/tmp/open-scaffold-runtime-omx/dist/cli.js')).toBe(true);
+    expect(isCliEntrypoint('C:\\tmp\\open-scaffold-runtime-omx\\dist\\cli.js')).toBe(true);
+    expect(isCliEntrypoint('/tmp/open-scaffold-runtime-omx/src/cli.ts')).toBe(true);
+    expect(isCliEntrypoint('/tmp/open-scaffold-runtime-omx/dist/index.js')).toBe(false);
+    expect(isCliEntrypoint(undefined)).toBe(false);
   });
 });

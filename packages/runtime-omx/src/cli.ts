@@ -55,7 +55,11 @@ export function runCli(argv: string[], io: CliIO = {}): number {
   }
 }
 
-const invoked = process.argv[1]?.endsWith('/cli.js') || process.argv[1]?.endsWith('/cli.ts');
-if (invoked) {
+export function isCliEntrypoint(argv1: string | undefined): boolean {
+  const entrypoint = argv1?.split(/[\\/]/).pop();
+  return entrypoint === 'cli.js' || entrypoint === 'cli.ts';
+}
+
+if (isCliEntrypoint(process.argv[1])) {
   process.exit(runCli(process.argv.slice(2)));
 }

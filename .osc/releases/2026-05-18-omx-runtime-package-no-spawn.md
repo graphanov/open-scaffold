@@ -4,7 +4,7 @@
 
 Adds `packages/runtime-omx/` as the first optional in-repo agentic runtime package boundary. It consumes Open Scaffold `run.json` packets for OMX `$ralplan`, validates no-spawn safety rules, and writes deterministic dispatch receipt/evidence artifacts.
 
-This does not launch OMX/Codex and does not claim production/full OMX support.
+This does not launch OMX/Codex and does not claim runtime support beyond the no-spawn `$ralplan` preview.
 
 ## Traceability
 
@@ -38,9 +38,9 @@ This does not launch OMX/Codex and does not claim production/full OMX support.
 ## Verification
 
 - `npm run build:runtime-omx` → pass.
-- `npm run test:runtime-omx` → 4 files / 25 tests passed.
+- `npm run test:runtime-omx` → 4 files / 28 tests passed.
 - `npm run build` → pass.
-- `npm test` → 18 files / 154 tests passed.
+- `npm test` → 18 files / 157 tests passed.
 - `./verify.sh --strict` → 10 pass / 0 fail / 0 warn.
 - `npm run osc -- verify` → pass.
 - `git diff --check` → pass.

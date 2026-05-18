@@ -104,6 +104,32 @@ describe('runtime-omx validation and no-spawn receipt', () => {
     expectValidationError(() => runNoSpawnOmx(path), 'plan.openQuestions must not contain blocking questions');
   });
 
+  it('rejects blocking open questions wherever the marker appears in the string', () => {
+    const { path } = tempRunPacket({
+      plan: {
+        path: '.osc/plans/active/042.md',
+        goal: 'Preview.',
+        acceptanceCriteria: ['ok'],
+        verificationSteps: ['verify'],
+        openQuestions: ['Needs approval (blocking) before dispatch'],
+      },
+    });
+    expectValidationError(() => runNoSpawnOmx(path), 'plan.openQuestions must not contain blocking questions');
+  });
+
+  it('allows explicit no-blocking open question placeholders', () => {
+    const { path } = tempRunPacket({
+      plan: {
+        path: '.osc/plans/active/042.md',
+        goal: 'Preview.',
+        acceptanceCriteria: ['ok'],
+        verificationSteps: ['verify'],
+        openQuestions: ['No blocking questions.'],
+      },
+    });
+    expect(() => runNoSpawnOmx(path)).not.toThrow();
+  });
+
   it('rejects non-OMX runtime selection', () => {
     const { path } = tempRunPacket({ runtimeSelection: { runtime: 'omc', workflow: 'plan', profileId: 'omc', profileSource: 'builtin' } });
     expectValidationError(() => runNoSpawnOmx(path), 'runtimeSelection.runtime must be omx');

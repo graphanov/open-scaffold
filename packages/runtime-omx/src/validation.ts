@@ -25,7 +25,11 @@ function stringArray(value: unknown, key: string, issues: string[]): string[] | 
 }
 
 function isBlockingQuestion(value: unknown): boolean {
-  if (typeof value === 'string') return /^\[?blocking\]?[:\s-]/i.test(value.trim()) || /^blocking[:\s-]/i.test(value.trim());
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (/^(none|n\/a|no open questions|no blocking questions)\.?$/i.test(normalized)) return false;
+    return /\bblocking\b/i.test(normalized);
+  }
   if (!isRecord(value)) return false;
   if (value.blocking === true || value.required === true) return true;
   const status = typeof value.status === 'string' ? value.status : '';

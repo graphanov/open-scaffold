@@ -56,7 +56,7 @@ This is a no-spawn scaffold only. It does not:
 - require network access;
 - mutate source files outside the designated run evidence artifacts;
 - commit, push, merge, publish, or approve work;
-- claim production/full/certified OMX support;
+- claim runtime support beyond the no-spawn `$ralplan` preview;
 - support `$deep-interview`, `$ralph`, `$ultrawork`, `$ultragoal`, `$team`, or other OMX workflows.
 
 Task correctness remains a separate postflight/evaluation question. A receipt only proves the package validated a handoff shape and wrote deterministic evidence.
