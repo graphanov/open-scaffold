@@ -25,7 +25,13 @@ Adds `osc plan move <slug> --to active|backlog|blocked` so solo developers can m
 - Post-Codex `npm test` → pass.
 - Post-Codex `./verify.sh --strict` → pass.
 - Post-Codex `npm run osc -- verify` → pass.
-- Post-Codex `git diff --check` → pass.
+- Codex second pass: valid P2 findings on legacy root-level plans and compact `## Status\nactive` formatting; added regression coverage and fixed `movePlan()` to support root plans plus single-newline status headers.
+- Final targeted GREEN: `npm test -- tests/cli-plan-move.test.ts` → 1 file / 4 tests passed.
+- Final `npm run build` → pass.
+- Final `npm test` → pass.
+- Final `./verify.sh --strict` → pass.
+- Final `npm run osc -- verify` → pass.
+- Final `git diff --check` → pass.
 
 ## Outcome
 

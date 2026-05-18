@@ -352,11 +352,11 @@ export function createEvidenceNoteSkeleton(slug: string, start = process.cwd(), 
 }
 
 function updatePlanStatus(markdown: string, stage: PlanCreationStage): string {
-  const statusPattern = /(## Status\r?\n\r?\n)([\s\S]*?)(?=\r?\n##\s+|$)/;
+  const statusPattern = /(^## Status[^\S\r\n]*\r?\n)(?:[^\S\r\n]*\r?\n)?([\s\S]*?)(?=\r?\n##\s+|$)/m;
   if (!statusPattern.test(markdown)) {
     throw new Error('Plan is missing a ## Status section. Refusing to move without a status to update.');
   }
-  return markdown.replace(statusPattern, `$1${stage}\n`);
+  return markdown.replace(statusPattern, `$1\n${stage}\n`);
 }
 
 export function movePlan(slug: string, toStage: PlanCreationStage, start = process.cwd()): MovedPlanResult {
@@ -365,7 +365,7 @@ export function movePlan(slug: string, toStage: PlanCreationStage, start = proce
   }
   const safeSlug = normalizeLifecyclePlanSlug(slug);
   const root = requireScaffoldRoot(start);
-  const parent = findPlanBySlug(root, safeSlug, ['active', 'backlog', 'blocked']);
+  const parent = findPlanBySlug(root, safeSlug, ['active', 'backlog', 'blocked', 'root']);
   if (!parent) {
     const donePlan = findPlanBySlug(root, safeSlug, ['done']);
     if (donePlan) {

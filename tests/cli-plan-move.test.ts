@@ -76,6 +76,56 @@ describe('osc plan move CLI', () => {
     expect(existsSync(blockedPlan)).toBe(false);
   }, 20_000);
 
+  it('moves legacy root plans with compact status formatting into a stage folder', () => {
+    const target = initializedScaffold();
+    const rootPlanPath = join(target, '.osc/plans/004-root-task.md');
+    writeFileSync(rootPlanPath, [
+      '# Plan: 004-root-task',
+      '',
+      '## Status',
+      'backlog',
+      '',
+      '## Context',
+      '',
+      'Legacy root-level plan.',
+      '',
+      '## Goal',
+      '',
+      'Move it into staged workflow.',
+      '',
+      '## Constraints / Out of scope',
+      '',
+      '- Do not close it.',
+      '',
+      '## Files to touch',
+      '',
+      '- `.osc/plans/004-root-task.md` — legacy source.',
+      '',
+      '## Acceptance criteria',
+      '',
+      '- [ ] Plan moves to active.',
+      '',
+      '## Verification steps',
+      '',
+      '1. Run the move command.',
+      '',
+      '## Open questions',
+      '',
+      '- None.',
+      '',
+    ].join('\n'));
+    writeFileSync(join(target, '.osc/plans/004-root-task-amendment-1.md'), '# Amendment 1: 004-root-task\n');
+
+    const output = execFileSync(tsx, [cli, 'plan', 'move', '004-root-task', '--to', 'active'], { cwd: target, encoding: 'utf8' });
+
+    expect(output).toContain('From: root');
+    const activePlan = join(target, '.osc/plans/active/004-root-task.md');
+    expect(existsSync(activePlan)).toBe(true);
+    expect(existsSync(join(target, '.osc/plans/active/004-root-task-amendment-1.md'))).toBe(true);
+    expect(existsSync(rootPlanPath)).toBe(false);
+    expect(readFileSync(activePlan, 'utf8')).toContain('## Status\n\nactive\n');
+  }, 20_000);
+
   it('refuses unsafe slugs, missing plans, done destinations, and unsupported options', () => {
     const target = initializedScaffold();
     execFileSync(tsx, [cli, 'plan', 'new', '003-third-task', '--stage', 'active'], { cwd: target, encoding: 'utf8' });
