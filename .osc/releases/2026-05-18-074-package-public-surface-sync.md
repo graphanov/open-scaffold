@@ -9,7 +9,7 @@ Prepares the next package/public-surface sync after PR #57. Live npm `latest` is
 - Prior reconciliation: `.osc/releases/2026-05-18-050-npm-publish-and-npx-init.md`.
 - Plan: `.osc/plans/active/074-package-public-surface-sync.md`.
 - Branch: `release/package-public-surface-sync`.
-- PR: pending owner approval.
+- PR: #58 — https://github.com/graphanov/open-scaffold/pull/58.
 - npm publish: not performed.
 - GitHub Release: not created.
 
@@ -80,10 +80,10 @@ Final verification for this branch should include:
 - Root package remains core-only: CLI, scaffold files, and docs; no `packages/runtime-omx/` payload ships inside the root tarball.
 - Runtime package distribution is clarified as repo/GitHub source for now, with any installable runtime-package release left as a separate owner-approved decision.
 - Public npm `latest` remains `0.4.1` until the owner approves and performs `npm publish`.
-- Plan 074 remains active until the owner decides whether to open/merge the PR and publish `0.4.2`.
+- Plan 074 remains active until the owner decides whether to merge the PR and publish `0.4.2`.
 
 ## Gates
 
-- Owner approval required before opening/merging the PR if not already granted.
+- Owner approval received to open PR #58; merge remains owner-gated.
 - Owner approval required before `npm publish`.
 - Owner approval required before creating or moving the GitHub Release marked Latest.
