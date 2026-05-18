@@ -9,7 +9,7 @@ Reconciles historical Open Scaffold plan `## Open questions` after the visible i
 - Roadmap / issue / task: Kanban `t_c9f97b1a`.
 - Plan: `.osc/plans/done/047-roadmap-open-question-reconciliation.md`.
 - Run ID / run packet: `N/A` — roadmap stewardship / documentation reconciliation, no runtime run packet needed.
-- Branch / PR: `roadmap/open-question-reconciliation`; PR pending at evidence-note creation.
+- Branch / PR: `roadmap/open-question-reconciliation`; PR #53 — https://github.com/graphanov/open-scaffold/pull/53.
 
 ## Verification
 
