@@ -57,7 +57,7 @@ describe('osc plan move CLI', () => {
     expect(existsSync(join(target, '.osc/plans/backlog/001-first-task.md'))).toBe(false);
     expect(existsSync(join(target, '.osc/plans/backlog/001-first-task-amendment-1.md'))).toBe(false);
     expect(readFileSync(activePlan, 'utf8')).toContain('## Status\n\nactive');
-  });
+  }, 20_000);
 
   it('moves active plans to blocked or backlog and creates missing destination folders', () => {
     const target = initializedScaffold();
@@ -74,7 +74,7 @@ describe('osc plan move CLI', () => {
     expect(existsSync(backlogPlan)).toBe(true);
     expect(readFileSync(backlogPlan, 'utf8')).toContain('## Status\n\nbacklog');
     expect(existsSync(blockedPlan)).toBe(false);
-  });
+  }, 20_000);
 
   it('refuses unsafe slugs, missing plans, done destinations, and unsupported options', () => {
     const target = initializedScaffold();
@@ -99,5 +99,5 @@ describe('osc plan move CLI', () => {
     const extra = spawnSync(tsx, [cli, 'plan', 'move', '003-third-task', '--to', 'active', '--force'], { cwd: target, encoding: 'utf8' });
     expect(extra.status).toBe(2);
     expect(extra.stderr).toContain('Unknown option for plan move');
-  });
+  }, 20_000);
 });

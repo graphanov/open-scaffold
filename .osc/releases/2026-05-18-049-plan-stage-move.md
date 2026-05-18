@@ -19,7 +19,13 @@ Adds `osc plan move <slug> --to active|backlog|blocked` so solo developers can m
 - `npm test` → 22 files / 186 tests passed.
 - `./verify.sh --strict` → 10 pass / 0 fail / 0 warn; 59 plan files before closure.
 - `npm run osc -- verify` → pass; 59 plan file(s), 0 warning(s).
-- `git diff --check` → pass.
+- Codex follow-up: first review artifact reported a subprocess-heavy Vitest timeout risk in `tests/cli-plan-move.test.ts`; the three new tests now carry explicit `20_000` ms per-test timeouts without changing assertions or CLI behavior.
+- Post-Codex targeted GREEN: `npm test -- tests/cli-plan-move.test.ts` → pass.
+- Post-Codex `npm run build` → pass.
+- Post-Codex `npm test` → pass.
+- Post-Codex `./verify.sh --strict` → pass.
+- Post-Codex `npm run osc -- verify` → pass.
+- Post-Codex `git diff --check` → pass.
 
 ## Outcome
 
