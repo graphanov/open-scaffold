@@ -8,7 +8,7 @@ Adds small `osc plan new` and `osc evidence new` helpers so the first-plan and e
 
 - Plan: `.osc/plans/done/044-cli-friction-reduction.md`
 - Branch: `cli/plan-evidence-helpers`
-- PR: pending — update after GitHub PR is opened
+- PR: `#52` — https://github.com/graphanov/open-scaffold/pull/52
 - Kanban: `t_49065bef`
 - Related docs: `README.md`, `docs/MINIMUM_VIABLE_SCAFFOLD.md`, `docs/WORKFLOW.md`
 
