@@ -3,6 +3,11 @@
 > Chronological record of project wiki actions. Append-only.
 > Format: `## [YYYY-MM-DD] action | subject`
 
+## [2026-05-18] decide | Executable Open Scaffold architecture
+- Captured executable Open Scaffold as explicit in-repo agentic runtime packages, not hidden core spawning.
+- Set `packages/runtime-omx/` as the first package boundary and `$ralplan` as the first OMX / oh-my-codex workflow to prove.
+- Updated runtime-selection and orchestration concept pages while keeping init-time runtime picker, runtime certification, and native orchestration claims out of scope.
+
 ## [2026-05-17] implement | Audit envelope digest manifest
 - Added `osc audit init` / `osc audit check` as the first JSON-backed audit-envelope digest-manifest mechanics.
 - Kept the command local and structure-only: no domain correctness judgment, compliance certification, approval decision, model benchmarking, runtime spawning, or external anchoring.

@@ -28,6 +28,9 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-18: closed 046-executable-open-scaffold-architecture — executable Open Scaffold architecture captured
+- 2026-05-18: Align 043 with OMX-first ralplan runtime spike direction — see .osc/plans/backlog/043-one-real-runtime-adapter-spike-amendment-1.md
+- 2026-05-18: Align 042 with in-repo packages/runtime-omx agentic runtime direction — see .osc/plans/backlog/042-reference-adapter-package-no-spawn-amendment-1.md
 - 2026-05-18: closed 041-adapter-conformance-contract-v1 — adapter conformance contract v1 shipped
 - 2026-05-17: record full-history checkout for strict CI verification — see .osc/plans/done/045-github-actions-ci-amendment-2.md
 - 2026-05-17: record CI-exposed lifecycle timestamp flake fix — see .osc/plans/done/045-github-actions-ci-amendment-1.md

@@ -1,10 +1,10 @@
 ---
 title: Agentic Orchestration
 created: 2026-05-15
-updated: 2026-05-15
+updated: 2026-05-18
 type: concept
 tags: [open-scaffold, agent-orchestration, model-routing, evolutionary-loops]
-sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, .osc/plans/backlog/031-agentic-orchestration-model-lab-vision.md]
+sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/AGENTIC_RUNTIME_LAYER.md, .osc/plans/backlog/031-agentic-orchestration-model-lab-vision.md, .osc/plans/done/046-executable-open-scaffold-architecture.md]
 confidence: low
 contested: true
 ---
@@ -56,6 +56,8 @@ As of 2026-05-15, agentic orchestration is a contested product hypothesis, not a
 - **Native multi-agent runtime:** explicitly deferred; reopen only with a proofability, auditability, or governed-execution driver.
 
 Open Scaffold core stays runtime-neutral and orchestration-neutral. Multi-lane orchestration may be performed by an external coordinator using the existing run packet, evidence receipt, and slice-close contracts. The scaffold provides the evidence substrate, not the orchestrator and not the lab.
+
+The accepted executable track does not change this boundary. `packages/runtime-omx/` is a first agentic runtime package target for OMX / oh-my-codex, starting with `$ralplan`; it is not a full multi-agent orchestration layer, model router, or native Open Scaffold runtime.
 
 ## Not the same as the scaffold's existing evolutionary loop
 

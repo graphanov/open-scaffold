@@ -6,7 +6,9 @@ Open Scaffold Milestone 16 asks whether core should remain non-spawning, add thi
 
 Open Scaffold core should **not** implement real autonomous runtime spawning yet.
 
-Core should first define the adapter/runtime boundary, dispatch receipt (handoff proof), authority vocabulary (permission words), and evidence expectations. Real spawning belongs in runtime-specific adapters or a future explicitly governed runtime product.
+Open Scaffold should become executable through explicit agentic runtime packages that sit outside core behavior, starting in-repo with `packages/runtime-omx/`. The first proof remains no-spawn and `$ralplan`-first: validate the run packet, preview the OMX handoff, and write receipt/evidence before any real launch path is allowed.
+
+Core should first define the adapter/runtime boundary, dispatch receipt (handoff proof), authority vocabulary (permission words), and evidence expectations. Real spawning belongs in runtime-specific packages/adapters or a future explicitly governed runtime product.
 
 ```text
 Open Scaffold core packages work.
@@ -42,7 +44,7 @@ If Open Scaffold core owns those too early, it becomes a runtime by drift. The c
 |---|---|---|
 | Open Scaffold core | mission, roadmap, plans, `run.json` work packages (run packets), evidence schema, approval/commit policy, verification expectations | runtime-specific launch mechanics, provider auth, live process control |
 | Coordinator / task bridge | intake, task selection, operator Q&A, lane choice, retry/block/review state | final evidence by itself |
-| Runtime adapter / bridge | translating `.osc` run packets into runtime-specific invocation, returning status/artifacts/evidence | canonical project truth, uncontrolled repo mutation |
+| Runtime adapter / bridge / agentic runtime package | translating `.osc` run packets into runtime-specific invocation, returning status/artifacts/evidence | canonical project truth, uncontrolled repo mutation, hidden default spawning |
 | Runtime / harness | execution, local session state, tool use, local logs, generated artifacts | approval authority or canonical task state unless explicitly granted |
 | Operator surface — chat/dashboard for status and approvals | visible status, blockers, questions, approvals | source of truth |
 | GitHub / repo evidence | durable review, CI, release, audit references | raw runtime transcript as canonical truth |
@@ -214,11 +216,12 @@ This confirms the adapter/binding thesis: coordinators and project protocols do 
 
 Near-term:
 
-1. Keep core non-spawning.
-2. Keep `docs/RUNTIME_BINDING_CONTRACT.md` aligned with this adapter/receipt vocabulary.
-3. Treat OMX v0.17.0 Hermes MCP as a reference pattern for coordinator-to-runtime bridges, not as Open Scaffold adapter certification.
-4. Use the fake/local conformance fixture to prove run-packet consumption, dispatch receipt writing, evidence writing, and no-spawn behavior before any real runtime adapter package.
-5. Keep real Claude/Codex/OpenCode/OMX/Ouroboros spawning in adapter packages or external runtimes.
+1. Keep core non-spawning by default.
+2. Start executable support in `packages/runtime-omx/`, a separate in-repo agentic runtime package boundary.
+3. Prove `$ralplan` first with no-spawn validation, command preview, dispatch receipt writing, and deterministic evidence.
+4. Keep `docs/RUNTIME_BINDING_CONTRACT.md` aligned with this adapter/receipt vocabulary.
+5. Treat OMX v0.17.0 Hermes MCP as a reference pattern for coordinator-to-runtime bridges, not as Open Scaffold adapter certification.
+6. Keep real Claude/Codex/OpenCode/OMX/Ouroboros spawning in runtime packages/adapters or external runtimes, never as hidden default core behavior.
 
 Longer-term:
 

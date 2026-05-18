@@ -11,7 +11,7 @@ User selects a runtime / outside tool
   -> Evidence comes back into Open Scaffold
 ```
 
-This page covers the first two Open Scaffold steps: choosing `--runtime` / `--workflow`, then writing those choices into the `run.json` package. For profile schema and custom project-local runtimes, read [`RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md). For the external adapter/coordinator contract, read [`RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
+This page covers the first two Open Scaffold steps: choosing `--runtime` / `--workflow`, then writing those choices into the `run.json` package. For profile schema and custom project-local runtimes, read [`RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md). For the external adapter/coordinator contract, read [`RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md). For the accepted executable architecture direction, read [`AGENTIC_RUNTIME_LAYER.md`](AGENTIC_RUNTIME_LAYER.md).
 
 ## Product intent
 
@@ -36,7 +36,9 @@ and get a concrete `.osc/runs/<run_id>/run.json` package that records:
 - evidence/approval expectations;
 - `executor.spawning: false` — core will not launch the agent/process until an external adapter/coordinator launches it.
 
-The selected runtime is dispatchable by an adapter, but Open Scaffold core still does not launch Claude Code, Codex, OMC, OMX, tmux, or any provider process by itself. Dispatchable means the `run.json` contains enough structured lane/workflow/profile data for an external adapter to consume if such an adapter exists; it does not mean the adapter is installed or certified.
+The selected runtime is dispatchable by an adapter, but Open Scaffold core still does not launch Claude Code, Codex, OMC, OMX, tmux, or any provider process by itself. Dispatchable means the `run.json` contains enough structured lane/workflow/profile data for an external adapter or an explicit agentic runtime package to consume if such a package exists; it does not mean the adapter is installed or certified.
+
+The first executable package track is OMX-first: `--runtime omx --workflow plan` should produce the `$ralplan`-targeted packet that `packages/runtime-omx/` can validate and preview before any real launch behavior is added.
 
 ## Runtime presets
 
@@ -72,7 +74,7 @@ Runtime harness     = execute while alive
 Operator            = approve merge/publish gates
 ```
 
-Open Scaffold core owns the run-packet contract. Runtime-specific adapters own process launch, authentication, tmux/session lifecycle, hooks, and runtime logs. Runtime state is forensic — useful for investigation, not durable project truth — until promoted into `.osc/runs`, tracked evidence docs, PRs, issues, or release notes. This boundary is the same one enforced by runtime profiles and the binding contract; this page only describes the selection surface.
+Open Scaffold core owns the run-packet contract. Runtime-specific adapters and agentic runtime packages own process launch, authentication, tmux/session lifecycle, hooks, and runtime logs. Runtime state is forensic — useful for investigation, not durable project truth — until promoted into `.osc/runs`, tracked evidence docs, PRs, issues, or release notes. This boundary is the same one enforced by runtime profiles and the binding contract; this page only describes the selection surface.
 
 ## Adapter checklist
 
@@ -101,6 +103,6 @@ This slice does not:
 - grant commit/push/merge/publish authority by default;
 - make model/orchestration-lab claims.
 
-The practical next step after this core selection surface is a separate runtime adapter package or coordinator integration that reads the package and performs the launch outside core.
+The practical next step after this core selection surface is a separate runtime adapter package or coordinator integration that reads the package and performs the launch outside core. The accepted first package boundary is `packages/runtime-omx/`, starting with no-spawn `$ralplan` validation/preview and receipt/evidence writing.
 
 For schema-backed runtime profiles, built-in profile ids, and project-local custom profiles, see [`RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md). Runtime profiles are data-only in v0: they let users select and document an adapter lane, but they do not install or spawn the runtime from core.

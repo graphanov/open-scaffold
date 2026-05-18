@@ -1,17 +1,17 @@
 ---
 title: Agent Runtime Selection
 created: 2026-05-15
-updated: 2026-05-15
+updated: 2026-05-18
 type: concept
 tags: [open-scaffold, runtime, agent-orchestration, product-vision]
-sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, .osc/plans/backlog/030-agent-runtime-selection-vision.md]
+sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/AGENTIC_RUNTIME_LAYER.md, .osc/plans/backlog/030-agent-runtime-selection-vision.md, .osc/plans/done/046-executable-open-scaffold-architecture.md]
 confidence: medium
-contested: true
+contested: partially
 ---
 
 # Agent Runtime Selection
 
-Agent runtime selection is the product hypothesis that an Open Scaffold user should eventually choose not only a scaffold tier, but also the runtime lane that will execute work against the scaffold.
+Agent runtime selection is the product direction that an Open Scaffold user should eventually choose not only a scaffold tier, but also the runtime lane that will execute work against the scaffold.
 
 The tier answers: "how much durable project structure do I want?"
 
@@ -60,6 +60,22 @@ A riskier version would add:
 
 Those belong behind explicit design decisions, safety analysis, and separate implementation plans.
 
+## Accepted executable direction
+
+As of 2026-05-18, the owner accepted that Open Scaffold should become executable through explicit in-repo agentic runtime packages while preserving the core evidence/audit boundary.
+
+The first track is:
+
+```text
+packages/runtime-omx/
+runtime target: OMX / oh-my-codex
+first workflow: $ralplan
+```
+
+This does not mean Open Scaffold core becomes a hidden runtime launcher. Core still creates the run packet and evidence expectations. The runtime package proves command preview, dispatch receipt, and evidence return first; real launch remains opt-in and separately verified.
+
+Later OMX workflows such as `$deep-interview`, `$ralph`, `$ultrawork`, and `$ultragoal` are support goals after `$ralplan` and the package boundary are proven.
+
 ## Open question for V1
 
 The live product question is whether runtime choice should become:
@@ -71,9 +87,9 @@ The live product question is whether runtime choice should become:
 
 ## Current scaffold stance
 
-As of 2026-05-15, runtime selection in `osc init` is not a v1 release promise. Open Scaffold core remains runtime-neutral by design; runtime adapters belong in downstream packages or external lanes that consume the existing run packet and binding contract.
+As of 2026-05-18, runtime selection in `osc init` is still not a v1 release promise. Open Scaffold core remains runtime-neutral by design; executable behavior starts in explicit agentic runtime packages that consume the existing run packet and binding contract.
 
-This page records the hypothesis so it can be tested instead of lost in chat. It should not be read as a commitment to ship a runtime picker, certify third-party runtimes, or make Open Scaffold core responsible for spawning.
+This page records the direction so it can be tested through evidence instead of lost in chat. It should not be read as a commitment to ship an init-time runtime picker, certify third-party runtimes, or make Open Scaffold core responsible for hidden spawning.
 
 The strongest version of the idea is not "Open Scaffold runs every agent." It is:
 
