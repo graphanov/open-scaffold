@@ -38,7 +38,7 @@ and get a concrete `.osc/runs/<run_id>/run.json` package that records:
 
 The selected runtime is dispatchable by an adapter, but Open Scaffold core still does not launch Claude Code, Codex, OMC, OMX, tmux, or any provider process by itself. Dispatchable means the `run.json` contains enough structured lane/workflow/profile data for an external adapter or an explicit agentic runtime package to consume if such a package exists; it does not mean the adapter is installed or certified.
 
-The first executable package track is OMX-first: `--runtime omx --workflow plan` should produce the `$ralplan`-targeted packet that `packages/runtime-omx/` can validate and preview before any real launch behavior is added.
+The first executable package track is OMX-first: `--runtime omx --workflow plan` produces the `$ralplan`-targeted packet that [`packages/runtime-omx/`](../packages/runtime-omx/) can validate and preview before any real launch behavior is added.
 
 ## Runtime presets
 
@@ -103,6 +103,6 @@ This slice does not:
 - grant commit/push/merge/publish authority by default;
 - make model/orchestration-lab claims.
 
-The practical next step after this core selection surface is a separate runtime adapter package or coordinator integration that reads the package and performs the launch outside core. The accepted first package boundary is `packages/runtime-omx/`, starting with no-spawn `$ralplan` validation/preview and receipt/evidence writing.
+The practical next step after this core selection surface is a separate runtime adapter package or coordinator integration that reads the package and performs the launch outside core. The accepted first package boundary is [`packages/runtime-omx/`](../packages/runtime-omx/), starting with no-spawn `$ralplan` validation/preview and receipt/evidence writing. It does not run `omx`, Codex, tmux, or provider processes.
 
 For schema-backed runtime profiles, built-in profile ids, and project-local custom profiles, see [`RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md). Runtime profiles are data-only in v0: they let users select and document an adapter lane, but they do not install or spawn the runtime from core.

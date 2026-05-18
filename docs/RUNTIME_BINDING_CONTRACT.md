@@ -158,7 +158,7 @@ A no-spawn conformance adapter must refuse packets when required fields are miss
 
 For the fake/local conformance fixture specifically, success means: packet consumed, `spawning: false` enforced, dispatch receipt written, evidence written, and no runtime, network, credentials, commit, push, merge, or publish authority used.
 
-For the next OMX track, `packages/runtime-omx/` should use the same no-spawn contract first: consume a run packet, validate the OMX `$ralplan` lane/workflow, and write deterministic receipt/evidence artifacts before any explicit real-runtime launch path is added.
+For the OMX track, [`packages/runtime-omx/`](../packages/runtime-omx/) is the first no-spawn agentic runtime package scaffold. It consumes a run packet, validates the OMX `$ralplan` lane/workflow (`runtimeSelection.runtime=omx`, `runtimeSelection.workflow=plan`, `executor.lane=omx-codex`, `executor.harnessSkill=$ralplan`, `executor.spawning=false`), and writes deterministic receipt/evidence artifacts before any explicit real-runtime launch path is added.
 
 ## Binding responsibilities
 
@@ -429,10 +429,10 @@ The first concrete executable track is OMX-first rather than runtime-generic: pr
 
 ## Dry-run and conformance examples
 
-For concrete, credential-free consumers of this contract, see [`docs/examples/runtime-binding-dry-run.mjs`](examples/runtime-binding-dry-run.mjs), [`docs/examples/runtime-binding-conformance/fake-local-adapter.mjs`](examples/runtime-binding-conformance/fake-local-adapter.mjs), and [`docs/examples/README.md`](examples/README.md). For the current OMC/OMX runtime-selection surface and refreshed-adapter checklist, see [`docs/RUNTIME_SELECTION.md`](RUNTIME_SELECTION.md).
+For concrete, credential-free consumers of this contract, see [`docs/examples/runtime-binding-dry-run.mjs`](examples/runtime-binding-dry-run.mjs), [`docs/examples/runtime-binding-conformance/fake-local-adapter.mjs`](examples/runtime-binding-conformance/fake-local-adapter.mjs), [`packages/runtime-omx/README.md`](../packages/runtime-omx/README.md), and [`docs/examples/README.md`](examples/README.md). For the current OMC/OMX runtime-selection surface and refreshed-adapter checklist, see [`docs/RUNTIME_SELECTION.md`](RUNTIME_SELECTION.md).
 
 The dry-run example reads a generated `.osc/runs/<run_id>/run.json`, validates the executable-package and `spawning: false` boundary, prints the handoff summary an external binding would use, and exits without launching any runtime.
 
-The fake/local adapter conformance fixture goes one step further: it consumes the same run packet, writes an `open-scaffold.dispatch-receipt.v1` receipt and a deterministic evidence artifact, and still exits without launching any runtime, reading credentials, or requiring network access. This proves structural handoff/evidence behavior only; task correctness, runtime availability, and adapter production support remain separate gates.
+The fake/local adapter conformance fixture goes one step further: it consumes the same run packet, writes an `open-scaffold.dispatch-receipt.v1` receipt and a deterministic evidence artifact, and still exits without launching any runtime, reading credentials, or requiring network access. `packages/runtime-omx/` applies that pattern to the OMX `$ralplan` lane specifically. These prove structural handoff/evidence behavior only; task correctness, runtime availability, and adapter production support remain separate gates.
 
 These examples are intentionally not a supported adapter SDK and not Open Scaffold launchers. They are reference proofs that run packets are concrete enough for external coordinators, runtime bindings, or humans to consume while core remains runtime-neutral.

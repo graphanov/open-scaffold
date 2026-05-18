@@ -9,9 +9,12 @@
     "open-scaffold": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build:core": "tsc -p tsconfig.json",
+    "build:runtime-omx": "tsc -p packages/runtime-omx/tsconfig.json",
+    "build": "npm run build:core && npm run build:runtime-omx",
     "prepack": "npm run build",
     "test": "vitest run",
+    "test:runtime-omx": "vitest run packages/runtime-omx/tests",
     "smoke:e2e": "vitest run tests/e2e/lifecycle.test.ts",
     "osc": "tsx src/cli.ts"
   },

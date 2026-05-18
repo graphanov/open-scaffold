@@ -2,7 +2,7 @@
 
 Open Scaffold should become executable through explicit agentic runtime packages while preserving the core source-of-truth, evidence, and audit model.
 
-This page records the accepted architecture direction after plan `046-executable-open-scaffold-architecture`. It is a direction for the next implementation slices, not a claim that real runtime launching already exists.
+This page records the accepted architecture direction after plan `046-executable-open-scaffold-architecture`. Plan `042-reference-adapter-package-no-spawn` adds the first no-spawn package scaffold for that direction; it is not a claim that real runtime launching already exists.
 
 ## Decision
 
@@ -51,7 +51,7 @@ npm run osc -- run .osc/plans/active/001-demo.md \
 
 That creates a dispatchable `run.json` package. It does not launch OMX.
 
-The first `packages/runtime-omx/` slice should consume that package and prove the `$ralplan` handoff path without real process launch. A later real-runtime spike may add an explicit opt-in launch flag, but launch must remain separate from default core packaging.
+The first `packages/runtime-omx/` slice consumes that package and proves the `$ralplan` handoff path without real process launch. See [`packages/runtime-omx/README.md`](../packages/runtime-omx/README.md) for the no-spawn scaffold. A later real-runtime spike may add an explicit opt-in launch flag, but launch must remain separate from default core packaging.
 
 ## Authority defaults
 
@@ -72,7 +72,7 @@ An agentic runtime package can translate these policies to a specific runtime, b
 
 Plan 046 sets the next execution order:
 
-1. `042-reference-adapter-package-no-spawn` becomes the in-repo `packages/runtime-omx/` no-spawn package scaffold.
+1. `042-reference-adapter-package-no-spawn` adds the in-repo `packages/runtime-omx/` no-spawn package scaffold.
 2. `043-one-real-runtime-adapter-spike` becomes the OMX-first, `$ralplan`-first real runtime spike after 042 proves the package boundary.
 3. `044-cli-friction-reduction` remains later unless ceremony blocks the execution proof.
 4. `030-agent-runtime-selection-vision` and `031-agentic-orchestration-model-lab-vision` stay as broader hypotheses until adapter/runtime evidence justifies promotion.
