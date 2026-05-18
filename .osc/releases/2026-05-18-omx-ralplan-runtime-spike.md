@@ -13,7 +13,7 @@ This does not make Open Scaffold core spawn runtimes and does not claim full OMX
 - Plan: `.osc/plans/done/043-one-real-runtime-adapter-spike.md`
 - Amendment: `.osc/plans/done/043-one-real-runtime-adapter-spike-amendment-1.md`
 - Branch: `runtime/omx-ralplan-adapter-spike`
-- PR: pending
+- PR: `#51` — https://github.com/graphanov/open-scaffold/pull/51
 - Kanban: `t_15d93ad5`
 - Package: `packages/runtime-omx/`
 - Runtime target: OMX / oh-my-codex
@@ -52,8 +52,8 @@ This does not make Open Scaffold core spawn runtimes and does not claim full OMX
 - Run packet generated through `npm run osc -- run .osc/plans/active/043-one-real-runtime-adapter-spike.md --runtime omx --workflow plan --repo . --worktree . --branch runtime/omx-ralplan-adapter-spike --operator-surface cli --task-id t_15d93ad5 --commit-policy 'no commit/push/merge/publish; human approval required'`.
 - Default package invocation wrote no-spawn receipt/evidence.
 - Explicit package invocation `node packages/runtime-omx/dist/cli.js <run.json> --allow-spawn` completed with `status=completed`, `spawned=true`, `oh-my-codex v0.17.3`, log path recorded, and no receipt failure.
-- `./verify.sh --strict` → 9 pass / 0 fail / 1 warn before PR URL existed (`release_note.run_without_pr`, to be patched after PR creation).
-- `npm run osc -- verify` → pass with the same temporary warning before PR URL existed.
+- `./verify.sh --strict` → 10 pass / 0 fail / 0 warn after PR URL patch.
+- `npm run osc -- verify` → pass after PR URL patch.
 - `git diff --check` → pass.
 
 ## Follow-up
