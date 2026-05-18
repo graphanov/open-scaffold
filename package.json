@@ -3,6 +3,24 @@
   "version": "0.4.1",
   "description": "Runtime-neutral scaffold and prompt/artifact CLI for disciplined AI-agent development.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/graphanov/open-scaffold.git"
+  },
+  "homepage": "https://github.com/graphanov/open-scaffold#readme",
+  "bugs": {
+    "url": "https://github.com/graphanov/open-scaffold/issues"
+  },
+  "keywords": [
+    "ai-agents",
+    "agentic-development",
+    "scaffold",
+    "workflow",
+    "evidence",
+    "repo-native",
+    "codex",
+    "claude-code"
+  ],
   "type": "module",
   "bin": {
     "osc": "dist/cli.js",

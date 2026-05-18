@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog — high-priority adoption blocker. The package is not on the public npm registry; `npx open-scaffold init` returns `npm ERR! 404` for every prospective user. This is the single largest obstacle to public adoption. Self-dogfooded planning, verification, and scaffolding infrastructure exists in-repo but has zero external reach until publish.
+done
+
 
 ## Context
 

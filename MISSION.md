@@ -28,6 +28,8 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-18: closed 050-npm-publish-and-npx-init — reconciled live npm/npx package truth and created package public-surface follow-up
+- 2026-05-18: reconcile stale npm publish blocker with live 0.4.1 package evidence — see .osc/plans/done/050-npm-publish-and-npx-init-amendment-1.md
 - 2026-05-18: closed 049-plan-stage-move — added plan stage movement CLI
 - 2026-05-18: closed 048-cli-lifecycle-parity — CLI lifecycle parity helpers shipped
 - 2026-05-18: closed 047-roadmap-open-question-reconciliation — roadmap open-question reconciliation shipped
