@@ -55,9 +55,13 @@ export function runCli(argv: string[], io: CliIO = {}): number {
   }
 }
 
-export function isCliEntrypoint(argv1: string | undefined): boolean {
-  const entrypoint = argv1?.split(/[\\/]/).pop();
-  return entrypoint === 'cli.js' || entrypoint === 'cli.ts';
+export function isCliEntrypoint(argv1: string | undefined, moduleUrl: string = import.meta.url): boolean {
+  if (!argv1) return false;
+  const normalizeEntrypoint = (value: string) => {
+    const withoutFileScheme = value.startsWith('file://') ? value.slice('file://'.length) : value;
+    return decodeURIComponent(withoutFileScheme).replace(/\\/g, '/').replace(/^\/([A-Za-z]:\/)/, '$1');
+  };
+  return normalizeEntrypoint(argv1) === normalizeEntrypoint(moduleUrl);
 }
 
 if (isCliEntrypoint(process.argv[1])) {

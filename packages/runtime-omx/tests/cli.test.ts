@@ -53,11 +53,11 @@ describe('runtime-omx CLI', () => {
     expect(missingOut.join('\n')).toContain('Usage: open-scaffold-runtime-omx');
   });
 
-  it('detects CLI self-invocation across path separators', () => {
-    expect(isCliEntrypoint('/tmp/open-scaffold-runtime-omx/dist/cli.js')).toBe(true);
-    expect(isCliEntrypoint('C:\\tmp\\open-scaffold-runtime-omx\\dist\\cli.js')).toBe(true);
-    expect(isCliEntrypoint('/tmp/open-scaffold-runtime-omx/src/cli.ts')).toBe(true);
-    expect(isCliEntrypoint('/tmp/open-scaffold-runtime-omx/dist/index.js')).toBe(false);
-    expect(isCliEntrypoint(undefined)).toBe(false);
+  it('detects CLI self-invocation only when the entrypoint matches this module', () => {
+    expect(isCliEntrypoint('/tmp/open-scaffold-runtime-omx/dist/cli.js', 'file:///tmp/open-scaffold-runtime-omx/dist/cli.js')).toBe(true);
+    expect(isCliEntrypoint('C:\\tmp\\open-scaffold-runtime-omx\\dist\\cli.js', 'file:///C:/tmp/open-scaffold-runtime-omx/dist/cli.js')).toBe(true);
+    expect(isCliEntrypoint('/tmp/host-program/dist/cli.js', 'file:///tmp/open-scaffold-runtime-omx/dist/cli.js')).toBe(false);
+    expect(isCliEntrypoint('/tmp/open-scaffold-runtime-omx/dist/index.js', 'file:///tmp/open-scaffold-runtime-omx/dist/cli.js')).toBe(false);
+    expect(isCliEntrypoint(undefined, 'file:///tmp/open-scaffold-runtime-omx/dist/cli.js')).toBe(false);
   });
 });
