@@ -8,7 +8,7 @@ Open Scaffold now has an accepted executable architecture direction: keep core a
 
 - Plan: `.osc/plans/done/046-executable-open-scaffold-architecture.md`
 - Branch: `runtime/execute-046-omx-architecture`
-- PR: this PR
+- PR: `#49` — https://github.com/graphanov/open-scaffold/pull/49
 - Kanban: `t_bfeec607`
 - Primary docs: `docs/AGENTIC_RUNTIME_LAYER.md`, `docs/RUNTIME_BINDING_CONTRACT.md`, `docs/SPAWNING_BOUNDARY.md`, `docs/RUNTIME_SELECTION.md`, `docs/RUNTIME_PROFILES.md`
 - Wiki concepts: `docs/wiki/concepts/agent-runtime-selection.md`, `docs/wiki/concepts/agentic-orchestration.md`
