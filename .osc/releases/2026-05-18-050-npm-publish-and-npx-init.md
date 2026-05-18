@@ -11,7 +11,7 @@ Reconciles plan 050 with live package truth. The initial npm publish blocker is 
 - Amendment: `.osc/plans/done/050-npm-publish-and-npx-init-amendment-1.md`.
 - Follow-up plan: `.osc/plans/backlog/074-package-public-surface-sync.md`.
 - Run ID / run packet: `N/A` — package/evidence/plan reconciliation slice, no runtime run packet.
-- Branch / PR: `release/package-truth-sync`; PR pending owner approval.
+- Branch / PR: `release/package-truth-sync`; PR #57 — https://github.com/graphanov/open-scaffold/pull/57.
 
 ## Verification
 
