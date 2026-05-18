@@ -18,11 +18,12 @@ Layer map:
 - [`RUNTIME_SELECTION.md`](RUNTIME_SELECTION.md) — user-facing `--runtime` / `--workflow` choice.
 - `RUNTIME_PROFILES.md` — profile schema, built-ins, and project-local `.osc/runtimes/*.json`.
 - [`RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md) — adapter/coordinator responsibilities after the `run.json` package exists.
+- [`AGENTIC_RUNTIME_LAYER.md`](AGENTIC_RUNTIME_LAYER.md) — accepted executable architecture: in-repo agentic runtime packages, OMX first.
 
 Keep the roles separate:
 
 - **Profile** = declarative data that records a lane/workflow in a run packet.
-- **Adapter** = external consumer that may translate or launch that packet.
+- **Adapter / agentic runtime package** = consumer that may translate, preview, or launch that packet when explicitly allowed.
 - **Launch** = outside Open Scaffold core.
 
 ## Commands
@@ -145,6 +146,8 @@ This is deliberate. Open Scaffold's job is to preserve the source-of-truth chain
 ## OMC, OMX, GSD, and custom runtimes
 
 OMC and OMX are built-in adapter-candidate profiles — selectable lane metadata with fake/local fixture coverage for their lane tokens, not certified launch integrations and not evidence that OMC/OMX processes were run.
+
+The accepted first executable package track is `packages/runtime-omx/`: an in-repo agentic runtime package should consume the `omx` profile data, validate `$ralplan` as the first workflow, and write no-spawn receipt/evidence proof before any real launch path is introduced.
 
 GSD and other frameworks can be represented as project-local `user-defined` profiles today. They should not be described as certified or built-in integrations until an adapter has passed the conformance expectations and produced public evidence.
 

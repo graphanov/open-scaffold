@@ -6,6 +6,8 @@ Named harnesses in this contract, including OMC and OMX, are runtime lanes or ad
 
 Open Scaffold core creates bounded run packages. Runtime bindings — external launch glue/adapters for a chosen lane — consume those packages and launch outside core. This document defines the contract between the repo-native Open Scaffold package and any coordinator, adapter, harness, agent, or human lane that executes it.
 
+For the accepted executable architecture direction, see [`docs/AGENTIC_RUNTIME_LAYER.md`](AGENTIC_RUNTIME_LAYER.md): Open Scaffold starts execution support through explicit in-repo agentic runtime packages, with `packages/runtime-omx/` as the first target package and `$ralplan` as the first OMX workflow to prove.
+
 ## Executive rule
 
 ```text
@@ -16,7 +18,7 @@ Evidence returns.
 Postflight closes.
 ```
 
-`spawning: false` in `run.json` means core did not launch a real agent/process. It is not a missing feature. It is the boundary that keeps generic Open Scaffold portable.
+`spawning: false` in `run.json` means core did not launch a real agent/process. It is not a missing feature. It is the boundary that keeps generic Open Scaffold portable while runtime packages prove execution behavior explicitly.
 
 ## What is a runtime binding?
 
@@ -25,6 +27,7 @@ A runtime binding is the external launch glue that turns a run packet — a repo
 Examples:
 
 - a coordinator script that reads `.osc/runs/<run_id>/run.json` and starts an OMX `$ralplan` session;
+- an in-repo agentic runtime package such as `packages/runtime-omx/` that first validates and previews an OMX `$ralplan` handoff without spawning;
 - an OMC-specific command that turns a plan into a Claude Code `/team` handoff;
 - an adapter that reads a project-local runtime profile in `.osc/runtimes/<id>.json` and translates its lane/workflow/evidence contract;
 - a GitHub bot that assigns a plain agent to a branch and links the PR;
@@ -40,7 +43,7 @@ A binding is not the Open Scaffold core. It may be a separate repo, plugin, bot,
 |---|---|---|
 | Open Scaffold core | plan/spec/run package, package-quality fields, prompt artifacts, evidence locations, commit policy | runtime auth, process lifecycle, autonomous spawning |
 | Coordinator/task bridge | selecting work, choosing lane, assigning owner, retry/block/review state | final evidence by itself |
-| Runtime binding | translating package to a specific launch, attaching runtime metadata, returning artifacts | project truth, merge authority unless granted |
+| Runtime binding / agentic runtime package | translating package to a specific handoff or launch, attaching runtime metadata, returning artifacts | project truth, hidden default spawning, merge authority unless granted |
 | Harness/agent/human lane | execution while alive | canonical task database, approval gate |
 | Operator surface — chat/dashboard for status, questions, and approvals | status/questions/approval messages | source of truth |
 | GitHub/evidence | public review, CI, release, proof | runtime session truth |
@@ -154,6 +157,8 @@ The receipt records which adapter consumed which packet, the selected lane/workf
 A no-spawn conformance adapter must refuse packets when required fields are missing, blockers/open questions remain, `executor.spawning` is not `false`, the lane/harness does not match the selected workflow, commit policy is absent, or receipt/evidence paths would leave `runtime.repoPath`.
 
 For the fake/local conformance fixture specifically, success means: packet consumed, `spawning: false` enforced, dispatch receipt written, evidence written, and no runtime, network, credentials, commit, push, merge, or publish authority used.
+
+For the next OMX track, `packages/runtime-omx/` should use the same no-spawn contract first: consume a run packet, validate the OMX `$ralplan` lane/workflow, and write deterministic receipt/evidence artifacts before any explicit real-runtime launch path is added.
 
 ## Binding responsibilities
 
@@ -419,6 +424,8 @@ Bindings become specific.
 Evidence stays durable.
 Operators stay in control.
 ```
+
+The first concrete executable track is OMX-first rather than runtime-generic: prove `packages/runtime-omx/` and `$ralplan`, then expand to other OMX workflows or other `packages/runtime-*` packages only with evidence.
 
 ## Dry-run and conformance examples
 

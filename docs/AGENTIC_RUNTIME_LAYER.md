@@ -1,0 +1,95 @@
+# Agentic Runtime Layer
+
+Open Scaffold should become executable through explicit agentic runtime packages while preserving the core source-of-truth, evidence, and audit model.
+
+This page records the accepted architecture direction after plan `046-executable-open-scaffold-architecture`. It is a direction for the next implementation slices, not a claim that real runtime launching already exists.
+
+## Decision
+
+```text
+Open Scaffold core packages work.
+Agentic runtime packages consume the package.
+A selected runtime does the work only when explicitly allowed.
+Receipts and evidence return to the repo/GitHub chain.
+Human approval gates remain explicit.
+```
+
+The first package boundary is:
+
+```text
+packages/runtime-omx/
+```
+
+The first runtime target is OMX / oh-my-codex.
+
+The first workflow to prove is:
+
+```text
+$ralplan
+```
+
+Later OMX workflows such as `$deep-interview`, `$ralph`, `$ultrawork`, `$ultragoal`, and team-style modes can follow only after the package boundary, receipts, evidence, and safety model are proven.
+
+## Layer model
+
+| Layer | Owns | Must not silently own |
+|---|---|---|
+| Open Scaffold core | mission, roadmap, plans, `run.json`, runtime profile data, package quality, evidence expectations, approval/commit policy | real runtime launch, provider auth, process lifecycle, credential handling, autonomous merge/publish authority |
+| Agentic runtime package | runtime-specific validation, command preview, dry-run receipt/evidence, adapter-specific launch policy when explicitly allowed | canonical project truth, hidden default spawning, broad runtime certification, merge/publish decisions |
+| OMX / oh-my-codex runtime | selected Codex/OMX execution workflow while alive | Open Scaffold core identity, final approval gate, durable evidence by itself |
+| Operator / GitHub / evidence chain | review, CI, approval, PR, release, and durable proof | raw runtime transcript as unquestioned truth |
+
+## Command shape
+
+The safe first shape is package-first and dry-run-first:
+
+```bash
+npm run osc -- run .osc/plans/active/001-demo.md \
+  --runtime omx \
+  --workflow plan
+```
+
+That creates a dispatchable `run.json` package. It does not launch OMX.
+
+The first `packages/runtime-omx/` slice should consume that package and prove the `$ralplan` handoff path without real process launch. A later real-runtime spike may add an explicit opt-in launch flag, but launch must remain separate from default core packaging.
+
+## Authority defaults
+
+Default authority should stay strict:
+
+- dry-run / preview first;
+- no secrets or credential reads;
+- no hidden network dependence;
+- no destructive filesystem authority;
+- no commit, push, merge, release, or package publish authority;
+- real launch only after explicit operator opt-in;
+- evidence/log paths returned to the Open Scaffold run/evidence chain;
+- human approval required before publication gates.
+
+An agentic runtime package can translate these policies to a specific runtime, but it cannot erase them.
+
+## Backlog impact
+
+Plan 046 sets the next execution order:
+
+1. `042-reference-adapter-package-no-spawn` becomes the in-repo `packages/runtime-omx/` no-spawn package scaffold.
+2. `043-one-real-runtime-adapter-spike` becomes the OMX-first, `$ralplan`-first real runtime spike after 042 proves the package boundary.
+3. `044-cli-friction-reduction` remains later unless ceremony blocks the execution proof.
+4. `030-agent-runtime-selection-vision` and `031-agentic-orchestration-model-lab-vision` stay as broader hypotheses until adapter/runtime evidence justifies promotion.
+
+## Non-goals
+
+This architecture slice does not:
+
+- implement runtime launch;
+- make `osc run` spawn a process;
+- claim full OMX support;
+- certify oh-my-codex as production-supported by Open Scaffold;
+- add credentials, daemon behavior, process supervision, hosted registries, marketplace behavior, or model benchmarking;
+- move approval/merge/release authority into the runtime package.
+
+## Why this preserves the Open Scaffold advantage
+
+Open Scaffold's advantage is not that it runs a particular agent. It is that every agent run can be tied back to mission, plan, scope, acceptance criteria, verification, evidence, and approval.
+
+The agentic runtime layer makes Open Scaffold executable without throwing away that advantage. Runtime packages may become specific and useful; core remains the durable black-box recorder and control contract.
