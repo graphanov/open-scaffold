@@ -112,8 +112,17 @@ describe('osc init CLI', () => {
       expect(text, path).not.toContain('.osc-dev');
     }
 
-    expect(readFileSync(join(target, 'README.md'), 'utf8')).toContain('TODO: replace this with your project overview.');
-    expect(readFileSync(join(target, 'AGENTS.md'), 'utf8')).toContain('This repository uses Open Scaffold. It is not the Open Scaffold product repository.');
+    const readme = readFileSync(join(target, 'README.md'), 'utf8');
+    const minimum = readFileSync(join(target, 'docs/MINIMUM_VIABLE_SCAFFOLD.md'), 'utf8');
+    const agents = readFileSync(join(target, 'AGENTS.md'), 'utf8');
+    expect(readme).toContain('TODO: replace this with your project overview.');
+    expect(agents).toContain('This repository uses Open Scaffold. It is not the Open Scaffold product repository.');
+    expect(readme).toContain('npx open-scaffold plan new');
+    expect(readme).toContain('npx open-scaffold evidence new');
+    expect(readme).toContain('cp .osc/plans/handoff-template.md');
+    expect(minimum).toContain('npx open-scaffold plan new');
+    expect(minimum).toContain('npx open-scaffold evidence new');
+    expect(minimum).toContain('copy `.osc/plans/handoff-template.md`');
   });
 
   it('exits non-zero rather than overwriting an existing file', () => {

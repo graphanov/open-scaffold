@@ -189,6 +189,13 @@ TODO: state what shipped, what remains out of scope, and the approval/review sta
 `;
 }
 
+function formatLocalDate(date: Date): string {
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function createPlanSkeleton(slug: string, stage: PlanCreationStage, start = process.cwd()): CreatedPlanSkeleton {
   if (!PLAN_CREATION_STAGES.includes(stage)) {
     throw new Error(`Invalid plan stage: ${stage}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
@@ -216,7 +223,7 @@ export function createEvidenceNoteSkeleton(slug: string, start = process.cwd(), 
   if (!existsSync(releasesDir)) {
     throw new Error(`Open Scaffold releases folder missing: ${relative(root, releasesDir)}`);
   }
-  const isoDate = date.toISOString().slice(0, 10);
+  const isoDate = formatLocalDate(date);
   const path = join(releasesDir, `${isoDate}-${safeSlug}.md`);
   const relativePath = relative(root, path);
   if (existsSync(path)) {
