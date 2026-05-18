@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from 'node:fs';
 import { runNoSpawnOmx, ValidationError } from './index.js';
 
 export interface CliIO {
@@ -61,7 +62,15 @@ export function isCliEntrypoint(argv1: string | undefined, moduleUrl: string = i
     const withoutFileScheme = value.startsWith('file://') ? value.slice('file://'.length) : value;
     return decodeURIComponent(withoutFileScheme).replace(/\\/g, '/').replace(/^\/([A-Za-z]:\/)/, '$1');
   };
-  return normalizeEntrypoint(argv1) === normalizeEntrypoint(moduleUrl);
+  const resolveEntrypoint = (value: string) => {
+    const normalized = normalizeEntrypoint(value);
+    try {
+      return realpathSync.native(normalized).replace(/\\/g, '/');
+    } catch {
+      return normalized;
+    }
+  };
+  return resolveEntrypoint(argv1) === resolveEntrypoint(moduleUrl);
 }
 
 if (isCliEntrypoint(process.argv[1])) {

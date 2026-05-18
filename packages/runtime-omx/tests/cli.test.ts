@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { runCli, isCliEntrypoint } from '../src/cli.js';
 import { tempRunPacket, readJson } from './fixtures.js';
 
@@ -59,5 +61,21 @@ describe('runtime-omx CLI', () => {
     expect(isCliEntrypoint('/tmp/host-program/dist/cli.js', 'file:///tmp/open-scaffold-runtime-omx/dist/cli.js')).toBe(false);
     expect(isCliEntrypoint('/tmp/open-scaffold-runtime-omx/dist/index.js', 'file:///tmp/open-scaffold-runtime-omx/dist/cli.js')).toBe(false);
     expect(isCliEntrypoint(undefined, 'file:///tmp/open-scaffold-runtime-omx/dist/cli.js')).toBe(false);
+  });
+
+  it('resolves symlinked bin entrypoints before checking module identity', () => {
+    const root = mkdtempSync(join(tmpdir(), 'runtime-omx-cli-'));
+    try {
+      const realCli = join(root, 'package/dist/cli.js');
+      const binLink = join(root, 'node_modules/.bin/open-scaffold-runtime-omx');
+      mkdirSync(dirname(realCli), { recursive: true });
+      mkdirSync(dirname(binLink), { recursive: true });
+      writeFileSync(realCli, '#!/usr/bin/env node\n');
+      symlinkSync(realCli, binLink);
+
+      expect(isCliEntrypoint(binLink, pathToFileURL(realCli).href)).toBe(true);
+    } finally {
+      rmSync(root, { force: true, recursive: true });
+    }
   });
 });
