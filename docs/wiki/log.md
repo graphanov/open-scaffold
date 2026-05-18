@@ -3,6 +3,11 @@
 > Chronological record of project wiki actions. Append-only.
 > Format: `## [YYYY-MM-DD] action | subject`
 
+## [2026-05-18] implement | OMX runtime package no-spawn scaffold
+- Added `packages/runtime-omx/` as the first no-spawn agentic runtime package scaffold.
+- It validates Open Scaffold `run.json` packets for OMX `$ralplan` and writes deterministic dispatch receipt/evidence artifacts without launching OMX/Codex.
+- Preserved the boundary that real runtime launch remains future explicit-opt-in work.
+
 ## [2026-05-18] decide | Executable Open Scaffold architecture
 - Captured executable Open Scaffold as explicit in-repo agentic runtime packages, not hidden core spawning.
 - Set `packages/runtime-omx/` as the first package boundary and `$ralplan` as the first OMX / oh-my-codex workflow to prove.

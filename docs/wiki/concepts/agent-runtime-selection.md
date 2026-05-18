@@ -4,7 +4,7 @@ created: 2026-05-15
 updated: 2026-05-18
 type: concept
 tags: [open-scaffold, runtime, agent-orchestration, product-vision]
-sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/AGENTIC_RUNTIME_LAYER.md, .osc/plans/backlog/030-agent-runtime-selection-vision.md, .osc/plans/done/046-executable-open-scaffold-architecture.md]
+sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/AGENTIC_RUNTIME_LAYER.md, packages/runtime-omx/README.md, .osc/plans/backlog/030-agent-runtime-selection-vision.md, .osc/plans/done/042-reference-adapter-package-no-spawn.md, .osc/plans/done/046-executable-open-scaffold-architecture.md]
 confidence: medium
 contested: partially
 ---
@@ -72,7 +72,7 @@ runtime target: OMX / oh-my-codex
 first workflow: $ralplan
 ```
 
-This does not mean Open Scaffold core becomes a hidden runtime launcher. Core still creates the run packet and evidence expectations. The runtime package proves command preview, dispatch receipt, and evidence return first; real launch remains opt-in and separately verified.
+This does not mean Open Scaffold core becomes a hidden runtime launcher. Core still creates the run packet and evidence expectations. The first no-spawn package scaffold now validates the OMX `$ralplan` handoff shape and writes receipt/evidence; real launch remains opt-in and separately verified.
 
 Later OMX workflows such as `$deep-interview`, `$ralph`, `$ultrawork`, and `$ultragoal` are support goals after `$ralplan` and the package boundary are proven.
 
