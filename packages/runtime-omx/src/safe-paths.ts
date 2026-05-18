@@ -32,6 +32,23 @@ function assertDirectoryNotSymlink(path: string): void {
   if (existsSync(path) && lstatSync(path).isSymbolicLink()) throw new Error('output parent must not be a symlink');
 }
 
+function findScaffoldRootFromRunPacket(runPacketPath: string): string {
+  let cursor = dirname(runPacketPath);
+  while (true) {
+    if (existsSync(join(cursor, '.osc'))) return cursor;
+    const parent = dirname(cursor);
+    if (parent === cursor) return dirname(runPacketPath);
+    cursor = parent;
+  }
+}
+
+function resolveRepoRoot(repoPath: string, runPacketPath: string): string {
+  const repoRootCandidate = isAbsolute(repoPath)
+    ? resolve(repoPath)
+    : resolve(findScaffoldRootFromRunPacket(runPacketPath), repoPath);
+  return realpathSync.native(repoRootCandidate);
+}
+
 function resolveOutput(repoRoot: string, runDir: string, runPacketPath: string, outputPath: string | undefined, defaultName: string): string {
   const requested = outputPath ? (isAbsolute(outputPath) ? resolve(outputPath) : resolve(repoRoot, outputPath)) : resolve(runDir, defaultName);
   const parent = dirname(requested);
@@ -49,8 +66,8 @@ function resolveOutput(repoRoot: string, runDir: string, runPacketPath: string, 
 
 export function safeOutputPaths(runPacketInputPath: string, repoPath: string, receiptOutput?: string): SafeOutputPaths {
   assertRunPacketInputPath(runPacketInputPath);
-  const repoRoot = realpathSync.native(resolve(repoPath));
   const runPacketPath = realpathSync.native(resolve(runPacketInputPath));
+  const repoRoot = resolveRepoRoot(repoPath, runPacketPath);
   ensureInside(repoRoot, runPacketPath, 'run packet path must stay under runtime.repoPath');
   if (lstatSync(runPacketPath).isSymbolicLink()) throw new Error('run packet must not be a symlink');
   const runDir = realpathSync.native(dirname(runPacketPath));

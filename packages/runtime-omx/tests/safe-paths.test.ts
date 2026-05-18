@@ -16,6 +16,13 @@ describe('runtime-omx safe output paths', () => {
     expect(existsSync(join(root, '.osc/runs/demo/runtime-omx-evidence.md'))).toBe(true);
   });
 
+  it('resolves relative runtime.repoPath from the packet scaffold root', () => {
+    const { root, path } = tempRunPacket({ runtime: { repoPath: '.', worktreePath: '.', branch: 'runtime/omx-package-no-spawn', tmuxSession: null, processId: null } });
+    const result = runNoSpawnOmx(path);
+    expect(result.receiptPath).toBe(join(root, '.osc/runs/demo/dispatch-receipt.json'));
+    expect(existsSync(result.receiptPath)).toBe(true);
+  });
+
   it('rejects receipt output outside the repo', () => {
     const { path } = tempRunPacket();
     const outside = join(mkdtempSync(join(tmpdir(), 'runtime-omx-outside-')), 'receipt.json');
