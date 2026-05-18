@@ -18,8 +18,12 @@ function initializedScaffold() {
   return target;
 }
 
-function todayIsoDate() {
-  return new Date().toISOString().slice(0, 10);
+function todayLocalDate() {
+  const now = new Date();
+  const year = String(now.getFullYear());
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 describe('osc plan/evidence helper CLI', () => {
@@ -80,7 +84,7 @@ describe('osc plan/evidence helper CLI', () => {
 
     const output = execFileSync(tsx, [cli, 'evidence', 'new', '001-first-task'], { cwd: target, encoding: 'utf8' });
 
-    const relativePath = `.osc/releases/${todayIsoDate()}-001-first-task.md`;
+    const relativePath = `.osc/releases/${todayLocalDate()}-001-first-task.md`;
     const evidencePath = join(target, relativePath);
     const text = readFileSync(evidencePath, 'utf8');
     expect(output).toContain(`Created evidence note: ${relativePath}`);

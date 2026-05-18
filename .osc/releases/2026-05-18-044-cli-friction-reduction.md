@@ -36,6 +36,7 @@ Adds small `osc plan new` and `osc evidence new` helpers so the first-plan and e
 - `npm test` → 20 files / 179 tests passed.
 - Dist smoke: `node dist/cli.js init --tier min --target <tmp>`, `node dist/cli.js plan new 001-first-task --stage active`, `node dist/cli.js evidence new 001-first-task`, fill mission/plan fields, `./verify.sh --quick --quiet`, `node dist/cli.js verify` → pass; `osc verify` reported one non-blocking warning that the active smoke-test plan already had a matching release note.
 - Codex review round 1 findings fixed before retrigger: downstream generated docs now include `npx open-scaffold ...` and shell-copy/manual evidence fallbacks, and evidence filenames now use local-date formatting instead of UTC `toISOString()`.
+- Codex review round 2 finding fixed before retrigger: the CLI evidence test expectation now uses local-date formatting too, preventing timezone-dependent flakes after the production date-format change.
 - `./verify.sh --strict` → 10 pass / 0 fail / 0 warn.
 - `npm run osc -- verify` → pass, 56 plan file(s), 0 warning(s).
 - `git diff --check` → pass.
