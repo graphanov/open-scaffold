@@ -9,7 +9,7 @@ Adds `osc plan move <slug> --to active|backlog|blocked` so solo developers can m
 - Roadmap / issue / task: Kanban `t_c6641254`.
 - Plan: `.osc/plans/done/049-plan-stage-move.md`.
 - Run ID / run packet: `N/A` — local CLI/product slice, no runtime run packet needed.
-- Branch: `cli/plan-stage-move`; PR pending owner review.
+- Branch / PR: `cli/plan-stage-move`; PR #55 — https://github.com/graphanov/open-scaffold/pull/55.
 
 ## Verification
 
