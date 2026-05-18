@@ -1,9 +1,11 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, join, relative } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 
 export const OSC_NAMESPACE = '.osc';
 export const PLAN_STAGES = ['active', 'backlog', 'blocked', 'done'] as const;
 export type PlanStage = typeof PLAN_STAGES[number];
+export const PLAN_CREATION_STAGES = ['active', 'backlog', 'blocked'] as const;
+export type PlanCreationStage = typeof PLAN_CREATION_STAGES[number];
 
 export interface MissionState {
   path: string;
@@ -22,6 +24,17 @@ export interface ScaffoldState {
   namespace: '.osc';
   mission: MissionState;
   plans: Record<PlanStage, PlanSummary[]>;
+}
+
+export interface CreatedScaffoldFile {
+  root: string;
+  path: string;
+  relativePath: string;
+  slug: string;
+}
+
+export interface CreatedPlanSkeleton extends CreatedScaffoldFile {
+  stage: PlanCreationStage;
 }
 
 export interface ExecutionGroup {
@@ -83,6 +96,142 @@ export function inspectScaffold(root = process.cwd()): ScaffoldState {
     }
   }
   return { root, namespace: OSC_NAMESPACE, mission: inspectMission(root), plans };
+}
+
+export function findScaffoldRoot(start = process.cwd()): string | null {
+  let current = resolve(start);
+  while (true) {
+    if (existsSync(join(current, OSC_NAMESPACE, 'plans')) && existsSync(join(current, OSC_NAMESPACE, 'releases'))) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
+function assertSafeSlug(slug: string): string {
+  const trimmed = slug.trim();
+  if (!trimmed || trimmed.endsWith('.md') || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(trimmed) || trimmed.includes('..')) {
+    throw new Error(`Unsafe slug: ${slug}. Use letters, numbers, dots, underscores, and hyphens only; omit .md and path separators.`);
+  }
+  return trimmed;
+}
+
+function requireScaffoldRoot(start = process.cwd()): string {
+  const root = findScaffoldRoot(start);
+  if (!root) throw new Error(`No Open Scaffold root found from ${resolve(start)}. Run this inside a repo with .osc/plans and .osc/releases.`);
+  return root;
+}
+
+function renderPlanSkeleton(slug: string, stage: PlanCreationStage): string {
+  return `# Plan: ${slug}
+
+## Status
+
+${stage}
+
+## Context
+
+TODO: explain why this plan exists now.
+
+## Goal
+
+TODO: state one observable outcome that defines done.
+
+## Constraints / Out of scope
+
+- TODO: list what this plan will not do.
+
+## Files to touch
+
+- TODO: \`path/to/file.ext\` — why this file changes.
+
+## Acceptance criteria
+
+- [ ] TODO: replace with a testable acceptance criterion before implementation.
+
+## Verification steps
+
+1. TODO: command or check — expected pass signal.
+
+## Open questions
+
+- TODO: unresolved decision or assumption, or write \`None.\` after review.
+`;
+}
+
+function renderEvidenceSkeleton(slug: string): string {
+  return `# Release / Evidence Note: ${slug}
+
+## Summary
+
+TODO: summarize what changed in 1-3 sentences. Do not claim approval, merge, publication, or runtime execution until verified.
+
+## Traceability
+
+- Roadmap / issue / task: TODO: link or identifier, or \`N/A\` with reason.
+- Plan: TODO: .osc/plans/done/<slug>.md
+- Run ID / run packet: TODO: path or \`N/A\`.
+- Branch / PR: TODO: branch and PR URL, or pending owner review.
+
+## Verification
+
+- TODO: command — result
+
+## Outcome
+
+TODO: state what shipped, what remains out of scope, and the approval/review state.
+
+## Follow-up
+
+- TODO: remaining work, owner gate, or \`N/A\`.
+`;
+}
+
+function formatLocalDate(date: Date): string {
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function createPlanSkeleton(slug: string, stage: PlanCreationStage, start = process.cwd()): CreatedPlanSkeleton {
+  if (!PLAN_CREATION_STAGES.includes(stage)) {
+    throw new Error(`Invalid plan stage: ${stage}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
+  }
+  const safeSlug = assertSafeSlug(slug);
+  const root = requireScaffoldRoot(start);
+  const stageDir = join(root, OSC_NAMESPACE, 'plans', stage);
+  if (!existsSync(stageDir)) {
+    throw new Error(`Open Scaffold stage folder missing: ${relative(root, stageDir)}`);
+  }
+  const path = join(stageDir, `${safeSlug}.md`);
+  const relativePath = relative(root, path);
+  if (existsSync(path)) {
+    throw new Error(`Refusing to overwrite existing plan: ${relativePath}`);
+  }
+  mkdirSync(stageDir, { recursive: true });
+  writeFileSync(path, renderPlanSkeleton(safeSlug, stage), 'utf8');
+  return { root, path, relativePath, slug: safeSlug, stage };
+}
+
+export function createEvidenceNoteSkeleton(slug: string, start = process.cwd(), date = new Date()): CreatedScaffoldFile {
+  const safeSlug = assertSafeSlug(slug);
+  const root = requireScaffoldRoot(start);
+  const releasesDir = join(root, OSC_NAMESPACE, 'releases');
+  if (!existsSync(releasesDir)) {
+    throw new Error(`Open Scaffold releases folder missing: ${relative(root, releasesDir)}`);
+  }
+  const isoDate = formatLocalDate(date);
+  const path = join(releasesDir, `${isoDate}-${safeSlug}.md`);
+  const relativePath = relative(root, path);
+  if (existsSync(path)) {
+    throw new Error(`Refusing to overwrite existing evidence note: ${relativePath}`);
+  }
+  mkdirSync(releasesDir, { recursive: true });
+  writeFileSync(path, renderEvidenceSkeleton(safeSlug), 'utf8');
+  return { root, path, relativePath, slug: safeSlug };
 }
 
 function normalizeHeading(raw: string): string {

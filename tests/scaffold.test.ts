@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { inspectScaffold, parsePlanFile } from '../src/scaffold.js';
+import { inspectScaffold, parsePlanFile, createEvidenceNoteSkeleton } from '../src/scaffold.js';
 
 function tempRepo() {
   const root = mkdtempSync(join(tmpdir(), 'osc-test-'));
@@ -10,6 +10,7 @@ function tempRepo() {
   mkdirSync(join(root, '.osc/plans/backlog'), { recursive: true });
   mkdirSync(join(root, '.osc/plans/blocked'), { recursive: true });
   mkdirSync(join(root, '.osc/plans/done'), { recursive: true });
+  mkdirSync(join(root, '.osc/releases'), { recursive: true });
   writeFileSync(join(root, 'MISSION.md'), '# Mission\n\nBuild the thing.\n');
   return root;
 }
@@ -100,5 +101,19 @@ describe('open-scaffold parser', () => {
       'Delegation prompts are generated.',
     ]);
     expect(plan.executionStrategy?.groups.map((g) => g.name)).toEqual(['Group A', 'Group B']);
+  });
+
+  it('uses the local scaffold date for evidence note filenames', () => {
+    const previousTz = process.env.TZ;
+    process.env.TZ = 'Pacific/Kiritimati';
+    try {
+      const root = tempRepo();
+      const result = createEvidenceNoteSkeleton('001-local-date', root, new Date('2026-01-01T00:30:00+14:00'));
+
+      expect(result.relativePath).toBe('.osc/releases/2026-01-01-001-local-date.md');
+    } finally {
+      if (previousTz === undefined) delete process.env.TZ;
+      else process.env.TZ = previousTz;
+    }
   });
 });

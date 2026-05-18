@@ -6,7 +6,7 @@ import { createRunArtifacts, type ArtifactMode, type ExecutorLane, type Operator
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
-import { inspectScaffold, parsePlanFile, planToJson } from './scaffold.js';
+import { createEvidenceNoteSkeleton, createPlanSkeleton, inspectScaffold, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
 import { validateScaffold } from './validation.js';
 
 function printHelp(): void {
@@ -17,6 +17,8 @@ Usage:
   osc init --min|--standard|--max --target <dir> [--force]
   osc status [--json]
   osc plan <plan-path>
+  osc plan new <slug> --stage <active|backlog|blocked>
+  osc evidence new <slug>
   osc delegate <plan-path> [run binding options]
   osc run <plan-path> [run binding options]
   osc review <plan-path> [run binding options]
@@ -290,6 +292,80 @@ function status(json: boolean): void {
     const plans = state.plans[stage];
     console.log(`${stage}: ${plans.length}`);
     for (const plan of plans) console.log(`  - ${plan.slug}`);
+  }
+}
+
+function exitForScaffoldHelperError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  if (message.startsWith('Unsafe slug') || message.startsWith('Invalid plan stage')) process.exit(2);
+  process.exit(1);
+}
+
+function parsePlanStage(args: string[]): PlanCreationStage {
+  let stage: PlanCreationStage | undefined;
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    if (flag === '--stage') {
+      const value = args[i + 1];
+      if (!value || value.startsWith('--')) {
+        console.error('Missing value for --stage');
+        process.exit(2);
+      }
+      if (!(PLAN_CREATION_STAGES as readonly string[]).includes(value)) {
+        console.error(`Invalid value for --stage: ${value}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
+        process.exit(2);
+      }
+      stage = value as PlanCreationStage;
+      i += 1;
+    } else {
+      console.error(`Unknown option for plan new: ${flag}`);
+      console.error('Usage: osc plan new <slug> --stage <active|backlog|blocked>');
+      process.exit(2);
+    }
+  }
+  if (!stage) {
+    console.error('Missing required option: --stage <active|backlog|blocked>');
+    process.exit(2);
+  }
+  return stage;
+}
+
+function planCommand(args: string[]): void {
+  if (args[0] === 'new') {
+    const slug = requireArg(args.slice(1), 'slug');
+    const stage = parsePlanStage(args.slice(2));
+    try {
+      const result = createPlanSkeleton(slug, stage, process.cwd());
+      console.log(`Created plan: ${result.relativePath}`);
+      console.log('Next: fill the TODO prompts before implementation; do not treat the skeleton as acceptance criteria.');
+      return;
+    } catch (error) {
+      exitForScaffoldHelperError(error);
+    }
+  }
+  const planPath = resolve(requireArg(args, 'plan-path'));
+  console.log(JSON.stringify(planToJson(parsePlanFile(planPath)), null, 2));
+}
+
+function evidenceCommand(args: string[]): void {
+  const [subcommand, ...rest] = args;
+  if (subcommand !== 'new') {
+    console.error('Usage: osc evidence new <slug>');
+    process.exit(2);
+  }
+  const slug = requireArg(rest, 'slug');
+  if (rest.length > 1) {
+    console.error(`Unknown option for evidence new: ${rest[1]}`);
+    console.error('Usage: osc evidence new <slug>');
+    process.exit(2);
+  }
+  try {
+    const result = createEvidenceNoteSkeleton(slug, process.cwd());
+    console.log(`Created evidence note: ${result.relativePath}`);
+    console.log('Next: replace every TODO with verified evidence before closing the plan.');
+  } catch (error) {
+    exitForScaffoldHelperError(error);
   }
 }
 
@@ -595,11 +671,9 @@ function main(): void {
     case 'status':
       status(args.includes('--json'));
       return;
-    case 'plan': {
-      const planPath = resolve(requireArg(args, 'plan-path'));
-      console.log(JSON.stringify(planToJson(parsePlanFile(planPath)), null, 2));
+    case 'plan':
+      planCommand(args);
       return;
-    }
     case 'delegate':
     case 'run':
     case 'review':
@@ -611,6 +685,9 @@ function main(): void {
       return;
     case 'audit':
       auditCommand(args);
+      return;
+    case 'evidence':
+      evidenceCommand(args);
       return;
     case 'verify': {
       const result = validateScaffold(process.cwd());

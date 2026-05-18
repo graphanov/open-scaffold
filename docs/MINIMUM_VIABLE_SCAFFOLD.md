@@ -36,9 +36,9 @@ Use `min` for the smallest durable loop, `standard` for the recommended day-one 
 Then follow the loop:
 
 1. **Define mission** — run `./bootstrap.sh` or edit `MISSION.md` until the project-specific mission is real.
-2. **Create one active plan** — copy `.osc/plans/handoff-template.md` into `.osc/plans/active/<slug>.md` and fill short bullets for goal, acceptance criteria, and verification.
+2. **Create one active plan** — run `osc plan new <slug> --stage active` (or `npx open-scaffold plan new <slug> --stage active` without a local install), then fill the TODO prompts with a real goal, acceptance criteria, and verification. Shell fallback: copy `.osc/plans/handoff-template.md` into `.osc/plans/active/<slug>.md` and fill it manually.
 3. **Execute and verify** — make the change, run the project test/check, then run `./verify.sh --standard`.
-4. **Record evidence** — add a short `.osc/releases/<date>-<slug>.md` note saying what changed, which plan it closed, what command/test ran, and the result.
+4. **Record evidence** — run `osc evidence new <slug>` (or `npx open-scaffold evidence new <slug>`) to create `.osc/releases/<date>-<slug>.md`, then replace the TODO prompts with what changed, which plan it closed, what command/test ran, and the result. Shell fallback: create the evidence note manually under `.osc/releases/`.
 5. **Close the plan** — run `./close.sh <slug> --message "<what shipped>"` so the plan moves to `done/` and `MISSION.md` is stamped.
 
 The payoff appears in the next session. If someone opens the repo later with no chat history, they can read `MISSION.md`, `.osc/plans/active/`, `.osc/plans/done/`, and `.osc/releases/` to see what the project is, whether work is still active, what was verified, and whether the next action is to continue, stop, or write a new plan.
