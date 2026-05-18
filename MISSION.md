@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-18: closed 048-cli-lifecycle-parity — CLI lifecycle parity helpers shipped
 - 2026-05-18: closed 047-roadmap-open-question-reconciliation — roadmap open-question reconciliation shipped
 - 2026-05-18: closed 044-cli-friction-reduction — CLI plan and evidence helpers shipped
 - 2026-05-18: closed 043-one-real-runtime-adapter-spike — OMX $ralplan explicit runtime launch gate shipped

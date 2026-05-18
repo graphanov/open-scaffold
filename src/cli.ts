@@ -6,7 +6,7 @@ import { createRunArtifacts, type ArtifactMode, type ExecutorLane, type Operator
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
-import { createEvidenceNoteSkeleton, createPlanSkeleton, inspectScaffold, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
+import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
 import { validateScaffold } from './validation.js';
 
 function printHelp(): void {
@@ -18,7 +18,9 @@ Usage:
   osc status [--json]
   osc plan <plan-path>
   osc plan new <slug> --stage <active|backlog|blocked>
+  osc amend <plan-slug> [--message <text>]
   osc evidence new <slug>
+  osc close <plan-slug> [--message <text>]
   osc delegate <plan-path> [run binding options]
   osc run <plan-path> [run binding options]
   osc review <plan-path> [run binding options]
@@ -369,6 +371,62 @@ function evidenceCommand(args: string[]): void {
   }
 }
 
+type LifecycleOptions = {
+  slug: string;
+  message: string;
+};
+
+function parseLifecycleOptions(args: string[], command: 'amend' | 'close'): LifecycleOptions {
+  const slug = requireArg(args, 'plan-slug');
+  let message = '';
+  const rest = args.slice(1);
+  for (let i = 0; i < rest.length; i += 1) {
+    const flag = rest[i];
+    if (flag === '--message') {
+      const value = rest[i + 1];
+      if (!value || value.startsWith('--')) {
+        console.error(`Missing value for --message`);
+        process.exit(2);
+      }
+      message = value;
+      i += 1;
+      continue;
+    }
+    console.error(`Unknown option for ${command}: ${flag}`);
+    console.error(`Usage: osc ${command} <plan-slug> [--message <text>]`);
+    process.exit(2);
+  }
+  return { slug, message };
+}
+
+function amendCommand(args: string[]): void {
+  const { slug, message } = parseLifecycleOptions(args, 'amend');
+  try {
+    const result = createPlanAmendment(slug, process.cwd(), message);
+    console.log(`Created amendment: ${result.relativePath}`);
+    if (result.changelogStamped) console.log('Stamped: MISSION.md changelog');
+    console.log('Next: fill in the TODO sections in the amendment, then verify and commit.');
+  } catch (error) {
+    exitForScaffoldHelperError(error);
+  }
+}
+
+function closeCommand(args: string[]): void {
+  const { slug, message } = parseLifecycleOptions(args, 'close');
+  try {
+    const result = closePlan(slug, process.cwd(), message);
+    if (result.alreadyDone) {
+      console.log(`Plan ${result.slug}.md is already in done/.`);
+      return;
+    }
+    console.log(`Closed: ${result.slug}`);
+    console.log(`Moved to done/: ${result.movedFiles.join(', ')}`);
+    if (result.changelogStamped) console.log('Stamped: MISSION.md changelog');
+  } catch (error) {
+    exitForScaffoldHelperError(error);
+  }
+}
+
 function createArtifacts(args: string[], mode: ArtifactMode): void {
   const { planPathArg, options } = parseRunOptions(args);
   const planPath = resolve(planPathArg);
@@ -674,6 +732,9 @@ function main(): void {
     case 'plan':
       planCommand(args);
       return;
+    case 'amend':
+      amendCommand(args);
+      return;
     case 'delegate':
     case 'run':
     case 'review':
@@ -688,6 +749,9 @@ function main(): void {
       return;
     case 'evidence':
       evidenceCommand(args);
+      return;
+    case 'close':
+      closeCommand(args);
       return;
     case 'verify': {
       const result = validateScaffold(process.cwd());

@@ -134,15 +134,26 @@ Shell fallback remains supported:
 cp .osc/plans/handoff-template.md .osc/plans/active/my-first-task.md
 ```
 
-### 4. Verify and record evidence
+### 4. Verify, amend if needed, record evidence, and close
 
 ```bash
 ./verify.sh
+osc amend my-first-task --message "scope changed" # only when new learning changes the plan
+# or, without local install: npx open-scaffold amend my-first-task --message "scope changed"
 osc evidence new my-first-task
 # or, without local install: npx open-scaffold evidence new my-first-task
+osc close my-first-task --message "verified first task"
+# or, without local install: npx open-scaffold close my-first-task --message "verified first task"
 ```
 
-Use `./verify.sh --standard` before calling a meaningful slice done. The evidence helper creates `.osc/releases/<date>-my-first-task.md` with TODO prompts; replace them with real commands, results, PR links, and follow-up before closing the plan.
+Use `./verify.sh --standard` before calling a meaningful slice done. The amendment helper creates `<slug>-amendment-N.md` with TODO prompts and stamps `MISSION.md`; fill those TODOs before continuing. The evidence helper creates `.osc/releases/<date>-my-first-task.md` with TODO prompts; replace them with real commands, results, PR links, and follow-up before closing the plan.
+
+Shell fallbacks remain supported:
+
+```bash
+./amend.sh my-first-task --message "scope changed"
+./close.sh my-first-task --message "verified first task"
+```
 
 ### 5. Optional: package a plan for an agent/runtime
 

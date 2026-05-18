@@ -50,7 +50,7 @@ Implement what the plan says. Independent tasks can run in parallel. Every chang
 
 Check the plan's acceptance criteria one by one. Run tests. Read the diff. Verification traces to criteria, not vibes.
 
-Run `./verify.sh` for a zero-dependency methodology compliance report (mission defined, plans exist, amendments sequential, changelog coverage). Use `./verify.sh --strict` for full checks including plan schema validation and paired-view drift detection. `osc verify` performs the generic CLI check; adapter repos keep their own namespace-specific verify behavior. Use `osc evidence new <slug>` to scaffold a `.osc/releases/<date>-<slug>.md` evidence note after verification, then replace every TODO with real commands and results. Shell scripts remain the day-zero floor; `osc` is the canonical tested path for richer run/package behavior.
+Run `./verify.sh` for a zero-dependency methodology compliance report (mission defined, plans exist, amendments sequential, changelog coverage). Use `./verify.sh --strict` for full checks including plan schema validation and paired-view drift detection. `osc verify` performs the generic CLI check; adapter repos keep their own namespace-specific verify behavior. Use `osc evidence new <slug>` to scaffold a `.osc/releases/<date>-<slug>.md` evidence note after verification, then replace every TODO with real commands and results. Use `osc close <slug> --message "<what shipped>"` (or `npx open-scaffold close <slug> --message "<what shipped>"`) to move a verified plan to `done/`. Shell scripts remain the day-zero floor; `osc` is the canonical tested path for richer run/package behavior.
 
 > **With adapters:** OMC/OMX handoffs should still end by running the repo-local `./verify.sh` plus acceptance-criteria checks. Runtime-native verify commands are wrappers around this evidence, not replacements for it.
 
@@ -63,15 +63,15 @@ Open a traceable GitHub PR for meaningful changes. The PR should link issue/task
 New information legitimately changes what you're building? That's fine — but capture it, don't silently drift.
 
 1. Do not edit plan files in place. Do not hand-edit MISSION.md's changelog for amendment bookkeeping.
-2. Run `./amend.sh <plan-slug>` from the repo root. The script finds the parent plan in whichever stage subfolder it lives in (`active/`, `backlog/`, `done/`, `blocked/`), autonumbers the next amendment file alongside it, scaffolds the 5-section schema from `.osc/plans/README.md`, and stamps MISSION.md's `## Changelog` section in one shot.
+2. Run `osc amend <plan-slug> --message "<what changed>"` (or `npx open-scaffold amend <plan-slug> --message "<what changed>"` without a local install). The CLI finds the parent plan in whichever stage subfolder it lives in (`active/`, `backlog/`, `done/`, `blocked/`), autonumbers the next amendment file alongside it, scaffolds the 5-section schema from `.osc/plans/README.md`, and stamps MISSION.md's `## Changelog` section in one shot.
 3. Fill in the three `TODO:` sections in the new amendment file: **Learning** (what changed and why), **New direction** (the revised goal or criteria), and **Impact on acceptance criteria** (which AC numbers change, how).
 4. Review the diff, then commit. Agents read the original plan plus all amendments in numeric order.
 
-Optional flags: `--stage` to `git add` both files automatically; `--backlog` to place the amendment in backlog instead of active; `--message "<text>"` to override the default changelog line. See `./amend.sh` at the repo root.
+Shell fallback: `./amend.sh <plan-slug>` remains supported, including script-specific flags such as `--stage`, `--backlog`, and `--message "<text>"`. The CLI path covers the common npm/day-two flow; the shell script remains the compatibility floor.
 
-This is the difference between legitimate scope evolution (captured, traceable) and bad scope creep (silent, invisible). The script is the safety net: it makes the mechanical parts of the amendment protocol (autonumbering, schema fidelity, changelog stamping) impossible to get wrong.
+This is the difference between legitimate scope evolution (captured, traceable) and bad scope creep (silent, invisible). The helper is the safety net: it makes the mechanical parts of the amendment protocol (autonumbering, schema fidelity, changelog stamping) harder to get wrong.
 
-> **With runtime harnesses:** use second-opinion or review flows before amending when you are stuck, but capture the final scope change with `./amend.sh`. Runtime memory is not a substitute for amendment files.
+> **With runtime harnesses:** use second-opinion or review flows before amending when you are stuck, but capture the final scope change with `osc amend` or `./amend.sh`. Runtime memory is not a substitute for amendment files.
 
 ## When to use what
 

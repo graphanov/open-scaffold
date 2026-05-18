@@ -39,7 +39,7 @@ Then follow the loop:
 2. **Create one active plan** — run `osc plan new <slug> --stage active` (or `npx open-scaffold plan new <slug> --stage active` without a local install), then fill the TODO prompts with a real goal, acceptance criteria, and verification. Shell fallback: copy `.osc/plans/handoff-template.md` into `.osc/plans/active/<slug>.md` and fill it manually.
 3. **Execute and verify** — make the change, run the project test/check, then run `./verify.sh --standard`.
 4. **Record evidence** — run `osc evidence new <slug>` (or `npx open-scaffold evidence new <slug>`) to create `.osc/releases/<date>-<slug>.md`, then replace the TODO prompts with what changed, which plan it closed, what command/test ran, and the result. Shell fallback: create the evidence note manually under `.osc/releases/`.
-5. **Close the plan** — run `./close.sh <slug> --message "<what shipped>"` so the plan moves to `done/` and `MISSION.md` is stamped.
+5. **Amend or close** — when new learning changes the plan, run `osc amend <slug> --message "<what changed>"` (or `npx open-scaffold amend <slug> --message "<what changed>"`) and fill the amendment TODOs. When the slice is verified, run `osc close <slug> --message "<what shipped>"` (or `npx open-scaffold close <slug> --message "<what shipped>"`) so the plan moves to `done/` and `MISSION.md` is stamped. Shell fallback: use `./amend.sh <slug>` and `./close.sh <slug> --message "<what shipped>"`.
 
 The payoff appears in the next session. If someone opens the repo later with no chat history, they can read `MISSION.md`, `.osc/plans/active/`, `.osc/plans/done/`, and `.osc/releases/` to see what the project is, whether work is still active, what was verified, and whether the next action is to continue, stop, or write a new plan.
 

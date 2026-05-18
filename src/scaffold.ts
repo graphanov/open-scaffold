@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 
 export const OSC_NAMESPACE = '.osc';
@@ -35,6 +35,21 @@ export interface CreatedScaffoldFile {
 
 export interface CreatedPlanSkeleton extends CreatedScaffoldFile {
   stage: PlanCreationStage;
+}
+
+export interface CreatedPlanAmendment extends CreatedScaffoldFile {
+  parentPath: string;
+  amendmentNumber: number;
+  changelogStamped: boolean;
+}
+
+export interface ClosedPlanResult {
+  root: string;
+  slug: string;
+  fromStage: PlanStage | 'root';
+  movedFiles: string[];
+  changelogStamped: boolean;
+  alreadyDone: boolean;
 }
 
 export interface ExecutionGroup {
@@ -118,6 +133,16 @@ function assertSafeSlug(slug: string): string {
   return trimmed;
 }
 
+function normalizeLifecyclePlanSlug(slug: string): string {
+  const trimmed = slug.trim();
+  if (!trimmed || trimmed.includes('/') || trimmed.includes('\\')) {
+    throw new Error(`Unsafe slug: ${slug}. Use a plan slug such as 001-my-task, not a path.`);
+  }
+  const withoutExtension = trimmed.endsWith('.md') ? trimmed.slice(0, -3) : trimmed;
+  const withoutAmendmentSuffix = withoutExtension.replace(/-amendment-\d+$/, '');
+  return assertSafeSlug(withoutAmendmentSuffix);
+}
+
 function requireScaffoldRoot(start = process.cwd()): string {
   const root = findScaffoldRoot(start);
   if (!root) throw new Error(`No Open Scaffold root found from ${resolve(start)}. Run this inside a repo with .osc/plans and .osc/releases.`);
@@ -189,11 +214,94 @@ TODO: state what shipped, what remains out of scope, and the approval/review sta
 `;
 }
 
+function renderAmendmentSkeleton(slug: string, amendmentNumber: number, date: Date): string {
+  return `# Amendment ${amendmentNumber}: ${slug}
+
+## Parent
+
+${slug}
+
+## Date
+
+${formatLocalDate(date)}
+
+## Learning
+
+TODO: what changed and why (the "I got smarter" moment)
+
+## New direction
+
+TODO: the revised goal or criteria, stated verbatim
+
+## Impact on acceptance criteria
+
+TODO: which acceptance criterion numbers change, and how
+`;
+}
+
 function formatLocalDate(date: Date): string {
   const year = String(date.getFullYear());
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+type FoundPlan = {
+  path: string;
+  dir: string;
+  stage: PlanStage | 'root';
+};
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function planStageSearchDirs(root: string, stages: readonly (PlanStage | 'root')[]): Array<{ stage: PlanStage | 'root'; dir: string }> {
+  const plansDir = join(root, OSC_NAMESPACE, 'plans');
+  return stages.map((stage) => ({ stage, dir: stage === 'root' ? plansDir : join(plansDir, stage) }));
+}
+
+function findPlanBySlug(root: string, slug: string, stages: readonly (PlanStage | 'root')[]): FoundPlan | null {
+  for (const { stage, dir } of planStageSearchDirs(root, stages)) {
+    const path = join(dir, `${slug}.md`);
+    if (existsSync(path)) return { path, dir, stage };
+  }
+  return null;
+}
+
+function assertMissionReady(root: string): void {
+  const missionPath = join(root, 'MISSION.md');
+  if (!existsSync(missionPath)) {
+    throw new Error(`MISSION.md not found at ${missionPath}`);
+  }
+  const mission = readFileSync(missionPath, 'utf8');
+  if (mission.includes('mission:unset') || mission.includes('TODO: define mission')) {
+    throw new Error('Mission is not yet defined. Run ./bootstrap.sh or edit MISSION.md first.');
+  }
+}
+
+function stampMissionChangelog(root: string, line: string, idempotencyToken?: string): boolean {
+  assertMissionReady(root);
+  const missionPath = join(root, 'MISSION.md');
+  const mission = readFileSync(missionPath, 'utf8');
+  if (idempotencyToken && mission.includes(idempotencyToken)) return false;
+
+  const anchor = '<!-- append YYYY-MM-DD entries below this line -->';
+  const entry = `- ${line}`;
+  let nextMission: string;
+  if (mission.includes(anchor)) {
+    const lines = mission.split(/\r?\n/);
+    const output: string[] = [];
+    for (const existingLine of lines) {
+      output.push(existingLine);
+      if (existingLine.includes(anchor)) output.push(entry);
+    }
+    nextMission = output.join('\n');
+  } else {
+    nextMission = `${mission.replace(/\s*$/, '')}\n\n${entry}\n`;
+  }
+  writeFileSync(missionPath, nextMission, 'utf8');
+  return true;
 }
 
 export function createPlanSkeleton(slug: string, stage: PlanCreationStage, start = process.cwd()): CreatedPlanSkeleton {
@@ -232,6 +340,76 @@ export function createEvidenceNoteSkeleton(slug: string, start = process.cwd(), 
   mkdirSync(releasesDir, { recursive: true });
   writeFileSync(path, renderEvidenceSkeleton(safeSlug), 'utf8');
   return { root, path, relativePath, slug: safeSlug };
+}
+
+export function createPlanAmendment(slug: string, start = process.cwd(), message = '', date = new Date()): CreatedPlanAmendment {
+  const safeSlug = normalizeLifecyclePlanSlug(slug);
+  const root = requireScaffoldRoot(start);
+  const parent = findPlanBySlug(root, safeSlug, ['active', 'backlog', 'blocked', 'done', 'root']);
+  if (!parent) {
+    throw new Error(`Parent plan not found: ${safeSlug}.md in .osc/plans/{active,backlog,blocked,done}.`);
+  }
+
+  let max = 0;
+  const amendmentPattern = new RegExp(`^${escapeRegex(safeSlug)}-amendment-(\\d+)\\.md$`);
+  for (const file of readdirSync(parent.dir)) {
+    const match = file.match(amendmentPattern);
+    if (!match) continue;
+    const value = Number.parseInt(match[1], 10);
+    if (value > max) max = value;
+  }
+  const amendmentNumber = max + 1;
+  const filename = `${safeSlug}-amendment-${amendmentNumber}.md`;
+  const path = join(parent.dir, filename);
+  const relativePath = relative(root, path);
+  if (existsSync(path)) {
+    throw new Error(`Refusing to overwrite existing amendment: ${relativePath}`);
+  }
+  assertMissionReady(root);
+  writeFileSync(path, renderAmendmentSkeleton(safeSlug, amendmentNumber, date), 'utf8');
+
+  const dateText = formatLocalDate(date);
+  const changelogLine = message.trim()
+    ? `${dateText}: ${message.trim()} — see ${relativePath}`
+    : `${dateText}: amendment ${amendmentNumber} to ${safeSlug} — see ${relativePath}`;
+  const changelogStamped = stampMissionChangelog(root, changelogLine, filename);
+  return { root, path, relativePath, slug: safeSlug, parentPath: parent.path, amendmentNumber, changelogStamped };
+}
+
+export function closePlan(slug: string, start = process.cwd(), message = '', date = new Date()): ClosedPlanResult {
+  const safeSlug = normalizeLifecyclePlanSlug(slug);
+  const root = requireScaffoldRoot(start);
+  const parent = findPlanBySlug(root, safeSlug, ['active', 'backlog', 'blocked', 'root', 'done']);
+  if (!parent) {
+    throw new Error(`Plan not found: ${safeSlug}.md in .osc/plans/{active,backlog,blocked}.`);
+  }
+  if (parent.stage === 'done') {
+    return { root, slug: safeSlug, fromStage: 'done', movedFiles: [], changelogStamped: false, alreadyDone: true };
+  }
+
+  const doneDir = join(root, OSC_NAMESPACE, 'plans', 'done');
+  mkdirSync(doneDir, { recursive: true });
+  const amendmentPattern = new RegExp(`^${escapeRegex(safeSlug)}-amendment-\\d+\\.md$`);
+  const filesToMove = [
+    `${safeSlug}.md`,
+    ...readdirSync(parent.dir).filter((file) => amendmentPattern.test(file)).sort(),
+  ];
+  for (const file of filesToMove) {
+    const destination = join(doneDir, file);
+    if (existsSync(destination)) {
+      throw new Error(`Refusing to overwrite existing done plan file: ${relative(root, destination)}`);
+    }
+  }
+  assertMissionReady(root);
+  for (const file of filesToMove) {
+    renameSync(join(parent.dir, file), join(doneDir, file));
+  }
+  const dateText = formatLocalDate(date);
+  const changelogLine = message.trim()
+    ? `${dateText}: closed ${safeSlug} — ${message.trim()}`
+    : `${dateText}: closed ${safeSlug}`;
+  const changelogStamped = stampMissionChangelog(root, changelogLine);
+  return { root, slug: safeSlug, fromStage: parent.stage, movedFiles: filesToMove, changelogStamped, alreadyDone: false };
 }
 
 function normalizeHeading(raw: string): string {
