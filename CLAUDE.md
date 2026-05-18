@@ -24,8 +24,7 @@ open-scaffold has multiple layers. The **core system** is framework-agnostic rep
 - **`.osc-dev/`** (gitignored; populated only when working on open-scaffold itself, not in cloned templates) — owner's internal workspace holding `plans/`, `decisions/` (full ADR records), `specs/`, and `snapshots/`. **Before proposing architectural changes to the scaffold itself, read `.osc-dev/plans/` and `.osc-dev/decisions/` first** — many design questions are already investigated there, and re-deriving a rejected decision wastes a session. Grep/Glob tools skip gitignored paths by default; include `.osc-dev/` explicitly when searching.
 - **`docs/WORKFLOW.md`** — the phase-to-tool-to-command cheat-sheet. Where to reach for which agent/skill at each development phase.
 - **`bootstrap.sh`** — optional idempotent day-one setup. Creates lazy dirs (`.osc/research/`, `.osc/state/`) and stamps MISSION.md's changelog with the bootstrap date.
-- **`amend.sh`** — amendment scaffolder. Run `./amend.sh <plan-slug>` to autonumber the next amendment, scaffold the 5-section schema, and stamp MISSION.md's changelog in one shot. Use `--backlog` to place in backlog instead of active. Use this instead of hand-editing amendment files or MISSION.md.
-- **`close.sh`** — plan closer. Run `./close.sh <plan-slug>` to move a completed plan and all its amendments to `done/` and stamp MISSION.md's changelog.
+- **Lifecycle helpers** — prefer `osc amend <plan-slug> --message "<what changed>"` and `osc close <plan-slug> --message "<what shipped>"` for the npm/day-two path. Shell fallbacks remain `./amend.sh <plan-slug>` and `./close.sh <plan-slug>`; the scripts keep their script-specific flags such as `--stage` and `--backlog`.
 - **`.osc/RULES.md`** — compact non-negotiable principles. Re-read before any major action on project structure.
 
 ## Compliance checks
@@ -52,20 +51,20 @@ If you cannot execute shell commands, check directly: first check that `MISSION.
 Legitimate scope evolution (the "I got smarter" case — new information changes what we should build) is captured via the amendment protocol, not silent edits. The full protocol is documented in `.osc/plans/README.md` (under 200 words). Short version:
 
 1. Plans in `.osc/plans/` are immutable once committed.
-2. New learnings become `<plan-slug>-amendment-<n>.md` files in the same stage folder as the parent — **scaffolded by `./amend.sh <plan-slug>`**, not hand-written.
-3. MISSION.md's `## Changelog` section gets a one-line entry per amendment — **stamped by `amend.sh`**, not hand-edited.
+2. New learnings become `<plan-slug>-amendment-<n>.md` files in the same stage folder as the parent — **scaffolded by `osc amend <plan-slug> --message "<what changed>"` or `./amend.sh <plan-slug>`**, not hand-written.
+3. MISSION.md's `## Changelog` section gets a one-line entry per amendment — **stamped by the helper**, not hand-edited.
 4. Agents and humans read the original plan PLUS all amendments in numeric order.
 
-Do NOT edit plans in place. Do NOT hand-edit amendment files or MISSION.md's changelog for amendment bookkeeping — let `amend.sh` do the mechanical work. Do NOT add features not traceable to a plan file or amendment. If a new requirement arrives, write an amendment first, then implement.
+Do NOT edit plans in place. Do NOT hand-edit amendment files or MISSION.md's changelog for amendment bookkeeping — let `osc amend` or `amend.sh` do the mechanical work. Do NOT add features not traceable to a plan file or amendment. If a new requirement arrives, write an amendment first, then implement.
 
 ### Agent-driven amendment flow
 
 When the user signals an "I got smarter" moment (new information changes a plan's goal, constraints, or acceptance criteria), drive the amendment conversationally:
 
 1. Ask the user what specifically changed since the plan was written and why it changes scope. Summarize their words back in their voice before writing anything.
-2. Run `./amend.sh <plan-slug>` from the repo root. The script autonumbers the amendment, scaffolds the 5-section schema (Parent / Date / Learning / New direction / Impact on acceptance criteria), and stamps MISSION.md's changelog.
-3. Fill in the three `TODO:` sections in the new amendment file using the user's summary. Do not touch MISSION.md directly — the script already stamped it.
-4. Show the user the diff of the new amendment file and the MISSION.md changelog line for review before staging. Pass `--stage` on a rerun, or stage manually after they approve.
+2. Run `osc amend <plan-slug> --message "<what changed>"` or `./amend.sh <plan-slug>` from the repo root. The helper autonumbers the amendment, scaffolds the 5-section schema (Parent / Date / Learning / New direction / Impact on acceptance criteria), and stamps MISSION.md's changelog.
+3. Fill in the three `TODO:` sections in the new amendment file using the user's summary. Do not touch MISSION.md directly — the helper already stamped it.
+4. Show the user the diff of the new amendment file and the MISSION.md changelog line for review before staging. If using the shell fallback, pass `--stage` on a rerun, or stage manually after they approve.
 5. Never hand-author amendment files, never manually edit MISSION.md's changelog for amendments, and never modify the parent plan file.
 
 ## Delegation detection

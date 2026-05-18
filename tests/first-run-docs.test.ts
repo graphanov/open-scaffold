@@ -32,7 +32,7 @@ describe('first-run documentation truth', () => {
     }
   });
 
-  it('documents plan and evidence helper commands without removing shell fallbacks', () => {
+  it('documents lifecycle helper commands without removing shell fallbacks', () => {
     const docs = [
       ['README.md', read('README.md')],
       ['docs/MINIMUM_VIABLE_SCAFFOLD.md', read('docs/MINIMUM_VIABLE_SCAFFOLD.md')],
@@ -42,9 +42,16 @@ describe('first-run documentation truth', () => {
     for (const [path, text] of docs) {
       expect(text, path).toContain('osc plan new');
       expect(text, path).toContain('osc evidence new');
+      expect(text, path).toContain('osc amend');
+      expect(text, path).toContain('osc close');
+      expect(text, path).toContain('npx open-scaffold amend');
+      expect(text, path).toContain('npx open-scaffold close');
     }
     expect(read('README.md')).toContain('cp .osc/plans/handoff-template.md');
+    expect(read('README.md')).toContain('./amend.sh');
+    expect(read('README.md')).toContain('./close.sh');
     expect(read('docs/MINIMUM_VIABLE_SCAFFOLD.md')).toContain('copy `.osc/plans/handoff-template.md`');
+    expect(read('docs/MINIMUM_VIABLE_SCAFFOLD.md')).toContain('./close.sh');
     expect(read('docs/WORKFLOW.md')).toContain('Shell scripts remain the day-zero floor');
   });
 
