@@ -10,6 +10,8 @@ export interface SafeOutputPaths {
   relativeRunPacketPath: string;
   relativeReceiptPath: string;
   relativeEvidencePath: string;
+  logPath: string;
+  relativeLogPath: string;
 }
 
 function ensureInside(parent: string, child: string, message: string): void {
@@ -76,7 +78,8 @@ export function safeOutputPaths(runPacketInputPath: string, repoPath: string, re
 
   const receiptPath = resolveOutput(repoRoot, runDir, runPacketPath, receiptOutput, 'dispatch-receipt.json');
   const evidencePath = resolveOutput(repoRoot, runDir, runPacketPath, undefined, 'runtime-omx-evidence.md');
-  if (receiptPath === evidencePath) throw new Error('dispatch receipt and evidence paths must be distinct');
+  const logPath = resolveOutput(repoRoot, runDir, runPacketPath, undefined, 'runtime-omx.log');
+  if (receiptPath === evidencePath || receiptPath === logPath || evidencePath === logPath) throw new Error('dispatch receipt, evidence, and log paths must be distinct');
 
   return {
     repoRoot,
@@ -84,8 +87,10 @@ export function safeOutputPaths(runPacketInputPath: string, repoPath: string, re
     runPacketPath,
     receiptPath,
     evidencePath,
+    logPath,
     relativeRunPacketPath: relative(repoRoot, runPacketPath),
     relativeReceiptPath: relative(repoRoot, receiptPath),
     relativeEvidencePath: relative(repoRoot, evidencePath),
+    relativeLogPath: relative(repoRoot, logPath),
   };
 }

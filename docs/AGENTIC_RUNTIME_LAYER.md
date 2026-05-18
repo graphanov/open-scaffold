@@ -51,7 +51,7 @@ npm run osc -- run .osc/plans/active/001-demo.md \
 
 That creates a dispatchable `run.json` package. It does not launch OMX.
 
-The first `packages/runtime-omx/` slice consumes that package and proves the `$ralplan` handoff path without real process launch. See [`packages/runtime-omx/README.md`](../packages/runtime-omx/README.md) for the no-spawn scaffold. A later real-runtime spike may add an explicit opt-in launch flag, but launch must remain separate from default core packaging.
+The first `packages/runtime-omx/` slice consumed that package and proved the `$ralplan` handoff path without real process launch. The follow-up runtime spike adds an explicit `--allow-spawn` package gate for OMX `$ralplan`; launch remains outside Open Scaffold core, requires safe branch/worktree/version checks, and still returns receipt/evidence before any human approval, merge, or publish decision.
 
 ## Authority defaults
 
@@ -72,8 +72,8 @@ An agentic runtime package can translate these policies to a specific runtime, b
 
 Plan 046 sets the next execution order:
 
-1. `042-reference-adapter-package-no-spawn` adds the in-repo `packages/runtime-omx/` no-spawn package scaffold.
-2. `043-one-real-runtime-adapter-spike` becomes the OMX-first, `$ralplan`-first real runtime spike after 042 proves the package boundary.
+1. `042-reference-adapter-package-no-spawn` added the in-repo `packages/runtime-omx/` no-spawn package scaffold.
+2. `043-one-real-runtime-adapter-spike` adds the OMX-first, `$ralplan`-first explicit launch path behind `--allow-spawn`, keeping core non-spawning.
 3. `044-cli-friction-reduction` remains later unless ceremony blocks the execution proof.
 4. `030-agent-runtime-selection-vision` and `031-agentic-orchestration-model-lab-vision` stay as broader hypotheses until adapter/runtime evidence justifies promotion.
 
@@ -81,7 +81,7 @@ Plan 046 sets the next execution order:
 
 This architecture slice does not:
 
-- implement runtime launch;
+- implement default runtime launch from core;
 - make `osc run` spawn a process;
 - claim full OMX support;
 - certify oh-my-codex as production-supported by Open Scaffold;

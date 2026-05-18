@@ -14,7 +14,7 @@ function expectValidationError(fn: () => unknown, message: string) {
   }
 }
 
-describe('runtime-omx validation and no-spawn receipt', () => {
+describe('runtime-omx validation and default no-spawn receipt', () => {
   it('accepts a valid OMX $ralplan run packet and writes deterministic artifacts', () => {
     const { root, path } = tempRunPacket();
 
@@ -25,9 +25,10 @@ describe('runtime-omx validation and no-spawn receipt', () => {
     expect(result.runId).toBe('demo-run');
     expect(result.receiptPath).toBe(join(root, '.osc/runs/demo/dispatch-receipt.json'));
     expect(result.evidencePath).toBe(join(root, '.osc/runs/demo/runtime-omx-evidence.md'));
+    expect(result.logPath).toBeNull();
     expect(receipt).toMatchObject({
       schema_version: 'open-scaffold.dispatch-receipt.v1',
-      receipt_id: 'runtime-omx:no-spawn:demo-run',
+      receipt_id: 'runtime-omx:no-spawn-preview:demo-run',
       run_id: 'demo-run',
       task_id: 'task:demo',
       adapter_id: 'runtime-omx',
@@ -45,6 +46,7 @@ describe('runtime-omx validation and no-spawn receipt', () => {
         package: 'oh-my-codex',
         version: '0.17.3',
       },
+      runtime_version: null,
       runtime_omx: {
         kind: 'no-spawn-preview',
         workflow: '$ralplan',
@@ -54,22 +56,19 @@ describe('runtime-omx validation and no-spawn receipt', () => {
         credentials_required: false,
         tmux_used: false,
         source_mutation: false,
+        exit_status: null,
       },
     });
-    expect(receipt.command_preview.argv).toEqual([
-      'omx',
-      'exec',
-      '--skip-git-repo-check',
-      '-C',
-      root,
-      '$ralplan "Preview an OMX $ralplan dispatch without launching anything."',
-    ]);
+    expect(receipt.command_preview).toMatchObject({ spawned: false, attempted: false });
+    expect(receipt.command_preview.argv.slice(0, 7)).toEqual(['omx', 'exec', '--skip-git-repo-check', '--sandbox', 'read-only', '-C', root]);
+    expect(receipt.command_preview.argv.at(-1)).toContain('redacted');
     expect(receipt.artifacts).toEqual(['.osc/runs/demo/runtime-omx-evidence.md']);
+    expect(receipt.logs).toEqual([]);
     expect(evidence).toContain('Schema: open-scaffold.adapter-evidence.v1');
     expect(evidence).toContain('Runtime backend: omx');
     expect(evidence).toContain('Workflow: $ralplan');
     expect(evidence).toContain('Spawned: false');
-    expect(evidence).toContain('No OMX, Codex, tmux, network, credentials, commit, push, merge, publish, or source mutation occurred.');
+    expect(evidence).toContain('Commit/push/merge/publish authority: false');
   });
 
   it('rejects unsupported schemaVersion', () => {
@@ -181,5 +180,6 @@ describe('runtime-omx validation and no-spawn receipt', () => {
     expectValidationError(() => runNoSpawnOmx(path), 'executor.spawning must be false');
     expect(existsSync(join(root, '.osc/runs/demo/dispatch-receipt.json'))).toBe(false);
     expect(existsSync(join(root, '.osc/runs/demo/runtime-omx-evidence.md'))).toBe(false);
+    expect(existsSync(join(root, '.osc/runs/demo/runtime-omx.log'))).toBe(false);
   });
 });

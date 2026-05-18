@@ -147,7 +147,7 @@ This is deliberate. Open Scaffold's job is to preserve the source-of-truth chain
 
 OMC and OMX are built-in adapter-candidate profiles — selectable lane metadata with fake/local fixture coverage for their lane tokens, not certified launch integrations and not evidence that OMC/OMX processes were run.
 
-The accepted first executable package track is [`packages/runtime-omx/`](../packages/runtime-omx/): an in-repo agentic runtime package scaffold that consumes the `omx` profile data, validates `$ralplan` as the first workflow, and writes no-spawn receipt/evidence proof before any real launch path is introduced. It keeps `install.auto=false` and `launch.spawning=false`; it is not a registry, installer, credential bridge, or certified production OMX integration.
+The accepted first executable package track is [`packages/runtime-omx/`](../packages/runtime-omx/): an in-repo agentic runtime package that consumes the `omx` profile data, validates `$ralplan` as the first workflow, writes receipt/evidence without spawning by default, and launches only through an explicit `--allow-spawn` package gate. It keeps `install.auto=false` and core `launch.spawning=false`; it is not a registry, installer, credential bridge, or certified production OMX integration.
 
 GSD and other frameworks can be represented as project-local `user-defined` profiles today. They should not be described as certified or built-in integrations until an adapter has passed the conformance expectations and produced public evidence.
 

@@ -2,7 +2,7 @@
   "name": "@open-scaffold/runtime-omx",
   "version": "0.0.0",
   "private": true,
-  "description": "No-spawn OMX $ralplan runtime package scaffold for Open Scaffold run packets.",
+  "description": "Explicit-opt-in OMX $ralplan runtime package for Open Scaffold run packets.",
   "license": "MIT",
   "type": "module",
   "bin": {

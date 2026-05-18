@@ -103,6 +103,6 @@ This slice does not:
 - grant commit/push/merge/publish authority by default;
 - make model/orchestration-lab claims.
 
-The practical next step after this core selection surface is a separate runtime adapter package or coordinator integration that reads the package and performs the launch outside core. The accepted first package boundary is [`packages/runtime-omx/`](../packages/runtime-omx/), starting with no-spawn `$ralplan` validation/preview and receipt/evidence writing. It does not run `omx`, Codex, tmux, or provider processes.
+The practical next step after this core selection surface is a runtime adapter package or coordinator integration that reads the package and performs any launch outside core. The accepted first package boundary is [`packages/runtime-omx/`](../packages/runtime-omx/), starting with `$ralplan`; it writes receipts/evidence by default without spawning and can launch OMX only through its explicit `--allow-spawn` package gate.
 
 For schema-backed runtime profiles, built-in profile ids, and project-local custom profiles, see [`RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md). Runtime profiles are data-only in v0: they let users select and document an adapter lane, but they do not install or spawn the runtime from core.
