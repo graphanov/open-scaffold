@@ -214,6 +214,8 @@ It is overkill for one-off scripts, disposable prototypes, or tasks that fit in 
 
 The current product direction is: make the source-of-truth loop undeniable, then let external runtimes plug into it through profiles and adapters. Open Scaffold now supports runtime selection and runtime profiles, but core still does not install, spawn, supervise, or benchmark runtimes.
 
+Package note: the root `open-scaffold` npm package ships the core CLI, scaffold files, and docs. In-repo runtime package paths such as `packages/runtime-omx/` are GitHub source references today; they are not included in the root npm payload and would need a separate owner-approved runtime-package release before package users can install them from npm.
+
 Near-term roadmap work should improve clarity, adapter evidence, and validation. Real runtime launching, hosted registries, marketplace behavior, and model/task recommendations remain future hypotheses until separately designed and proven. See the [roadmap](ROADMAP.md) for the current milestone list.
 
 ---
