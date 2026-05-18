@@ -11,7 +11,7 @@ This does not launch OMX/Codex and does not claim production/full OMX support.
 - Plan: `.osc/plans/done/042-reference-adapter-package-no-spawn.md`
 - Amendment: `.osc/plans/done/042-reference-adapter-package-no-spawn-amendment-1.md`
 - Branch: `runtime/omx-package-no-spawn`
-- PR: this PR
+- PR: `#50` — https://github.com/graphanov/open-scaffold/pull/50
 - Kanban: `t_b8b143d3`
 - Package: `packages/runtime-omx/`
 - Runtime target: OMX / oh-my-codex
