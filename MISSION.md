@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-19: closed 077-npm-trusted-publishing-workflow — added npm trusted publishing workflow setup
 - 2026-05-19: closed 076-plan-wizard-package-release-sync — prepared plan wizard package release candidate
 - 2026-05-19: closed 052-interactive-plan-wizard — added interactive plan wizard
 - 2026-05-19: closed 075-brownfield-package-release-sync — prepared brownfield init package release candidate
