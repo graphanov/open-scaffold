@@ -20,6 +20,8 @@ The first package boundary is:
 packages/runtime-omx/
 ```
 
+Package distribution note: `packages/runtime-omx/` is a GitHub source path in this repository, not part of the root `open-scaffold` npm payload. The root package ships core CLI/scaffold/docs only; publishing an installable runtime package remains a separate owner-approved release decision.
+
 The first runtime target is OMX / oh-my-codex.
 
 The first workflow to prove is:

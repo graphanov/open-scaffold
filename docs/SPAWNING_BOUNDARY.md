@@ -6,7 +6,7 @@ Open Scaffold Milestone 16 asks whether core should remain non-spawning, add thi
 
 Open Scaffold core should **not** implement real autonomous runtime spawning yet.
 
-Open Scaffold should become executable through explicit agentic runtime packages that sit outside core behavior, starting in-repo with [`packages/runtime-omx/`](../packages/runtime-omx/). The first proof is `$ralplan`-first: validate the run packet, write receipt/evidence by default without spawning, and launch OMX only through an explicit package-level `--allow-spawn` gate after branch/worktree/version checks.
+Open Scaffold should become executable through explicit agentic runtime packages that sit outside core behavior, starting in-repo with [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx). The first proof is `$ralplan`-first: validate the run packet, write receipt/evidence by default without spawning, and launch OMX only through an explicit package-level `--allow-spawn` gate after branch/worktree/version checks. This is a GitHub source path for now; it is not included in the root `open-scaffold` npm payload.
 
 Core should first define the adapter/runtime boundary, dispatch receipt (handoff proof), authority vocabulary (permission words), and evidence expectations. Real spawning belongs in runtime-specific packages/adapters or a future explicitly governed runtime product.
 
@@ -217,7 +217,7 @@ This confirms the adapter/binding thesis: coordinators and project protocols do 
 Near-term:
 
 1. Keep core non-spawning by default.
-2. Use [`packages/runtime-omx/`](../packages/runtime-omx/) as the first separate in-repo agentic runtime package boundary.
+2. Use [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx) as the first separate in-repo agentic runtime package boundary, while keeping runtime-package npm publication as a separate owner-approved decision.
 3. Prove `$ralplan` first with default receipt/evidence writing plus an explicit, branch/worktree/version-checked `--allow-spawn` launch gate.
 4. Keep `docs/RUNTIME_BINDING_CONTRACT.md` aligned with this adapter/receipt vocabulary.
 5. Treat OMX v0.17.0 Hermes MCP as a reference pattern for coordinator-to-runtime bridges, not as Open Scaffold adapter certification.

@@ -38,7 +38,7 @@ and get a concrete `.osc/runs/<run_id>/run.json` package that records:
 
 The selected runtime is dispatchable by an adapter, but Open Scaffold core still does not launch Claude Code, Codex, OMC, OMX, tmux, or any provider process by itself. Dispatchable means the `run.json` contains enough structured lane/workflow/profile data for an external adapter or an explicit agentic runtime package to consume if such a package exists; it does not mean the adapter is installed or certified.
 
-The first executable package track is OMX-first: `--runtime omx --workflow plan` produces the `$ralplan`-targeted packet that [`packages/runtime-omx/`](../packages/runtime-omx/) can validate and preview before any real launch behavior is added.
+The first executable package track is OMX-first: `--runtime omx --workflow plan` produces the `$ralplan`-targeted packet that [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx) can validate and preview from the GitHub source tree before any real launch behavior is added. That runtime package path is not shipped inside the root `open-scaffold` npm payload today.
 
 ## Runtime presets
 
@@ -103,6 +103,6 @@ This slice does not:
 - grant commit/push/merge/publish authority by default;
 - make model/orchestration-lab claims.
 
-The practical next step after this core selection surface is a runtime adapter package or coordinator integration that reads the package and performs any launch outside core. The accepted first package boundary is [`packages/runtime-omx/`](../packages/runtime-omx/), starting with `$ralplan`; it writes receipts/evidence by default without spawning and can launch OMX only through its explicit `--allow-spawn` package gate.
+The practical next step after this core selection surface is a runtime adapter package or coordinator integration that reads the package and performs any launch outside core. The accepted first package boundary is [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx), starting with `$ralplan`; it writes receipts/evidence by default without spawning and can launch OMX only through its explicit `--allow-spawn` package gate. It is a repository/GitHub package path for now, not an installable subpackage shipped by the root npm tarball.
 
 For schema-backed runtime profiles, built-in profile ids, and project-local custom profiles, see [`RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md). Runtime profiles are data-only in v0: they let users select and document an adapter lane, but they do not install or spawn the runtime from core.

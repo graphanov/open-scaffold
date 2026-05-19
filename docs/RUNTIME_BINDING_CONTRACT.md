@@ -6,7 +6,7 @@ Named harnesses in this contract, including OMC and OMX, are runtime lanes or ad
 
 Open Scaffold core creates bounded run packages. Runtime bindings — external launch glue/adapters for a chosen lane — consume those packages and launch outside core. This document defines the contract between the repo-native Open Scaffold package and any coordinator, adapter, harness, agent, or human lane that executes it.
 
-For the accepted executable architecture direction, see [`docs/AGENTIC_RUNTIME_LAYER.md`](AGENTIC_RUNTIME_LAYER.md): Open Scaffold starts execution support through explicit in-repo agentic runtime packages, with `packages/runtime-omx/` as the first target package and `$ralplan` as the first OMX workflow to prove.
+For the accepted executable architecture direction, see [`docs/AGENTIC_RUNTIME_LAYER.md`](AGENTIC_RUNTIME_LAYER.md): Open Scaffold starts execution support through explicit in-repo agentic runtime packages, with `packages/runtime-omx/` as the first target package and `$ralplan` as the first OMX workflow to prove. That path refers to the GitHub source tree; it is not included in the root `open-scaffold` npm package today.
 
 ## Executive rule
 
@@ -158,7 +158,7 @@ A no-spawn conformance adapter must refuse packets when required fields are miss
 
 For the fake/local conformance fixture specifically, success means: packet consumed, `spawning: false` enforced, dispatch receipt written, evidence written, and no runtime, network, credentials, commit, push, merge, or publish authority used.
 
-For the OMX track, [`packages/runtime-omx/`](../packages/runtime-omx/) is the first explicit agentic runtime package. It consumes a run packet, validates the OMX `$ralplan` lane/workflow (`runtimeSelection.runtime=omx`, `runtimeSelection.workflow=plan`, `executor.lane=omx-codex`, `executor.harnessSkill=$ralplan`, `executor.spawning=false`), writes deterministic receipt/evidence artifacts by default without spawning, and can launch only behind its package-level `--allow-spawn` gate after branch/worktree/version checks.
+For the OMX track, [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx) is the first explicit agentic runtime package in the GitHub source tree. It consumes a run packet, validates the OMX `$ralplan` lane/workflow (`runtimeSelection.runtime=omx`, `runtimeSelection.workflow=plan`, `executor.lane=omx-codex`, `executor.harnessSkill=$ralplan`, `executor.spawning=false`), writes deterministic receipt/evidence artifacts by default without spawning, and can launch only behind its package-level `--allow-spawn` gate after branch/worktree/version checks. It is not shipped in the root npm tarball today; package publication for runtime packages remains a separate gate.
 
 ## Binding responsibilities
 
@@ -425,11 +425,11 @@ Evidence stays durable.
 Operators stay in control.
 ```
 
-The first concrete executable track is OMX-first rather than runtime-generic: prove `packages/runtime-omx/` and `$ralplan`, then expand to other OMX workflows or other `packages/runtime-*` packages only with evidence.
+The first concrete executable track is OMX-first rather than runtime-generic: prove the GitHub source package path `packages/runtime-omx/` and `$ralplan`, then expand to other OMX workflows or other `packages/runtime-*` packages only with evidence.
 
 ## Dry-run and conformance examples
 
-For concrete, credential-free consumers of this contract, see [`docs/examples/runtime-binding-dry-run.mjs`](examples/runtime-binding-dry-run.mjs), [`docs/examples/runtime-binding-conformance/fake-local-adapter.mjs`](examples/runtime-binding-conformance/fake-local-adapter.mjs), [`packages/runtime-omx/README.md`](../packages/runtime-omx/README.md), and [`docs/examples/README.md`](examples/README.md). For the current OMC/OMX runtime-selection surface and refreshed-adapter checklist, see [`docs/RUNTIME_SELECTION.md`](RUNTIME_SELECTION.md).
+For concrete, credential-free consumers of this contract, see [`docs/examples/runtime-binding-dry-run.mjs`](examples/runtime-binding-dry-run.mjs), [`docs/examples/runtime-binding-conformance/fake-local-adapter.mjs`](examples/runtime-binding-conformance/fake-local-adapter.mjs), [`packages/runtime-omx/README.md`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx#readme), and [`docs/examples/README.md`](examples/README.md). For the current OMC/OMX runtime-selection surface and refreshed-adapter checklist, see [`docs/RUNTIME_SELECTION.md`](RUNTIME_SELECTION.md).
 
 The dry-run example reads a generated `.osc/runs/<run_id>/run.json`, validates the executable-package and `spawning: false` boundary, prints the handoff summary an external binding would use, and exits without launching any runtime.
 
