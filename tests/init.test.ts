@@ -198,4 +198,14 @@ describe('tiered scaffold initialization', () => {
     expect(() => initializeScaffold({ tier: 'max', target, fromExisting: true })).toThrow(/supports --tier min only/);
     expect(readFileSync(join(target, 'README.md'), 'utf8')).toBe('user readme');
   });
+
+  it('refuses to force-overwrite existing project root shell scripts in brownfield mode', () => {
+    const target = tempTarget();
+    writeFileSync(join(target, 'package.json'), '{"name":"script-safe"}\n');
+    writeFileSync(join(target, 'verify.sh'), '#!/usr/bin/env bash\necho project verify\n');
+
+    expect(() => initializeScaffold({ tier: 'min', target, fromExisting: true, force: true })).toThrow(/Refusing to overwrite existing project files in brownfield mode: verify\.sh/);
+    expect(readFileSync(join(target, 'verify.sh'), 'utf8')).toBe('#!/usr/bin/env bash\necho project verify\n');
+    expect(existsSync(join(target, 'MISSION.md'))).toBe(false);
+  });
 });

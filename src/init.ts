@@ -655,6 +655,12 @@ export function initializeScaffold(options: InitializeScaffoldOptions): Initiali
   }
   const target = resolve(options.target);
   const fromExisting = Boolean(options.fromExisting);
+  const protectedExistingProjectFiles = fromExisting && options.force
+    ? ['verify.sh', 'close.sh', 'bootstrap.sh'].filter((file) => existsSync(join(target, file)))
+    : [];
+  if (protectedExistingProjectFiles.length > 0) {
+    throw new Error(`Refusing to overwrite existing project files in brownfield mode: ${protectedExistingProjectFiles.join(', ')}. Rename or move them before re-running with --force.`);
+  }
   const project = fromExisting ? detectExistingProject(target) : undefined;
   const files = filesForInitialization(options.tier, fromExisting);
 

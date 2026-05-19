@@ -14,10 +14,10 @@ Adds explicit brownfield initialization with `osc init --from-existing` so Open 
 
 ## Verification
 
-- RED check: `npm test -- --run tests/init.test.ts tests/cli-init.test.ts` initially failed because `fromExisting` behavior did not exist and the CLI rejected `--from-existing`; a later independent review also exposed unsafe standard/max brownfield force semantics and incomplete monorepo detection before the final fix.
-- Targeted GREEN: `npm test -- --run tests/init.test.ts tests/cli-init.test.ts` → 2 files / 40 tests passed.
+- RED check: `npm test -- --run tests/init.test.ts tests/cli-init.test.ts` initially failed because `fromExisting` behavior did not exist and the CLI rejected `--from-existing`; independent review/Codex also exposed unsafe standard/max force semantics, incomplete monorepo detection, and root shell-script overwrite risk before the final fixes.
+- Targeted GREEN: `npm test -- --run tests/init.test.ts tests/cli-init.test.ts` → 2 files / 41 tests passed.
 - `npm run build` → pass.
-- Full test suite: `npm test -- --run` → 22 files / 195 tests passed.
+- Full test suite: `npm test -- --run` → 22 files / 196 tests passed.
 - Manual brownfield smoke: `node dist/cli.js init --from-existing --tier min --target <tmp>` against an existing Node.js repo preserved `package.json` and `src/index.js` hashes, generated `MISSION.md`, `.osc/`, `AGENTS.md`, and `CLAUDE.md`, and refused a second run with scaffold-owned conflicts listed.
 - `git diff --check` → pass.
 - `./verify.sh --strict` before closure → 10 pass / 0 fail / 0 warn.
