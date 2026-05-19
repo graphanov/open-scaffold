@@ -22,7 +22,7 @@ Refreshed first-party GitHub Actions pins in CI and trusted publishing workflows
 - `git diff --check` — pass.
 - PR CI — pass; https://github.com/graphanov/open-scaffold/actions/runs/26109263576.
 - PR CI annotations — pass; `gh run view 26109263576 --json jobs` reported `annotationsCount: 0` for the `ci` job.
-- Codex latest-head review — pass; PR #65 head `488f9ff110778e24ac3dda0d6823a75377cdebd2` returned “Didn't find any major issues.”
+- Codex review loop — PR #65 review artifacts inspected. The release note does not freeze a “latest head” hash because evidence-only commits can change the head and make the note recursively stale; final latest-head readiness is determined from the PR conversation after the last push.
 
 ## Outcome
 
