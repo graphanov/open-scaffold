@@ -145,7 +145,7 @@ export function validatePlanFile(path: string, _options: PlanValidationOptions =
 
   const stage = planStageFromPath(path);
   const status = firstParagraph(sections.get('Status') ?? '');
-  if (stage && status && !status.toLowerCase().includes(stage)) {
+  if (stage && status && status.trim().toLowerCase() !== stage) {
     issues.push(issue('error', lineNumberForHeading(lines, 'Status'), 'status-stage-consistency', `Plan is in ${stage}/ but ## Status says "${status}".`, `Move the plan to the matching folder or change ## Status to ${stage}.`));
   }
 

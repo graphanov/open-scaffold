@@ -178,6 +178,13 @@ describe('plan validation CLI', () => {
     expect(issues.some((issue) => issue.rule === 'no-vague-goal')).toBe(true);
     expect(issues.some((issue) => issue.rule === 'blocking-questions-tagged')).toBe(true);
     expect(issues.every((issue) => issue.suggestion.length > 0)).toBe(true);
+
+    const inactivePath = join(target, '.osc/plans/active/022-inactive.md');
+    writeFileSync(inactivePath, readFileSync(brokenPath, 'utf8').replace('# Plan: 021-broken', '# Plan: 022-inactive').replace('## Status\n\nactive', '## Status\n\ninactive'));
+    const inactive = spawnSync(tsx, [cli, 'plan', 'validate', '022-inactive', '--json'], { cwd: target, encoding: 'utf8' });
+    expect(inactive.status).toBe(1);
+    const inactiveIssues = JSON.parse(inactive.stdout) as Array<{ rule: string; message: string }>;
+    expect(inactiveIssues.some((issue) => issue.rule === 'status-stage-consistency' && issue.message.includes('inactive'))).toBe(true);
   });
 
   it('reports heading-order and missing-section errors with actionable text output', () => {
