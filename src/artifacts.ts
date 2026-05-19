@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { ParsedPlan } from './scaffold.js';
 
@@ -34,6 +34,88 @@ export interface RunArtifacts {
   promptPaths: string[];
 }
 
+export interface PackageQuality {
+  executable: boolean;
+  blockers: string[];
+  requiredAction: string | null;
+}
+
+export interface RunManifest {
+  schemaVersion: 'open-scaffold.run.v1';
+  runId: string;
+  taskId: string | null;
+  mode: ArtifactMode;
+  status: 'created';
+  lifecycleStates: string[];
+  createdAt: string;
+  updatedAt: string;
+  namespace: '.osc';
+  sourceRefs: string[];
+  plan: {
+    slug: string;
+    path: string;
+    goal: string;
+    filesToTouch: string[];
+    acceptanceCriteria: string[];
+    verificationSteps: string[];
+    openQuestions: string[];
+  };
+  packageQuality: PackageQuality;
+  runtimeSelection: {
+    runtime: string | null;
+    workflow: RuntimeWorkflow | null;
+    profileId: string | null;
+    profileSource: string | null;
+    note: string;
+  };
+  executor: {
+    lane: ExecutorLane | null;
+    harnessSkill: string | null;
+    spawning: false;
+    note: string;
+  };
+  runtime: {
+    repoPath: string | null;
+    worktreePath: string | null;
+    branch: string | null;
+    tmuxSession: null;
+    processId: null;
+  };
+  bindings: {
+    operatorSurface: OperatorSurface;
+    operatorThreadId: string | null;
+    githubIssue: string | null;
+    githubPr: string | null;
+  };
+  artifacts: {
+    runDir: string;
+    manifest: string;
+    prompts: string[];
+    logs: string[];
+    outputs: string[];
+    evidence: string[];
+  };
+  questions: string[];
+  commitPolicy: string;
+  note: string;
+}
+
+export interface PromptPreview {
+  relativePath: string;
+  absolutePath: string;
+  content: string;
+}
+
+export interface RunArtifactsPreview {
+  runId: string;
+  runDir: string;
+  manifestPath: string;
+  promptFiles: PromptPreview[];
+  manifest: RunManifest;
+  packageMarkdown: string;
+  filesToTouch: string[];
+}
+
 function timestamp(): string {
   return new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 }
@@ -56,8 +138,18 @@ function blockingOpenQuestions(plan: ParsedPlan): string[] {
   return plan.openQuestions.filter(isBlockingOpenQuestion);
 }
 
-function contextQuality(plan: ParsedPlan): { executable: boolean; blockers: string[]; requiredAction: string | null } {
+function missionBlocker(root: string): string | null {
+  const missionPath = join(root, 'MISSION.md');
+  if (!existsSync(missionPath)) return 'undefined mission';
+  const text = readFileSync(missionPath, 'utf8');
+  if (/mission:unset/i.test(text) || /TODO:\s*define mission/i.test(text)) return 'undefined mission';
+  return null;
+}
+
+function contextQuality(root: string, plan: ParsedPlan): PackageQuality {
   const blockers: string[] = [];
+  const mission = missionBlocker(root);
+  if (mission) blockers.push(mission);
   if (!plan.goal.trim()) blockers.push('missing goal');
   if (plan.acceptanceCriteria.length === 0) blockers.push('missing acceptance criteria');
   if (plan.verificationSteps.length === 0) blockers.push('missing verification steps');
@@ -111,24 +203,37 @@ function promptForGroup(plan: ParsedPlan, groupName: string, tasks: string, runI
   ].join('\n');
 }
 
-export function createRunArtifacts(root: string, plan: ParsedPlan, mode: ArtifactMode = 'run', options: RunArtifactOptions = {}): RunArtifacts {
+function packageMarkdownFor(promptFiles: PromptPreview[]): string {
+  const sections = promptFiles.flatMap((prompt) => [
+    `## ${prompt.relativePath}`,
+    '',
+    '```markdown',
+    prompt.content.trimEnd(),
+    '```',
+    '',
+  ]);
+  return ['# Open Scaffold Run Package', '', ...sections].join('\n');
+}
+
+function buildRunArtifacts(root: string, plan: ParsedPlan, mode: ArtifactMode, options: RunArtifactOptions): RunArtifactsPreview {
   const runId = `${timestamp()}-${slugify(plan.slug)}-${mode}`;
   const runDir = join(root, '.osc', 'runs', runId);
   const promptDir = join(runDir, 'prompts');
-  mkdirSync(promptDir, { recursive: true });
 
   const groups = plan.executionStrategy?.groups?.length
     ? plan.executionStrategy.groups.map((g) => ({ name: g.name, tasks: g.tasks }))
     : [{ name: 'Single Session', tasks: `Execute plan ${plan.slug}.` }];
 
-  const promptPaths: string[] = [];
-  for (const group of groups) {
-    const file = join(promptDir, `${slugify(group.name)}.md`);
-    writeFileSync(file, promptForGroup(plan, group.name, group.tasks, runId, options), 'utf8');
-    promptPaths.push(file);
-  }
+  const promptFiles = groups.map((group) => {
+    const absolutePath = join(promptDir, `${slugify(group.name)}.md`);
+    return {
+      absolutePath,
+      relativePath: relative(root, absolutePath),
+      content: promptForGroup(plan, group.name, group.tasks, runId, options),
+    };
+  });
 
-  const quality = contextQuality(plan);
+  const quality = contextQuality(root, plan);
   const createdAt = new Date().toISOString();
   const relativeOrNull = (value?: string) => value ?? null;
   const sourceRefs = [
@@ -139,7 +244,7 @@ export function createRunArtifacts(root: string, plan: ParsedPlan, mode: Artifac
   ].filter((value): value is string => Boolean(value));
 
   const manifestPath = join(runDir, 'run.json');
-  writeFileSync(manifestPath, JSON.stringify({
+  const manifest: RunManifest = {
     schemaVersion: 'open-scaffold.run.v1',
     runId,
     taskId: options.taskId ?? null,
@@ -154,6 +259,7 @@ export function createRunArtifacts(root: string, plan: ParsedPlan, mode: Artifac
       slug: plan.slug,
       path: relative(root, plan.path),
       goal: plan.goal,
+      filesToTouch: plan.filesToTouch,
       acceptanceCriteria: plan.acceptanceCriteria,
       verificationSteps: plan.verificationSteps,
       openQuestions: plan.openQuestions,
@@ -188,7 +294,7 @@ export function createRunArtifacts(root: string, plan: ParsedPlan, mode: Artifac
     artifacts: {
       runDir: relative(root, runDir),
       manifest: relative(root, manifestPath),
-      prompts: promptPaths.map((p) => relative(root, p)),
+      prompts: promptFiles.map((prompt) => prompt.relativePath),
       logs: [],
       outputs: [],
       evidence: [],
@@ -196,7 +302,34 @@ export function createRunArtifacts(root: string, plan: ParsedPlan, mode: Artifac
     questions: [],
     commitPolicy: options.commitPolicy ?? 'no commit/push unless explicitly approved by the operator',
     note: 'Canonical lifecycle belongs to the task/run record. Chat threads mirror/control via bindings; they are not canonical task identity.',
-  }, null, 2) + '\n', 'utf8');
+  };
 
-  return { runId, runDir, manifestPath, promptPaths };
+  return {
+    runId,
+    runDir,
+    manifestPath,
+    promptFiles,
+    manifest,
+    packageMarkdown: packageMarkdownFor(promptFiles),
+    filesToTouch: plan.filesToTouch,
+  };
+}
+
+export function previewRunArtifacts(root: string, plan: ParsedPlan, mode: ArtifactMode = 'run', options: RunArtifactOptions = {}): RunArtifactsPreview {
+  return buildRunArtifacts(root, plan, mode, options);
+}
+
+export function createRunArtifacts(root: string, plan: ParsedPlan, mode: ArtifactMode = 'run', options: RunArtifactOptions = {}): RunArtifacts {
+  const preview = buildRunArtifacts(root, plan, mode, options);
+  mkdirSync(join(preview.runDir, 'prompts'), { recursive: true });
+
+  const promptPaths: string[] = [];
+  for (const prompt of preview.promptFiles) {
+    writeFileSync(prompt.absolutePath, prompt.content, 'utf8');
+    promptPaths.push(prompt.absolutePath);
+  }
+
+  writeFileSync(preview.manifestPath, JSON.stringify(preview.manifest, null, 2) + '\n', 'utf8');
+
+  return { runId: preview.runId, runDir: preview.runDir, manifestPath: preview.manifestPath, promptPaths };
 }

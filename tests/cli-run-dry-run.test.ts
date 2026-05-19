@@ -1,0 +1,179 @@
+import { describe, expect, it } from 'vitest';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+
+const repoRoot = resolve(import.meta.dirname, '..');
+const tsx = join(repoRoot, 'node_modules/.bin/tsx');
+const cli = join(repoRoot, 'src/cli.ts');
+
+function tempDir(prefix = 'osc-run-dry-run-') {
+  return mkdtempSync(join(tmpdir(), prefix));
+}
+
+function initializedScaffold() {
+  const target = tempDir();
+  execFileSync(tsx, [cli, 'init', '--tier', 'min', '--target', target], { encoding: 'utf8' });
+  writeFileSync(join(target, 'MISSION.md'), '# Mission\n\nTest repo mission for dry-run previews.\n', 'utf8');
+  return target;
+}
+
+function scaffoldWithUnsetMission() {
+  const target = tempDir();
+  execFileSync(tsx, [cli, 'init', '--tier', 'min', '--target', target], { encoding: 'utf8' });
+  return target;
+}
+
+function writePlan(root: string, slug: string, body: string) {
+  const path = join(root, '.osc/plans/active', `${slug}.md`);
+  writeFileSync(path, body, 'utf8');
+  return path;
+}
+
+const validPlan = `# Plan: 001-dry-run-demo
+
+## Status
+
+active
+
+## Context
+
+A valid plan for previewing a run packet.
+
+## Goal
+
+Preview run artifacts without writing a run directory.
+
+## Constraints / Out of scope
+
+- Do not spawn a runtime.
+
+## Files to touch
+
+- src/demo.ts
+- tests/demo.test.ts
+
+## Acceptance criteria
+
+- [ ] Dry-run emits a preview.
+- [ ] Dry-run leaves .osc/runs unchanged.
+
+## Verification steps
+
+1. Run npm test.
+2. Run ./verify.sh --strict.
+
+## Open questions
+
+None.
+`;
+
+const invalidPlan = `# Plan: 002-bad-dry-run
+
+## Status
+
+active
+
+## Context
+
+This plan intentionally lacks dispatch-ready context.
+
+## Goal
+
+
+## Constraints / Out of scope
+
+- None.
+
+## Files to touch
+
+- src/demo.ts
+
+## Acceptance criteria
+
+
+## Verification steps
+
+
+## Open questions
+
+- BLOCKING: Which acceptance criteria should this satisfy?
+`;
+
+describe('osc run --dry-run', () => {
+  it('prints a run preview and summary without creating .osc/runs files', () => {
+    const target = initializedScaffold();
+    const planPath = writePlan(target, '001-dry-run-demo', validPlan);
+    const before = existsSync(join(target, '.osc/runs')) ? readdirSync(join(target, '.osc/runs')) : [];
+
+    const result = spawnSync(tsx, [cli, 'run', planPath, '--dry-run', '--runtime', 'omx', '--workflow', 'plan'], { cwd: target, encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('Dry-run run.json:');
+    expect(result.stdout).toContain('"schemaVersion": "open-scaffold.run.v1"');
+    expect(result.stdout).toContain('Dry-run package.md:');
+    expect(result.stdout).toContain('Would create run');
+    expect(result.stdout).toContain('executor omx-codex');
+    expect(result.stdout).toContain('workflow plan');
+    expect(result.stdout).toContain('harness skill $ralplan');
+    expect(result.stdout).toContain('src/demo.ts');
+    const after = existsSync(join(target, '.osc/runs')) ? readdirSync(join(target, '.osc/runs')) : [];
+    expect(after).toEqual(before);
+  });
+
+  it('supports JSON-only dry-run output for machine consumers', () => {
+    const target = initializedScaffold();
+    const planPath = writePlan(target, '001-dry-run-demo', validPlan);
+
+    const result = spawnSync(tsx, [cli, 'run', planPath, '--dry-run', '--json', '--executor', 'plain-agent', '--workflow', 'execute'], { cwd: target, encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.run.schemaVersion).toBe('open-scaffold.run.v1');
+    expect(parsed.run.executor).toMatchObject({ lane: 'plain-agent', spawning: false });
+    expect(parsed.run.runtimeSelection).toMatchObject({ workflow: 'execute' });
+    expect(parsed.packageMarkdown).toContain('# Open Scaffold Prompt: Single Session');
+    expect(parsed.filesToTouch).toEqual(['src/demo.ts', 'tests/demo.test.ts']);
+  });
+
+  it('reports non-executable dry-runs without writing artifacts', () => {
+    const target = initializedScaffold();
+    const planPath = writePlan(target, '002-bad-dry-run', invalidPlan);
+
+    const result = spawnSync(tsx, [cli, 'run', planPath, '--dry-run', '--json'], { cwd: target, encoding: 'utf8' });
+
+    expect(result.status).toBe(1);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.run.packageQuality.executable).toBe(false);
+    expect(parsed.run.packageQuality.blockers).toContain('missing goal');
+    expect(parsed.run.packageQuality.blockers).toContain('missing acceptance criteria');
+    expect(parsed.run.packageQuality.blockers).toContain('missing verification steps');
+    expect(parsed.run.packageQuality.blockers).toContain('blocking open questions present');
+    expect(existsSync(join(target, '.osc/runs'))).toBe(false);
+  });
+
+  it('treats an undefined mission as a dry-run blocker', () => {
+    const target = scaffoldWithUnsetMission();
+    const planPath = writePlan(target, '001-dry-run-demo', validPlan);
+
+    const result = spawnSync(tsx, [cli, 'run', planPath, '--dry-run', '--json'], { cwd: target, encoding: 'utf8' });
+
+    expect(result.status).toBe(1);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.run.packageQuality.executable).toBe(false);
+    expect(parsed.run.packageQuality.blockers).toContain('undefined mission');
+    expect(existsSync(join(target, '.osc/runs'))).toBe(false);
+  });
+
+  it('keeps missing-plan dry-runs read-only and reports the missing path', () => {
+    const target = initializedScaffold();
+    const result = spawnSync(tsx, [cli, 'run', '.osc/plans/active/nope.md', '--dry-run'], { cwd: target, encoding: 'utf8' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Plan not found:');
+    expect(existsSync(join(target, '.osc/runs'))).toBe(false);
+  });
+});

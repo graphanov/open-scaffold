@@ -2,7 +2,7 @@
 
 ## Status
 
-backlog — depends on 050 (npm publish) for baseline `osc run` availability. This adds a preview mode to the run command that lets users and reviewers inspect what would happen before committing to a real run. Complements 055 (linter) as part of the pre-execution quality gate.
+done — implemented in this slice. `osc run <plan> --dry-run` now previews run packets without writing `.osc/runs/` artifacts.
 
 ## Context
 
