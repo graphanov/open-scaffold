@@ -13,16 +13,18 @@ This slice adds `osc run <plan> --dry-run` so users can preview a run packet bef
 
 ## Verification
 
-- `npm test -- tests/artifacts.test.ts tests/cli-run-dry-run.test.ts --run` — pass; 2 files / 12 tests.
+- `npm test -- tests/cli-run-dry-run.test.ts tests/cli-init.test.ts --run` — pass; 2 files / 34 tests, including `osc run --help`, subdirectory root resolution, dry-run/write-mode artifact-root parity, and runtime-profile compatibility regressions.
 - `npm run build` — pass; core TypeScript and `packages/runtime-omx` TypeScript builds succeeded for package candidate `0.4.6`.
-- `npm test -- --run` — pass; 25 files / 216 tests.
+- `npm test -- --run` — pass; 25 files / 218 tests.
 - `git diff --check` — pass.
 - Manual dry-run smoke against `.osc/plans/done/056-run-dry-run-preview.md` with `--runtime omx --workflow plan` — pass; emitted schema `open-scaffold.run.v1`, executable `true`, executor `omx-codex`, workflow `plan`, harness `$ralplan`, package prompt present.
 - Dry-run no-write smoke — pass; `.osc/runs` entry count remained `14` before and after the preview.
 - `./verify.sh --strict` — pass; 10 pass / 0 fail / 0 warn.
-- `npm pack --dry-run --json` — pass; produced `open-scaffold-0.4.6.tgz`, 95 files, unpacked size 601,776 bytes.
+- `npm pack --dry-run --json` — pass; produced `open-scaffold-0.4.6.tgz`, 95 files, unpacked size 603,376 bytes.
 - `npm publish --dry-run` — pass; dry-run only, reported `+ open-scaffold@0.4.6`.
 - Codex P2 root-resolution regression — fixed with a subdirectory dry-run test proving package quality resolves the plan scaffold root while preserving external-coordinator `--repo` behavior.
+- Codex P1 dry-run/write-mode artifact-root parity regression — fixed so dry-run previews use the same caller-cwd artifact root as write-mode runs while using the plan scaffold root only for mission/package-quality checks.
+- Dogfood CLI-help pinpoint — fixed `osc run --help` so it prints run-specific usage instead of treating `--help` as a missing plan path.
 
 ## Outcome
 

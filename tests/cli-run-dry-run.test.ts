@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -102,6 +102,15 @@ This plan intentionally lacks dispatch-ready context.
 `;
 
 describe('osc run --dry-run', () => {
+  it('prints run-specific help instead of treating --help as a plan path', () => {
+    const result = spawnSync(tsx, [cli, 'run', '--help'], { cwd: repoRoot, encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('Usage: osc run <plan-path> [--dry-run] [--json] [run binding options]');
+    expect(result.stdout).toContain('Dry-run options:');
+  });
+
   it('prints a run preview and summary without creating .osc/runs files', () => {
     const target = initializedScaffold();
     const planPath = writePlan(target, '001-dry-run-demo', validPlan);
@@ -152,9 +161,35 @@ describe('osc run --dry-run', () => {
     const parsed = JSON.parse(result.stdout);
     expect(parsed.run.packageQuality.executable).toBe(true);
     expect(parsed.run.packageQuality.blockers).toEqual([]);
-    expect(parsed.run.artifacts.runDir).toContain('.osc/runs/');
-    expect(parsed.run.plan.path).toBe('.osc/plans/active/001-dry-run-demo.md');
-    expect(existsSync(join(target, '.osc/runs'))).toBe(false);
+    expect(existsSync(join(subdir, '.osc/runs'))).toBe(false);
+
+    const writeResult = spawnSync(tsx, [cli, 'run', planPath, '--runtime', 'omx', '--workflow', 'plan'], { cwd: subdir, encoding: 'utf8' });
+    expect(writeResult.status).toBe(0);
+    const runsDir = join(subdir, '.osc/runs');
+    const runId = readdirSync(runsDir).sort().at(-1) as string;
+    const manifest = JSON.parse(readFileSync(join(runsDir, runId, 'run.json'), 'utf8'));
+    expect(parsed.run.artifacts.runDir.replace(parsed.run.runId, '<run>')).toBe(manifest.artifacts.runDir.replace(manifest.runId, '<run>'));
+    expect(parsed.run.artifacts.manifest.replace(parsed.run.runId, '<run>')).toBe(manifest.artifacts.manifest.replace(manifest.runId, '<run>'));
+    expect(manifest.packageQuality.executable).toBe(true);
+  });
+
+  it('keeps dry-run artifact paths aligned with write-mode run paths from the caller cwd', () => {
+    const target = initializedScaffold();
+    const planPath = writePlan(target, '001-dry-run-demo', validPlan);
+    const subdir = join(target, 'src');
+    mkdirSync(subdir, { recursive: true });
+
+    const dryRun = spawnSync(tsx, [cli, 'run', planPath, '--dry-run', '--json'], { cwd: subdir, encoding: 'utf8' });
+    expect(dryRun.status).toBe(0);
+    const preview = JSON.parse(dryRun.stdout);
+    expect(preview.run.artifacts.runDir).toMatch(/^\.osc\/runs\//);
+    expect(existsSync(join(subdir, '.osc/runs'))).toBe(false);
+
+    const writeRun = spawnSync(tsx, [cli, 'run', planPath], { cwd: subdir, encoding: 'utf8' });
+    expect(writeRun.status).toBe(0);
+    expect(writeRun.stderr).toBe('');
+    expect(writeRun.stdout).toContain(join(subdir, '.osc/runs'));
+    expect(existsSync(join(subdir, '.osc/runs'))).toBe(true);
   });
 
   it('reports non-executable dry-runs without writing artifacts', () => {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
@@ -227,6 +227,27 @@ function parseRunOptions(args: string[]): { planPathArg: string; options: RunArt
   }
 
   return { planPathArg, options, dryRun, json };
+}
+
+function printRunArtifactsUsage(mode: ArtifactMode): void {
+  const dryRunOptions = mode === 'run' ? ' [--dry-run] [--json]' : '';
+  console.log(`Usage: osc ${mode} <plan-path>${dryRunOptions} [run binding options]
+
+Run binding options:
+  --task-id <id>              Canonical task/card/issue id for this work item
+  --source-ref <ref>          Additional source ref; repeatable
+  --runtime <preset>          omc | omx | plain | human | custom
+  --workflow <workflow>       interview | plan | team | loop | execute | goal | custom
+  --executor <lane>           omc-claude | omx-codex | plain-agent | human | custom
+  --harness-skill <skill>     e.g. /ralplan, $ralplan, /ralph, $ultrawork
+  --repo <path>               Repository path for execution
+  --worktree <path>           Worktree path for isolated execution
+  --branch <name>             Branch expected for the run
+  --operator-surface <name>   discord | slack | telegram | github | cli | none | custom
+  --operator-thread <id>      Optional chat/thread/comment binding id
+  --issue <id-or-url>         Optional GitHub issue binding
+  --pr <id-or-url>            Optional PR binding
+  --commit-policy <text>      Commit/push approval rule${mode === 'run' ? '\n\nDry-run options:\n  --dry-run                   Preview run artifacts without writing .osc/runs files\n  --json                      With --dry-run, print only machine-readable JSON' : ''}`);
 }
 
 function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string; force: boolean; fromExisting: boolean } {
@@ -642,15 +663,20 @@ function closeCommand(args: string[]): void {
 }
 
 function createArtifacts(args: string[], mode: ArtifactMode): void {
+  if (args[0] === '-h' || args[0] === '--help' || args[0] === 'help') {
+    printRunArtifactsUsage(mode);
+    return;
+  }
   const { planPathArg, options, dryRun, json } = parseRunOptions(args);
-  const planPath = resolve(planPathArg);
-  if (!existsSync(planPath)) {
-    console.error(`Plan not found: ${planPath}`);
+  const absolutePlanPath = resolve(planPathArg);
+  if (!existsSync(absolutePlanPath)) {
+    console.error(`Plan not found: ${absolutePlanPath}`);
     process.exit(1);
   }
+  const planPath = realpathSync(absolutePlanPath);
   const scaffoldRoot = findScaffoldRoot(dirname(planPath)) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
   applyRuntimeSelection(options, options.repo ? resolve(options.repo) : scaffoldRoot);
-  const artifactRoot = dryRun ? scaffoldRoot : process.cwd();
+  const artifactRoot = process.cwd();
   const artifactOptions: RunArtifactOptions = { ...options, scaffoldRoot };
   const plan = parsePlanFile(planPath);
 
