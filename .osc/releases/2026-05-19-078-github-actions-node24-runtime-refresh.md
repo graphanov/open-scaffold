@@ -20,11 +20,13 @@ Refreshed first-party GitHub Actions pins in CI and trusted publishing workflows
 - `npm test -- --run` — pass; 23 test files / 204 tests.
 - `./verify.sh --strict` — pass; 10 pass, 0 fail, 0 warn.
 - `git diff --check` — pass.
-- PR CI — pending.
+- PR CI — pass; https://github.com/graphanov/open-scaffold/actions/runs/26109263576.
+- PR CI annotations — pass; `gh run view 26109263576 --json jobs` reported `annotationsCount: 0` for the `ci` job.
+- Codex latest-head review — pass; PR #65 head `488f9ff110778e24ac3dda0d6823a75377cdebd2` returned “Didn't find any major issues.”
 
 ## Outcome
 
-Pending PR creation and CI verification. This slice updates workflow action pins only; it does not publish npm, change package version, change CLI behavior, or create/update GitHub Releases.
+Repo-side workflow annotation fix is verified and ready for merge. This slice updates workflow action pins only; it does not publish npm, change package version, change CLI behavior, or create/update GitHub Releases.
 
 ## Follow-up
 
