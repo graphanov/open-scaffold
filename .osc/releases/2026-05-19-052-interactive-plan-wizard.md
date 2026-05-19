@@ -13,9 +13,9 @@ Added `osc plan wizard`, a plain-terminal plan-creation interview that turns use
 
 ## Verification
 
-- `npm test -- tests/wizard.test.ts --run` — pass; 6 wizard tests cover template rendering, JSON normalization, non-interactive creation, stdin-driven interactive creation, and unset-mission refusal.
+- `npm test -- tests/wizard.test.ts --run` — pass; 8 wizard tests cover template rendering, JSON normalization, non-interactive creation, stdin-driven interactive creation, unset-mission refusal, and a Codex P2 regression that proves mission readiness is checked before waiting for interactive stdin.
 - `npm run build` — pass; core and runtime package TypeScript builds succeeded.
-- `npm test -- --run` — pass; 23 test files / 203 tests passed after the Codex preflight regression test was added.
+- `npm test -- --run` — pass; 23 test files / 204 tests passed.
 - Built CLI smoke: `node dist/cli.js plan wizard test-json --stage backlog --non-interactive --answers tests/fixtures/wizard-answers.json` in a temporary initialized scaffold — pass; created `.osc/plans/backlog/test-json.md`, no `TODO:` markers, cache acceptance criteria present.
 - Built CLI stdin smoke: `node dist/cli.js plan wizard test-interactive` with piped answers in a temporary initialized scaffold — pass; created `.osc/plans/active/test-interactive.md`, no `TODO:` markers, two acceptance criteria present.
 - Built CLI unset-mission smoke: `node dist/cli.js plan wizard blocked-plan --non-interactive --answers tests/fixtures/wizard-answers.json` in a fresh scaffold with the default unset mission — pass; exited 1, printed `Mission is not yet defined...`, and created no plan.
@@ -30,5 +30,5 @@ The plan wizard is implemented as a local helper over the existing plan lifecycl
 
 ## Follow-up
 
-- PR review and Codex latest-head review remain pending until the branch is pushed and the PR is opened.
+- PR #62 is open; Codex P2 feedback is addressed with the mission-preflight regression test and the latest-head recheck is handled in PR review comments.
 - Plan `055-plan-linter` remains the later mechanical quality feedback layer for judging generated or hand-written plans.

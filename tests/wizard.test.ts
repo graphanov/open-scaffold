@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -147,5 +147,43 @@ describe('osc plan wizard CLI', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('Mission is not yet defined');
     expect(existsSync(join(target, '.osc/plans/active/blocked-plan.md'))).toBe(false);
+  }, 20_000);
+
+  it('checks mission readiness before waiting for interactive stdin', async () => {
+    const target = initializedScaffold({ defineMission: false });
+    const child = spawn(tsx, [cli, 'plan', 'wizard', 'blocked-interactive'], {
+      cwd: target,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+
+    const result = await new Promise<{ status: number | null }>((resolvePromise, reject) => {
+      const timeout = setTimeout(() => {
+        child.kill('SIGKILL');
+        reject(new Error('wizard waited for stdin instead of failing mission preflight'));
+      }, 1_500);
+      child.once('error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+      child.once('exit', (status) => {
+        clearTimeout(timeout);
+        resolvePromise({ status });
+      });
+    });
+
+    expect(result.status).toBe(1);
+    expect(stderr).toContain('Mission is not yet defined');
+    expect(stdout).not.toContain('Goal / done outcome');
+    expect(existsSync(join(target, '.osc/plans/active/blocked-interactive.md'))).toBe(false);
   }, 20_000);
 });
