@@ -8,7 +8,7 @@ Refreshed first-party GitHub Actions pins in CI and trusted publishing workflows
 
 - Roadmap / issue / task: workflow maintenance follow-up after trusted publishing setup and `open-scaffold@0.4.4` publish.
 - Plan: `.osc/plans/done/078-github-actions-node24-runtime-refresh.md`.
-- Branch / PR: `ci/update-actions-node24`; PR URL to be added after PR creation.
+- Branch / PR: `ci/update-actions-node24`; PR #65 — https://github.com/graphanov/open-scaffold/pull/65.
 - Package/release target: none; no npm publish or GitHub Release mutation in this slice.
 
 ## Verification
