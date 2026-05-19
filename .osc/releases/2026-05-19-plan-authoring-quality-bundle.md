@@ -6,7 +6,7 @@ Adds a bundled plan-authoring quality layer after the plan wizard: reusable plan
 
 ## Traceability
 
-- Roadmap / issue / task: Kanban `t_8e6b6fb5`.
+- Roadmap / issue / task: Kanban `t_390e6428`.
 - Plans: `.osc/plans/done/053-plan-template-library.md` and `.osc/plans/done/055-plan-linter.md`.
 - Run ID / run packet: `N/A` — direct repo product slice; no runtime run packet needed.
 - Branch: `cli/plan-authoring-quality-bundle`.
