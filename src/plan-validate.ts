@@ -109,10 +109,24 @@ function findLineContaining(lines: string[], needle: string, fallback = 1): numb
   return index >= 0 ? index + 1 : fallback;
 }
 
+function lineContainsTodoPlaceholder(line: string): boolean {
+  const withoutInlineCode = line.replace(/`[^`]*`/g, '');
+  return /(^|[\s>*-])TODO:\s*\S/i.test(withoutInlineCode);
+}
+
 function shouldBeBlockingQuestion(item: string): boolean {
-  if (/^none\.?$/i.test(item.trim())) return false;
-  if (/^BLOCKING:/i.test(item.trim())) return false;
-  return item.includes('?') || /\b(should|whether|can|must|decide|blocked|blocker)\b/i.test(item);
+  const trimmed = item.trim();
+  if (/^none\.?$/i.test(trimmed)) return false;
+  if (/^BLOCKING:/i.test(trimmed)) return false;
+  return /\b(block|blocked|blocking|blocker|must decide|decision gate|owner approval|human input|external input|unknown dependency)\b/i.test(trimmed);
+}
+
+function statusMatchesStage(status: string, stage: PlanStage): boolean {
+  const normalized = status.trim().toLowerCase();
+  if (normalized === stage) return true;
+  if (!normalized.startsWith(stage)) return false;
+  const next = normalized[stage.length];
+  return next === undefined || /[\s:—–-]/.test(next);
 }
 
 export function validatePlanFile(path: string, _options: PlanValidationOptions = {}): PlanValidationResult {
@@ -138,15 +152,15 @@ export function validatePlanFile(path: string, _options: PlanValidationOptions =
   }
 
   lines.forEach((line, index) => {
-    if (line.includes('TODO:')) {
+    if (lineContainsTodoPlaceholder(line)) {
       issues.push(issue('error', index + 1, 'no-todos', 'Plan contains a TODO marker.', 'Replace TODO markers with concrete plan content before implementation.'));
     }
   });
 
   const stage = planStageFromPath(path);
   const status = firstParagraph(sections.get('Status') ?? '');
-  if (stage && status && status.trim().toLowerCase() !== stage) {
-    issues.push(issue('error', lineNumberForHeading(lines, 'Status'), 'status-stage-consistency', `Plan is in ${stage}/ but ## Status says "${status}".`, `Move the plan to the matching folder or change ## Status to ${stage}.`));
+  if (stage && status && !statusMatchesStage(status, stage)) {
+    issues.push(issue('error', lineNumberForHeading(lines, 'Status'), 'status-stage-consistency', `Plan is in ${stage}/ but ## Status says "${status}".`, `Move the plan to the matching folder or start ## Status with ${stage}.`));
   }
 
   for (const section of REQUIRED_PLAN_SECTIONS) {

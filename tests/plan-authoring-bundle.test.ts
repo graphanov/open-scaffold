@@ -3,6 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { validatePlanFile } from '../src/plan-validate.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -133,6 +134,47 @@ describe('plan validation CLI', () => {
     const clean = execFileSync(tsx, [cli, 'plan', 'validate', '020-clean'], { cwd: target, encoding: 'utf8' });
     expect(clean).toContain('0 issues found');
 
+    const exampleMentionPath = join(target, '.osc/plans/active/020-doc-todo-example.md');
+    writeFileSync(exampleMentionPath, [
+      '# Plan: 020-doc-todo-example',
+      '',
+      '## Status',
+      '',
+      'active',
+      '',
+      '## Context',
+      '',
+      'This plan documents the literal `TODO:` marker without leaving an unfinished placeholder.',
+      '',
+      '## Goal',
+      '',
+      'Document placeholder wording without blocking plan validation.',
+      '',
+      '## Constraints / Out of scope',
+      '',
+      '- Do not add real placeholder work.',
+      '',
+      '## Files to touch',
+      '',
+      '- `docs/example.md` — example documentation path.',
+      '',
+      '## Acceptance criteria',
+      '',
+      '- [ ] The plan can mention placeholder syntax without failing validation.',
+      '',
+      '## Verification steps',
+      '',
+      '1. Run `osc plan validate 020-doc-todo-example --strict`.',
+      '',
+      '## Open questions',
+      '',
+      '- Should examples mention placeholder wording?',
+      '',
+    ].join('\n'));
+    const exampleMention = spawnSync(tsx, [cli, 'plan', 'validate', '020-doc-todo-example', '--strict'], { cwd: target, encoding: 'utf8' });
+    expect(exampleMention.status).toBe(0);
+    expect(exampleMention.stdout).toContain('0 issues found');
+
     const brokenPath = join(target, '.osc/plans/backlog/021-broken.md');
     writeFileSync(brokenPath, [
       '# Plan: 021-broken',
@@ -165,7 +207,7 @@ describe('plan validation CLI', () => {
       '',
       '## Open questions',
       '',
-      '- Can this ship? ',
+      '- Does this block release? ',
       '',
     ].join('\n'));
 
@@ -185,6 +227,24 @@ describe('plan validation CLI', () => {
     expect(inactive.status).toBe(1);
     const inactiveIssues = JSON.parse(inactive.stdout) as Array<{ rule: string; message: string }>;
     expect(inactiveIssues.some((issue) => issue.rule === 'status-stage-consistency' && issue.message.includes('inactive'))).toBe(true);
+
+    const prefixedPath = join(target, '.osc/plans/backlog/023-prefixed.md');
+    const validPrefixedPlan = readFileSync(brokenPath, 'utf8')
+      .replace('# Plan: 021-broken', '# Plan: 023-prefixed')
+      .replace('## Status\n\nactive', '## Status\n\nbacklog — queued for a later release')
+      .replace('TODO: explain context.', 'Context exists.')
+      .replace('Improve.', 'Accept status text that starts with the correct stage token.')
+      .replace('## Constraints / Out of scope\n\n\n## Files to touch', '## Constraints / Out of scope\n\n- Keep scope small.\n\n## Files to touch')
+      .replace('## Acceptance criteria\n\n\n## Verification steps', '## Acceptance criteria\n\n- [ ] Stage-prefixed status text validates when the folder stage matches.\n\n## Verification steps')
+      .replace('- Does this block release? ', '- None.');
+    writeFileSync(prefixedPath, validPrefixedPlan);
+    expect(validatePlanFile(prefixedPath).issues).toEqual([]);
+
+    const backloggedPath = join(target, '.osc/plans/backlog/024-backlogged.md');
+    writeFileSync(backloggedPath, validPrefixedPlan
+      .replace('# Plan: 023-prefixed', '# Plan: 024-backlogged')
+      .replace('backlog — queued for a later release', 'backlogged'));
+    expect(validatePlanFile(backloggedPath).issues.some((issue) => issue.rule === 'status-stage-consistency' && issue.message.includes('backlogged'))).toBe(true);
   });
 
   it('reports heading-order and missing-section errors with actionable text output', () => {
