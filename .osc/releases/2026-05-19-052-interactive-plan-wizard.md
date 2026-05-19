@@ -9,7 +9,7 @@ Added `osc plan wizard`, a plain-terminal plan-creation interview that turns use
 - Roadmap / issue / task: V2 adoption friction backlog; `.osc/plans/done/052-interactive-plan-wizard.md`.
 - Plan: `.osc/plans/done/052-interactive-plan-wizard.md`.
 - Run ID / run packet: N/A — OSC Shipwright executed directly in the repo under the accepted roadmap plan.
-- Branch / PR: `cli/interactive-plan-wizard`; PR pending at initial evidence capture.
+- Branch / PR: `cli/interactive-plan-wizard`; PR #62 — https://github.com/graphanov/open-scaffold/pull/62.
 
 ## Verification
 
