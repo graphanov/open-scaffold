@@ -1,4 +1,4 @@
-import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import type { Stats } from 'node:fs';
 import { dirname, join, relative as relativePath, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -55,6 +55,13 @@ export interface InitializeScaffoldOptions {
   tier: ScaffoldTier;
   target: string;
   force?: boolean;
+  fromExisting?: boolean;
+}
+
+interface ExistingProjectDetection {
+  label: string;
+  marker: string | null;
+  packageManager?: string;
 }
 
 export interface InitializeScaffoldResult {
@@ -78,8 +85,96 @@ function sourcePathFor(file: string): string | null {
   return join(packageRoot(), file);
 }
 
-function missionTemplate(): string {
-  return `# Mission\n\n<!-- mission:unset -->\n\nTODO: define mission.\n\nDescribe what this repository is trying to accomplish, the non-goals, and the owner-visible definition of done before starting substantial work.\n`;
+function missionTemplate(project?: ExistingProjectDetection): string {
+  if (!project) {
+    return `# Mission\n\n<!-- mission:unset -->\n\nTODO: define mission.\n\nDescribe what this repository is trying to accomplish, the non-goals, and the owner-visible definition of done before starting substantial work.\n`;
+  }
+
+  const marker = project.marker ? ` Detected marker: \`${project.marker}\`.` : '';
+  const packageManager = project.packageManager ? ` Package manager: ${project.packageManager}.` : '';
+  return [
+    '# Mission',
+    '',
+    '<!-- mission:unset -->',
+    '',
+    `TODO: define the mission for this ${project.label}.`,
+    '',
+    `This repository appears to be an existing ${project.label}. Open Scaffold was added in brownfield mode so existing project files stay owned by the project.${marker}${packageManager}`,
+    '',
+    '## Goals',
+    '',
+    `- TODO: describe what this ${project.label} should achieve first.`,
+    '',
+    '## Non-Goals',
+    '',
+    '- TODO: describe what this project should not do yet.',
+    '',
+    '## Changelog',
+    '',
+    'One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.',
+    '',
+    '<!-- append YYYY-MM-DD entries below this line -->',
+  ].join('\n') + '\n';
+}
+
+function detectPackageManager(target: string): string | undefined {
+  if (existsSync(join(target, 'pnpm-lock.yaml')) || existsSync(join(target, 'pnpm-workspace.yaml'))) return 'pnpm';
+  if (existsSync(join(target, 'yarn.lock'))) return 'Yarn';
+  if (existsSync(join(target, 'package-lock.json'))) return 'npm';
+  if (existsSync(join(target, 'bun.lockb')) || existsSync(join(target, 'bun.lock'))) return 'Bun';
+  return undefined;
+}
+
+function packageJsonDeclaresWorkspaces(target: string): boolean {
+  try {
+    const parsed = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8')) as { workspaces?: unknown };
+    return Array.isArray(parsed.workspaces) || (typeof parsed.workspaces === 'object' && parsed.workspaces !== null);
+  } catch {
+    return false;
+  }
+}
+
+function detectExistingProject(target: string): ExistingProjectDetection {
+  if (existsSync(join(target, 'package.json'))) {
+    return {
+      label: packageJsonDeclaresWorkspaces(target) || existsSync(join(target, 'pnpm-workspace.yaml')) || existsSync(join(target, 'lerna.json')) || existsSync(join(target, 'nx.json')) ? 'Node.js monorepo' : 'Node.js project',
+      marker: 'package.json',
+      packageManager: detectPackageManager(target),
+    };
+  }
+  if (existsSync(join(target, 'pyproject.toml')) || existsSync(join(target, 'setup.py')) || existsSync(join(target, 'requirements.txt'))) {
+    return { label: 'Python project', marker: existsSync(join(target, 'pyproject.toml')) ? 'pyproject.toml' : existsSync(join(target, 'setup.py')) ? 'setup.py' : 'requirements.txt' };
+  }
+  if (existsSync(join(target, 'go.mod'))) return { label: 'Go project', marker: 'go.mod' };
+  if (existsSync(join(target, 'Cargo.toml'))) return { label: 'Rust project', marker: 'Cargo.toml' };
+  if (existsSync(join(target, 'pnpm-workspace.yaml')) || existsSync(join(target, 'lerna.json')) || existsSync(join(target, 'nx.json'))) {
+    return { label: 'monorepo', marker: existsSync(join(target, 'pnpm-workspace.yaml')) ? 'pnpm-workspace.yaml' : existsSync(join(target, 'lerna.json')) ? 'lerna.json' : 'nx.json' };
+  }
+  return { label: 'existing project', marker: null };
+}
+
+function filesForInitialization(tier: ScaffoldTier, fromExisting: boolean): string[] {
+  const files = [...tierFiles[tier]];
+  if (fromExisting) {
+    for (const file of ['AGENTS.md', 'CLAUDE.md']) {
+      if (!files.includes(file)) files.push(file);
+    }
+  }
+  return files;
+}
+
+function scaffoldConflicts(target: string, files: readonly string[], fromExisting: boolean): string[] {
+  if (!fromExisting) return files.filter((file) => existsSync(join(target, file)));
+
+  const conflicts: string[] = [];
+  const oscExists = existsSync(join(target, '.osc'));
+
+  for (const file of files) {
+    if (file.startsWith('.osc/')) continue;
+    if (existsSync(join(target, file))) conflicts.push(file);
+  }
+  if (oscExists) conflicts.push('.osc');
+  return conflicts;
 }
 
 function downstreamReadmeTemplate(): string {
@@ -347,10 +442,10 @@ printf '\\nBootstrap complete.\\nRead: %s\\n' "$NEXT_READ"
 
 function downstreamTemplateFor(file: string, tier: ScaffoldTier): string | null {
   if (file === 'bootstrap.sh') return downstreamBootstrapTemplate();
+  if (file === 'AGENTS.md' || file === 'CLAUDE.md') return downstreamAgentInstructionsTemplate(file);
   if (tier === 'min') return null;
   if (file === 'README.md') return downstreamReadmeTemplate();
   if (file === 'ROADMAP.md') return downstreamRoadmapTemplate();
-  if (file === 'AGENTS.md' || file === 'CLAUDE.md') return downstreamAgentInstructionsTemplate(file);
   if (file === 'docs/MINIMUM_VIABLE_SCAFFOLD.md') return downstreamMinimumScaffoldDocTemplate();
   return null;
 }
@@ -494,9 +589,13 @@ function assertTemplateExists(file: string, source: string): void {
   }
 }
 
-function formatSummary(tier: ScaffoldTier, target: string, files: string[]): string {
+function formatSummary(tier: ScaffoldTier, target: string, files: string[], project?: ExistingProjectDetection): string {
+  const detection = project
+    ? [`Detected existing ${project.label}${project.marker ? ` via ${project.marker}` : ''}${project.packageManager ? ` (${project.packageManager})` : ''}.`]
+    : [];
   return [
     `Generated ${tier} Open Scaffold in ${target}`,
+    ...detection,
     `Files created (${files.length}):`,
     ...files.map((file) => `  - ${file}`),
     '',
@@ -551,8 +650,19 @@ function rejectSymlinkedDestination(target: string, destination: string): void {
 
 export function initializeScaffold(options: InitializeScaffoldOptions): InitializeScaffoldResult {
   ensureKnownTier(options.tier);
+  if (options.fromExisting && options.tier !== 'min') {
+    throw new Error('Brownfield init currently supports --tier min only. Use greenfield init for standard/max docs, or add advanced docs manually after preserving existing project files.');
+  }
   const target = resolve(options.target);
-  const files = [...tierFiles[options.tier]];
+  const fromExisting = Boolean(options.fromExisting);
+  const protectedExistingProjectFiles = fromExisting && options.force
+    ? ['verify.sh', 'close.sh', 'bootstrap.sh'].filter((file) => existsSync(join(target, file)))
+    : [];
+  if (protectedExistingProjectFiles.length > 0) {
+    throw new Error(`Refusing to overwrite existing project files in brownfield mode: ${protectedExistingProjectFiles.join(', ')}. Rename or move them before re-running with --force.`);
+  }
+  const project = fromExisting ? detectExistingProject(target) : undefined;
+  const files = filesForInitialization(options.tier, fromExisting);
 
   rejectSymlinkedExistingPath(target);
   mkdirSync(target, { recursive: true });
@@ -561,10 +671,11 @@ export function initializeScaffold(options: InitializeScaffoldOptions): Initiali
     rejectSymlinkedDestination(target, join(target, file));
   }
 
-  const existing = files.filter((file) => existsSync(join(target, file)));
+  const existing = scaffoldConflicts(target, files, fromExisting);
 
   if (existing.length > 0 && !options.force) {
-    throw new Error(`Refusing to overwrite existing files: ${existing.join(', ')}. Re-run with --force only if you intend to replace them.`);
+    const noun = fromExisting ? 'existing scaffold files' : 'existing files';
+    throw new Error(`Refusing to overwrite ${noun}: ${existing.join(', ')}. Re-run with --force only if you intend to replace them.`);
   }
 
   for (const file of files) {
@@ -576,7 +687,7 @@ export function initializeScaffold(options: InitializeScaffoldOptions): Initiali
     if (generatedTemplate !== null) {
       writeFileSync(destination, generatedTemplate);
     } else if (source === null) {
-      writeFileSync(destination, file === 'MISSION.md' ? missionTemplate() : '');
+      writeFileSync(destination, file === 'MISSION.md' ? missionTemplate(project) : '');
     } else if (file === '.osc/RULES.md' && options.tier === 'min') {
       writeFileSync(destination, minRulesTemplate());
     } else if (file === '.osc/plans/README.md' && options.tier === 'min') {
@@ -595,7 +706,7 @@ export function initializeScaffold(options: InitializeScaffoldOptions): Initiali
     tier: options.tier,
     target,
     filesCreated: files,
-    summary: formatSummary(options.tier, target, files),
+    summary: formatSummary(options.tier, target, files, project),
   };
 }
 

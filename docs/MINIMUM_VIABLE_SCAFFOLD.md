@@ -31,7 +31,20 @@ node dist/cli.js init --tier min --target <repo>
 # or: --tier standard / --tier max
 ```
 
-Use `min` for the smallest durable loop, `standard` for the recommended day-one repo, and `max` only when the project already needs GitHub, runtime, or status/control-room protocol docs. The command writes only local files and refuses to overwrite existing files by default.
+Use `min` for the smallest durable loop, `standard` for the recommended day-one repo, and `max` only when the project already needs GitHub, runtime, or status/control-room protocol docs. The command writes only local files and refuses to overwrite existing files unless `--force` is supplied.
+
+## Brownfield adoption
+
+Most useful projects already have source files, package manifests, README content, and CI conventions. Use the explicit brownfield flag when adding Open Scaffold to an existing repo:
+
+```bash
+npx open-scaffold init --from-existing --tier min --target .
+# source checkout fallback: node dist/cli.js init --from-existing --tier min --target .
+```
+
+Brownfield init currently supports the `min` tier only. That keeps adoption safe and additive: advanced standard/max docs can be added manually later, but the first brownfield command will not replace user-owned README, roadmap, or docs content.
+
+It detects common project markers (`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, and workspace files), writes a mission draft that names the detected project type, and adds scaffold files around the existing project. It does not edit package manifests, source trees, lockfiles, README content, or CI files. If scaffold-owned paths such as `MISSION.md`, `.osc/`, `AGENTS.md`, or `CLAUDE.md` already exist, it refuses and lists the conflicts; use `--force` only when you intend to replace those scaffold-owned files.
 
 Then follow the loop:
 
