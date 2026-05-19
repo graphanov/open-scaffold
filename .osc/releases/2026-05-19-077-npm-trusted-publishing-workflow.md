@@ -8,7 +8,7 @@ Added a manually dispatched GitHub Actions workflow for npm trusted publishing. 
 
 - Roadmap / issue / task: package release reliability follow-up after `.osc/plans/done/076-plan-wizard-package-release-sync.md` and PR #63.
 - Plan: `.osc/plans/done/077-npm-trusted-publishing-workflow.md`.
-- Branch / PR: `ci/npm-trusted-publishing`; PR URL to be added after PR creation.
+- Branch / PR: `ci/npm-trusted-publishing`; PR #64 — https://github.com/graphanov/open-scaffold/pull/64.
 - Workflow: `.github/workflows/publish-npm.yml`.
 - Package target: `open-scaffold@0.4.4`.
 
