@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-19: closed 056-run-dry-run-preview — Added osc run --dry-run preview for run packets
 - 2026-05-19: closed 055-plan-linter — added mechanical plan validation CLI
 - 2026-05-19: closed 053-plan-template-library — added plan template library and template-based plan creation
 - 2026-05-19: closed 078-github-actions-node24-runtime-refresh — refreshed GitHub Actions pins after Node 20 deprecation annotation

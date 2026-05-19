@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, readdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createRunArtifacts } from '../src/artifacts.js';
+import { createRunArtifacts, previewRunArtifacts } from '../src/artifacts.js';
 
 function tempRepo() {
   const root = mkdtempSync(join(tmpdir(), 'osc-artifacts-'));
@@ -132,6 +132,33 @@ describe('run artifact generation', () => {
 
     expect(manifest.runtimeSelection).toMatchObject({ runtime: 'omx', workflow: 'plan' });
     expect(manifest.executor).toMatchObject({ lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false });
+  });
+
+  it('previews run artifacts in memory without creating .osc/runs files', () => {
+    const root = tempRepo();
+    const planWithFiles = {
+      ...plan,
+      filesToTouch: ['src/artifacts.ts', 'src/cli.ts'],
+    };
+
+    const preview = previewRunArtifacts(root, planWithFiles as any, 'run', {
+      runtime: 'omx',
+      workflow: 'plan',
+      executor: 'omx-codex',
+      harnessSkill: '$ralplan',
+    });
+
+    expect(existsSync(join(root, '.osc/runs'))).toBe(false);
+    expect(preview.runId).toContain('001-demo-run');
+    expect(preview.manifest.runId).toBe(preview.runId);
+    expect(preview.manifest.artifacts.runDir).toContain('.osc/runs/');
+    expect(preview.manifest.artifacts.manifest).toContain('run.json');
+    expect(preview.manifest.executor).toMatchObject({ lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false });
+    expect(preview.manifest.runtimeSelection).toMatchObject({ runtime: 'omx', workflow: 'plan' });
+    expect(preview.manifest.plan.filesToTouch).toEqual(['src/artifacts.ts', 'src/cli.ts']);
+    expect(preview.packageMarkdown).toContain('# Open Scaffold Prompt: Group A');
+    expect(preview.promptFiles).toHaveLength(1);
+    expect(preview.promptFiles[0].relativePath).toBe('.osc/runs/' + preview.runId + '/prompts/group-a.md');
   });
 
 });

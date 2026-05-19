@@ -70,6 +70,15 @@ Then fill every TODO before implementation. The helpers create and move structur
 
 Implement what the plan says. Independent tasks can run in parallel. Every change must trace back to a plan file or amendment.
 
+Before creating a durable run packet, preview what Open Scaffold would package:
+
+```bash
+osc run .osc/plans/active/<plan>.md --dry-run --runtime omx --workflow plan
+osc run .osc/plans/active/<plan>.md --dry-run --json
+```
+
+`--dry-run` validates the plan, renders the `run.json` and package markdown in memory, lists files from the plan, and exits without creating `.osc/runs/` artifacts. Re-run without `--dry-run` only when the preview is acceptable.
+
 > **With OMC harness:** `/ralph` for Claude Code autonomous completion loops; `/team` or `/ultrawork` for parallel fan-out across multiple Claude Code-oriented agents.
 >
 > **With OMX harness:** `$ralph` for Codex persistent completion loops; `$team` for tmux-backed Codex worker teams; `$ultrawork` for parallel execution; promote runtime evidence back into Open Scaffold.

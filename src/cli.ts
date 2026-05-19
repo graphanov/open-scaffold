@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
-import { createRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
+import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
@@ -29,7 +29,7 @@ Usage:
   osc evidence new <slug>
   osc close <plan-slug> [--message <text>]
   osc delegate <plan-path> [run binding options]
-  osc run <plan-path> [run binding options]
+  osc run <plan-path> [--dry-run] [--json] [run binding options]
   osc review <plan-path> [run binding options]
   osc ultrareview <plan-path> [run binding options]
   osc eval init <run-or-plan> [--out <path>]
@@ -138,10 +138,12 @@ function applyRuntimeSelection(options: RunArtifactOptions, root: string): void 
   }
 }
 
-function parseRunOptions(args: string[]): { planPathArg: string; options: RunArtifactOptions } {
+function parseRunOptions(args: string[]): { planPathArg: string; options: RunArtifactOptions; dryRun: boolean; json: boolean } {
   const planPathArg = requireArg(args, 'plan-path');
   const rest = args.slice(1);
   const options: RunArtifactOptions = {};
+  let dryRun = false;
+  let json = false;
 
   function takeValue(index: number, flag: string): string {
     const value = rest[index + 1];
@@ -211,6 +213,12 @@ function parseRunOptions(args: string[]): { planPathArg: string; options: RunArt
         options.commitPolicy = takeValue(i, flag);
         i += 1;
         break;
+      case '--dry-run':
+        dryRun = true;
+        break;
+      case '--json':
+        json = true;
+        break;
       default:
         console.error(`Unknown option for run artifacts: ${flag}`);
         printHelp();
@@ -218,8 +226,28 @@ function parseRunOptions(args: string[]): { planPathArg: string; options: RunArt
     }
   }
 
-  applyRuntimeSelection(options, options.repo ? resolve(options.repo) : process.cwd());
-  return { planPathArg, options };
+  return { planPathArg, options, dryRun, json };
+}
+
+function printRunArtifactsUsage(mode: ArtifactMode): void {
+  const dryRunOptions = mode === 'run' ? ' [--dry-run] [--json]' : '';
+  console.log(`Usage: osc ${mode} <plan-path>${dryRunOptions} [run binding options]
+
+Run binding options:
+  --task-id <id>              Canonical task/card/issue id for this work item
+  --source-ref <ref>          Additional source ref; repeatable
+  --runtime <preset>          omc | omx | plain | human | custom
+  --workflow <workflow>       interview | plan | team | loop | execute | goal | custom
+  --executor <lane>           omc-claude | omx-codex | plain-agent | human | custom
+  --harness-skill <skill>     e.g. /ralplan, $ralplan, /ralph, $ultrawork
+  --repo <path>               Repository path for execution
+  --worktree <path>           Worktree path for isolated execution
+  --branch <name>             Branch expected for the run
+  --operator-surface <name>   discord | slack | telegram | github | cli | none | custom
+  --operator-thread <id>      Optional chat/thread/comment binding id
+  --issue <id-or-url>         Optional GitHub issue binding
+  --pr <id-or-url>            Optional PR binding
+  --commit-policy <text>      Commit/push approval rule${mode === 'run' ? '\n\nDry-run options:\n  --dry-run                   Preview run artifacts without writing .osc/runs files\n  --json                      With --dry-run, print only machine-readable JSON' : ''}`);
 }
 
 function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string; force: boolean; fromExisting: boolean } {
@@ -635,14 +663,69 @@ function closeCommand(args: string[]): void {
 }
 
 function createArtifacts(args: string[], mode: ArtifactMode): void {
-  const { planPathArg, options } = parseRunOptions(args);
-  const planPath = resolve(planPathArg);
-  if (!existsSync(planPath)) {
-    console.error(`Plan not found: ${planPath}`);
+  if (args[0] === '-h' || args[0] === '--help' || args[0] === 'help') {
+    printRunArtifactsUsage(mode);
+    return;
+  }
+  const { planPathArg, options, dryRun, json } = parseRunOptions(args);
+  const absolutePlanPath = resolve(planPathArg);
+  if (!existsSync(absolutePlanPath)) {
+    console.error(`Plan not found: ${absolutePlanPath}`);
     process.exit(1);
   }
+  const planPath = realpathSync(absolutePlanPath);
+  const scaffoldRoot = findScaffoldRoot(dirname(planPath)) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
+  applyRuntimeSelection(options, options.repo ? resolve(options.repo) : scaffoldRoot);
+  const artifactRoot = process.cwd();
+  const artifactOptions: RunArtifactOptions = { ...options, scaffoldRoot };
   const plan = parsePlanFile(planPath);
-  const run = createRunArtifacts(process.cwd(), plan, mode, options);
+
+  if (dryRun) {
+    if (mode !== 'run') {
+      console.error('--dry-run is only supported for osc run');
+      process.exit(2);
+    }
+    const preview = previewRunArtifacts(artifactRoot, plan, mode, artifactOptions);
+    const payload = {
+      run: preview.manifest,
+      packageMarkdown: preview.packageMarkdown,
+      filesToTouch: preview.filesToTouch,
+    };
+    if (json) {
+      console.log(JSON.stringify(payload, null, 2));
+    } else {
+      const executor = preview.manifest.executor.lane ?? 'unspecified';
+      const workflow = preview.manifest.runtimeSelection.workflow ?? 'unspecified';
+      const harnessSkill = preview.manifest.executor.harnessSkill ?? 'none';
+      console.log('Dry-run run.json:');
+      console.log(JSON.stringify(preview.manifest, null, 2));
+      console.log('');
+      console.log('Dry-run package.md:');
+      console.log(preview.packageMarkdown);
+      console.log('Dry-run summary:');
+      console.log(`Would create run ${preview.runId} in ${preview.manifest.artifacts.runDir} with executor ${executor}, workflow ${workflow}, harness skill ${harnessSkill}.`);
+      if (preview.filesToTouch.length) {
+        console.log('Files to touch:');
+        for (const file of preview.filesToTouch) console.log(`  - ${file}`);
+      } else {
+        console.log('Files to touch: none listed.');
+      }
+      if (!preview.manifest.packageQuality.executable) {
+        console.log('Blockers:');
+        for (const blocker of preview.manifest.packageQuality.blockers) console.log(`  - ${blocker}`);
+      }
+      console.log('No files were written. Re-run without --dry-run to create .osc/runs artifacts.');
+    }
+    if (!preview.manifest.packageQuality.executable) process.exit(1);
+    return;
+  }
+
+  if (json) {
+    console.error('--json is only supported with --dry-run for osc run');
+    process.exit(2);
+  }
+
+  const run = createRunArtifacts(artifactRoot, plan, mode, artifactOptions);
   console.log(`Created ${mode} artifacts:`);
   console.log(`  Run: ${run.runDir}`);
   console.log(`  Manifest: ${run.manifestPath}`);
