@@ -3,7 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { mapAnswersToTemplate, validateAnswers, type PlanWizardAnswers } from '../src/wizard.js';
+import { assertWizardReady, mapAnswersToTemplate, validateAnswers, type PlanWizardAnswers } from '../src/wizard.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -50,6 +50,12 @@ const completeAnswers: PlanWizardAnswers = {
 };
 
 describe('plan wizard template rendering', () => {
+  it('exposes a mission preflight so callers can refuse before collecting answers', () => {
+    const target = initializedScaffold({ defineMission: false });
+
+    expect(() => assertWizardReady(target)).toThrow('Mission is not yet defined');
+  });
+
   it('maps answers to a complete seven-section plan without TODO markers', () => {
     const text = mapAnswersToTemplate('test-wizard', 'active', completeAnswers);
 

@@ -143,6 +143,14 @@ export function loadAnswersFile(path: string): PlanWizardAnswers {
   return validateAnswers(parsed);
 }
 
+export function assertWizardReady(start = process.cwd()): string {
+  const root = findScaffoldRoot(start);
+  if (!root) throw new Error(`No Open Scaffold root found from ${start}. Run this inside a repo with .osc/plans and .osc/releases.`);
+  const mission = inspectMission(root);
+  if (!mission.defined) throw new Error('Mission is not yet defined. Run ./bootstrap.sh or edit MISSION.md first.');
+  return root;
+}
+
 function answersFromLines(text: string): PlanWizardAnswers {
   const lines = text.split(/\r?\n/);
   const next = () => lines.shift() ?? '';
@@ -203,10 +211,7 @@ export async function askInteractiveAnswers(): Promise<PlanWizardAnswers> {
 
 export function createWizardPlan(slug: string, stage: PlanCreationStage, answers: PlanWizardAnswers, start = process.cwd()): CreatedWizardPlan {
   const safeSlug = assertSafeWizardSlug(slug);
-  const root = findScaffoldRoot(start);
-  if (!root) throw new Error(`No Open Scaffold root found from ${start}. Run this inside a repo with .osc/plans and .osc/releases.`);
-  const mission = inspectMission(root);
-  if (!mission.defined) throw new Error('Mission is not yet defined. Run ./bootstrap.sh or edit MISSION.md first.');
+  const root = assertWizardReady(start);
   const stageDir = join(root, '.osc', 'plans', stage);
   if (!existsSync(stageDir)) throw new Error(`Open Scaffold stage folder missing: ${relative(root, stageDir)}`);
   const path = join(stageDir, `${safeSlug}.md`);

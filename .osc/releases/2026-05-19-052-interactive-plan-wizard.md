@@ -15,10 +15,11 @@ Added `osc plan wizard`, a plain-terminal plan-creation interview that turns use
 
 - `npm test -- tests/wizard.test.ts --run` — pass; 6 wizard tests cover template rendering, JSON normalization, non-interactive creation, stdin-driven interactive creation, and unset-mission refusal.
 - `npm run build` — pass; core and runtime package TypeScript builds succeeded.
-- `npm test -- --run` — pass; 23 test files / 202 tests passed.
+- `npm test -- --run` — pass; 23 test files / 203 tests passed after the Codex preflight regression test was added.
 - Built CLI smoke: `node dist/cli.js plan wizard test-json --stage backlog --non-interactive --answers tests/fixtures/wizard-answers.json` in a temporary initialized scaffold — pass; created `.osc/plans/backlog/test-json.md`, no `TODO:` markers, cache acceptance criteria present.
 - Built CLI stdin smoke: `node dist/cli.js plan wizard test-interactive` with piped answers in a temporary initialized scaffold — pass; created `.osc/plans/active/test-interactive.md`, no `TODO:` markers, two acceptance criteria present.
 - Built CLI unset-mission smoke: `node dist/cli.js plan wizard blocked-plan --non-interactive --answers tests/fixtures/wizard-answers.json` in a fresh scaffold with the default unset mission — pass; exited 1, printed `Mission is not yet defined...`, and created no plan.
+- Codex preflight regression smoke: `node dist/cli.js plan wizard blocked-plan` with piped answers in a fresh unset-mission scaffold — pass; exited 1 before collecting answers, wrote no stdout prompts, printed `Mission is not yet defined...`, and created no plan.
 - `git diff --check` — pass.
 - `./verify.sh --strict` — pass; 10 pass, 0 fail, 0 warn.
 - `npm pack --dry-run --json` — pass; package candidate `open-scaffold@0.4.3`, 86 files, includes `dist/wizard.js`/`dist/wizard.d.ts`, and keeps dogfood plan/release history out of the npm payload.

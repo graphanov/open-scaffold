@@ -8,7 +8,7 @@ import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js'
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
 import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
 import { validateScaffold } from './validation.js';
-import { askInteractiveAnswers, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
+import { askInteractiveAnswers, assertWizardReady, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
 
 function printHelp(): void {
   console.log(`osc — Open Scaffold CLI
@@ -447,6 +447,7 @@ async function planCommand(args: string[]): Promise<void> {
   if (args[0] === 'wizard') {
     const options = parsePlanWizardOptions(args.slice(1));
     try {
+      assertWizardReady(process.cwd());
       let answers: PlanWizardAnswers;
       if (options.nonInteractive) {
         answers = loadAnswersFile(resolve(options.answersPath as string));
