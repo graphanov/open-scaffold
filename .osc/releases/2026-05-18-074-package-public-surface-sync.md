@@ -2,36 +2,36 @@
 
 ## Summary
 
-Prepares the next package/public-surface sync after PR #57. Live npm `latest` is still `open-scaffold@0.4.1`, while current `main` contains newer CLI lifecycle helpers and local package metadata that have not reached the registry. This slice prepares `0.4.2` as the recommended patch release candidate, clarifies that `packages/runtime-omx/` is a GitHub source path rather than part of the root npm payload, and keeps npm publish / GitHub Release / merge as explicit owner gates.
+Completed the package/public-surface sync after PR #57. PR #58 prepared `open-scaffold@0.4.2`, clarified that `packages/runtime-omx/` is a GitHub source path rather than part of the root npm payload, and kept merge/npm/GitHub Release gates explicit. After owner approval, `open-scaffold@0.4.2` was published to npm and GitHub Release `v0.4.2` was created and marked Latest.
 
 ## Traceability
 
 - Prior reconciliation: `.osc/releases/2026-05-18-050-npm-publish-and-npx-init.md`.
-- Plan: `.osc/plans/active/074-package-public-surface-sync.md`.
-- Branch: `release/package-public-surface-sync`.
-- PR: #58 — https://github.com/graphanov/open-scaffold/pull/58.
-- npm publish: not performed.
-- GitHub Release: not created.
+- Plan: `.osc/plans/done/074-package-public-surface-sync.md`.
+- Branch / PR: `release/package-public-surface-sync`; PR #58 — https://github.com/graphanov/open-scaffold/pull/58.
+- npm package: https://www.npmjs.com/package/open-scaffold/v/0.4.2.
+- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v0.4.2.
+- Release target: `3e0a633c5431435c1ed473d83c07b2dadafe75a7`.
 
 ## Registry and command-surface evidence
 
-- `npm view open-scaffold version time dist-tags --json`:
-  - `version`: `0.4.1`.
-  - `dist-tags.latest`: `0.4.1`.
-  - published versions: `0.4.0`, `0.4.1`.
-- `npm view open-scaffold --json` summary:
-  - package exists with description and MIT license.
-  - published metadata does not expose `repository`, `homepage`, `bugs`, or `keywords` yet.
-  - `dist.fileCount`: `82`.
-  - `dist.unpackedSize`: `484719` bytes.
-- `npx --yes open-scaffold@latest --help` succeeds, but npm latest lacks current local lifecycle helpers:
+Before publish:
+
+- `npm view open-scaffold version time dist-tags --json` reported `version: 0.4.1` and `dist-tags.latest: 0.4.1`.
+- `npx --yes open-scaffold@latest --help` succeeded, but npm latest lacked current lifecycle helpers:
   - `osc plan new`
   - `osc plan move`
   - `osc amend`
   - `osc evidence new`
   - `osc close`
-- `node dist/cli.js --help` after local build includes those helpers.
-- `npx --yes open-scaffold@latest init --tier min --target <tmp>` succeeds and creates the expected 13 min-tier files.
+- `node dist/cli.js --help` after local build included those helpers.
+
+After publish:
+
+- `npm view open-scaffold version dist-tags --json` reports `version: 0.4.2` and `dist-tags.latest: 0.4.2`.
+- `npm view open-scaffold --json` exposes repository, homepage, bugs URL, license, description, and keywords.
+- `npx --yes open-scaffold@latest --help` exposes the lifecycle helpers listed above.
+- `npx --yes open-scaffold@latest init --tier min --target <tmp>` succeeds and creates the expected min-tier files.
 
 ## Package payload evidence
 
@@ -47,43 +47,37 @@ Prepares the next package/public-surface sync after PR #57. Live npm `latest` is
 
 ## Runtime package distribution decision
 
-Decision for this slice: keep `packages/runtime-omx/` as a GitHub source / repo-only package path for now. Do not include it in the root `open-scaffold` npm tarball and do not publish a separate runtime package in this PR. Runtime-package publication remains a separate owner-approved release decision.
+Decision for this slice: keep `packages/runtime-omx/` as a GitHub source / repo-only package path for now. Do not include it in the root `open-scaffold` npm tarball and do not publish a separate runtime package in this release. Runtime-package publication remains a separate owner-approved release decision.
 
 Docs were updated so shipped root-package docs no longer imply that `packages/runtime-omx/` is available inside the root npm payload. Relative links to `../packages/runtime-omx/` in shipped docs were converted to GitHub source links where needed.
 
-## Version / publish recommendation
-
-Recommended next package action after review and owner approval: publish patch version `0.4.2`.
-
-Rationale:
-
-- The package public surface is stale relative to current main but this is not a breaking or feature-strategy release.
-- The local release candidate adds already-merged CLI lifecycle helpers to the public `npx` path.
-- Missing npm metadata can only reach npm through a new version publish.
-- Runtime wording is a clarification, not a new installable runtime package.
-
 ## Verification
 
-Final verification for this branch should include:
+PR #58 / release-candidate verification:
 
-- `git diff --check`
-- `./verify.sh --strict`
-- `npm test -- --run`
-- `npm run build`
-- `npm pack --dry-run --json`
-- `npx --yes open-scaffold@latest init --tier min --target <tmp>`
-- `node dist/cli.js --help`
+- `git diff --check` — pass.
+- `./verify.sh --strict` — 10 pass / 0 fail / 0 warn.
+- `npm test -- --run` — 22 files / 187 tests passed.
+- `npm run build` — pass.
+- `npm pack --dry-run --json` — pass.
+- `npm publish --dry-run` — pass.
+- `npx --yes open-scaffold@latest init --tier min --target <tmp>` — pass.
+- `node dist/cli.js --help` — pass.
+- GitHub CI — pass.
+- Codex latest-head review for PR #58 — no major issues.
+
+Post-publish verification:
+
+- `npm view open-scaffold version dist-tags --json` — latest `0.4.2`.
+- `npx --yes open-scaffold@latest --help` — lifecycle helper commands present.
+- `npx --yes open-scaffold@latest init --tier min --target <tmp>` — pass.
+- `gh release view v0.4.2 --repo graphanov/open-scaffold` — release exists, non-draft, non-prerelease, target `3e0a633c5431435c1ed473d83c07b2dadafe75a7`.
+- `gh release list --repo graphanov/open-scaffold --limit 5` — `v0.4.2 — Package public-surface sync` is Latest.
 
 ## Outcome
 
-- Local release candidate prepared as `open-scaffold@0.4.2`.
+- `open-scaffold@0.4.2` is published to npm and is the `latest` dist-tag.
+- GitHub Release `v0.4.2 — Package public-surface sync` exists and is marked Latest.
 - Root package remains core-only: CLI, scaffold files, and docs; no `packages/runtime-omx/` payload ships inside the root tarball.
 - Runtime package distribution is clarified as repo/GitHub source for now, with any installable runtime-package release left as a separate owner-approved decision.
-- Public npm `latest` remains `0.4.1` until the owner approves and performs `npm publish`.
-- Plan 074 remains active until the owner decides whether to merge the PR and publish `0.4.2`.
-
-## Gates
-
-- Owner approval received to open PR #58; merge remains owner-gated.
-- Owner approval required before `npm publish`.
-- Owner approval required before creating or moving the GitHub Release marked Latest.
+- Plan 074 is closed to `done/` by the follow-up closeout PR.
