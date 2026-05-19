@@ -111,7 +111,7 @@ function findLineContaining(lines: string[], needle: string, fallback = 1): numb
 
 function lineContainsTodoPlaceholder(line: string): boolean {
   const withoutInlineCode = line.replace(/`[^`]*`/g, '');
-  return /(^|[\s>*-])TODO:\s*\S/i.test(withoutInlineCode);
+  return /(^|[\s>*-])TODO:\s*(\S|$)/i.test(withoutInlineCode);
 }
 
 function shouldBeBlockingQuestion(item: string): boolean {
