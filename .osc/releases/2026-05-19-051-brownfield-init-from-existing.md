@@ -10,7 +10,7 @@ Adds explicit brownfield initialization with `osc init --from-existing` so Open 
 - Plan: `.osc/plans/done/051-brownfield-init-from-existing.md`.
 - Run ID / run packet: `N/A` — local CLI/product slice, no runtime run packet needed.
 - Branch: `cli/brownfield-init-from-existing`.
-- PR: pending owner review; not opened in this local execution gate.
+- PR: #60 — https://github.com/graphanov/open-scaffold/pull/60.
 
 ## Verification
 
