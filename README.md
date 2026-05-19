@@ -38,15 +38,13 @@ For the same idea in three diagrams (problem, loop, system boundary), see [`docs
 
 ---
 
-## 60-second demo
+## Demo: work resumes from the repo
 
-Want the loop before the theory? Read [`docs/EXAMPLES.md`](docs/EXAMPLES.md#60-second-viewer-demo). It shows the four artifacts that matter:
+![Open Scaffold resume loop: an old session loses context, a new session reads repo files, and work resumes](.github/assets/readme-resume-screencast.gif)
 
-```text
-Mission -> plan -> verification -> evidence/status
-```
+The chat can fade. The repository keeps the work. A fresh session reads `.osc/plans/active/`, recovers the goal, checks, and next action, then continues from repo truth.
 
-For a full non-recursive loop, read the [downstream walkthrough](docs/examples/downstream-walkthrough.md): mission, plan, optional `run.json` package, evidence, close, and day-2 resume. Broader shapes live in the [examples index](docs/examples/README.md).
+Want the underlying files? Read [`docs/EXAMPLES.md`](docs/EXAMPLES.md#60-second-viewer-demo) for the four-artifact loop, or the [downstream walkthrough](docs/examples/downstream-walkthrough.md) for a full day-2 resume example.
 
 ---
 
