@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-19: closed 075-brownfield-package-release-sync — prepared brownfield init package release candidate
 - 2026-05-19: closed 051-brownfield-init-from-existing — brownfield init from existing repos shipped
 - 2026-05-19: closed 074-package-public-surface-sync — published 0.4.2 and aligned package public surfaces
 - 2026-05-18: closed 050-npm-publish-and-npx-init — reconciled live npm/npx package truth and created package public-surface follow-up
