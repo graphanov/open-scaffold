@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -137,6 +137,24 @@ describe('osc run --dry-run', () => {
     expect(parsed.run.runtimeSelection).toMatchObject({ workflow: 'execute' });
     expect(parsed.packageMarkdown).toContain('# Open Scaffold Prompt: Single Session');
     expect(parsed.filesToTouch).toEqual(['src/demo.ts', 'tests/demo.test.ts']);
+  });
+
+  it('resolves scaffold root from the plan path when run from a subdirectory', () => {
+    const target = initializedScaffold();
+    const planPath = writePlan(target, '001-dry-run-demo', validPlan);
+    const subdir = join(target, 'src');
+    mkdirSync(subdir, { recursive: true });
+
+    const result = spawnSync(tsx, [cli, 'run', planPath, '--dry-run', '--json', '--runtime', 'omx', '--workflow', 'plan'], { cwd: subdir, encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.run.packageQuality.executable).toBe(true);
+    expect(parsed.run.packageQuality.blockers).toEqual([]);
+    expect(parsed.run.artifacts.runDir).toContain('.osc/runs/');
+    expect(parsed.run.plan.path).toBe('.osc/plans/active/001-dry-run-demo.md');
+    expect(existsSync(join(target, '.osc/runs'))).toBe(false);
   });
 
   it('reports non-executable dry-runs without writing artifacts', () => {

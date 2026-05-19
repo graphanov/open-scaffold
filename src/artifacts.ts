@@ -25,6 +25,8 @@ export interface RunArtifactOptions {
   issue?: string;
   pr?: string;
   commitPolicy?: string;
+  /** Internal root used for mission/package-quality checks when artifacts are written elsewhere. */
+  scaffoldRoot?: string;
 }
 
 export interface RunArtifacts {
@@ -233,7 +235,7 @@ function buildRunArtifacts(root: string, plan: ParsedPlan, mode: ArtifactMode, o
     };
   });
 
-  const quality = contextQuality(root, plan);
+  const quality = contextQuality(options.scaffoldRoot ?? root, plan);
   const createdAt = new Date().toISOString();
   const relativeOrNull = (value?: string) => value ?? null;
   const sourceRefs = [

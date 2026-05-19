@@ -226,7 +226,6 @@ function parseRunOptions(args: string[]): { planPathArg: string; options: RunArt
     }
   }
 
-  applyRuntimeSelection(options, options.repo ? resolve(options.repo) : process.cwd());
   return { planPathArg, options, dryRun, json };
 }
 
@@ -649,6 +648,10 @@ function createArtifacts(args: string[], mode: ArtifactMode): void {
     console.error(`Plan not found: ${planPath}`);
     process.exit(1);
   }
+  const scaffoldRoot = findScaffoldRoot(dirname(planPath)) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
+  applyRuntimeSelection(options, options.repo ? resolve(options.repo) : scaffoldRoot);
+  const artifactRoot = dryRun ? scaffoldRoot : process.cwd();
+  const artifactOptions: RunArtifactOptions = { ...options, scaffoldRoot };
   const plan = parsePlanFile(planPath);
 
   if (dryRun) {
@@ -656,7 +659,7 @@ function createArtifacts(args: string[], mode: ArtifactMode): void {
       console.error('--dry-run is only supported for osc run');
       process.exit(2);
     }
-    const preview = previewRunArtifacts(process.cwd(), plan, mode, options);
+    const preview = previewRunArtifacts(artifactRoot, plan, mode, artifactOptions);
     const payload = {
       run: preview.manifest,
       packageMarkdown: preview.packageMarkdown,
@@ -696,7 +699,7 @@ function createArtifacts(args: string[], mode: ArtifactMode): void {
     process.exit(2);
   }
 
-  const run = createRunArtifacts(process.cwd(), plan, mode, options);
+  const run = createRunArtifacts(artifactRoot, plan, mode, artifactOptions);
   console.log(`Created ${mode} artifacts:`);
   console.log(`  Run: ${run.runDir}`);
   console.log(`  Manifest: ${run.manifestPath}`);
