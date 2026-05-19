@@ -10,7 +10,7 @@ Adds a bundled plan-authoring quality layer after the plan wizard: reusable plan
 - Plans: `.osc/plans/done/053-plan-template-library.md` and `.osc/plans/done/055-plan-linter.md`.
 - Run ID / run packet: `N/A` — direct repo product slice; no runtime run packet needed.
 - Branch: `cli/plan-authoring-quality-bundle`.
-- PR: pending at branch evidence time; final PR conversation is the latest-head review source of truth.
+- PR: https://github.com/graphanov/open-scaffold/pull/66; final PR conversation is the latest-head review source of truth.
 - Package candidate: `open-scaffold@0.4.5`.
 
 ## Verification
