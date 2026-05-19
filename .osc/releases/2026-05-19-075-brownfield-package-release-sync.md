@@ -12,7 +12,7 @@ Prepared the package/public-surface sync needed after PR #60 added brownfield in
 - Branch: `release/brownfield-init-package-sync`.
 - Kanban: `t_16140b93`.
 - Release candidate: `open-scaffold@0.4.3`.
-- PR: pending owner review; not opened in this local execution gate.
+- PR: #61 — https://github.com/graphanov/open-scaffold/pull/61.
 
 ## Registry and command-surface evidence
 
