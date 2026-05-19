@@ -28,8 +28,12 @@ Use the helper when the repo has the `osc` CLI available:
 
 ```bash
 osc plan new <slug> --stage backlog
+osc plan new <slug> --stage backlog --from-template bug-fix
+osc plan new --from-template list
 osc plan move <slug> --to active
 ```
+
+Use templates when the work shape is known but you want a stronger starting point than the blank handoff skeleton. Shipped templates live under `.osc/plans/templates/`; project teams can add `custom-<name>.md` templates there.
 
 For a first filled draft instead of a blank skeleton, use the terminal interview wizard:
 
@@ -39,6 +43,15 @@ osc plan wizard <slug> --stage backlog --non-interactive --answers answers.json
 ```
 
 The wizard asks for goal, context, constraints, likely files, acceptance criteria, verification, and open questions. It still records your answers only — it does not invent scope or judge whether the plan is good.
+
+Validate the result before implementation when the plan will drive real work:
+
+```bash
+osc plan validate <slug-or-path>
+osc plan validate <slug-or-path> --strict --json
+```
+
+Plan validation is mechanical: it catches missing sections, TODO markers, empty acceptance criteria, status/folder drift, vague goals, untagged blocking questions, and heading-order issues. It is not a semantic product review.
 
 Use `active` directly when execution is immediate. Use `blocked` or `backlog` when you need to park work without deleting the plan:
 

@@ -6,6 +6,16 @@ export const PLAN_STAGES = ['active', 'backlog', 'blocked', 'done'] as const;
 export type PlanStage = typeof PLAN_STAGES[number];
 export const PLAN_CREATION_STAGES = ['active', 'backlog', 'blocked'] as const;
 export type PlanCreationStage = typeof PLAN_CREATION_STAGES[number];
+export const REQUIRED_PLAN_SECTIONS = [
+  'Status',
+  'Context',
+  'Goal',
+  'Constraints / Out of scope',
+  'Files to touch',
+  'Acceptance criteria',
+  'Verification steps',
+  'Open questions',
+] as const;
 
 export interface MissionState {
   path: string;
@@ -35,6 +45,12 @@ export interface CreatedScaffoldFile {
 
 export interface CreatedPlanSkeleton extends CreatedScaffoldFile {
   stage: PlanCreationStage;
+  templateName?: string;
+}
+
+export interface PlanTemplateSummary {
+  name: string;
+  path: string;
 }
 
 export interface CreatedPlanAmendment extends CreatedScaffoldFile {
@@ -195,6 +211,50 @@ TODO: state one observable outcome that defines done.
 `;
 }
 
+function templatesDir(root: string): string {
+  return join(root, OSC_NAMESPACE, 'plans', 'templates');
+}
+
+function assertSafeTemplateName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.endsWith('.md') || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(trimmed) || trimmed.includes('..')) {
+    throw new Error(`Unsafe template name: ${name}. Use a template id such as bug-fix or custom-team.`);
+  }
+  return trimmed;
+}
+
+export function listPlanTemplates(start = process.cwd()): PlanTemplateSummary[] {
+  const root = requireScaffoldRoot(start);
+  const dir = templatesDir(root);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((file) => file.endsWith('.md') && file !== 'README.md')
+    .sort()
+    .map((file) => ({ name: basename(file, '.md'), path: relative(root, join(dir, file)) }));
+}
+
+function assertTemplateHasRequiredSections(templateText: string, templateName: string): void {
+  const sections = splitSections(templateText);
+  const missing = REQUIRED_PLAN_SECTIONS.filter((section) => !sections.has(section));
+  if (missing.length > 0) {
+    throw new Error(`Template ${templateName} is missing required sections: ${missing.map((section) => `## ${section}`).join(', ')}`);
+  }
+}
+
+function renderPlanFromTemplate(slug: string, stage: PlanCreationStage, templateName: string, root: string): string {
+  const safeTemplateName = assertSafeTemplateName(templateName);
+  const path = join(templatesDir(root), `${safeTemplateName}.md`);
+  if (!existsSync(path)) {
+    throw new Error(`Template not found: ${safeTemplateName}. Expected .osc/plans/templates/${safeTemplateName}.md`);
+  }
+  let text = readText(path);
+  assertTemplateHasRequiredSections(text, safeTemplateName);
+  text = text.replace(/^# Plan:.+$/m, `# Plan: ${slug}`);
+  text = updatePlanStatus(text, stage);
+  text = text.replace(/\bREPLACE_ME:\s*/g, '');
+  return text.endsWith('\n') ? text : `${text}\n`;
+}
+
 function renderEvidenceSkeleton(slug: string): string {
   return `# Release / Evidence Note: ${slug}
 
@@ -313,7 +373,7 @@ function stampMissionChangelog(root: string, line: string, idempotencyToken?: st
   return true;
 }
 
-export function createPlanSkeleton(slug: string, stage: PlanCreationStage, start = process.cwd()): CreatedPlanSkeleton {
+export function createPlanSkeleton(slug: string, stage: PlanCreationStage, start = process.cwd(), options: { templateName?: string } = {}): CreatedPlanSkeleton {
   if (!PLAN_CREATION_STAGES.includes(stage)) {
     throw new Error(`Invalid plan stage: ${stage}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
   }
@@ -329,8 +389,9 @@ export function createPlanSkeleton(slug: string, stage: PlanCreationStage, start
     throw new Error(`Refusing to overwrite existing plan: ${relativePath}`);
   }
   mkdirSync(stageDir, { recursive: true });
-  writeFileSync(path, renderPlanSkeleton(safeSlug, stage), 'utf8');
-  return { root, path, relativePath, slug: safeSlug, stage };
+  const content = options.templateName ? renderPlanFromTemplate(safeSlug, stage, options.templateName, root) : renderPlanSkeleton(safeSlug, stage);
+  writeFileSync(path, content, 'utf8');
+  return { root, path, relativePath, slug: safeSlug, stage, templateName: options.templateName };
 }
 
 export function createEvidenceNoteSkeleton(slug: string, start = process.cwd(), date = new Date()): CreatedScaffoldFile {
