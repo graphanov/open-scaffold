@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog — depends on 050 (npm publish) for `osc plan` subcommand availability. Complements 052 (wizard) and 053 (templates) by providing post-creation quality feedback. The linter catches structural and heuristic issues at plan creation time rather than waiting for verification at PR time.
+done
+
 
 ## Context
 

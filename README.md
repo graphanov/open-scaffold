@@ -122,13 +122,18 @@ If the goal is clear, tell your agent:
 Write a plan in .osc/plans/active/ for <task> using .osc/plans/handoff-template.md.
 ```
 
-If the goal is fuzzy, park the plan in backlog first, then move it to active when it becomes the work you are actually doing. Fill the template with short bullets; the important parts are goal, acceptance criteria, and verification. The helpers create files and TODO prompts; they do **not** invent acceptance criteria for you:
+If the goal is fuzzy, park the plan in backlog first, then move it to active when it becomes the work you are actually doing. Fill the template with short bullets; the important parts are goal, acceptance criteria, and verification. The helpers create files and prompts; they do **not** invent acceptance criteria for you:
 
 ```bash
 osc plan new my-first-task --stage backlog
+osc plan new my-first-bug --stage backlog --from-template bug-fix
+osc plan new --from-template list
+osc plan validate my-first-bug
 osc plan move my-first-task --to active
 # or, without local install:
 npx open-scaffold plan new my-first-task --stage backlog
+npx open-scaffold plan new my-first-bug --stage backlog --from-template bug-fix
+npx open-scaffold plan validate my-first-bug
 npx open-scaffold plan move my-first-task --to active
 ```
 

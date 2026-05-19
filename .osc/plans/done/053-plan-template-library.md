@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog — depends on 050 (npm publish) so that shipped templates are reachable. Complements 052 (interactive wizard) as an alternative plan-creation acceleration path: rather than answering questions, users copy a domain-specific template and fill in placeholders. Both wizard and templates ship together so users can choose their preferred workflow.
+done
+
 
 ## Context
 

@@ -1,6 +1,6 @@
 {
   "name": "open-scaffold",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Runtime-neutral scaffold and prompt/artifact CLI for disciplined AI-agent development.",
   "license": "MIT",
   "repository": {
@@ -42,6 +42,7 @@
     ".osc/plans/WORKFLOW.md",
     ".osc/plans/README.md",
     ".osc/plans/handoff-template.md",
+    ".osc/plans/templates",
     ".osc/releases/README.md",
     ".osc/specs/.gitkeep",
     "docs",

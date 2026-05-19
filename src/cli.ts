@@ -6,8 +6,9 @@ import { createRunArtifacts, type ArtifactMode, type ExecutorLane, type Operator
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
-import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
+import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
 import { validateScaffold } from './validation.js';
+import { formatPlanValidationIssues, hasBlockingIssues, resolvePlanValidationPath, validatePlanFile } from './plan-validate.js';
 import { askInteractiveAnswers, assertWizardReady, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
 
 function printHelp(): void {
@@ -19,7 +20,9 @@ Usage:
   osc init --min|--standard|--max --target <dir> [--force]
   osc status [--json]
   osc plan <plan-path>
-  osc plan new <slug> --stage <active|backlog|blocked>
+  osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]
+  osc plan new --from-template list
+  osc plan validate <slug-or-path> [--json] [--strict]
   osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
   osc plan move <slug> --to <active|backlog|blocked>
   osc amend <plan-slug> [--message <text>]
@@ -312,12 +315,30 @@ function exitForScaffoldHelperError(error: unknown): never {
   process.exit(1);
 }
 
-function parsePlanStage(args: string[]): PlanCreationStage {
+interface PlanNewOptions {
+  slug?: string;
+  stage: PlanCreationStage;
+  templateName?: string;
+  listTemplates: boolean;
+}
+
+function printPlanNewUsage(): void {
+  console.error('Usage: osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>] | osc plan new --from-template list');
+}
+
+function parsePlanNewOptions(args: string[]): PlanNewOptions {
+  if (args[0] === '--from-template' && args[1] === 'list' && args.length === 2) {
+    return { stage: 'active', templateName: 'list', listTemplates: true };
+  }
+  const slug = requireArg(args, 'slug');
+  const rest = args.slice(1);
   let stage: PlanCreationStage | undefined;
-  for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
+  let templateName: string | undefined;
+  let listTemplates = false;
+  for (let i = 0; i < rest.length; i += 1) {
+    const flag = rest[i];
     if (flag === '--stage') {
-      const value = args[i + 1];
+      const value = rest[i + 1];
       if (!value || value.startsWith('--')) {
         console.error('Missing value for --stage');
         process.exit(2);
@@ -328,17 +349,27 @@ function parsePlanStage(args: string[]): PlanCreationStage {
       }
       stage = value as PlanCreationStage;
       i += 1;
+    } else if (flag === '--from-template') {
+      const value = rest[i + 1];
+      if (!value || value.startsWith('--')) {
+        console.error('Missing value for --from-template');
+        process.exit(2);
+      }
+      templateName = value;
+      listTemplates = value === 'list';
+      i += 1;
     } else {
       console.error(`Unknown option for plan new: ${flag}`);
-      console.error('Usage: osc plan new <slug> --stage <active|backlog|blocked>');
+      printPlanNewUsage();
       process.exit(2);
     }
   }
+  if (listTemplates) return { slug, stage: stage ?? 'active', templateName, listTemplates };
   if (!stage) {
     console.error('Missing required option: --stage <active|backlog|blocked>');
     process.exit(2);
   }
-  return stage;
+  return { slug, stage, templateName, listTemplates };
 }
 
 function parsePlanMoveDestination(args: string[]): PlanCreationStage {
@@ -433,12 +464,54 @@ function parsePlanWizardOptions(args: string[]): { slug: string; stage: PlanCrea
 
 async function planCommand(args: string[]): Promise<void> {
   if (args[0] === 'new') {
-    const slug = requireArg(args.slice(1), 'slug');
-    const stage = parsePlanStage(args.slice(2));
+    const options = parsePlanNewOptions(args.slice(1));
+    if (options.listTemplates) {
+      try {
+        const templates = listPlanTemplates(process.cwd());
+        for (const template of templates) console.log(`${template.name}\t${template.path}`);
+        return;
+      } catch (error) {
+        exitForScaffoldHelperError(error);
+      }
+    }
+    const slug = options.slug as string;
     try {
-      const result = createPlanSkeleton(slug, stage, process.cwd());
+      const result = createPlanSkeleton(slug, options.stage, process.cwd(), { templateName: options.templateName });
       console.log(`Created plan: ${result.relativePath}`);
-      console.log('Next: fill the TODO prompts before implementation; do not treat the skeleton as acceptance criteria.');
+      if (result.templateName) {
+        console.log(`Template: ${result.templateName}`);
+        console.log('Next: review the template placeholders and replace angle-bracket prompts before implementation.');
+      } else {
+        console.log('Next: fill the TODO prompts before implementation; do not treat the skeleton as acceptance criteria.');
+      }
+      return;
+    } catch (error) {
+      exitForScaffoldHelperError(error);
+    }
+  }
+  if (args[0] === 'validate') {
+    const target = requireArg(args.slice(1), 'slug-or-path');
+    const rest = args.slice(2);
+    let json = false;
+    let strict = false;
+    for (const flag of rest) {
+      if (flag === '--json') json = true;
+      else if (flag === '--strict') strict = true;
+      else {
+        console.error(`Unknown option for plan validate: ${flag}`);
+        console.error('Usage: osc plan validate <slug-or-path> [--json] [--strict]');
+        process.exit(2);
+      }
+    }
+    try {
+      const planPath = resolvePlanValidationPath(target, process.cwd());
+      const result = validatePlanFile(planPath, { strict });
+      if (json) {
+        console.log(JSON.stringify(result.issues, null, 2));
+      } else {
+        console.log(formatPlanValidationIssues(result.issues));
+      }
+      if (hasBlockingIssues(result.issues, strict)) process.exit(1);
       return;
     } catch (error) {
       exitForScaffoldHelperError(error);
