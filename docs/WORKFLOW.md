@@ -8,7 +8,7 @@ Named coordinators, harnesses, and status/approval channels (operator surfaces) 
 
 Every task moves through a natural progression. You do not need to use every phase — small fixes skip straight to Execute. The phases exist so you know where you are and what to reach for.
 
-For first-use setup, start with the [Minimum Viable Scaffold](MINIMUM_VIABLE_SCAFFOLD.md): choose a scaffold tier with `osc init --tier min|standard|max --target <repo>`, define the mission, add one active plan, verify, record evidence, and close.
+For first-use setup, start with the [Minimum Viable Scaffold](MINIMUM_VIABLE_SCAFFOLD.md): choose a scaffold tier with `osc init --tier min|standard|max --target <repo>` for greenfield setup or `osc init --from-existing --tier min --target .` for an existing repo, define the mission, add one active plan, verify, record evidence, and close.
 
 ### 1. Clarify (when the goal is fuzzy)
 

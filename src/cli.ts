@@ -14,6 +14,7 @@ function printHelp(): void {
 
 Usage:
   osc init --tier <min|standard|max> --target <dir> [--force]
+  osc init --from-existing --tier min --target <dir> [--force]
   osc init --min|--standard|--max --target <dir> [--force]
   osc status [--json]
   osc plan <plan-path>
@@ -216,10 +217,11 @@ function parseRunOptions(args: string[]): { planPathArg: string; options: RunArt
   return { planPathArg, options };
 }
 
-function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string; force: boolean } {
+function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string; force: boolean; fromExisting: boolean } {
   let tier: ScaffoldTier | undefined;
   let target: string | undefined;
   let force = false;
+  let fromExisting = false;
 
   function takeValue(index: number, flag: string): string {
     const value = args[index + 1];
@@ -253,6 +255,9 @@ function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string;
       case '--force':
         force = true;
         break;
+      case '--from-existing':
+        fromExisting = true;
+        break;
       default:
         console.error(`Unknown option for init: ${flag}`);
         printHelp();
@@ -268,7 +273,7 @@ function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string;
     console.error('Missing required option: --target <dir>');
     process.exit(2);
   }
-  return { tier, target, force };
+  return { tier, target, force, fromExisting };
 }
 
 function init(args: string[]): void {

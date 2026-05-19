@@ -154,6 +154,27 @@ describe('osc init CLI', () => {
     expect(output).not.toContain(join(target, 'docs/WORKFLOW.md'));
   });
 
+  it('creates a brownfield scaffold from the CLI without replacing existing project files', () => {
+    const target = tempTarget();
+    const packageJson = '{"name":"cli-brownfield"}\n';
+    writeFileSync(join(target, 'package.json'), packageJson);
+
+    const output = execFileSync(tsx, [cli, 'init', '--from-existing', '--tier', 'min', '--target', target], { encoding: 'utf8' });
+
+    expect(output).toContain('Detected existing Node.js project');
+    expect(readFileSync(join(target, 'package.json'), 'utf8')).toBe(packageJson);
+    expect(readFileSync(join(target, 'MISSION.md'), 'utf8')).toContain('Node.js');
+    expect(existsSync(join(target, 'AGENTS.md'))).toBe(true);
+    expect(existsSync(join(target, 'CLAUDE.md'))).toBe(true);
+  });
+
+  it('mentions the brownfield init flag in CLI help', () => {
+    const result = spawnSync(tsx, [cli, '--help'], { encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('osc init --from-existing --tier min --target <dir> [--force]');
+  });
+
   it('maps runtime and workflow presets into a run packet without spawning', () => {
     const target = tempTarget();
     execFileSync(tsx, [cli, 'init', '--standard', '--target', target], { encoding: 'utf8' });

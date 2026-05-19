@@ -101,4 +101,101 @@ describe('tiered scaffold initialization', () => {
     expect(() => initializeScaffold({ tier: 'standard', target, force: true })).toThrow(/Refusing to write through symlinked path: README\.md/);
     expect(readFileSync(join(outside, 'README.md'), 'utf8')).toBe('outside');
   });
+
+  it('adds a min brownfield scaffold to an existing Node.js repo without touching project files', () => {
+    const target = tempTarget();
+    const packageJson = '{"name":"brownfield-node","scripts":{"test":"node src/index.js"}}\n';
+    const source = 'console.log("hi")\n';
+    writeFileSync(join(target, 'package.json'), packageJson);
+    mkdirSync(join(target, 'src'));
+    writeFileSync(join(target, 'src/index.js'), source);
+
+    const result = initializeScaffold({ tier: 'min', target, fromExisting: true });
+
+    expect(result.summary).toContain('Detected existing Node.js project');
+    expect(result.filesCreated).toContain('AGENTS.md');
+    expect(result.filesCreated).toContain('CLAUDE.md');
+    expect(existsSync(join(target, '.osc/plans/active/.gitkeep'))).toBe(true);
+    expect(existsSync(join(target, 'AGENTS.md'))).toBe(true);
+    expect(existsSync(join(target, 'CLAUDE.md'))).toBe(true);
+    expect(readFileSync(join(target, 'MISSION.md'), 'utf8')).toContain('Node.js');
+    expect(readFileSync(join(target, 'MISSION.md'), 'utf8')).toContain('<!-- mission:unset -->');
+    expect(readFileSync(join(target, 'package.json'), 'utf8')).toBe(packageJson);
+    expect(readFileSync(join(target, 'src/index.js'), 'utf8')).toBe(source);
+  });
+
+  it('refuses brownfield scaffold conflicts without force and lists scaffold-owned conflicts', () => {
+    const target = tempTarget();
+    writeFileSync(join(target, 'package.json'), '{"name":"conflict"}\n');
+    writeFileSync(join(target, 'MISSION.md'), 'keep mission');
+    mkdirSync(join(target, '.osc'));
+
+    expect(() => initializeScaffold({ tier: 'min', target, fromExisting: true })).toThrow(/Refusing to overwrite existing scaffold files: MISSION\.md, \.osc/);
+    expect(readFileSync(join(target, 'MISSION.md'), 'utf8')).toBe('keep mission');
+    expect(readFileSync(join(target, 'package.json'), 'utf8')).toBe('{"name":"conflict"}\n');
+  });
+
+  it('allows forced brownfield scaffold refresh while preserving user project files', () => {
+    const target = tempTarget();
+    const packageJson = '{"name":"force-node"}\n';
+    writeFileSync(join(target, 'package.json'), packageJson);
+    writeFileSync(join(target, 'MISSION.md'), 'old mission');
+    writeFileSync(join(target, 'README.md'), 'user readme');
+
+    initializeScaffold({ tier: 'min', target, fromExisting: true, force: true });
+
+    expect(readFileSync(join(target, 'package.json'), 'utf8')).toBe(packageJson);
+    expect(readFileSync(join(target, 'README.md'), 'utf8')).toBe('user readme');
+    expect(readFileSync(join(target, 'MISSION.md'), 'utf8')).toContain('Node.js');
+    expect(readFileSync(join(target, 'AGENTS.md'), 'utf8')).toContain('This repository uses Open Scaffold');
+  });
+
+  it('tailors brownfield mission drafts for Python, Go, Rust, and generic projects', () => {
+    const cases = [
+      { marker: 'pyproject.toml', contents: '[project]\nname="demo"\n', expected: 'Python' },
+      { marker: 'go.mod', contents: 'module example.com/demo\n', expected: 'Go' },
+      { marker: 'Cargo.toml', contents: '[package]\nname="demo"\n', expected: 'Rust' },
+      { marker: 'README.md', contents: '# Existing project\n', expected: 'existing project' },
+    ];
+
+    for (const entry of cases) {
+      const target = tempTarget();
+      writeFileSync(join(target, entry.marker), entry.contents);
+
+      initializeScaffold({ tier: 'min', target, fromExisting: true });
+
+      expect(readFileSync(join(target, 'MISSION.md'), 'utf8'), entry.marker).toContain(entry.expected);
+      expect(readFileSync(join(target, entry.marker), 'utf8'), entry.marker).toBe(entry.contents);
+    }
+  });
+
+  it('detects common Node.js monorepo markers before falling back to a plain Node.js project', () => {
+    const cases = [
+      { file: 'package.json', contents: '{"name":"mono","workspaces":["packages/*"]}\n' },
+      { file: 'pnpm-workspace.yaml', contents: 'packages:\n  - packages/*\n' },
+      { file: 'lerna.json', contents: '{"packages":["packages/*"]}\n' },
+      { file: 'nx.json', contents: '{"npmScope":"demo"}\n' },
+    ];
+
+    for (const entry of cases) {
+      const target = tempTarget();
+      writeFileSync(join(target, 'package.json'), '{"name":"mono"}\n');
+      writeFileSync(join(target, entry.file), entry.contents);
+
+      initializeScaffold({ tier: 'min', target, fromExisting: true });
+
+      expect(readFileSync(join(target, 'MISSION.md'), 'utf8'), entry.file).toContain('Node.js monorepo');
+      expect(readFileSync(join(target, entry.file), 'utf8'), entry.file).toBe(entry.contents);
+    }
+  });
+
+  it('rejects standard and max brownfield tiers so force cannot overwrite user-owned docs', () => {
+    const target = tempTarget();
+    writeFileSync(join(target, 'package.json'), '{"name":"safe"}\n');
+    writeFileSync(join(target, 'README.md'), 'user readme');
+
+    expect(() => initializeScaffold({ tier: 'standard', target, fromExisting: true, force: true })).toThrow(/supports --tier min only/);
+    expect(() => initializeScaffold({ tier: 'max', target, fromExisting: true })).toThrow(/supports --tier min only/);
+    expect(readFileSync(join(target, 'README.md'), 'utf8')).toBe('user readme');
+  });
 });

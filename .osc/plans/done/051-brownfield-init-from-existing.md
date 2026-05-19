@@ -2,7 +2,7 @@
 
 ## Status
 
-backlog — blocked on 050 (npm publish) for baseline `osc init` availability. This extends the greenfield-only `osc init` to support existing project directories, which is the majority real-world adoption path. No work begins until `osc init --tier min` is stable and published.
+done
 
 ## Context
 

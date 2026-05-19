@@ -81,6 +81,7 @@ Use npm for the normal first run. Use `--target .` to add scaffold files to the 
 
 ```bash
 npx open-scaffold init --tier min --target <your-project>
+# existing repo: npx open-scaffold init --from-existing --tier min --target .
 cd <your-project>
 ```
 
