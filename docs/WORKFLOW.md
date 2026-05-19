@@ -31,6 +31,15 @@ osc plan new <slug> --stage backlog
 osc plan move <slug> --to active
 ```
 
+For a first filled draft instead of a blank skeleton, use the terminal interview wizard:
+
+```bash
+osc plan wizard <slug> --stage active
+osc plan wizard <slug> --stage backlog --non-interactive --answers answers.json
+```
+
+The wizard asks for goal, context, constraints, likely files, acceptance criteria, verification, and open questions. It still records your answers only — it does not invent scope or judge whether the plan is good.
+
 Use `active` directly when execution is immediate. Use `blocked` or `backlog` when you need to park work without deleting the plan:
 
 ```bash

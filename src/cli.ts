@@ -8,6 +8,7 @@ import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js'
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
 import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
 import { validateScaffold } from './validation.js';
+import { askInteractiveAnswers, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
 
 function printHelp(): void {
   console.log(`osc — Open Scaffold CLI
@@ -19,6 +20,7 @@ Usage:
   osc status [--json]
   osc plan <plan-path>
   osc plan new <slug> --stage <active|backlog|blocked>
+  osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
   osc plan move <slug> --to <active|backlog|blocked>
   osc amend <plan-slug> [--message <text>]
   osc evidence new <slug>
@@ -372,7 +374,64 @@ function parsePlanMoveDestination(args: string[]): PlanCreationStage {
   return toStage;
 }
 
-function planCommand(args: string[]): void {
+function printPlanWizardUsage(): void {
+  console.error('Usage: osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]');
+}
+
+function parsePlanWizardOptions(args: string[]): { slug: string; stage: PlanCreationStage; nonInteractive: boolean; answersPath?: string } {
+  const slug = requireArg(args, 'slug');
+  const rest = args.slice(1);
+  let stage: PlanCreationStage = 'active';
+  let nonInteractive = false;
+  let answersPath: string | undefined;
+  for (let i = 0; i < rest.length; i += 1) {
+    const flag = rest[i];
+    switch (flag) {
+      case '--stage': {
+        const value = rest[i + 1];
+        if (!value || value.startsWith('--')) {
+          console.error('Missing value for --stage');
+          process.exit(2);
+        }
+        if (!(PLAN_CREATION_STAGES as readonly string[]).includes(value)) {
+          console.error(`Invalid value for --stage: ${value}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
+          process.exit(2);
+        }
+        stage = value as PlanCreationStage;
+        i += 1;
+        break;
+      }
+      case '--non-interactive':
+        nonInteractive = true;
+        break;
+      case '--answers': {
+        const value = rest[i + 1];
+        if (!value || value.startsWith('--')) {
+          console.error('Missing value for --answers');
+          process.exit(2);
+        }
+        answersPath = value;
+        i += 1;
+        break;
+      }
+      default:
+        console.error(`Unknown option for plan wizard: ${flag}`);
+        printPlanWizardUsage();
+        process.exit(2);
+    }
+  }
+  if (nonInteractive && !answersPath) {
+    console.error('Missing required option for --non-interactive: --answers <answers.json>');
+    process.exit(2);
+  }
+  if (answersPath && !nonInteractive) {
+    console.error('--answers is only supported with --non-interactive');
+    process.exit(2);
+  }
+  return { slug, stage, nonInteractive, answersPath };
+}
+
+async function planCommand(args: string[]): Promise<void> {
   if (args[0] === 'new') {
     const slug = requireArg(args.slice(1), 'slug');
     const stage = parsePlanStage(args.slice(2));
@@ -380,6 +439,23 @@ function planCommand(args: string[]): void {
       const result = createPlanSkeleton(slug, stage, process.cwd());
       console.log(`Created plan: ${result.relativePath}`);
       console.log('Next: fill the TODO prompts before implementation; do not treat the skeleton as acceptance criteria.');
+      return;
+    } catch (error) {
+      exitForScaffoldHelperError(error);
+    }
+  }
+  if (args[0] === 'wizard') {
+    const options = parsePlanWizardOptions(args.slice(1));
+    try {
+      let answers: PlanWizardAnswers;
+      if (options.nonInteractive) {
+        answers = loadAnswersFile(resolve(options.answersPath as string));
+      } else {
+        answers = await askInteractiveAnswers();
+      }
+      const result = createWizardPlan(options.slug, options.stage, answers, process.cwd());
+      console.log(`Created plan: ${result.relativePath}`);
+      console.log('Next: review the generated plan, adjust any _not specified_ sections, then verify before implementation.');
       return;
     } catch (error) {
       exitForScaffoldHelperError(error);
@@ -771,7 +847,7 @@ function runtimes(args: string[]): void {
   process.exit(2);
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
   switch (command) {
     case undefined:
@@ -787,7 +863,7 @@ function main(): void {
       status(args.includes('--json'));
       return;
     case 'plan':
-      planCommand(args);
+      await planCommand(args);
       return;
     case 'amend':
       amendCommand(args);
@@ -838,4 +914,7 @@ function main(): void {
   }
 }
 
-main();
+main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+});
