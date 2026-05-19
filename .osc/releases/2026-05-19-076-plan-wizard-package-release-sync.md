@@ -9,7 +9,7 @@ Prepared `open-scaffold@0.4.4` as the package release candidate for the already-
 - Roadmap / issue / task: V2 adoption friction backlog; follows `.osc/plans/done/052-interactive-plan-wizard.md` and PR #62.
 - Plan: `.osc/plans/done/076-plan-wizard-package-release-sync.md`.
 - Run ID / run packet: N/A — OSC Shipwright executed directly in the repo under the accepted release-sync plan.
-- Branch / PR: `release/plan-wizard-package-sync`; PR pending until this branch is pushed.
+- Branch / PR: `release/plan-wizard-package-sync`; PR #63 — https://github.com/graphanov/open-scaffold/pull/63.
 - Package candidate: `open-scaffold@0.4.4`.
 
 ## Verification
