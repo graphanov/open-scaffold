@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog — depends on 050 (npm publish) for baseline `osc plan new` availability. Addresses the blank-page paralysis problem where new users see a 7-section template full of `TODO:` markers and don't know where to start. The wizard is a UX layer over the existing plan scaffolding; it does not change the plan format or lifecycle.
+done
+
 
 ## Context
 

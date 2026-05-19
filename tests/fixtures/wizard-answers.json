@@ -1,0 +1,9 @@
+{
+  "goal": "Build a CLI cache",
+  "context": "Cache misses were slow",
+  "constraints": ["Do not change API"],
+  "filesToTouch": ["src/cache.ts", "tests/cache.test.ts"],
+  "acceptanceCriteria": ["Cache hit rate above 90%", "Response under 10ms"],
+  "verificationSteps": ["Run npm test"],
+  "openQuestions": ["Depends on PR #42"]
+}
