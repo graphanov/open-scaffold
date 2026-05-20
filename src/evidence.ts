@@ -186,19 +186,33 @@ function collectGitContext(root: string, runner: CommandRunner): GitContext {
   };
 }
 
-function detectGitHubHost(root: string, runner: CommandRunner): string {
-  const remoteUrl = runner('git', ['remote', 'get-url', 'origin'], root);
-  const value = remoteUrl.status === 0 ? remoteUrl.stdout.trim() : '';
+function parseGitHubHostFromRemoteUrl(value: string): string | null {
   if (/^https?:\/\//.test(value)) {
     try {
       const parsed = new URL(value);
       if (parsed.hostname) return parsed.hostname;
     } catch {
-      // Fall through to the default host when the remote URL is malformed.
+      return null;
     }
   }
   const sshMatch = value.match(/^(?:git@|ssh:\/\/git@)([^/:]+)[:/]/);
-  if (sshMatch?.[1]) return sshMatch[1];
+  return sshMatch?.[1] ?? null;
+}
+
+function detectGitHubHost(root: string, runner: CommandRunner): string {
+  const originUrl = runner('git', ['remote', 'get-url', 'origin'], root);
+  const originHost = originUrl.status === 0 ? parseGitHubHostFromRemoteUrl(originUrl.stdout.trim()) : null;
+  if (originHost) return originHost;
+
+  const remotes = runner('git', ['remote'], root);
+  if (remotes.status === 0) {
+    for (const remote of remotes.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)) {
+      const remoteUrl = runner('git', ['remote', 'get-url', remote], root);
+      const host = remoteUrl.status === 0 ? parseGitHubHostFromRemoteUrl(remoteUrl.stdout.trim()) : null;
+      if (host) return host;
+    }
+  }
+
   return 'github.com';
 }
 

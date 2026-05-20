@@ -201,7 +201,7 @@ describe('osc evidence collect', () => {
     expect(result.block).not.toContain('To get started with GitHub CLI');
   });
 
-  it('checks gh auth against the current remote host before collecting PR and CI data', () => {
+  it('checks gh auth against a non-origin remote host before collecting PR and CI data', () => {
     const target = initializedScaffold();
     let authArgs: string[] = [];
     const runner: CommandRunner = (command, args) => {
@@ -212,7 +212,9 @@ describe('osc evidence collect', () => {
       if (command === 'git' && args[0] === 'log') return { commandLine: printable, status: 0, stdout: 'abc123 test\n', stderr: '' };
       if (command === 'git' && args[0] === 'diff') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
       if (command === 'git' && args[0] === 'ls-files') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
-      if (command === 'git' && args[0] === 'remote') return { commandLine: printable, status: 0, stdout: 'git@github.enterprise.test:owner/repo.git\n', stderr: '' };
+      if (command === 'git' && args[0] === 'remote' && args[1] === 'get-url' && args[2] === 'origin') return { commandLine: printable, status: 1, stdout: '', stderr: 'error: No such remote origin\n' };
+      if (command === 'git' && args[0] === 'remote' && args.length === 1) return { commandLine: printable, status: 0, stdout: 'upstream\n', stderr: '' };
+      if (command === 'git' && args[0] === 'remote' && args[1] === 'get-url' && args[2] === 'upstream') return { commandLine: printable, status: 0, stdout: 'git@github.enterprise.test:owner/repo.git\n', stderr: '' };
       if (command === 'gh' && args[0] === '--version') return { commandLine: printable, status: 0, stdout: 'gh version 2.0.0\n', stderr: '' };
       if (command === 'gh' && args[0] === 'auth') {
         authArgs = args;
