@@ -9,7 +9,7 @@
 
 ## Concepts
 
-- [[agent-runtime-selection]] — Proposed runtime-choice seam between scaffold tiers and execution lanes.
+- [[agent-runtime-selection]] — Runtime-choice seam kept at the run-packet/profile/adapter layer, not an init-time picker.
 - [[agentic-orchestration]] — Contested vision for multi-model, multi-runtime orchestration and evidence loops.
 - [[agent-resumability]] — How agents can re-enter work without relying on vanished chat context.
 - [[body-of-work-wiki]] — Why Open Scaffold has a scoped project wiki and what belongs here.

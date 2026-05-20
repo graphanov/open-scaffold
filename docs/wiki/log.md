@@ -3,6 +3,11 @@
 > Chronological record of project wiki actions. Append-only.
 > Format: `## [YYYY-MM-DD] action | subject`
 
+## [2026-05-20] reconcile | Agent runtime selection vision
+- Closed `030-agent-runtime-selection-vision` against existing three-lane sparring evidence and public runtime-profile/adapter documentation.
+- Preserved the v1 stance: no `osc init --runtime` picker; runtime choice stays in run packets, runtime profiles, adapter receipts, and explicit agentic runtime packages.
+- Left package publication, GitHub Release updates, and native-runtime claims behind owner gates.
+
 ## [2026-05-18] implement | OMX $ralplan explicit launch gate
 - Extended `packages/runtime-omx/` from no-spawn receipt writing to an explicit `--allow-spawn` `$ralplan` launch path.
 - Kept Open Scaffold core non-spawning; the package checks branch/worktree safety and `oh-my-codex >= 0.17.3`, requests Codex `--sandbox read-only`, and records receipts/logs/evidence under `.osc/runs/<run_id>/`.
@@ -44,7 +49,7 @@
 
 ## [2026-05-15] capture | Agent runtime selection hypothesis
 - Added `docs/wiki/concepts/agent-runtime-selection.md` as a contested public-safe concept page for the idea that scaffold tier selection may eventually pair with runtime lane selection.
-- Added `.osc/plans/backlog/030-agent-runtime-selection-vision.md` to keep the vision behind research, evidence, and owner approval before any runtime-spawning scope change.
+- Added initial plan `030-agent-runtime-selection-vision` to keep the vision behind research, evidence, and owner approval before any runtime-spawning scope change. It is now closed at `.osc/plans/done/030-agent-runtime-selection-vision.md`.
 
 ## [2026-05-15] create | Project wiki knowledge seed
 - Added a curated seed pack of 12 public-safe pages across concepts, comparisons, and reusable query answers.

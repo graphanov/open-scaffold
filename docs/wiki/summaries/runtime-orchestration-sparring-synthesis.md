@@ -4,7 +4,7 @@ created: 2026-05-15
 updated: 2026-05-15
 type: summary
 tags: [open-scaffold, agent-orchestration, runtime, evidence, product-vision]
-sources: [.osc/plans/backlog/030-agent-runtime-selection-vision.md, .osc/plans/backlog/031-agentic-orchestration-model-lab-vision.md, docs/wiki/concepts/agent-runtime-selection.md, docs/wiki/concepts/agentic-orchestration.md]
+sources: [.osc/plans/done/030-agent-runtime-selection-vision.md, .osc/plans/backlog/031-agentic-orchestration-model-lab-vision.md, docs/wiki/concepts/agent-runtime-selection.md, docs/wiki/concepts/agentic-orchestration.md]
 confidence: medium
 contested: true
 ---
