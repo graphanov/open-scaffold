@@ -175,6 +175,27 @@ describe('osc init CLI', () => {
     expect(result.stdout).toContain('osc init --from-existing --tier min --target <dir> [--force]');
   });
 
+  it('prints init-specific help without treating --help as an unknown option', () => {
+    const result = spawnSync(tsx, [cli, 'init', '--help'], { encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('Usage: osc init --tier <min|standard|max> --target <dir> [--force]');
+    expect(result.stdout).toContain('osc init --from-existing --tier min --target <dir> [--force]');
+    expect(result.stdout).not.toContain('Unknown option for init');
+    expect(result.stdout).not.toContain('Run binding options:');
+  });
+
+  it('shows init-specific usage for unsupported init options', () => {
+    const result = spawnSync(tsx, [cli, 'init', '--json'], { encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Unknown option for init: --json');
+    expect(result.stderr).toContain('Usage: osc init --tier <min|standard|max> --target <dir> [--force]');
+    expect(result.stderr).not.toContain('Run binding options:');
+  });
+
   it('maps runtime and workflow presets into a run packet without spawning', () => {
     const target = tempTarget();
     execFileSync(tsx, [cli, 'init', '--standard', '--target', target], { encoding: 'utf8' });
