@@ -80,8 +80,9 @@ describe('osc plan/evidence helper CLI', () => {
     expect(missingRoot.stderr).toContain('No Open Scaffold root found');
   }, CLI_TEST_TIMEOUT_MS);
 
-  it('creates an evidence note skeleton under .osc/releases without false proof claims', () => {
+  it('creates an evidence note skeleton under .osc/releases for an existing plan without false proof claims', () => {
     const target = initializedScaffold();
+    execFileSync(tsx, [cli, 'plan', 'new', '001-first-task', '--stage', 'active'], { cwd: target, encoding: 'utf8' });
 
     const output = execFileSync(tsx, [cli, 'evidence', 'new', '001-first-task'], { cwd: target, encoding: 'utf8' });
 
@@ -100,13 +101,19 @@ describe('osc plan/evidence helper CLI', () => {
     expect(text).not.toContain('Shipped.');
   });
 
-  it('refuses duplicate, unsafe-path, and missing-root evidence requests', () => {
+  it('refuses duplicate, missing-plan, unsafe-path, and missing-root evidence requests', () => {
     const target = initializedScaffold();
+    execFileSync(tsx, [cli, 'plan', 'new', '001-first-task', '--stage', 'active'], { cwd: target, encoding: 'utf8' });
     execFileSync(tsx, [cli, 'evidence', 'new', '001-first-task'], { cwd: target, encoding: 'utf8' });
 
     const duplicate = spawnSync(tsx, [cli, 'evidence', 'new', '001-first-task'], { cwd: target, encoding: 'utf8' });
     expect(duplicate.status).toBe(1);
     expect(duplicate.stderr).toContain('Refusing to overwrite existing evidence note');
+
+    const missingPlan = spawnSync(tsx, [cli, 'evidence', 'new', '999-missing-plan'], { cwd: target, encoding: 'utf8' });
+    expect(missingPlan.status).toBe(1);
+    expect(missingPlan.stderr).toContain('Plan not found: 999-missing-plan.md in .osc/plans/{active,backlog,blocked,done}');
+    expect(existsSync(join(target, `.osc/releases/${todayLocalDate()}-999-missing-plan.md`))).toBe(false);
 
     const unsafe = spawnSync(tsx, [cli, 'evidence', 'new', '../outside'], { cwd: target, encoding: 'utf8' });
     expect(unsafe.status).toBe(2);
