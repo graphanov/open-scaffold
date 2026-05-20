@@ -9,7 +9,7 @@ Fixed a day-two plan lifecycle help gap: help flags for plan/amend/close command
 - Roadmap / issue / task: Open Scaffold pinpoint dogfood scout, plan lifecycle surface.
 - Plan: `.osc/plans/done/081-lifecycle-help-flags.md`.
 - Run ID / run packet: N/A — local CLI pinpoint fix, no runtime run packet needed.
-- Branch / PR: `fix/lifecycle-help-flags`; PR pending at initial commit time.
+- Branch / PR: `fix/lifecycle-help-flags`; PR #71, https://github.com/graphanov/open-scaffold/pull/71.
 - Automation provenance: Opened/advanced by John-Lo-Mein autopilot; cron job `open-scaffold-autopilot-pr-runner` / `13dc0942e2e9`; script `open-scaffold-prrunner-webhook-runner.py`; source `cron-open-scaffold-pr-runner`.
 - Owner gates: merge, npm publish, and GitHub Release creation/latest movement remain owner-gated.
 
