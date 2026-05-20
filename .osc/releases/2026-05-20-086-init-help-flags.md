@@ -9,7 +9,7 @@ This pinpoint dogfood slice tightens the first-run / brownfield init CLI surface
 - Roadmap / issue / task: Pinpoint dogfood surface `brownfield init`; no GitHub issue; not mirrored to a task board.
 - Plan: `.osc/plans/done/086-init-help-flags.md`.
 - Run ID / run packet: N/A — pinpoint scout reproduction; no runtime run packet needed.
-- Branch / PR: branch `fix/init-help-flags`; PR URL to be inserted after creation.
+- Branch / PR: branch `fix/init-help-flags`; PR https://github.com/graphanov/open-scaffold/pull/77.
 - Automation provenance: opened/advanced by John Lomein autopilot; cron job `open-scaffold-autopilot-pr-runner` / `13dc0942e2e9`; script `open-scaffold-prrunner-webhook-runner.py`; source `cron-open-scaffold-pr-runner`.
 - Owner gates: merge, npm publish, and GitHub Release creation/latest movement remain owner-gated.
 
