@@ -259,6 +259,22 @@ function printInitUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   osc init --min|--standard|--max --target <dir> [--force]`, stream);
 }
 
+function hasInitHelpRequest(args: string[]): boolean {
+  let previousFlagNeedsValue = false;
+  for (const arg of args) {
+    if (previousFlagNeedsValue) {
+      previousFlagNeedsValue = false;
+      continue;
+    }
+    if (arg === '--tier' || arg === '--target') {
+      previousFlagNeedsValue = true;
+      continue;
+    }
+    if (arg === '--help' || arg === '-h') return true;
+  }
+  return args.length === 1 && args[0] === 'help';
+}
+
 function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string; force: boolean; fromExisting: boolean } {
   let tier: ScaffoldTier | undefined;
   let target: string | undefined;
@@ -319,7 +335,7 @@ function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string;
 }
 
 function init(args: string[]): void {
-  if (args.some(isHelpArg)) {
+  if (hasInitHelpRequest(args)) {
     printInitUsage('stdout');
     return;
   }

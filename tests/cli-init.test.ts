@@ -196,6 +196,26 @@ describe('osc init CLI', () => {
     expect(result.stderr).not.toContain('Run binding options:');
   });
 
+  it('does not treat a target value named help as an init help request', () => {
+    const parent = tempTarget();
+    const result = spawnSync(tsx, [cli, 'init', '--target', 'help', '--tier', 'min'], { cwd: parent, encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('Generated min Open Scaffold');
+    expect(existsSync(join(parent, 'help', 'MISSION.md'))).toBe(true);
+  });
+
+  it('does not treat an invalid tier value named help as an init help request', () => {
+    const target = tempTarget();
+    const result = spawnSync(tsx, [cli, 'init', '--tier', 'help', '--target', target], { encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Invalid value for --tier: help');
+    expect(result.stderr).not.toContain('Usage: osc init');
+  });
+
   it('maps runtime and workflow presets into a run packet without spawning', () => {
     const target = tempTarget();
     execFileSync(tsx, [cli, 'init', '--standard', '--target', target], { encoding: 'utf8' });
