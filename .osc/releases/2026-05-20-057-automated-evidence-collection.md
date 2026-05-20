@@ -10,7 +10,7 @@ This slice adds `osc evidence collect <slug>` so a user can append a timestamped
 - Plan: `.osc/plans/done/057-automated-evidence-collection.md`.
 - Amendment: `.osc/plans/done/057-automated-evidence-collection-amendment-1.md` aligns the plan with the current `.osc/releases/` evidence-note path.
 - Run ID / run packet: N/A — this was direct Shipwright execution, not a delegated runtime run.
-- Branch / PR: branch `cli/evidence-collect`; PR pending owner review.
+- Branch / PR: branch `cli/evidence-collect`; PR `https://github.com/graphanov/open-scaffold/pull/70`.
 
 ## Verification
 
