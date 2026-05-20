@@ -9,7 +9,7 @@ This pinpoint dogfood slice tightens the verification opacity surface. `./verify
 - Roadmap / issue / task: Pinpoint dogfood surface `verification opacity`; no GitHub issue; not mirrored to a task board.
 - Plan: `.osc/plans/done/083-verify-help-flags.md`.
 - Run ID / run packet: N/A — pinpoint scout reproduction plus John-Lo-Mein autopilot advancement; no runtime run packet needed.
-- Branch / PR: branch `fix/verify-help-flags`; PR pending John-Lo-Mein autopilot creation.
+- Branch / PR: branch `fix/verify-help-flags`; PR https://github.com/graphanov/open-scaffold/pull/73.
 - Owner gates: merge, npm publish, and GitHub Release creation/latest movement remain owner-gated.
 
 ## Automation provenance
