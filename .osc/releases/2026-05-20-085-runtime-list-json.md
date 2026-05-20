@@ -9,7 +9,7 @@ This pinpoint dogfood slice tightens the runtime/profile boundary surface for au
 - Roadmap / issue / task: Pinpoint dogfood surface `runtime/profile boundary`; no GitHub issue; not mirrored to a task board.
 - Plan: `.osc/plans/done/085-runtime-list-json.md`.
 - Run ID / run packet: N/A — pinpoint scout reproduction; no runtime run packet needed.
-- Branch / PR: branch `cli/runtime-list-json`; PR pending until John Lomein autopilot opens the focused GitHub PR.
+- Branch / PR: branch `cli/runtime-list-json`; PR https://github.com/graphanov/open-scaffold/pull/76.
 - Automation provenance: Opened/advanced by John Lomein autopilot; cron job `open-scaffold-autopilot-pr-runner` / `13dc0942e2e9`; script `open-scaffold-prrunner-webhook-runner.py`; source `cron-open-scaffold-pr-runner`.
 - Owner gates: merge, npm publish, and GitHub Release creation/latest movement remain owner-gated.
 
@@ -33,5 +33,5 @@ Out of scope: runtime install, runtime registry, marketplace behavior, credentia
 
 ## Follow-up
 
-- Push/open a focused PR once GitHub write authentication is available.
+- Review PR https://github.com/graphanov/open-scaffold/pull/76 and keep the owner merge gate explicit.
 - Keep bundle-release treatment for package/release drift; this pinpoint does not require immediate npm publish by itself.
