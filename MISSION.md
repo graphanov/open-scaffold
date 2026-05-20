@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-20: closed 058-doctor-auto-fix — added doctor auto-fix CLI
 - 2026-05-20: closed 083-verify-help-flags — Added verify help flag handling
 - 2026-05-20: closed 082-evidence-new-plan-validation — validated evidence note creation against plan slugs
 - 2026-05-20: closed 081-lifecycle-help-flags — Added lifecycle help flag handling

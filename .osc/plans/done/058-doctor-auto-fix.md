@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog — depends on 055 (plan-linter) for the diagnostic framework that doctor extends into repair, and 057 (automated-evidence-collection) for evidence gathering that doctor can verify. This is the first slice in the 058–064 batch, building on the diagnostic foundation from 050–057 to add repair capability. The jump from diagnosis to repair is the natural next step after linter and evidence collection have proven the system can see its own state clearly.
+active
+
 
 ## Context
 
