@@ -333,7 +333,7 @@ function planStageSearchDirs(root: string, stages: readonly (PlanStage | 'root')
 function findPlanBySlug(root: string, slug: string, stages: readonly (PlanStage | 'root')[]): FoundPlan | null {
   for (const { stage, dir } of planStageSearchDirs(root, stages)) {
     const path = join(dir, `${slug}.md`);
-    if (existsSync(path)) return { path, dir, stage };
+    if (existsSync(path) && statSync(path).isFile()) return { path, dir, stage };
   }
   return null;
 }
@@ -397,6 +397,9 @@ export function createPlanSkeleton(slug: string, stage: PlanCreationStage, start
 export function createEvidenceNoteSkeleton(slug: string, start = process.cwd(), date = new Date()): CreatedScaffoldFile {
   const safeSlug = assertSafeSlug(slug);
   const root = requireScaffoldRoot(start);
+  if (!findPlanBySlug(root, safeSlug, PLAN_STAGES)) {
+    throw new Error(`Plan not found: ${safeSlug}.md in .osc/plans/{active,backlog,blocked,done}. Create or move the plan before creating evidence.`);
+  }
   const releasesDir = join(root, OSC_NAMESPACE, 'releases');
   if (!existsSync(releasesDir)) {
     throw new Error(`Open Scaffold releases folder missing: ${relative(root, releasesDir)}`);

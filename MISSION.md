@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-20: closed 082-evidence-new-plan-validation — validated evidence note creation against plan slugs
 - 2026-05-20: closed 081-lifecycle-help-flags — Added lifecycle help flag handling
 - 2026-05-20: closed 057-automated-evidence-collection — added automated evidence collection CLI
 - 2026-05-20: align evidence collection with current .osc/releases evidence-note path — see .osc/plans/done/057-automated-evidence-collection-amendment-1.md

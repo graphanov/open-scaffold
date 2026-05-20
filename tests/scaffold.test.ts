@@ -108,6 +108,7 @@ describe('open-scaffold parser', () => {
     process.env.TZ = 'Pacific/Kiritimati';
     try {
       const root = tempRepo();
+      writeFileSync(join(root, '.osc/plans/active/001-local-date.md'), samplePlan.replace('# Plan: sample', '# Plan: 001-local-date'));
       const result = createEvidenceNoteSkeleton('001-local-date', root, new Date('2026-01-01T00:30:00+14:00'));
 
       expect(result.relativePath).toBe('.osc/releases/2026-01-01-001-local-date.md');
