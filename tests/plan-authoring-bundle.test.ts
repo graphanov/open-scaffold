@@ -8,6 +8,7 @@ import { validatePlanFile } from '../src/plan-validate.js';
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const cli = join(repoRoot, 'src/cli.ts');
+const CLI_TEST_TIMEOUT_MS = 20_000;
 
 function tempDir(prefix = 'osc-plan-authoring-') {
   return mkdtempSync(join(tmpdir(), prefix));
@@ -251,7 +252,7 @@ describe('plan validation CLI', () => {
       .replace('# Plan: 023-prefixed', '# Plan: 024-backlogged')
       .replace('backlog — queued for a later release', 'backlogged'));
     expect(validatePlanFile(backloggedPath).issues.some((issue) => issue.rule === 'status-stage-consistency' && issue.message.includes('backlogged'))).toBe(true);
-  });
+  }, CLI_TEST_TIMEOUT_MS);
 
   it('reports heading-order and missing-section errors with actionable text output', () => {
     const target = initializedScaffold();

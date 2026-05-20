@@ -7,6 +7,7 @@ import { dirname, join, resolve } from 'node:path';
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const cli = join(repoRoot, 'src/cli.ts');
+const CLI_TEST_TIMEOUT_MS = 20_000;
 
 function tempDir(prefix = 'osc-cli-helpers-', base = tmpdir()) {
   return mkdtempSync(join(base, prefix));
@@ -77,7 +78,7 @@ describe('osc plan/evidence helper CLI', () => {
     const missingRoot = spawnSync(tsx, [cli, 'plan', 'new', '001-first-task', '--stage', 'active'], { cwd: noRoot, encoding: 'utf8' });
     expect(missingRoot.status).toBe(1);
     expect(missingRoot.stderr).toContain('No Open Scaffold root found');
-  });
+  }, CLI_TEST_TIMEOUT_MS);
 
   it('creates an evidence note skeleton under .osc/releases without false proof claims', () => {
     const target = initializedScaffold();

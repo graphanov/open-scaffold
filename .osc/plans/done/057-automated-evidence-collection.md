@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog — depends on 050 (npm publish) for baseline `osc evidence` availability. This is the final slice in the 050–057 backlog batch, closing the loop from plan creation (050–055) through execution preview (056) to evidence collection (057). It makes the evidence loop feel lightweight by automating the gathering of verification results, git context, and CI status.
+done
+
 
 ## Context
 
