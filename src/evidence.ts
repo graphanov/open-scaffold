@@ -39,9 +39,11 @@ interface GitContext {
   notes: string[];
 }
 
+type GhStatus = 'skipped' | 'missing' | 'unauthenticated' | 'available';
+
 interface PrCiContext {
   enabled: boolean;
-  ghAvailable: boolean;
+  ghStatus: GhStatus;
   prList: CommandResult | null;
   checks: CommandResult | null;
   env: Record<string, string>;
@@ -188,7 +190,7 @@ function collectPrCiContext(root: string, runner: CommandRunner, git: GitContext
   if (!enabled) {
     return {
       enabled: false,
-      ghAvailable: false,
+      ghStatus: 'skipped',
       prList: null,
       checks: null,
       env: {},
@@ -200,11 +202,23 @@ function collectPrCiContext(root: string, runner: CommandRunner, git: GitContext
   if (ghVersion.status !== 0) {
     return {
       enabled: true,
-      ghAvailable: false,
+      ghStatus: 'missing',
       prList: null,
       checks: null,
       env: readCiEnv(),
       notes: ['gh CLI not available — PR and CI checks skipped'],
+    };
+  }
+
+  const ghAuth = runner('gh', ['auth', 'status'], root);
+  if (ghAuth.status !== 0) {
+    return {
+      enabled: true,
+      ghStatus: 'unauthenticated',
+      prList: null,
+      checks: null,
+      env: readCiEnv(),
+      notes: ['gh CLI installed but not authenticated — PR and CI checks skipped; run gh auth login or set GH_TOKEN to collect PR/CI status'],
     };
   }
 
@@ -223,7 +237,7 @@ function collectPrCiContext(root: string, runner: CommandRunner, git: GitContext
 
   return {
     enabled: true,
-    ghAvailable: true,
+    ghStatus: 'available',
     prList,
     checks,
     env: readCiEnv(),
@@ -258,8 +272,10 @@ function renderCollectedBlock(now: Date, verification: CommandResult, git: GitCo
   lines.push('#### PR / CI status', '');
   if (!prCi.enabled) {
     lines.push('- PR/CI checks skipped by default — pass `--ci` to enable `gh` calls.', '');
-  } else if (!prCi.ghAvailable) {
+  } else if (prCi.ghStatus === 'missing') {
     lines.push('- gh CLI not available — PR and CI checks skipped.', '');
+  } else if (prCi.ghStatus === 'unauthenticated') {
+    lines.push('- gh CLI installed but not authenticated — PR and CI checks skipped. Run `gh auth login` or set `GH_TOKEN` to collect PR/CI status.', '');
   } else {
     if (prCi.prList) {
       lines.push('- PR lookup:', '```text', compactOutput(prCi.prList), '```', '');

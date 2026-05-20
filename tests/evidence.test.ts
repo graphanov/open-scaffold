@@ -170,6 +170,35 @@ describe('osc evidence collect', () => {
     expect(result.block).toContain('M\tREADME.md');
   });
 
+  it('records unauthenticated gh without dumping auth prompts into evidence', () => {
+    const target = initializedScaffold();
+    const runner: CommandRunner = (command, args) => {
+      const printable = [command, ...args].join(' ');
+      if (command.endsWith('verify.sh')) return { commandLine: './verify.sh --standard', status: 0, stdout: 'verify pass\n', stderr: '' };
+      if (command === 'git' && args[0] === 'rev-parse') return { commandLine: printable, status: 0, stdout: 'true\n', stderr: '' };
+      if (command === 'git' && args[0] === 'branch') return { commandLine: printable, status: 0, stdout: 'feature/evidence\n', stderr: '' };
+      if (command === 'git' && args[0] === 'log') return { commandLine: printable, status: 0, stdout: 'abc123 test\n', stderr: '' };
+      if (command === 'git' && args[0] === 'diff') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
+      if (command === 'git' && args[0] === 'ls-files') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
+      if (command === 'gh' && args[0] === '--version') return { commandLine: printable, status: 0, stdout: 'gh version 2.0.0\n', stderr: '' };
+      if (command === 'gh' && args[0] === 'auth') {
+        return {
+          commandLine: printable,
+          status: 1,
+          stdout: '',
+          stderr: 'To get started with GitHub CLI, please run: gh auth login\n',
+        };
+      }
+      throw new Error(`unexpected command: ${printable}`);
+    };
+
+    const result = collectEvidence('001-first-task', target, { ci: true, dryRun: true, runner });
+
+    expect(result.block).toContain('gh CLI installed but not authenticated — PR and CI checks skipped');
+    expect(result.block).toContain('Run `gh auth login` or set `GH_TOKEN`');
+    expect(result.block).not.toContain('To get started with GitHub CLI');
+  });
+
   it('refuses unsafe slugs and missing plans', () => {
     const target = initializedScaffold();
 
