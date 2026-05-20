@@ -352,8 +352,25 @@ interface PlanNewOptions {
   listTemplates: boolean;
 }
 
-function printPlanNewUsage(): void {
-  console.error('Usage: osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>] | osc plan new --from-template list');
+function printPlanUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc plan <plan-path>
+  osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]
+  osc plan new --from-template list
+  osc plan validate <slug-or-path> [--json] [--strict]
+  osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
+  osc plan move <slug> --to <active|backlog|blocked>`, stream);
+}
+
+function printPlanNewUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>] | osc plan new --from-template list', stream);
+}
+
+function printPlanValidateUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc plan validate <slug-or-path> [--json] [--strict]', stream);
+}
+
+function printPlanMoveUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc plan move <slug> --to <active|backlog|blocked>', stream);
 }
 
 function parsePlanNewOptions(args: string[]): PlanNewOptions {
@@ -435,8 +452,8 @@ function parsePlanMoveDestination(args: string[]): PlanCreationStage {
   return toStage;
 }
 
-function printPlanWizardUsage(): void {
-  console.error('Usage: osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]');
+function printPlanWizardUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]', stream);
 }
 
 function parsePlanWizardOptions(args: string[]): { slug: string; stage: PlanCreationStage; nonInteractive: boolean; answersPath?: string } {
@@ -493,8 +510,18 @@ function parsePlanWizardOptions(args: string[]): { slug: string; stage: PlanCrea
 }
 
 async function planCommand(args: string[]): Promise<void> {
-  if (args[0] === 'new') {
-    const options = parsePlanNewOptions(args.slice(1));
+  const [subcommand, ...rest] = args;
+  if (subcommand === undefined || isHelpArg(subcommand)) {
+    printPlanUsage('stdout');
+    return;
+  }
+
+  if (subcommand === 'new') {
+    if (isHelpArg(rest[0])) {
+      printPlanNewUsage('stdout');
+      return;
+    }
+    const options = parsePlanNewOptions(rest);
     if (options.listTemplates) {
       try {
         const templates = listPlanTemplates(process.cwd());
@@ -519,17 +546,22 @@ async function planCommand(args: string[]): Promise<void> {
       exitForScaffoldHelperError(error);
     }
   }
-  if (args[0] === 'validate') {
-    const target = requireArg(args.slice(1), 'slug-or-path');
-    const rest = args.slice(2);
+
+  if (subcommand === 'validate') {
+    if (isHelpArg(rest[0])) {
+      printPlanValidateUsage('stdout');
+      return;
+    }
+    const target = requireArg(rest, 'slug-or-path');
+    const validateArgs = rest.slice(1);
     let json = false;
     let strict = false;
-    for (const flag of rest) {
+    for (const flag of validateArgs) {
       if (flag === '--json') json = true;
       else if (flag === '--strict') strict = true;
       else {
         console.error(`Unknown option for plan validate: ${flag}`);
-        console.error('Usage: osc plan validate <slug-or-path> [--json] [--strict]');
+        printPlanValidateUsage();
         process.exit(2);
       }
     }
@@ -547,8 +579,13 @@ async function planCommand(args: string[]): Promise<void> {
       exitForScaffoldHelperError(error);
     }
   }
-  if (args[0] === 'wizard') {
-    const options = parsePlanWizardOptions(args.slice(1));
+
+  if (subcommand === 'wizard') {
+    if (isHelpArg(rest[0])) {
+      printPlanWizardUsage('stdout');
+      return;
+    }
+    const options = parsePlanWizardOptions(rest);
     try {
       assertWizardReady(process.cwd());
       let answers: PlanWizardAnswers;
@@ -565,9 +602,14 @@ async function planCommand(args: string[]): Promise<void> {
       exitForScaffoldHelperError(error);
     }
   }
-  if (args[0] === 'move') {
-    const slug = requireArg(args.slice(1), 'slug');
-    const toStage = parsePlanMoveDestination(args.slice(2));
+
+  if (subcommand === 'move') {
+    if (isHelpArg(rest[0])) {
+      printPlanMoveUsage('stdout');
+      return;
+    }
+    const slug = requireArg(rest, 'slug');
+    const toStage = parsePlanMoveDestination(rest.slice(1));
     try {
       const result = movePlan(slug, toStage, process.cwd());
       if (result.alreadyInStage) {
@@ -583,6 +625,7 @@ async function planCommand(args: string[]): Promise<void> {
       exitForScaffoldHelperError(error);
     }
   }
+
   const planPath = resolve(requireArg(args, 'plan-path'));
   console.log(JSON.stringify(planToJson(parsePlanFile(planPath)), null, 2));
 }
@@ -675,6 +718,10 @@ function evidenceCommand(args: string[]): void {
   process.exit(2);
 }
 
+function printLifecycleUsage(command: 'amend' | 'close', stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc ${command} <plan-slug> [--message <text>]`, stream);
+}
+
 type LifecycleOptions = {
   slug: string;
   message: string;
@@ -697,13 +744,17 @@ function parseLifecycleOptions(args: string[], command: 'amend' | 'close'): Life
       continue;
     }
     console.error(`Unknown option for ${command}: ${flag}`);
-    console.error(`Usage: osc ${command} <plan-slug> [--message <text>]`);
+    printLifecycleUsage(command);
     process.exit(2);
   }
   return { slug, message };
 }
 
 function amendCommand(args: string[]): void {
+  if (isHelpArg(args[0])) {
+    printLifecycleUsage('amend', 'stdout');
+    return;
+  }
   const { slug, message } = parseLifecycleOptions(args, 'amend');
   try {
     const result = createPlanAmendment(slug, process.cwd(), message);
@@ -716,6 +767,10 @@ function amendCommand(args: string[]): void {
 }
 
 function closeCommand(args: string[]): void {
+  if (isHelpArg(args[0])) {
+    printLifecycleUsage('close', 'stdout');
+    return;
+  }
   const { slug, message } = parseLifecycleOptions(args, 'close');
   try {
     const result = closePlan(slug, process.cwd(), message);
