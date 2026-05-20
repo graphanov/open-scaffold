@@ -108,6 +108,33 @@ describe('osc evidence collect', () => {
     expect(result.stderr).toContain('osc evidence new 001-first-task');
   });
 
+  it('uses gh pr checks JSON fields supported by the GitHub CLI', () => {
+    const target = initializedScaffold();
+    let checksFields = '';
+    const runner: CommandRunner = (command, args) => {
+      const printable = [command, ...args].join(' ');
+      if (command.endsWith('verify.sh')) return { commandLine: './verify.sh --standard', status: 0, stdout: 'verify pass\n', stderr: '' };
+      if (command === 'git' && args[0] === 'rev-parse') return { commandLine: printable, status: 0, stdout: 'true\n', stderr: '' };
+      if (command === 'git' && args[0] === 'branch') return { commandLine: printable, status: 0, stdout: 'feature/evidence\n', stderr: '' };
+      if (command === 'git' && args[0] === 'log') return { commandLine: printable, status: 0, stdout: 'abc123 test\n', stderr: '' };
+      if (command === 'git' && args[0] === 'diff') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
+      if (command === 'git' && args[0] === 'ls-files') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
+      if (command === 'gh' && args[0] === '--version') return { commandLine: printable, status: 0, stdout: 'gh version 2.0.0\n', stderr: '' };
+      if (command === 'gh' && args[0] === 'pr' && args[1] === 'list') return { commandLine: printable, status: 0, stdout: '[]\n', stderr: '' };
+      if (command === 'gh' && args[0] === 'pr' && args[1] === 'checks') {
+        checksFields = args.at(-1) ?? '';
+        return { commandLine: printable, status: 0, stdout: '[{"name":"ci","state":"SUCCESS","bucket":"pass"}]\n', stderr: '' };
+      }
+      return { commandLine: printable, status: 0, stdout: '', stderr: '' };
+    };
+
+    const result = collectEvidence('001-first-task', target, { ci: true, dryRun: true, runner });
+
+    expect(checksFields).toBe('name,state,bucket,workflow,link,startedAt,completedAt');
+    expect(checksFields).not.toContain('conclusion');
+    expect(result.block).toContain('"bucket":"pass"');
+  });
+
   it('records missing gh gracefully when CI collection is requested', () => {
     const target = initializedScaffold();
     const runner: CommandRunner = (command, args) => {

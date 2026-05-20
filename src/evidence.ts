@@ -217,7 +217,7 @@ function collectPrCiContext(root: string, runner: CommandRunner, git: GitContext
   } else {
     prList = runner('gh', ['pr', 'list', '--head', branch, '--json', 'number,title,url,state'], root);
     if (prList.status === 0 && prList.stdout.trim() === '[]') notes.push(`no open PR found for branch ${branch}`);
-    checks = runner('gh', ['pr', 'checks', '--json', 'name,state,conclusion,link'], root);
+    checks = runner('gh', ['pr', 'checks', '--json', 'name,state,bucket,workflow,link,startedAt,completedAt'], root);
     if (checks.status !== 0) notes.push('gh pr checks did not return check data for the current branch');
   }
 
