@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const coreSrcRoot = new URL('../../../src/', import.meta.url);
-const runtimeSrcRoot = new URL('../src/', import.meta.url);
+const coreSrcRoot = fileURLToPath(new URL('../../../src/', import.meta.url));
+const runtimeSrcRoot = fileURLToPath(new URL('../src/', import.meta.url));
 
 const coreForbiddenPatterns = [
   /node:child_process/,
@@ -12,7 +13,7 @@ const coreForbiddenPatterns = [
   /\bexecSync\s*\(/,
 ];
 
-const coreProcessAllowedFiles = new Set(['evidence.ts']);
+const coreProcessAllowedFiles = new Set([join(coreSrcRoot, 'evidence.ts')]);
 
 const runtimeForbiddenPatterns = [
   /node:http/,
@@ -35,13 +36,22 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
+function isCoreProcessAllowedFile(file: string): boolean {
+  return coreProcessAllowedFiles.has(file);
+}
+
 describe('runtime-omx source boundary', () => {
+  it('only allowlists the intended core evidence collector file', () => {
+    expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'evidence.ts'))).toBe(true);
+    expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'nested', 'evidence.ts'))).toBe(false);
+  });
+
   it('Open Scaffold core source remains free of runtime process launching code', () => {
-    const files = sourceFiles(coreSrcRoot.pathname);
+    const files = sourceFiles(coreSrcRoot);
     expect(files.length).toBeGreaterThan(0);
     const violations: string[] = [];
     for (const file of files) {
-      if (coreProcessAllowedFiles.has(basename(file))) continue;
+      if (isCoreProcessAllowedFile(file)) continue;
       const content = readFileSync(file, 'utf8');
       for (const pattern of coreForbiddenPatterns) {
         if (pattern.test(content)) violations.push(`${file}: ${pattern}`);
@@ -51,7 +61,7 @@ describe('runtime-omx source boundary', () => {
   });
 
   it('runtime package source avoids network, env, home credential APIs, and bypass flags', () => {
-    const files = sourceFiles(runtimeSrcRoot.pathname);
+    const files = sourceFiles(runtimeSrcRoot);
     expect(files.length).toBeGreaterThan(0);
     const violations: string[] = [];
     for (const file of files) {

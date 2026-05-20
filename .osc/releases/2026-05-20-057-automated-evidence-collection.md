@@ -16,8 +16,8 @@ This slice adds `osc evidence collect <slug>` so a user can append a timestamped
 
 - `git diff --check` — pass.
 - `./verify.sh --strict` — pass; 10 pass / 0 fail / 0 warn.
-- `npm test -- tests/evidence.test.ts tests/cli-plan-evidence.test.ts tests/plan-authoring-bundle.test.ts packages/runtime-omx/tests/no-spawn-boundary.test.ts --run` — pass; 4 files / 19 tests, including collect help handling, CLI-heavy timeout stability, and the cross-platform evidence allowlist fix.
-- `npm test -- --run` — pass; 26 files / 225 tests.
+- `npm test -- tests/evidence.test.ts tests/cli-plan-evidence.test.ts tests/plan-authoring-bundle.test.ts packages/runtime-omx/tests/no-spawn-boundary.test.ts --run` — pass; 4 files / 20 tests, including collect help handling, CLI-heavy timeout stability, and the cross-platform evidence allowlist fix.
+- `npm test -- --run` — pass; 26 files / 226 tests.
 - `npm run build` — pass; core TypeScript and `packages/runtime-omx` TypeScript builds succeeded for package candidate `0.4.7`.
 - `node dist/cli.js evidence collect --help` — pass; prints collect-specific usage instead of treating `--help` as a slug.
 - `node dist/cli.js evidence collect 057-automated-evidence-collection --ci --dry-run` — pass; captured PR #70 and CI check using supported `gh pr checks` JSON fields (`bucket`, `state`, `workflow`, etc.).
