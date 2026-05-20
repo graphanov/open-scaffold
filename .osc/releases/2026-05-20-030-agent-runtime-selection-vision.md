@@ -41,7 +41,8 @@ Changed files:
 - `.osc/releases/2026-05-20-030-agent-runtime-selection-vision.md` — this evidence note.
 - `docs/wiki/concepts/agent-runtime-selection.md` — updated the concept from open v1 question to resolved v1 stance.
 - `docs/wiki/index.md` — updated the concept summary.
-- `docs/wiki/log.md` — appended the reconciliation entry.
+- `docs/wiki/summaries/runtime-orchestration-sparring-synthesis.md` — updated the source path after closing the plan.
+- `docs/wiki/log.md` — appended the reconciliation entry and removed the stale backlog plan path from the old capture entry.
 - `MISSION.md` — changelog stamp from `osc close`.
 
 ## Follow-up

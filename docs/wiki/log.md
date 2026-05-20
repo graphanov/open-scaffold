@@ -49,7 +49,7 @@
 
 ## [2026-05-15] capture | Agent runtime selection hypothesis
 - Added `docs/wiki/concepts/agent-runtime-selection.md` as a contested public-safe concept page for the idea that scaffold tier selection may eventually pair with runtime lane selection.
-- Added `.osc/plans/backlog/030-agent-runtime-selection-vision.md` to keep the vision behind research, evidence, and owner approval before any runtime-spawning scope change.
+- Added initial plan `030-agent-runtime-selection-vision` to keep the vision behind research, evidence, and owner approval before any runtime-spawning scope change. It is now closed at `.osc/plans/done/030-agent-runtime-selection-vision.md`.
 
 ## [2026-05-15] create | Project wiki knowledge seed
 - Added a curated seed pack of 12 public-safe pages across concepts, comparisons, and reusable query answers.
