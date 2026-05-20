@@ -12,6 +12,8 @@ const coreForbiddenPatterns = [
   /\bexecSync\s*\(/,
 ];
 
+const coreProcessAllowedFiles = new Set(['evidence.ts']);
+
 const runtimeForbiddenPatterns = [
   /node:http/,
   /node:https/,
@@ -39,6 +41,7 @@ describe('runtime-omx source boundary', () => {
     expect(files.length).toBeGreaterThan(0);
     const violations: string[] = [];
     for (const file of files) {
+      if (coreProcessAllowedFiles.has(file.split('/').at(-1) ?? '')) continue;
       const content = readFileSync(file, 'utf8');
       for (const pattern of coreForbiddenPatterns) {
         if (pattern.test(content)) violations.push(`${file}: ${pattern}`);

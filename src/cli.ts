@@ -3,6 +3,7 @@ import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
+import { collectEvidence } from './evidence.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
@@ -27,6 +28,7 @@ Usage:
   osc plan move <slug> --to <active|backlog|blocked>
   osc amend <plan-slug> [--message <text>]
   osc evidence new <slug>
+  osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
   osc close <plan-slug> [--message <text>]
   osc delegate <plan-path> [run binding options]
   osc run <plan-path> [--dry-run] [--json] [run binding options]
@@ -585,25 +587,62 @@ async function planCommand(args: string[]): Promise<void> {
   console.log(JSON.stringify(planToJson(parsePlanFile(planPath)), null, 2));
 }
 
+function printEvidenceUsage(): void {
+  console.error('Usage: osc evidence new <slug> | osc evidence collect <slug> [--ci] [--dry-run] [--verbose]');
+}
+
 function evidenceCommand(args: string[]): void {
   const [subcommand, ...rest] = args;
-  if (subcommand !== 'new') {
-    console.error('Usage: osc evidence new <slug>');
-    process.exit(2);
+  if (subcommand === 'new') {
+    const slug = requireArg(rest, 'slug');
+    if (rest.length > 1) {
+      console.error(`Unknown option for evidence new: ${rest[1]}`);
+      console.error('Usage: osc evidence new <slug>');
+      process.exit(2);
+    }
+    try {
+      const result = createEvidenceNoteSkeleton(slug, process.cwd());
+      console.log(`Created evidence note: ${result.relativePath}`);
+      console.log('Next: replace every TODO with verified evidence before closing the plan.');
+      return;
+    } catch (error) {
+      exitForScaffoldHelperError(error);
+    }
   }
-  const slug = requireArg(rest, 'slug');
-  if (rest.length > 1) {
-    console.error(`Unknown option for evidence new: ${rest[1]}`);
-    console.error('Usage: osc evidence new <slug>');
-    process.exit(2);
+
+  if (subcommand === 'collect') {
+    const slug = requireArg(rest, 'slug');
+    let ci = false;
+    let dryRun = false;
+    let verbose = false;
+    for (const flag of rest.slice(1)) {
+      if (flag === '--ci') ci = true;
+      else if (flag === '--dry-run') dryRun = true;
+      else if (flag === '--verbose') verbose = true;
+      else {
+        console.error(`Unknown option for evidence collect: ${flag}`);
+        console.error('Usage: osc evidence collect <slug> [--ci] [--dry-run] [--verbose]');
+        process.exit(2);
+      }
+    }
+    try {
+      const result = collectEvidence(slug, process.cwd(), { ci, dryRun, verbose });
+      if (dryRun) {
+        console.log(result.block);
+        console.log('No files were written. Re-run without --dry-run to append this block.');
+      } else {
+        console.log(`Collected evidence: ${result.relativePath}`);
+        console.log(`Appended timestamped block for ${result.slug}.`);
+        if (verbose) console.log(result.block);
+      }
+      return;
+    } catch (error) {
+      exitForScaffoldHelperError(error);
+    }
   }
-  try {
-    const result = createEvidenceNoteSkeleton(slug, process.cwd());
-    console.log(`Created evidence note: ${result.relativePath}`);
-    console.log('Next: replace every TODO with verified evidence before closing the plan.');
-  } catch (error) {
-    exitForScaffoldHelperError(error);
-  }
+
+  printEvidenceUsage();
+  process.exit(2);
 }
 
 type LifecycleOptions = {
