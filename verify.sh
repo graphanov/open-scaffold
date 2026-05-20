@@ -12,12 +12,32 @@ PASS_COUNT=0
 FAIL_COUNT=0
 WARN_COUNT=0
 
+print_help() {
+  printf '%s\n' \
+    'Usage: ./verify.sh [--quick|--standard|--strict] [--quiet] [--help]' \
+    '' \
+    'Tiers:' \
+    '  --quick      Mission and plan presence checks.' \
+    '  --standard   Quick checks plus amendment and changelog checks. Default.' \
+    '  --strict     Standard checks plus schema, drift, immutability, evidence, and stale-state checks.' \
+    '' \
+    'Options:' \
+    '  --quiet      Suppress pass/warn output; failures still print.' \
+    '  -h, --help   Print this usage text and exit 0.' \
+    '' \
+    'Exit codes:' \
+    '  0  All checks passed.' \
+    '  1  One or more checks failed.' \
+    '  2  Invalid option.'
+}
+
 # Parse flags (order-independent, bash 3.2 compatible)
 for arg in "$@"; do
   case "$arg" in
+    -h|--help|help) print_help; exit 0 ;;
     --quick|--standard|--strict) TIER="$arg" ;;
     --quiet) QUIET=true ;;
-    *) printf 'Unknown flag: %s\n' "$arg" >&2; exit 2 ;;
+    *) printf 'Unknown flag: %s\n' "$arg" >&2; print_help >&2; exit 2 ;;
   esac
 done
 
