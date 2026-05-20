@@ -235,12 +235,23 @@ function pairedViewDiagnoses(root: string): DoctorDiagnosis[] {
   const missingInClaude = agentsSections.filter((section) => !claudeByHeading.has(section.heading));
   const missingTotal = missingInAgents.length + missingInClaude.length;
 
+  const out: DoctorDiagnosis[] = [];
+
   // AGENTS.md and CLAUDE.md are native paired views, not byte-identical mirrors. Avoid
   // auto-mutating intentionally different large structures; only repair narrow section
-  // drops where one or two top-level sections are absent.
-  if (missingTotal > 2) return [];
-
-  const out: DoctorDiagnosis[] = [];
+  // drops where one or two top-level sections are absent. Broad drift still needs to be
+  // surfaced as an unfixable hygiene issue so `osc doctor` never reports clean after a
+  // major paired-view truncation.
+  if (missingTotal > 2) {
+    out.push({
+      check: 'paired-view',
+      severity: 'warn',
+      path: 'AGENTS.md / CLAUDE.md',
+      message: `Paired views have broad top-level section drift (${missingInAgents.length} missing in AGENTS.md, ${missingInClaude.length} missing in CLAUDE.md); manual review required.`,
+      fixable: false,
+    });
+    return out;
+  }
   for (const section of missingInAgents) {
     out.push({
       check: 'paired-view',
@@ -318,6 +329,17 @@ function stalePlanDiagnoses(root: string, now: Date, staleDays: number): DoctorD
   for (const plan of listStageFiles(root).filter((file) => file.stage === 'active')) {
     const ageDays = Math.floor((nowMs - statSync(plan.path).mtimeMs) / 86_400_000);
     if (ageDays <= staleDays) continue;
+    const status = statusText(readText(plan.path));
+    if (status === null) {
+      out.push({
+        check: 'stale-plan',
+        severity: 'error',
+        path: plan.relativePath,
+        message: `Active plan ${basename(plan.name, '.md')} is stale (${ageDays} days; threshold ${staleDays}) but has no ## Status section, so doctor cannot move it safely.`,
+        fixable: false,
+      });
+      continue;
+    }
     out.push({
       check: 'stale-plan',
       severity: 'warn',

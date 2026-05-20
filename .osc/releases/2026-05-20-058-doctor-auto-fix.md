@@ -24,17 +24,17 @@ This slice turns `osc doctor` from a placeholder status print into a scaffold hy
 ## Verification
 
 - `npm run --silent osc -- doctor --help` → pass; documents `--fix`, `--dry-run`, `--severity`, and `--check`.
-- `npm run --silent osc -- doctor --fix --dry-run` → pass; current repo reports `0 fix(es)` and `Doctor: no issues found.` without mutating files.
-- `npm test -- tests/doctor.test.ts --run` → pass; 1 file / 8 tests.
+- `npm run --silent osc -- doctor --fix --dry-run` → pass; current repo reports `0 fix(es) would be applied` plus one unfixable broad paired-view drift warning for manual review.
+- `npm test -- tests/doctor.test.ts --run` → pass; 1 file / 10 tests after Codex hardening for broad paired-view drift and malformed stale plans.
 - `git diff --check` → pass.
-- `npm test -- --run` → pass; 29 files / 246 tests.
+- `npm test -- --run` → pass; 29 files / 248 tests.
 - `npm run build` → pass; core TypeScript and `packages/runtime-omx` TypeScript builds succeeded.
 - `npm pack --dry-run --json` → pass; package candidate `open-scaffold@0.4.8`, 99 files, includes `dist/doctor.js` and `dist/doctor.d.ts` after build.
 - `./verify.sh --strict` → pass; 10 pass / 0 fail / 0 warn.
 
 ## Outcome
 
-`osc doctor` now has a real repair workflow: diagnostic output includes severity and fixability, `--fix --dry-run` previews planned repairs, `--fix` applies fixable repairs, `--check` limits diagnostics to one checker, and `--severity` filters output. The implementation deliberately avoids broad paired-view rewrites and does not auto-mutate historical done-plan status drift in the current repository, preserving done-plan immutability.
+`osc doctor` now has a real repair workflow: diagnostic output includes severity and fixability, `--fix --dry-run` previews planned repairs, `--fix` applies fixable repairs, `--check` limits diagnostics to one checker, and `--severity` filters output. The implementation deliberately avoids broad paired-view rewrites and does not auto-mutate historical done-plan status drift in the current repository, preserving done-plan immutability. A Codex review round on PR #74 found two safe-repair edge cases; the branch now reports broad paired-view drift as unfixable instead of clean and reports malformed stale active plans without crashing or partially moving files.
 
 Out of scope: semantic plan judgment, backup snapshots, automatic verifier integration, npm publish, GitHub Release changes, merge, or broad dashboard/metrics work.
 

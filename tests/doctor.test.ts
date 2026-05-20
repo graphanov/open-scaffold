@@ -134,6 +134,35 @@ describe('osc doctor auto-fix', () => {
     expect(read(blockedPath)).toContain('## Status\n\nblocked');
   });
 
+  it('reports broad paired-view drift as unfixable instead of reporting clean', () => {
+    const root = tempRepo();
+    writeFileSync(join(root, 'AGENTS.md'), '<!-- PAIRED VIEW -->\n\n# Agents\n\n## A\n\nA.\n\n## B\n\nB.\n\n## C\n\nC.\n');
+    writeFileSync(join(root, 'CLAUDE.md'), '<!-- PAIRED VIEW -->\n\n# Claude\n\n## X\n\nX.\n\n## Y\n\nY.\n\n## Z\n\nZ.\n');
+
+    const result = runDoctor(root, { check: 'paired-view' });
+
+    expect(result.diagnoses).toEqual([
+      expect.objectContaining({ check: 'paired-view', fixable: false, message: expect.stringContaining('broad top-level section drift') }),
+    ]);
+  });
+
+  it('does not crash or partially repair stale active plans that lack a status section', () => {
+    const root = tempRepo();
+    const planPath = join(root, '.osc/plans/active/001-sample.md');
+    writeFileSync(planPath, samplePlan.replace(/## Status\n\nactive\n\n/, ''));
+    const old = (Date.now() - 45 * 86_400_000) / 1000;
+    utimesSync(planPath, old, old);
+
+    const result = runDoctor(root, { fix: true, check: 'stale-plan', now: new Date('2026-05-20T12:00:00'), staleDays: 30 });
+
+    expect(result.applied).toEqual([]);
+    expect(result.diagnoses).toEqual([
+      expect.objectContaining({ check: 'stale-plan', severity: 'error', fixable: false, message: expect.stringContaining('has no ## Status section') }),
+    ]);
+    expect(existsSync(planPath)).toBe(true);
+    expect(existsSync(join(root, '.osc/plans/blocked/001-sample.md'))).toBe(false);
+  });
+
   it('creates a missing releases README', () => {
     const root = tempRepo('osc-doctor-no-readme-');
     writeFileSync(join(root, '.osc/plans/active/001-sample.md'), samplePlan);
