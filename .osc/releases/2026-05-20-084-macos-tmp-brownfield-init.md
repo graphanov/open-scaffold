@@ -9,7 +9,7 @@ This slice fixes a macOS first-run brownfield smoke failure where targets under 
 - Roadmap / issue / task: build-in-public Sentinel friction finding; Hermes Kanban card `t_217ac297`; no GitHub issue.
 - Plan: `.osc/plans/done/084-macos-tmp-brownfield-init.md`.
 - Run ID / run packet: N/A — direct John Lomein autopilot implementation; no runtime run packet needed.
-- Branch / PR: branch `fix/macos-tmp-brownfield-init`; PR pending.
+- Branch / PR: branch `fix/macos-tmp-brownfield-init`; PR https://github.com/graphanov/open-scaffold/pull/75.
 - Version candidate: `open-scaffold@0.4.8` remains the current unpublished release-train candidate; no publish-only bump in this PR.
 - Owner gates: merge, npm publish, and GitHub Release creation/latest movement remain owner-gated.
 
