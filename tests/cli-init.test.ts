@@ -272,6 +272,15 @@ describe('osc init CLI', () => {
     const list = execFileSync(tsx, [cli, 'runtimes', 'list'], { cwd: target, encoding: 'utf8' });
     expect(list).toContain('omx\tbuiltin\tomx-codex\tadapter-candidate');
 
+    const listJson = JSON.parse(execFileSync(tsx, [cli, 'runtimes', 'list', '--json'], { cwd: target, encoding: 'utf8' }));
+    expect(listJson).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'omx', source: 'builtin', lane: 'omx-codex', status: 'adapter-candidate' }),
+    ]));
+
+    const invalidList = spawnSync(tsx, [cli, 'runtimes', 'list', '--bogus'], { cwd: target, encoding: 'utf8' });
+    expect(invalidList.status).toBe(2);
+    expect(invalidList.stderr).toContain('Unknown option for runtimes list: --bogus');
+
     const shown = JSON.parse(execFileSync(tsx, [cli, 'runtimes', 'show', 'omx'], { cwd: target, encoding: 'utf8' }));
     expect(shown).toMatchObject({ id: 'omx', source: 'builtin', lane: 'omx-codex' });
   }, 15_000);

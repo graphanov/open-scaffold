@@ -41,7 +41,7 @@ Usage:
   osc audit check <audit-manifest-path>
   osc verify
   osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]
-  osc runtimes list
+  osc runtimes list [--json]
   osc runtimes show <id>
 
 Run binding options:
@@ -1165,11 +1165,30 @@ function evalCommand(args: string[]): void {
 }
 
 function runtimes(args: string[]): void {
-  const [subcommand, id] = args;
+  const [subcommand, ...rest] = args;
   if (subcommand === 'list') {
+    const json = rest.includes('--json');
+    const unknown = rest.find((arg) => arg !== '--json');
+    if (unknown) {
+      console.error(`Unknown option for runtimes list: ${unknown}`);
+      console.error('Usage: osc runtimes list [--json]');
+      process.exit(2);
+    }
     try {
-      for (const entry of loadRuntimeProfiles(process.cwd())) {
-        console.log(`${entry.profile.id}\t${entry.source}\t${entry.profile.lane}\t${entry.profile.status}\t${entry.profile.displayName}`);
+      const entries = loadRuntimeProfiles(process.cwd());
+      if (json) {
+        console.log(JSON.stringify(entries.map((entry) => ({
+          id: entry.profile.id,
+          source: entry.source,
+          path: entry.path ?? null,
+          lane: entry.profile.lane,
+          status: entry.profile.status,
+          displayName: entry.profile.displayName,
+        })), null, 2));
+      } else {
+        for (const entry of entries) {
+          console.log(`${entry.profile.id}\t${entry.source}\t${entry.profile.lane}\t${entry.profile.status}\t${entry.profile.displayName}`);
+        }
       }
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error));
@@ -1178,6 +1197,7 @@ function runtimes(args: string[]): void {
     return;
   }
   if (subcommand === 'show') {
+    const [id] = rest;
     if (!id) {
       console.error('Missing required argument: runtime id');
       process.exit(2);
@@ -1196,7 +1216,7 @@ function runtimes(args: string[]): void {
     console.log(JSON.stringify({ ...resolved.profile, source: resolved.source, path: resolved.path ?? null }, null, 2));
     return;
   }
-  console.error('Usage: osc runtimes list | osc runtimes show <id>');
+  console.error('Usage: osc runtimes list [--json] | osc runtimes show <id>');
   process.exit(2);
 }
 

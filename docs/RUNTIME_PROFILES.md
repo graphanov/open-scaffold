@@ -30,11 +30,12 @@ Keep the roles separate:
 
 ```bash
 osc runtimes list
+osc runtimes list --json
 osc runtimes show omx
 osc run .osc/plans/active/001-demo.md --runtime omx --workflow plan
 ```
 
-`osc runtimes list` prints the visible profile id, source, executor lane, status, and display name.
+`osc runtimes list` prints the visible profile id, source, executor lane, status, and display name as TSV for quick terminal scans. `osc runtimes list --json` prints the same summary as parseable JSON for coordinators and automation.
 
 `osc runtimes show <id>` prints the selected profile JSON plus its source.
 
