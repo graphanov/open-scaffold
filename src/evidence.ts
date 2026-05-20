@@ -189,8 +189,14 @@ function collectGitContext(root: string, runner: CommandRunner): GitContext {
 function detectGitHubHost(root: string, runner: CommandRunner): string {
   const remoteUrl = runner('git', ['remote', 'get-url', 'origin'], root);
   const value = remoteUrl.status === 0 ? remoteUrl.stdout.trim() : '';
-  const httpsMatch = value.match(/^https?:\/\/([^/]+)/);
-  if (httpsMatch?.[1]) return httpsMatch[1];
+  if (/^https?:\/\//.test(value)) {
+    try {
+      const parsed = new URL(value);
+      if (parsed.hostname) return parsed.hostname;
+    } catch {
+      // Fall through to the default host when the remote URL is malformed.
+    }
+  }
   const sshMatch = value.match(/^(?:git@|ssh:\/\/git@)([^/:]+)[:/]/);
   if (sshMatch?.[1]) return sshMatch[1];
   return 'github.com';

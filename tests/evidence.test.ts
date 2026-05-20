@@ -170,7 +170,7 @@ describe('osc evidence collect', () => {
     expect(result.block).toContain('M\tREADME.md');
   });
 
-  it('records unauthenticated gh without dumping auth prompts into evidence', () => {
+  it('records unauthenticated gh without dumping auth prompts or URL credentials into evidence', () => {
     const target = initializedScaffold();
     const runner: CommandRunner = (command, args) => {
       const printable = [command, ...args].join(' ');
@@ -180,7 +180,7 @@ describe('osc evidence collect', () => {
       if (command === 'git' && args[0] === 'log') return { commandLine: printable, status: 0, stdout: 'abc123 test\n', stderr: '' };
       if (command === 'git' && args[0] === 'diff') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
       if (command === 'git' && args[0] === 'ls-files') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
-      if (command === 'git' && args[0] === 'remote') return { commandLine: printable, status: 0, stdout: 'https://github.com/example/project.git\n', stderr: '' };
+      if (command === 'git' && args[0] === 'remote') return { commandLine: printable, status: 0, stdout: 'https://user:redacted@github.com/example/project.git\n', stderr: '' };
       if (command === 'gh' && args[0] === '--version') return { commandLine: printable, status: 0, stdout: 'gh version 2.0.0\n', stderr: '' };
       if (command === 'gh' && args[0] === 'auth') {
         return {
@@ -197,6 +197,7 @@ describe('osc evidence collect', () => {
 
     expect(result.block).toContain('gh CLI installed but not authenticated for github.com — PR and CI checks skipped');
     expect(result.block).toContain('gh auth login --hostname github.com');
+    expect(result.block).not.toContain('redacted');
     expect(result.block).not.toContain('To get started with GitHub CLI');
   });
 
