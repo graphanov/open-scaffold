@@ -651,6 +651,10 @@ function printEvidenceCollectUsage(stream: 'stdout' | 'stderr' = 'stderr'): void
   printUsage('Usage: osc evidence collect <slug> [--ci] [--dry-run] [--verbose]', stream);
 }
 
+function printVerifyUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc verify', stream);
+}
+
 function evidenceCommand(args: string[]): void {
   const [subcommand, ...rest] = args;
   if (isHelpArg(subcommand) || subcommand === undefined) {
@@ -1168,6 +1172,15 @@ async function main(): Promise<void> {
       closeCommand(args);
       return;
     case 'verify': {
+      if (isHelpArg(args[0])) {
+        printVerifyUsage('stdout');
+        return;
+      }
+      if (args.length > 0) {
+        console.error(`Unknown option for verify: ${args[0]}`);
+        printVerifyUsage();
+        process.exit(2);
+      }
       const result = validateScaffold(process.cwd());
       for (const failure of result.failures) {
         console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
