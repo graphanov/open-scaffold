@@ -8,6 +8,7 @@ import { collectEvidence, type CommandRunner } from '../src/evidence';
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const cli = join(repoRoot, 'src/cli.ts');
+const CLI_TEST_TIMEOUT_MS = 20_000;
 
 function tempDir(prefix = 'osc-evidence-collect-', base = tmpdir()) {
   return mkdtempSync(join(base, prefix));
@@ -60,6 +61,14 @@ function initGitRepo(target: string) {
 }
 
 describe('osc evidence collect', () => {
+  it('prints collect-specific help instead of treating --help as a slug', () => {
+    const result = spawnSync(tsx, [cli, 'evidence', 'collect', '--help'], { cwd: repoRoot, encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('Usage: osc evidence collect <slug> [--ci] [--dry-run] [--verbose]');
+  });
+
   it('prints a dry-run collection block without modifying the evidence note', () => {
     const target = initializedScaffold();
     initGitRepo(target);
@@ -78,7 +87,7 @@ describe('osc evidence collect', () => {
     expect(output).toContain('No files were written.');
     expect(readFileSync(notePath, 'utf8')).toBe(before);
     expect(statSync(notePath).mtimeMs).toBe(beforeMtime);
-  });
+  }, CLI_TEST_TIMEOUT_MS);
 
   it('appends collected evidence while preserving existing note content and no-git context', () => {
     const target = initializedScaffold();

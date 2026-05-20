@@ -587,17 +587,43 @@ async function planCommand(args: string[]): Promise<void> {
   console.log(JSON.stringify(planToJson(parsePlanFile(planPath)), null, 2));
 }
 
-function printEvidenceUsage(): void {
-  console.error('Usage: osc evidence new <slug> | osc evidence collect <slug> [--ci] [--dry-run] [--verbose]');
+function isHelpArg(arg: string | undefined): boolean {
+  return arg === '-h' || arg === '--help' || arg === 'help';
+}
+
+function printUsage(message: string, stream: 'stdout' | 'stderr' = 'stderr'): void {
+  if (stream === 'stdout') console.log(message);
+  else console.error(message);
+}
+
+function printEvidenceUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc evidence new <slug> | osc evidence collect <slug> [--ci] [--dry-run] [--verbose]', stream);
+}
+
+function printEvidenceNewUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc evidence new <slug>', stream);
+}
+
+function printEvidenceCollectUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc evidence collect <slug> [--ci] [--dry-run] [--verbose]', stream);
 }
 
 function evidenceCommand(args: string[]): void {
   const [subcommand, ...rest] = args;
+  if (isHelpArg(subcommand) || subcommand === undefined) {
+    printEvidenceUsage('stdout');
+    return;
+  }
+
   if (subcommand === 'new') {
+    if (isHelpArg(rest[0])) {
+      printEvidenceNewUsage('stdout');
+      return;
+    }
     const slug = requireArg(rest, 'slug');
     if (rest.length > 1) {
       console.error(`Unknown option for evidence new: ${rest[1]}`);
-      console.error('Usage: osc evidence new <slug>');
+      printEvidenceNewUsage();
       process.exit(2);
     }
     try {
@@ -611,6 +637,10 @@ function evidenceCommand(args: string[]): void {
   }
 
   if (subcommand === 'collect') {
+    if (isHelpArg(rest[0])) {
+      printEvidenceCollectUsage('stdout');
+      return;
+    }
     const slug = requireArg(rest, 'slug');
     let ci = false;
     let dryRun = false;
@@ -621,7 +651,7 @@ function evidenceCommand(args: string[]): void {
       else if (flag === '--verbose') verbose = true;
       else {
         console.error(`Unknown option for evidence collect: ${flag}`);
-        console.error('Usage: osc evidence collect <slug> [--ci] [--dry-run] [--verbose]');
+        printEvidenceCollectUsage();
         process.exit(2);
       }
     }

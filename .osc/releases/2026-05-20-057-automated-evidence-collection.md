@@ -14,13 +14,15 @@ This slice adds `osc evidence collect <slug>` so a user can append a timestamped
 
 ## Verification
 
-- `npm test -- tests/evidence.test.ts tests/cli-plan-evidence.test.ts --run` — pass; 2 files / 10 tests.
-- `npm test -- packages/runtime-omx/tests/no-spawn-boundary.test.ts tests/evidence.test.ts --run` — pass; 2 files / 7 tests.
-- `npm test -- tests/evidence.test.ts --run` — pass after changed-file, ANSI-output, and `gh pr checks` field fixes; 6 tests.
+- `git diff --check` — pass.
+- `./verify.sh --strict` — pass; 10 pass / 0 fail / 0 warn.
+- `npm test -- tests/evidence.test.ts tests/cli-plan-evidence.test.ts tests/plan-authoring-bundle.test.ts --run` — pass; 3 files / 17 tests, including collect help handling and CLI-heavy timeout stability.
+- `npm test -- --run` — pass; 26 files / 225 tests.
 - `npm run build` — pass; core TypeScript and `packages/runtime-omx` TypeScript builds succeeded for package candidate `0.4.7`.
-- `npm test -- --run` — pass; 26 files / 224 tests.
+- `node dist/cli.js evidence collect --help` — pass; prints collect-specific usage instead of treating `--help` as a slug.
 - `node dist/cli.js evidence collect 057-automated-evidence-collection --ci --dry-run` — pass; captured PR #70 and CI check using supported `gh pr checks` JSON fields (`bucket`, `state`, `workflow`, etc.).
 - `node dist/cli.js evidence collect 057-automated-evidence-collection --dry-run` — pass; emitted a no-write collected block with `./verify.sh --standard`, branch, recent commits, tracked changes, untracked files, and skipped PR/CI note.
+- `npm pack --dry-run --json` — pass; package candidate `open-scaffold-0.4.7.tgz`, 97 files.
 
 ## Outcome
 
