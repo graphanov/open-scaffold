@@ -9,7 +9,7 @@ This pinpoint dogfood slice tightens the evidence flow by making `osc evidence n
 - Roadmap / issue / task: Pinpoint dogfood surface `evidence flow`; no GitHub issue; not mirrored to a task board.
 - Plan: `.osc/plans/done/082-evidence-new-plan-validation.md`.
 - Run ID / run packet: N/A — direct pinpoint scout execution advanced by John-Lo-Mein autopilot.
-- Branch / PR: branch `fix/evidence-new-plan-validation`; PR pending.
+- Branch / PR: branch `fix/evidence-new-plan-validation`; PR https://github.com/graphanov/open-scaffold/pull/72.
 - Automation provenance: Opened/advanced by John-Lo-Mein autopilot; cron job `open-scaffold-autopilot-pr-runner` / `13dc0942e2e9`; script `open-scaffold-prrunner-webhook-runner.py`; source `cron-open-scaffold-pr-runner`.
 - Owner gates: merge, npm publish, GitHub Release.
 
@@ -30,5 +30,4 @@ This pinpoint dogfood slice tightens the evidence flow by making `osc evidence n
 
 ## Follow-up
 
-- Open the focused PR, patch this note with the PR URL, and run the latest-head Codex review loop.
-- Merge and npm/GitHub Release publication remain owner-gated.
+- Merge remains owner-gated; npm/GitHub Release publication remain owner-gated if this CLI behavior is released through the public package.
