@@ -23,6 +23,8 @@ This pinpoint dogfood slice tightens the evidence flow by making `osc evidence n
 - `npm run build` — pass; core TypeScript and `packages/runtime-omx` TypeScript builds succeeded.
 - `node dist/cli.js evidence collect 082-evidence-new-plan-validation --dry-run` — pass; the collector finds the matching done plan and previews a collected evidence block without writing.
 - `./verify.sh --strict` — pass; 10 pass / 0 fail / 0 warn.
+- Codex review fix — `findPlanBySlug` now requires matching plan paths to be regular files, and `tests/cli-plan-evidence.test.ts` covers a `.md/` directory masquerading as a plan.
+- Post-Codex verification: `git diff --check`, `npm test -- tests/scaffold.test.ts tests/cli-plan-evidence.test.ts tests/evidence.test.ts --run`, `./verify.sh --strict`, `npm test -- --run`, `npm run build`, and a temporary scaffold directory-plan reproduction all passed.
 
 ## Outcome
 

@@ -333,7 +333,7 @@ function planStageSearchDirs(root: string, stages: readonly (PlanStage | 'root')
 function findPlanBySlug(root: string, slug: string, stages: readonly (PlanStage | 'root')[]): FoundPlan | null {
   for (const { stage, dir } of planStageSearchDirs(root, stages)) {
     const path = join(dir, `${slug}.md`);
-    if (existsSync(path)) return { path, dir, stage };
+    if (existsSync(path) && statSync(path).isFile()) return { path, dir, stage };
   }
   return null;
 }

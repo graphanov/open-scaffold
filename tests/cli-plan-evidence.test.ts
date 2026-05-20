@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -114,6 +114,13 @@ describe('osc plan/evidence helper CLI', () => {
     expect(missingPlan.status).toBe(1);
     expect(missingPlan.stderr).toContain('Plan not found: 999-missing-plan.md in .osc/plans/{active,backlog,blocked,done}');
     expect(existsSync(join(target, `.osc/releases/${todayLocalDate()}-999-missing-plan.md`))).toBe(false);
+
+    const directoryPlanSlug = '998-directory-plan';
+    mkdirSync(join(target, `.osc/plans/active/${directoryPlanSlug}.md`));
+    const directoryPlan = spawnSync(tsx, [cli, 'evidence', 'new', directoryPlanSlug], { cwd: target, encoding: 'utf8' });
+    expect(directoryPlan.status).toBe(1);
+    expect(directoryPlan.stderr).toContain('Plan not found: 998-directory-plan.md in .osc/plans/{active,backlog,blocked,done}');
+    expect(existsSync(join(target, `.osc/releases/${todayLocalDate()}-998-directory-plan.md`))).toBe(false);
 
     const unsafe = spawnSync(tsx, [cli, 'evidence', 'new', '../outside'], { cwd: target, encoding: 'utf8' });
     expect(unsafe.status).toBe(2);
