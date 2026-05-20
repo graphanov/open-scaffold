@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { initializeScaffold, tierFiles } from '../src/init.js';
@@ -80,6 +80,20 @@ describe('tiered scaffold initialization', () => {
 
     expect(() => initializeScaffold({ tier: 'min', target: join(link, 'project') })).toThrow(/Refusing to write through symlinked path:/);
     expect(existsSync(join(outside, 'project'))).toBe(false);
+  });
+
+  it('allows the standard macOS /tmp alias for new brownfield targets', () => {
+    if (process.platform !== 'darwin' || !existsSync('/tmp') || !lstatSync('/tmp').isSymbolicLink() || realpathSync('/tmp') !== '/private/tmp') return;
+
+    const slug = `osc-init-macos-tmp-${process.pid}-${Date.now()}`;
+    const requestedTarget = join('/tmp', slug);
+    const canonicalTarget = join('/private/tmp', slug);
+
+    const result = initializeScaffold({ tier: 'min', target: requestedTarget, fromExisting: true, force: true });
+
+    expect(result.target).toBe(canonicalTarget);
+    expect(existsSync(join(canonicalTarget, 'MISSION.md'))).toBe(true);
+    expect(readFileSync(join(canonicalTarget, 'MISSION.md'), 'utf8')).toContain('<!-- mission:unset -->');
   });
 
   it('refuses dangling symlink destinations before writing outside target', () => {

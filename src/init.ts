@@ -1,4 +1,4 @@
-import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import type { Stats } from 'node:fs';
 import { dirname, join, relative as relativePath, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -619,6 +619,23 @@ function lstatIfPresent(path: string): Stats | null {
   }
 }
 
+function normalizeKnownSystemAlias(path: string): string {
+  const target = resolve(path);
+  if (process.platform !== 'darwin') return target;
+
+  const tmpAlias = resolve('/tmp');
+  if (target !== tmpAlias && !target.startsWith(`${tmpAlias}${sep}`)) return target;
+
+  const tmpStats = lstatIfPresent(tmpAlias);
+  if (!tmpStats?.isSymbolicLink()) return target;
+
+  const realTmp = realpathSync(tmpAlias);
+  if (realTmp !== '/private/tmp') return target;
+
+  const suffix = relativePath(tmpAlias, target);
+  return suffix ? join(realTmp, suffix) : realTmp;
+}
+
 function rejectSymlinkedExistingPath(path: string): void {
   let current = resolve(path);
 
@@ -660,7 +677,7 @@ export function initializeScaffold(options: InitializeScaffoldOptions): Initiali
   if (options.fromExisting && options.tier !== 'min') {
     throw new Error('Brownfield init currently supports --tier min only. Use greenfield init for standard/max docs, or add advanced docs manually after preserving existing project files.');
   }
-  const target = resolve(options.target);
+  const target = normalizeKnownSystemAlias(options.target);
   const fromExisting = Boolean(options.fromExisting);
   const protectedExistingProjectFiles = fromExisting && options.force
     ? ['verify.sh', 'close.sh', 'bootstrap.sh'].filter((file) => existsSync(join(target, file)))
