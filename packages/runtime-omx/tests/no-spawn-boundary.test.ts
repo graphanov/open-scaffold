@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 const coreSrcRoot = new URL('../../../src/', import.meta.url);
 const runtimeSrcRoot = new URL('../src/', import.meta.url);
@@ -41,7 +41,7 @@ describe('runtime-omx source boundary', () => {
     expect(files.length).toBeGreaterThan(0);
     const violations: string[] = [];
     for (const file of files) {
-      if (coreProcessAllowedFiles.has(file.split('/').at(-1) ?? '')) continue;
+      if (coreProcessAllowedFiles.has(basename(file))) continue;
       const content = readFileSync(file, 'utf8');
       for (const pattern of coreForbiddenPatterns) {
         if (pattern.test(content)) violations.push(`${file}: ${pattern}`);
