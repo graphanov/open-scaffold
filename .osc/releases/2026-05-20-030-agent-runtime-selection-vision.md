@@ -9,7 +9,7 @@ This validation slice closes the old runtime-selection vision backlog item witho
 - Roadmap / issue / task: backlog plan selected by the deterministic slice selector; no GitHub issue existed.
 - Plan: `.osc/plans/done/030-agent-runtime-selection-vision.md`.
 - Run ID / run packet: N/A for this PR; existing local forensic evidence lives under `.osc/runs/20260515T125857-v1-runtime-choice-sparring/` and remains ignored/private.
-- Branch / PR: branch `vision/030-agent-runtime-selection`; PR pending.
+- Branch / PR: branch `vision/030-agent-runtime-selection`; PR https://github.com/graphanov/open-scaffold/pull/78.
 - Automation provenance: opened/advanced by John Lomein autopilot; cron job `open-scaffold-autopilot-pr-runner` / `13dc0942e2e9`; script `open-scaffold-prrunner-webhook-runner.py`; source `cron-open-scaffold-pr-runner`; selected source `backlog_plan`.
 - Owner gates: merge, npm publish, and GitHub Release creation/latest movement remain owner-gated.
 
