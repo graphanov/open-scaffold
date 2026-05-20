@@ -3,6 +3,7 @@ import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
+import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
 import { collectEvidence } from './evidence.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
@@ -39,7 +40,7 @@ Usage:
   osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]
   osc audit check <audit-manifest-path>
   osc verify
-  osc doctor
+  osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]
   osc runtimes list
   osc runtimes show <id>
 
@@ -655,6 +656,73 @@ function printVerifyUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage('Usage: osc verify', stream);
 }
 
+function printDoctorUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(
+    'Usage: osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <status-alignment|changelog-gap|paired-view|stale-plan|release-readme>]',
+    stream,
+  );
+}
+
+function parseDoctorOptions(args: string[]): DoctorOptions {
+  const options: DoctorOptions = {};
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--fix':
+        options.fix = true;
+        break;
+      case '--dry-run':
+        options.dryRun = true;
+        break;
+      case '--severity': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--') || !['info', 'warn', 'error'].includes(value)) {
+          console.error('Missing or invalid value for --severity. Expected info, warn, or error.');
+          printDoctorUsage();
+          process.exit(2);
+        }
+        options.severity = value as DoctorSeverity;
+        i += 1;
+        break;
+      }
+      case '--check': {
+        const value = args[i + 1];
+        const check = value ? parseDoctorCheckName(value) : null;
+        if (!value || value.startsWith('--') || !check) {
+          console.error('Missing or invalid value for --check.');
+          printDoctorUsage();
+          process.exit(2);
+        }
+        options.check = check;
+        i += 1;
+        break;
+      }
+      default:
+        console.error(`Unknown option for doctor: ${flag}`);
+        printDoctorUsage();
+        process.exit(2);
+    }
+  }
+  return options;
+}
+
+function doctorCommand(args: string[]): void {
+  if (isHelpArg(args[0])) {
+    printDoctorUsage('stdout');
+    return;
+  }
+  const options = parseDoctorOptions(args);
+  try {
+    const result = runDoctor(process.cwd(), options);
+    process.stdout.write(formatDoctorReport(result, options));
+    const exitCode = doctorExitCode(result, options);
+    if (exitCode !== 0) process.exit(exitCode);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
 function evidenceCommand(args: string[]): void {
   const [subcommand, ...rest] = args;
   if (isHelpArg(subcommand) || subcommand === undefined) {
@@ -1195,8 +1263,7 @@ async function main(): Promise<void> {
       return;
     }
     case 'doctor':
-      status(false);
-      console.log('Doctor: generic CLI is installed; adapters must be checked in their own repos.');
+      doctorCommand(args);
       return;
     case 'runtimes':
       runtimes(args);
