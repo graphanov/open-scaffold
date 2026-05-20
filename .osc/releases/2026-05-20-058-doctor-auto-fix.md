@@ -9,7 +9,7 @@ This slice turns `osc doctor` from a placeholder status print into a scaffold hy
 - Roadmap / issue / task: accepted public backlog plan `058-doctor-auto-fix`; no GitHub issue; not mirrored to Kanban.
 - Plan: `.osc/plans/done/058-doctor-auto-fix.md`.
 - Run ID / run packet: N/A — direct John-Lo-Mein autopilot implementation; no runtime run packet needed.
-- Branch / PR: branch `cli/doctor-auto-fix`; PR pending.
+- Branch / PR: branch `cli/doctor-auto-fix`; PR https://github.com/graphanov/open-scaffold/pull/74.
 - Version candidate: `open-scaffold@0.4.8` in `package.json` / `package-lock.json` for owner-gated npm publication after merge.
 - Owner gates: merge, npm publish, and GitHub Release creation/latest movement remain owner-gated.
 
@@ -40,5 +40,5 @@ Out of scope: semantic plan judgment, backup snapshots, automatic verifier integ
 
 ## Follow-up
 
-- Replace the pending PR placeholder with the real PR URL after the PR is opened.
+- PR opened: https://github.com/graphanov/open-scaffold/pull/74.
 - After merge, owner-gated package/release sync remains: publish `open-scaffold@0.4.8`, verify registry + `npx`, then create/mark GitHub Release `v0.4.8` Latest if approved.
