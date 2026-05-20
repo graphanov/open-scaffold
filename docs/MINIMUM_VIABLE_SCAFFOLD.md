@@ -46,6 +46,8 @@ Brownfield init currently supports the `min` tier only. That keeps adoption safe
 
 It detects common project markers (`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, and workspace files), writes a mission draft that names the detected project type, and adds scaffold files around the existing project. It does not edit package manifests, source trees, lockfiles, README content, or CI files. If scaffold-owned paths such as `MISSION.md`, `.osc/`, `AGENTS.md`, or `CLAUDE.md` already exist, it refuses and lists the conflicts; use `--force` only when you intend to replace those scaffold-owned files.
 
+On macOS, the CLI treats the standard `/tmp` compatibility alias as `/private/tmp` before applying symlink safety checks, so copy-paste smoke targets such as `--target /tmp/osc-smoke` work without weakening protection against project-owned symlinks.
+
 Then follow the loop:
 
 1. **Define mission** — run `./bootstrap.sh` or edit `MISSION.md` until the project-specific mission is real.
