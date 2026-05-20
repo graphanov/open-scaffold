@@ -8,9 +8,17 @@ This pinpoint dogfood slice tightens the verification opacity surface. `./verify
 
 - Roadmap / issue / task: Pinpoint dogfood surface `verification opacity`; no GitHub issue; not mirrored to a task board.
 - Plan: `.osc/plans/done/083-verify-help-flags.md`.
-- Run ID / run packet: N/A — direct pinpoint scout execution, no runtime run packet needed.
-- Branch / PR: branch `fix/verify-help-flags`; PR blocked in this session because GitHub write authentication is unavailable.
-- Owner gates: push/PR, merge, npm publish, and GitHub Release creation/latest movement remain owner-gated.
+- Run ID / run packet: N/A — pinpoint scout reproduction plus John-Lo-Mein autopilot advancement; no runtime run packet needed.
+- Branch / PR: branch `fix/verify-help-flags`; PR pending John-Lo-Mein autopilot creation.
+- Owner gates: merge, npm publish, and GitHub Release creation/latest movement remain owner-gated.
+
+## Automation provenance
+
+- Opened/advanced by John-Lo-Mein autopilot.
+- Cron job: `open-scaffold-autopilot-pr-runner` / `13dc0942e2e9`.
+- Script: `open-scaffold-prrunner-webhook-runner.py`.
+- Source: `cron-open-scaffold-pr-runner`.
+- Owner gates: `merge`, `npm publish`, `GitHub Release`.
 
 ## Verification
 
