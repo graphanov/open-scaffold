@@ -180,6 +180,7 @@ describe('osc evidence collect', () => {
       if (command === 'git' && args[0] === 'log') return { commandLine: printable, status: 0, stdout: 'abc123 test\n', stderr: '' };
       if (command === 'git' && args[0] === 'diff') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
       if (command === 'git' && args[0] === 'ls-files') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
+      if (command === 'git' && args[0] === 'remote') return { commandLine: printable, status: 0, stdout: 'https://github.com/example/project.git\n', stderr: '' };
       if (command === 'gh' && args[0] === '--version') return { commandLine: printable, status: 0, stdout: 'gh version 2.0.0\n', stderr: '' };
       if (command === 'gh' && args[0] === 'auth') {
         return {
@@ -194,9 +195,38 @@ describe('osc evidence collect', () => {
 
     const result = collectEvidence('001-first-task', target, { ci: true, dryRun: true, runner });
 
-    expect(result.block).toContain('gh CLI installed but not authenticated — PR and CI checks skipped');
-    expect(result.block).toContain('Run `gh auth login` or set `GH_TOKEN`');
+    expect(result.block).toContain('gh CLI installed but not authenticated for github.com — PR and CI checks skipped');
+    expect(result.block).toContain('gh auth login --hostname github.com');
     expect(result.block).not.toContain('To get started with GitHub CLI');
+  });
+
+  it('checks gh auth against the current remote host before collecting PR and CI data', () => {
+    const target = initializedScaffold();
+    let authArgs: string[] = [];
+    const runner: CommandRunner = (command, args) => {
+      const printable = [command, ...args].join(' ');
+      if (command.endsWith('verify.sh')) return { commandLine: './verify.sh --standard', status: 0, stdout: 'verify pass\n', stderr: '' };
+      if (command === 'git' && args[0] === 'rev-parse') return { commandLine: printable, status: 0, stdout: 'true\n', stderr: '' };
+      if (command === 'git' && args[0] === 'branch') return { commandLine: printable, status: 0, stdout: 'feature/evidence\n', stderr: '' };
+      if (command === 'git' && args[0] === 'log') return { commandLine: printable, status: 0, stdout: 'abc123 test\n', stderr: '' };
+      if (command === 'git' && args[0] === 'diff') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
+      if (command === 'git' && args[0] === 'ls-files') return { commandLine: printable, status: 0, stdout: '', stderr: '' };
+      if (command === 'git' && args[0] === 'remote') return { commandLine: printable, status: 0, stdout: 'git@github.enterprise.test:owner/repo.git\n', stderr: '' };
+      if (command === 'gh' && args[0] === '--version') return { commandLine: printable, status: 0, stdout: 'gh version 2.0.0\n', stderr: '' };
+      if (command === 'gh' && args[0] === 'auth') {
+        authArgs = args;
+        return { commandLine: printable, status: 0, stdout: 'authenticated\n', stderr: '' };
+      }
+      if (command === 'gh' && args[0] === 'pr' && args[1] === 'list') return { commandLine: printable, status: 0, stdout: '[{"number":1,"state":"OPEN"}]\n', stderr: '' };
+      if (command === 'gh' && args[0] === 'pr' && args[1] === 'checks') return { commandLine: printable, status: 0, stdout: '[{"name":"ci","state":"SUCCESS","bucket":"pass"}]\n', stderr: '' };
+      throw new Error(`unexpected command: ${printable}`);
+    };
+
+    const result = collectEvidence('001-first-task', target, { ci: true, dryRun: true, runner });
+
+    expect(authArgs).toEqual(['auth', 'status', '--hostname', 'github.enterprise.test']);
+    expect(result.block).toContain('"number":1');
+    expect(result.block).toContain('"bucket":"pass"');
   });
 
   it('refuses unsafe slugs and missing plans', () => {

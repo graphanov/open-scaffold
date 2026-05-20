@@ -186,6 +186,16 @@ function collectGitContext(root: string, runner: CommandRunner): GitContext {
   };
 }
 
+function detectGitHubHost(root: string, runner: CommandRunner): string {
+  const remoteUrl = runner('git', ['remote', 'get-url', 'origin'], root);
+  const value = remoteUrl.status === 0 ? remoteUrl.stdout.trim() : '';
+  const httpsMatch = value.match(/^https?:\/\/([^/]+)/);
+  if (httpsMatch?.[1]) return httpsMatch[1];
+  const sshMatch = value.match(/^(?:git@|ssh:\/\/git@)([^/:]+)[:/]/);
+  if (sshMatch?.[1]) return sshMatch[1];
+  return 'github.com';
+}
+
 function collectPrCiContext(root: string, runner: CommandRunner, git: GitContext, enabled: boolean): PrCiContext {
   if (!enabled) {
     return {
@@ -210,7 +220,8 @@ function collectPrCiContext(root: string, runner: CommandRunner, git: GitContext
     };
   }
 
-  const ghAuth = runner('gh', ['auth', 'status'], root);
+  const ghHost = detectGitHubHost(root, runner);
+  const ghAuth = runner('gh', ['auth', 'status', '--hostname', ghHost], root);
   if (ghAuth.status !== 0) {
     return {
       enabled: true,
@@ -218,7 +229,7 @@ function collectPrCiContext(root: string, runner: CommandRunner, git: GitContext
       prList: null,
       checks: null,
       env: readCiEnv(),
-      notes: ['gh CLI installed but not authenticated — PR and CI checks skipped; run gh auth login or set GH_TOKEN to collect PR/CI status'],
+      notes: [`gh CLI installed but not authenticated for ${ghHost} — PR and CI checks skipped; run gh auth login --hostname ${ghHost} or set GH_TOKEN to collect PR/CI status`],
     };
   }
 
