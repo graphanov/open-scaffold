@@ -253,6 +253,28 @@ Run binding options:
   --commit-policy <text>      Commit/push approval rule${mode === 'run' ? '\n\nDry-run options:\n  --dry-run                   Preview run artifacts without writing .osc/runs files\n  --json                      With --dry-run, print only machine-readable JSON' : ''}`);
 }
 
+function printInitUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc init --tier <min|standard|max> --target <dir> [--force]
+  osc init --from-existing --tier min --target <dir> [--force]
+  osc init --min|--standard|--max --target <dir> [--force]`, stream);
+}
+
+function hasInitHelpRequest(args: string[]): boolean {
+  let previousFlagNeedsValue = false;
+  for (const arg of args) {
+    if (previousFlagNeedsValue) {
+      previousFlagNeedsValue = false;
+      continue;
+    }
+    if (arg === '--tier' || arg === '--target') {
+      previousFlagNeedsValue = true;
+      continue;
+    }
+    if (arg === '--help' || arg === '-h') return true;
+  }
+  return args.length === 1 && args[0] === 'help';
+}
+
 function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string; force: boolean; fromExisting: boolean } {
   let tier: ScaffoldTier | undefined;
   let target: string | undefined;
@@ -296,7 +318,7 @@ function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string;
         break;
       default:
         console.error(`Unknown option for init: ${flag}`);
-        printHelp();
+        printInitUsage();
         process.exit(2);
     }
   }
@@ -313,6 +335,10 @@ function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string;
 }
 
 function init(args: string[]): void {
+  if (hasInitHelpRequest(args)) {
+    printInitUsage('stdout');
+    return;
+  }
   const options = parseInitOptions(args);
   try {
     const result = initializeScaffold(options);

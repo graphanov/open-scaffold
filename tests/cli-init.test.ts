@@ -175,6 +175,47 @@ describe('osc init CLI', () => {
     expect(result.stdout).toContain('osc init --from-existing --tier min --target <dir> [--force]');
   });
 
+  it('prints init-specific help without treating --help as an unknown option', () => {
+    const result = spawnSync(tsx, [cli, 'init', '--help'], { encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('Usage: osc init --tier <min|standard|max> --target <dir> [--force]');
+    expect(result.stdout).toContain('osc init --from-existing --tier min --target <dir> [--force]');
+    expect(result.stdout).not.toContain('Unknown option for init');
+    expect(result.stdout).not.toContain('Run binding options:');
+  });
+
+  it('shows init-specific usage for unsupported init options', () => {
+    const result = spawnSync(tsx, [cli, 'init', '--json'], { encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Unknown option for init: --json');
+    expect(result.stderr).toContain('Usage: osc init --tier <min|standard|max> --target <dir> [--force]');
+    expect(result.stderr).not.toContain('Run binding options:');
+  });
+
+  it('does not treat a target value named help as an init help request', () => {
+    const parent = tempTarget();
+    const result = spawnSync(tsx, [cli, 'init', '--target', 'help', '--tier', 'min'], { cwd: parent, encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('Generated min Open Scaffold');
+    expect(existsSync(join(parent, 'help', 'MISSION.md'))).toBe(true);
+  });
+
+  it('does not treat an invalid tier value named help as an init help request', () => {
+    const target = tempTarget();
+    const result = spawnSync(tsx, [cli, 'init', '--tier', 'help', '--target', target], { encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Invalid value for --tier: help');
+    expect(result.stderr).not.toContain('Usage: osc init');
+  });
+
   it('maps runtime and workflow presets into a run packet without spawning', () => {
     const target = tempTarget();
     execFileSync(tsx, [cli, 'init', '--standard', '--target', target], { encoding: 'utf8' });
