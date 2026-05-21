@@ -17,8 +17,8 @@ Added a local `osc metrics` command that turns scaffold state into numerical hea
 ## Verification
 
 - `git diff --check` — pass.
-- `npm test -- --run tests/metrics.test.ts` — pass; 1 file / 6 tests.
-- `npm test -- --run` — pass; 32 files / 278 tests.
+- `npm test -- --run tests/metrics.test.ts` — pass; 1 file / 7 tests.
+- `npm test -- --run` — pass; 32 files / 279 tests.
 - `npm run build` — pass; core TypeScript and runtime OMX TypeScript builds succeeded.
 - `node dist/cli.js metrics` — pass; default human-readable metrics table renders without flags.
 - `node dist/cli.js metrics --json | jq .summary.total_plans` — pass; JSON parsed and returned `89` for the current repository metrics view.
@@ -29,7 +29,7 @@ Added a local `osc metrics` command that turns scaffold state into numerical hea
 
 ## Outcome
 
-`osc metrics` now reads only local scaffold files and local git history when available. It reports factual counts and percentages without benchmarking or ranking team performance, and it falls back to file modification timestamps with a warning when git history is unavailable. Codex review round 1 found two actionable edges before this note was finalized: the no-flag `osc metrics` path now renders the default table, and done plans without evidence-note dates now contribute mtime fallback cycle-time samples instead of being marked insufficient. The slice deliberately does not add charts, dashboards, metrics snapshots, databases, analytics services, network collectors, runtime spawning, npm publication, GitHub Release changes, or merge automation.
+`osc metrics` now reads only local scaffold files and local git history when available. It reports factual counts and percentages without benchmarking or ranking team performance, and it falls back to file modification timestamps with a warning when git history is unavailable. Codex review found actionable edges before this note was finalized: the no-flag `osc metrics` path now renders the default table, done plans without evidence-note dates now contribute mtime fallback cycle-time samples instead of being marked insufficient, `last month` date math clamps to the previous month on month-end days, and evidence notes are matched by exact plan-slug boundaries instead of substring matches. The slice deliberately does not add charts, dashboards, metrics snapshots, databases, analytics services, network collectors, runtime spawning, npm publication, GitHub Release changes, or merge automation.
 
 ## Follow-up
 

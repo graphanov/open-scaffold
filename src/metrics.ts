@@ -96,6 +96,19 @@ function startOfUtcDay(date: Date): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
+function utcDaysInMonth(year: number, monthIndex: number): number {
+  return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+}
+
+function previousUtcMonthClamped(date: Date): Date {
+  const day = startOfUtcDay(date);
+  const targetMonth = day.getUTCMonth() - 1;
+  const targetYear = targetMonth < 0 ? day.getUTCFullYear() - 1 : day.getUTCFullYear();
+  const normalizedMonth = (targetMonth + 12) % 12;
+  const clampedDay = Math.min(day.getUTCDate(), utcDaysInMonth(targetYear, normalizedMonth));
+  return new Date(Date.UTC(targetYear, normalizedMonth, clampedDay));
+}
+
 function parseIsoDateOnly(raw: string): Date | null {
   const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return null;
@@ -139,8 +152,7 @@ export function parseSinceDate(value: string, now = new Date()): Date {
   }
 
   if (/^last\s+month$/i.test(raw)) {
-    const day = startOfUtcDay(now);
-    return new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth() - 1, day.getUTCDate()));
+    return previousUtcMonthClamped(now);
   }
 
   if (raw.includes('/') || /^[A-Za-z]/.test(raw) || !/^\d{4}-\d{2}-\d{2}/.test(raw)) {
@@ -230,9 +242,19 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function evidencePathMatchesSlug(relativePath: string, slug: string): boolean {
+  const noteSlug = basename(relativePath, '.md');
+  const datedSlug = noteSlug.match(/^\d{4}-\d{2}-\d{2}-(.+)$/)?.[1] ?? null;
+  return noteSlug === slug || datedSlug === slug;
+}
+
+function evidenceTextMatchesSlug(text: string, slug: string): boolean {
+  const slugTokenPattern = new RegExp(`(^|[^A-Za-z0-9-])${escapeRegex(slug)}([^A-Za-z0-9-]|$)`);
+  return slugTokenPattern.test(text);
+}
+
 function evidenceForPlan(notes: EvidenceNote[], slug: string): EvidenceNote | null {
-  const slugPattern = new RegExp(`(^|[^A-Za-z0-9])${escapeRegex(slug)}([^A-Za-z0-9]|$)`);
-  const matches = notes.filter((note) => note.relativePath.includes(slug) || slugPattern.test(note.text));
+  const matches = notes.filter((note) => evidencePathMatchesSlug(note.relativePath, slug) || evidenceTextMatchesSlug(note.text, slug));
   if (matches.length === 0) return null;
   return matches.sort((a, b) => (a.date?.getTime() ?? 0) - (b.date?.getTime() ?? 0)).at(-1) ?? null;
 }

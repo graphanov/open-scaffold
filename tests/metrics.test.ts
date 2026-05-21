@@ -117,7 +117,31 @@ describe('osc metrics', () => {
   it('parses relative dates and rejects ambiguous date formats', () => {
     expect(parseSinceDate('30 days ago', now).toISOString()).toBe('2026-05-16T00:00:00.000Z');
     expect(parseSinceDate('last month', now).toISOString()).toBe('2026-05-15T00:00:00.000Z');
+    expect(parseSinceDate('last month', new Date('2026-03-31T12:00:00.000Z')).toISOString()).toBe('2026-02-28T00:00:00.000Z');
+    expect(parseSinceDate('last month', new Date('2024-03-31T12:00:00.000Z')).toISOString()).toBe('2024-02-29T00:00:00.000Z');
+    expect(parseSinceDate('last month', new Date('2026-01-31T12:00:00.000Z')).toISOString()).toBe('2025-12-31T00:00:00.000Z');
     expect(() => parseSinceDate('01/02/2026', now)).toThrow(/Ambiguous date/);
+  });
+
+  it('does not attach evidence notes from longer slug substrings', () => {
+    const root = tempScaffold('osc-metrics-exact-evidence-');
+    writePlan(root, 'done', 'foo', '2026-04-30');
+    writePlan(root, 'done', '001-foo', '2026-05-01');
+    writePlan(root, 'done', '001-foo-bar', '2026-05-02');
+    writeEvidence(root, '2026-05-09', '001-foo', 'weak_approved');
+    writeEvidence(root, '2026-05-10', '001-foo-bar', 'approved');
+
+    const metrics = computeMetrics({ root, now });
+    const unprefixed = metrics.plans.find((plan) => plan.slug === 'foo');
+    const shorter = metrics.plans.find((plan) => plan.slug === '001-foo');
+    const longer = metrics.plans.find((plan) => plan.slug === '001-foo-bar');
+
+    expect(unprefixed?.has_evidence).toBe(false);
+    expect(unprefixed?.evidence_note).toBeNull();
+    expect(shorter?.has_evidence).toBe(true);
+    expect(shorter?.evidence_note).toBe('.osc/releases/2026-05-09-001-foo.md');
+    expect(longer?.has_evidence).toBe(true);
+    expect(longer?.evidence_note).toBe('.osc/releases/2026-05-10-001-foo-bar.md');
   });
 
   it('prints CLI JSON and table output', () => {
