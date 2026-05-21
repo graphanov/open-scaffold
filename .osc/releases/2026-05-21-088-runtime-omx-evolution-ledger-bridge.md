@@ -15,9 +15,10 @@ Bridged `packages/runtime-omx` outputs into the `osc evolve record` ledger path 
 
 - `npm test -- tests/evolution.test.ts tests/cli-evolution.test.ts packages/runtime-omx/tests/cli.test.ts` — 3 files / 24 tests passed after the RED phase failed for the missing receipt/evidence bridge and runtime command hint.
 - `npm test -- tests/evolution.test.ts tests/cli-evolution.test.ts packages/runtime-omx/tests/cli.test.ts packages/runtime-omx/tests/validation.test.ts` — 4 files / 38 tests passed.
+- `npm test -- packages/runtime-omx/tests/cli.test.ts tests/evolution.test.ts tests/cli-evolution.test.ts` — 3 files / 25 tests passed after the Codex flag-guard fix.
 - `npm run build:runtime-omx` — TypeScript runtime package build passed.
-- `npm run test:runtime-omx` — 5 runtime test files / 45 tests passed.
-- `npm test` — 31 test files / 271 tests passed.
+- `npm run test:runtime-omx` — 5 runtime test files / 46 tests passed.
+- `npm test` — 31 test files / 272 tests passed.
 - `npm run build` — core and runtime-omx builds passed.
 - `./verify.sh --strict` — 10 pass, 0 fail, 0 warn.
 - `npm run osc -- verify` — passed with one pre-existing warning for backlog plan `062-glass-cockpit-webhooks` run-id release-summary drift.
@@ -41,4 +42,5 @@ Out of scope remains hidden `osc run` spawning, automatic frontier promotion, mo
 ## Follow-up
 
 - Open PR and run latest-head Codex review loop before asking for owner merge approval.
+- Codex round 1 raised a P2 runtime-omx CLI guard issue for `--decision` / `--score` / `--rationale` without `--evolution-loop`; fixed by failing before artifact writes and adding a regression test.
 - Keep npm publish and GitHub Release creation owner-gated if this slice later changes package/public-surface versioning.

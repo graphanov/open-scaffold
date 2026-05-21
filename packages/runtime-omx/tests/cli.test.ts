@@ -65,6 +65,17 @@ describe('runtime-omx CLI', () => {
     expect(existsSync(join(root, loopDir, 'attempts.jsonl'))).toBe(false);
   });
 
+  it('rejects evolution-only flags without an evolution loop hint', () => {
+    const { root, path } = tempRunPacket();
+    const stderr: string[] = [];
+
+    const exitCode = runCli([path, '--decision', 'retry', '--rationale', 'Would be ignored without a loop.'], { stdout: () => undefined, stderr: (message) => stderr.push(message) });
+
+    expect(exitCode).toBe(1);
+    expect(stderr.join('\n')).toContain('--decision, --score, and --rationale require --evolution-loop');
+    expect(existsSync(join(root, '.osc/runs/demo/dispatch-receipt.json'))).toBe(false);
+  });
+
   it('supports --out for a safe run-directory receipt path', () => {
     const { root, path } = tempRunPacket();
     const stdout: string[] = [];

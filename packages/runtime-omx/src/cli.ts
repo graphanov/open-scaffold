@@ -64,6 +64,7 @@ export function runCli(argv: string[], io: CliIO = {}): number {
   let evolutionDecision: EvolutionDecision | undefined;
   let evolutionScore: number | undefined;
   let evolutionRationale: string | undefined;
+  let evolutionOnlyFlagUsed = false;
   while (args.length) {
     const arg = args.shift();
     if (arg === '--out') {
@@ -95,6 +96,7 @@ export function runCli(argv: string[], io: CliIO = {}): number {
       continue;
     }
     if (arg === '--decision') {
+      evolutionOnlyFlagUsed = true;
       const value = args.shift();
       if (!isEvolutionDecision(value)) {
         stderr(`runtime-omx error: --decision must be one of: ${EVOLUTION_DECISIONS.join(', ')}`);
@@ -104,6 +106,7 @@ export function runCli(argv: string[], io: CliIO = {}): number {
       continue;
     }
     if (arg === '--score') {
+      evolutionOnlyFlagUsed = true;
       const raw = args.shift();
       const parsed = Number(raw);
       if (!raw || !Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
@@ -114,6 +117,7 @@ export function runCli(argv: string[], io: CliIO = {}): number {
       continue;
     }
     if (arg === '--rationale') {
+      evolutionOnlyFlagUsed = true;
       evolutionRationale = args.shift();
       if (!evolutionRationale) {
         stderr('runtime-omx error: --rationale requires text');
@@ -125,6 +129,10 @@ export function runCli(argv: string[], io: CliIO = {}): number {
     return 1;
   }
 
+  if (!evolutionLoop && evolutionOnlyFlagUsed) {
+    stderr('runtime-omx error: --decision, --score, and --rationale require --evolution-loop so evolution intent is not silently ignored.');
+    return 1;
+  }
   if (evolutionLoop && (!evolutionDecision || !evolutionRationale)) {
     stderr('runtime-omx error: --evolution-loop requires --decision and --rationale so adapter output is not recorded as fake evidence.');
     return 1;
