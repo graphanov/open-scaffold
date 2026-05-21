@@ -67,7 +67,21 @@ Improve the run contract.
     decision: { status: 'approved', approver: 'human', rationale: 'Evidence reviewed.' },
     improvement: { route: 'close', target: null, carried_forward: [], do_not_assume: ['No model benchmark claim.'] },
   }, null, 2));
-  return { root, planPath, runPath, evalPath };
+  const receiptPath = join(root, '.osc/runs/demo-run/dispatch-receipt.json');
+  const adapterEvidencePath = join(root, '.osc/runs/demo-run/runtime-omx-evidence.md');
+  const adapterLogPath = join(root, '.osc/runs/demo-run/runtime-omx.log');
+  writeFileSync(receiptPath, JSON.stringify({
+    schema_version: 'open-scaffold.dispatch-receipt.v1',
+    receipt_id: 'runtime-omx:no-spawn-preview:demo-run',
+    run_id: 'demo-run',
+    adapter_id: 'runtime-omx',
+    runtime_backend: 'omx',
+    artifacts: ['.osc/runs/demo-run/runtime-omx-evidence.md', '.osc/runs/demo-run/runtime-omx.log'],
+    status: 'dry_run',
+  }, null, 2));
+  writeFileSync(adapterEvidencePath, 'runtime omx evidence');
+  writeFileSync(adapterLogPath, 'runtime omx log');
+  return { root, planPath, runPath, evalPath, receiptPath, adapterEvidencePath, adapterLogPath };
 }
 
 describe('osc evolve CLI', () => {
@@ -149,6 +163,46 @@ describe('osc evolve CLI', () => {
     expect(output).toContain('Updated frontier: demo-run');
     const frontier = JSON.parse(readFileSync(join(outDir, 'frontier.json'), 'utf8'));
     expect(frontier.current).toMatchObject({ attempt_id: 'demo-run', run_id: 'demo-run', score: 0.93, rationale: 'Best evidence so far.' });
+  });
+
+  it('records adapter receipts and evidence through CLI options with subdirectory-relative paths', () => {
+    const { root, receiptPath } = tempRepo();
+    const subdir = join(root, 'subdir');
+    mkdirSync(subdir, { recursive: true });
+    const init = execFileSync(tsx, [cli, 'evolve', 'init', '../.osc/plans/active/087-demo.md'], { cwd: subdir, encoding: 'utf8' });
+    const createdLine = init.split('\n').find((line) => line.startsWith('Created evolution loop: '));
+    const loopDir = createdLine?.replace('Created evolution loop: ', '').trim();
+    expect(loopDir).toBeTruthy();
+    const relativeLoopDir = `../.osc/evolution/${basename(loopDir!)}`;
+
+    const output = execFileSync(tsx, [
+      cli,
+      'evolve',
+      'record',
+      relativeLoopDir,
+      '--run',
+      '../.osc/runs/demo-run/run.json',
+      '--receipt',
+      '../.osc/runs/demo-run/dispatch-receipt.json',
+      '--evidence',
+      '../.osc/runs/demo-run/runtime-omx-evidence.md',
+      '--evidence',
+      '../.osc/runs/demo-run/runtime-omx.log',
+      '--decision',
+      'retry',
+      '--rationale',
+      'Record runtime OMX adapter output refs.',
+    ], { cwd: subdir, encoding: 'utf8' });
+
+    expect(output).toContain('Recorded evolution attempt: demo-run');
+    const attempts = readFileSync(join(loopDir!, 'attempts.jsonl'), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    expect(attempts[0].adapter_receipts).toEqual(['.osc/runs/demo-run/dispatch-receipt.json']);
+    expect(attempts[0].evidence_refs).toEqual(expect.arrayContaining([
+      '.osc/runs/demo-run/dispatch-receipt.json',
+      '.osc/runs/demo-run/runtime-omx-evidence.md',
+      '.osc/runs/demo-run/runtime-omx.log',
+    ]));
+    expect(receiptPath).toContain('dispatch-receipt.json');
   });
 
   it('rejects promotion without rationale instead of silently updating frontier', () => {

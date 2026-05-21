@@ -152,6 +152,19 @@ A v1 adapter consumes one `open-scaffold.run.v1` run packet. It either refuses t
 1. an `open-scaffold.dispatch-receipt.v1` dispatch receipt, normally at `.osc/runs/<run_id>/dispatch-receipt.json`;
 2. one or more repo-local evidence artifacts cited by that receipt.
 
+Those adapter outputs can then be recorded into an evolution loop by core:
+
+```bash
+osc evolve record .osc/evolution/<loop_id> \
+  --run .osc/runs/<run_id>/run.json \
+  --receipt .osc/runs/<run_id>/dispatch-receipt.json \
+  --evidence .osc/runs/<run_id>/runtime-omx-evidence.md \
+  --decision retry \
+  --rationale "Adapter output recorded for the next attempt."
+```
+
+The core recorder validates the dispatch receipt schema, receipt/run `run_id` consistency, and repo-local/private-path boundaries before appending attempt or frontier state. Runtime packages should not mutate `.osc/evolution/` as a default side effect.
+
 The receipt records which adapter consumed which packet, the selected lane/workflow/profile, what authority was used, whether a real runtime was spawned, and where evidence/logs/artifacts live. The evidence artifact records factual handoff/result proof. Neither artifact proves that the task acceptance criteria passed; postflight/evaluation still decides correctness, approval, merge, and release.
 
 A no-spawn conformance adapter must refuse packets when required fields are missing, blockers/open questions remain, `executor.spawning` is not `false`, the lane/harness does not match the selected workflow, commit policy is absent, or receipt/evidence paths would leave `runtime.repoPath`.

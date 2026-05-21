@@ -23,6 +23,59 @@ describe('runtime-omx CLI', () => {
     expect(existsSync(join(root, '.osc/runs/demo/runtime-omx-evidence.md'))).toBe(true);
   });
 
+  it('prints an explicit osc evolve record command from the repo root without mutating the evolution ledger', () => {
+    const { root } = tempRunPacket();
+    const loopDir = '.osc/evolution/demo-loop';
+    const subdir = join(root, 'subdir');
+    mkdirSync(join(root, loopDir), { recursive: true });
+    mkdirSync(subdir, { recursive: true });
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const previousCwd = process.cwd();
+
+    let exitCode = 1;
+    try {
+      process.chdir(subdir);
+      exitCode = runCli([
+        '../.osc/runs/demo/run.json',
+        '--evolution-loop',
+        '../.osc/evolution/demo-loop',
+        '--decision',
+        'retry',
+        '--score',
+        '0.42',
+        '--rationale',
+        'No-spawn preview captured adapter output.',
+      ], { stdout: (message) => stdout.push(message), stderr: (message) => stderr.push(message) });
+    } finally {
+      process.chdir(previousCwd);
+    }
+
+    const output = stdout.join('\n');
+    expect(exitCode).toBe(0);
+    expect(stderr).toEqual([]);
+    expect(output).toContain('runtime-omx evolution record command:');
+    expect(output).toContain(`cd ${root} && osc evolve record .osc/evolution/demo-loop`);
+    expect(output).toContain('--run .osc/runs/demo/run.json');
+    expect(output).toContain('--receipt .osc/runs/demo/dispatch-receipt.json');
+    expect(output).toContain('--evidence .osc/runs/demo/runtime-omx-evidence.md');
+    expect(output).toContain('--decision retry');
+    expect(output).toContain('--score 0.42');
+    expect(output).toContain("--rationale 'No-spawn preview captured adapter output.'");
+    expect(existsSync(join(root, loopDir, 'attempts.jsonl'))).toBe(false);
+  });
+
+  it('rejects evolution-only flags without an evolution loop hint', () => {
+    const { root, path } = tempRunPacket();
+    const stderr: string[] = [];
+
+    const exitCode = runCli([path, '--decision', 'retry', '--rationale', 'Would be ignored without a loop.'], { stdout: () => undefined, stderr: (message) => stderr.push(message) });
+
+    expect(exitCode).toBe(1);
+    expect(stderr.join('\n')).toContain('--decision, --score, and --rationale require --evolution-loop');
+    expect(existsSync(join(root, '.osc/runs/demo/dispatch-receipt.json'))).toBe(false);
+  });
+
   it('supports --out for a safe run-directory receipt path', () => {
     const { root, path } = tempRunPacket();
     const stdout: string[] = [];
@@ -51,6 +104,7 @@ describe('runtime-omx CLI', () => {
     expect(runCli(['--help'], { stdout: (message) => helpOut.push(message), stderr: () => undefined })).toBe(0);
     expect(helpOut.join('\n')).toContain('Usage: open-scaffold-runtime-omx');
     expect(helpOut.join('\n')).toContain('--allow-spawn');
+    expect(helpOut.join('\n')).toContain('--evolution-loop <dir>');
 
     const missingOut: string[] = [];
     expect(runCli([], { stdout: (message) => missingOut.push(message), stderr: () => undefined })).toBe(1);

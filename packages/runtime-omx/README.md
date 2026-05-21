@@ -43,6 +43,18 @@ open-scaffold-runtime-omx .osc/runs/<run_id>/run.json \
   --out .osc/runs/<run_id>/dispatch-receipt.json
 ```
 
+Evolution-ledger hint for a no-spawn attempt:
+
+```bash
+open-scaffold-runtime-omx .osc/runs/<run_id>/run.json \
+  --evolution-loop .osc/evolution/<loop_id> \
+  --decision retry \
+  --score 0.42 \
+  --rationale "No-spawn runtime-omx preview captured adapter output."
+```
+
+This prints a copy/paste-ready `cd <repo-root> && osc evolve record ... --receipt ... --evidence ...` command that records the dispatch receipt, adapter evidence, and optional log into the loop from one consistent path base. It does not mutate `.osc/evolution/` itself; the operator must run the printed command explicitly.
+
 Explicit OMX launch:
 
 ```bash
@@ -71,6 +83,7 @@ This package does not:
 
 - launch OMX unless `--allow-spawn` is provided;
 - run through Open Scaffold core or make `osc run` spawn anything;
+- mutate `.osc/evolution/` by default; `--evolution-loop` only prints an explicit `osc evolve record` command;
 - read credentials or home-directory runtime configuration itself;
 - require network access in the adapter code;
 - mutate source files outside the designated run evidence artifacts;

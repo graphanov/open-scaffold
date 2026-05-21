@@ -9,6 +9,7 @@ export const EVOLUTION_ATTEMPT_SCHEMA = 'open-scaffold.evolution-attempt.v1';
 export const EVOLUTION_FRONTIER_SCHEMA = 'open-scaffold.evolution-frontier.v1';
 const RUN_SCHEMA = 'open-scaffold.run.v1';
 const EVALUATION_SCHEMA = 'open-scaffold.evaluation.v1';
+const DISPATCH_RECEIPT_SCHEMA = 'open-scaffold.dispatch-receipt.v1';
 
 export const EVOLUTION_STRATEGIES = ['manual', 'greedy', 'tournament', 'novelty', 'map_elites', 'custom'] as const;
 export type EvolutionStrategy = (typeof EVOLUTION_STRATEGIES)[number];
@@ -69,6 +70,8 @@ export interface WriteEvolutionResult {
 export interface RecordEvolutionAttemptOptions {
   runPath: string;
   evaluationPath?: string;
+  receiptPaths?: string[];
+  evidencePaths?: string[];
   decision: EvolutionDecision;
   score?: number;
   rationale: string;
@@ -148,6 +151,17 @@ function repoRelativePathExists(root: string, ref: string): boolean {
   const absolute = isAbsolute(ref) ? ref : resolve(realRoot, ref);
   if (!isInsideRoot(realRoot, absolute)) return false;
   return existsSync(absolute);
+}
+
+function adapterRefRelativeToRoot(root: string, refPath: string, label: string): string {
+  const realRoot = rootRealpath(root);
+  const absolute = isAbsolute(refPath) ? resolve(refPath) : resolve(realRoot, refPath);
+  if (!existsSync(absolute)) throw new Error(`${label} does not exist: ${refPath}`);
+  const real = realpathSync(absolute);
+  if (!isInsideRoot(realRoot, real)) throw new Error(`${label} must stay under the scaffold repository root: ${refPath}`);
+  const rel = toPosix(relative(realRoot, real));
+  if (isPrivatePath(rel)) throw new Error(`Reference points at private/internal workspace state: ${rel}`);
+  return rel;
 }
 
 function sourceFromPlan(sourcePath: string, root: string): EvolutionSource {
@@ -342,6 +356,30 @@ function readEvaluationSummary(evaluationPath: string, root: string): Record<str
   };
 }
 
+function readDispatchReceiptSummary(receiptPath: string, root: string, expectedRunId: string | null): Record<string, unknown> {
+  const receiptRef = adapterRefRelativeToRoot(root, receiptPath, 'Dispatch receipt');
+  const parsed = readJson(receiptPath);
+  if (!isRecord(parsed) || parsed.schema_version !== DISPATCH_RECEIPT_SCHEMA) {
+    throw new Error(`Dispatch receipt must declare schema_version: ${DISPATCH_RECEIPT_SCHEMA}`);
+  }
+  const receiptRunId = asString(parsed.run_id);
+  if (!receiptRunId) throw new Error('Dispatch receipt must include run_id.');
+  if (expectedRunId && receiptRunId !== expectedRunId) {
+    throw new Error(`Dispatch receipt run_id ${receiptRunId} does not match run packet ${expectedRunId}.`);
+  }
+  return {
+    receiptPath: receiptRef,
+    receiptId: asString(parsed.receipt_id),
+    runId: receiptRunId,
+    adapterId: asString(parsed.adapter_id),
+    status: asString(parsed.status),
+  };
+}
+
+function uniqueRefs(refs: string[]): string[] {
+  return [...new Set(refs)];
+}
+
 function readAttempts(attemptsPath: string): Array<Record<string, unknown>> {
   if (!existsSync(attemptsPath)) return [];
   const text = readFileSync(attemptsPath, 'utf8');
@@ -378,16 +416,21 @@ export function recordEvolutionAttempt(loopDir: string, options: RecordEvolution
   if (runId && evaluationRunId && runId !== evaluationRunId) {
     throw new Error(`Evaluation run_id ${evaluationRunId} does not match run packet ${runId}.`);
   }
+  const adapterReceipts = (options.receiptPaths ?? []).map((receiptPath) => readDispatchReceiptSummary(isAbsolute(receiptPath) ? receiptPath : resolve(root, receiptPath), root, runId));
+  const adapterReceiptRefs = adapterReceipts.map((receipt) => asString(receipt.receiptPath)).filter((value): value is string => Boolean(value));
+  const adapterEvidenceRefs = (options.evidencePaths ?? []).map((evidencePath) => adapterRefRelativeToRoot(root, isAbsolute(evidencePath) ? evidencePath : resolve(root, evidencePath), 'Adapter evidence'));
   const attemptId = runId ?? `attempt-${shortDigest([asString(run.runPacket) ?? options.runPath])}`;
   const attempts = readAttempts(attemptsPath);
   if (attempts.some((attempt) => attempt.attempt_id === attemptId)) {
     throw new Error(`Evolution attempt already recorded: ${attemptId}`);
   }
   const now = options.now ?? new Date();
-  const evidenceRefs = [
+  const evidenceRefs = uniqueRefs([
     ...(asStringArray(run.evidenceRefs)),
     ...(evalSummary ? [asString(evalSummary.evaluationPath)].filter((value): value is string => Boolean(value)) : []),
-  ];
+    ...adapterReceiptRefs,
+    ...adapterEvidenceRefs,
+  ]);
   const attempt = {
     schema: EVOLUTION_ATTEMPT_SCHEMA,
     attempt_id: attemptId,
@@ -402,6 +445,7 @@ export function recordEvolutionAttempt(loopDir: string, options: RecordEvolution
     score: options.score ?? null,
     rationale: options.rationale,
     evidence_refs: evidenceRefs,
+    adapter_receipts: adapterReceiptRefs,
     boundary: boundary(),
   };
   let frontier: Record<string, unknown> | null = null;
@@ -523,6 +567,7 @@ export function validateEvolutionLoopDir(loopDir: string, root = process.cwd()):
       validateBoundary(attempt.boundary, failures, attemptsPath, 'evolution.attempt');
       validateRef(attempt.run_packet, failures, warnings, root, attemptsPath, 'evolution.attempt.run_packet');
       if (attempt.evaluation) validateRef(attempt.evaluation, failures, warnings, root, attemptsPath, 'evolution.attempt.evaluation');
+      for (const ref of Array.isArray(attempt.adapter_receipts) ? attempt.adapter_receipts : []) validateRef(ref, failures, warnings, root, attemptsPath, 'evolution.attempt.adapter_receipt');
       for (const ref of Array.isArray(attempt.evidence_refs) ? attempt.evidence_refs : []) validateRef(ref, failures, warnings, root, attemptsPath, 'evolution.attempt.evidence_ref');
     }
   } catch (error) {

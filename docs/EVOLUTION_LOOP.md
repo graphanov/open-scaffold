@@ -48,16 +48,21 @@ osc evolve init .osc/plans/active/087-demo.md \
   --strategy greedy
 ```
 
-Record an attempt from a run packet and optional evaluation envelope:
+Record an attempt from a run packet, optional evaluation envelope, and optional adapter-output refs:
 
 ```bash
 osc evolve record .osc/evolution/demo-loop \
   --run .osc/runs/demo-run/run.json \
   --evaluation docs/evidence/demo-evaluation.json \
+  --receipt .osc/runs/demo-run/dispatch-receipt.json \
+  --evidence .osc/runs/demo-run/runtime-omx-evidence.md \
+  --evidence .osc/runs/demo-run/runtime-omx.log \
   --decision promote \
   --score 0.93 \
   --rationale "Best evidence so far."
 ```
+
+`--receipt` is specialized for `open-scaffold.dispatch-receipt.v1` dispatch receipts and must match the run packet `run_id`. `--evidence` is repeatable for curated repo-local adapter evidence or logs. Missing refs, outside-repo refs, and private/internal refs are rejected before the attempt journal or frontier is mutated.
 
 Check loop structure:
 
@@ -95,7 +100,7 @@ Each `attempts.jsonl` line summarizes one candidate attempt:
 - `decision`: `promote`, `reject`, `retry`, or `block`
 - optional numeric `score`
 - required `rationale`
-- evidence refs
+- evidence refs, including optional adapter dispatch receipts;
 - boundary flags
 
 The journal is append-only in spirit: record another attempt rather than rewriting what happened.
@@ -131,6 +136,7 @@ Allowed:
 
 - record a loop from a plan or run packet;
 - append curated run/evaluation attempts;
+- record adapter dispatch receipts and repo-local adapter evidence/log refs as attempt evidence;
 - promote a frontier with rationale;
 - validate structure, refs, duplicate attempt ids, private-path leaks, and unsupported boundary claims;
 - compose with `osc run`, `osc eval`, and `osc audit`.
@@ -160,12 +166,13 @@ That makes OMX the first serious runtime-engine direction without making the cor
 ## Minimal example
 
 ```text
-1. `osc run <plan> --runtime omx --workflow plan` creates a run packet.
-2. An OMX adapter/runtime executes the attempt and returns evidence.
-3. `osc eval init/check` records acceptance-criteria evaluation.
-4. `osc evolve record` appends the attempt.
-5. If the attempt is best so far, `--decision promote` updates `frontier.json`.
-6. The coordinator chooses: retry, create next slice, close, or block.
+1. `osc evolve init <plan-or-run> --out .osc/evolution/<loop_id>` creates the loop.
+2. `osc run <plan> --runtime omx --workflow plan` creates a run packet.
+3. `open-scaffold-runtime-omx .osc/runs/<run_id>/run.json` validates the OMX `$ralplan` handoff and writes receipt/evidence without spawning by default.
+4. `osc eval init/check` records acceptance-criteria evaluation when needed.
+5. `osc evolve record ... --receipt .osc/runs/<run_id>/dispatch-receipt.json --evidence .osc/runs/<run_id>/runtime-omx-evidence.md` appends the attempt.
+6. If the attempt is best so far, `--decision promote` updates `frontier.json`.
+7. The coordinator chooses: retry, create next slice, close, or block.
 ```
 
 This is the durable shape behind an agentic improvement loop: attempts can be executed by OMX or another lane, but the project can still reconstruct what was tried, what evidence exists, which attempt is current frontier, and why.
