@@ -251,6 +251,34 @@ This check proves only local artifact presence and byte-level digest consistency
 
 Future work can define parent links, Merkle batch roots, envelope self-digests, and external-anchor receipt shape. Provider submission, key custody, network retries, legal attestation, runtime event capture, and systems-of-record audit logs belong to optional adapters or external systems.
 
+## Evolution loop
+
+A single evaluation envelope answers how one run or plan result maps to acceptance criteria. An evolution loop records multiple attempts against the same objective and the explicit frontier decision between them.
+
+The v1 CLI surface is:
+
+```bash
+osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>]
+osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text>
+osc evolve check <loop-dir>
+```
+
+It writes curated loop state under `.osc/evolution/<loop_id>/`:
+
+```text
+loop.json
+attempts.jsonl
+frontier.json
+```
+
+The bridge is:
+
+```text
+plan/spec -> run attempts -> evaluation envelopes -> attempt journal -> frontier -> next attempt | next slice | close | block
+```
+
+`osc evolve` is structure-only. It does not spawn runtimes, execute strategies, rank models, certify compliance, approve release, or replace human judgment. It is designed so OMX-based agentic runtime packages, other adapters, coordinators, CI, or humans can execute attempts externally and promote only the curated evidence back into Open Scaffold. See [`docs/EVOLUTION_LOOP.md`](EVOLUTION_LOOP.md).
+
 ## Postflight checklist
 
 Before a slice is called closed, answer these in writing:

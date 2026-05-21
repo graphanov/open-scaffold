@@ -1,7 +1,7 @@
 # Open Scaffold Project Wiki Index
 
 > Public-safe compiled knowledge for Open Scaffold as a body of work. This is not the task board, release log, or product reference.
-> Last updated: 2026-05-18 | Total pages: 18
+> Last updated: 2026-05-21 | Total pages: 18
 
 ## Meta / Operating Contracts
 

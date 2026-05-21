@@ -1,7 +1,10 @@
 # Open Scaffold Project Wiki Log
-
 > Chronological record of project wiki actions. Append-only.
 > Format: `## [YYYY-MM-DD] action | subject`
+
+## [2026-05-21] implement | Evolution loop contract
+- Added `docs/EVOLUTION_LOOP.md` and `osc evolve init|record|check` as a contract-first attempt/frontier ledger for multi-attempt improvement loops.
+- Clarified that the OMX-based agentic runtime/engine path can execute attempts externally while Open Scaffold core records plans, run packets, evaluations, audit/evolution state, and approval boundaries.
 
 ## [2026-05-20] reconcile | Agent runtime selection vision
 - Closed `030-agent-runtime-selection-vision` against existing three-lane sparring evidence and public runtime-profile/adapter documentation.

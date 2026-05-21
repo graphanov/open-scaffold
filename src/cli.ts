@@ -6,6 +6,7 @@ import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type Execut
 import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
 import { collectEvidence } from './evidence.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
+import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, recordEvolutionAttempt, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
 import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
@@ -39,6 +40,9 @@ Usage:
   osc eval check <evaluation-path>
   osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]
   osc audit check <audit-manifest-path>
+  osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>]
+  osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text>
+  osc evolve check <loop-dir>
   osc verify
   osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]
   osc runtimes list [--json]
@@ -1190,6 +1194,178 @@ function evalCommand(args: string[]): void {
   process.exit(2);
 }
 
+function printEvolutionUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> | osc evolve check <loop-dir>', stream);
+}
+
+function takeEvolutionValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${flag}`);
+    process.exit(2);
+  }
+  return value;
+}
+
+function parseEvolutionStrategy(value: string): EvolutionStrategy {
+  if ((EVOLUTION_STRATEGIES as readonly string[]).includes(value)) return value as EvolutionStrategy;
+  console.error(`Invalid value for --strategy: ${value}. Expected one of: ${EVOLUTION_STRATEGIES.join(', ')}`);
+  printEvolutionUsage();
+  process.exit(2);
+}
+
+function parseEvolutionDecision(value: string): EvolutionDecision {
+  if ((EVOLUTION_DECISIONS as readonly string[]).includes(value)) return value as EvolutionDecision;
+  console.error(`Invalid value for --decision: ${value}. Expected one of: ${EVOLUTION_DECISIONS.join(', ')}`);
+  printEvolutionUsage();
+  process.exit(2);
+}
+
+function evolutionRootFor(path: string): string {
+  return findScaffoldRoot(path) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
+}
+
+function evolutionCommand(args: string[]): void {
+  const [subcommand, sourceOrPath, ...rest] = args;
+  if (subcommand === undefined || isHelpArg(subcommand)) {
+    printEvolutionUsage('stdout');
+    return;
+  }
+
+  if (subcommand === 'init') {
+    if (!sourceOrPath) {
+      printEvolutionUsage();
+      process.exit(2);
+    }
+    let outPath: string | null = null;
+    let strategy: EvolutionStrategy = 'manual';
+    for (let i = 0; i < rest.length; i += 1) {
+      const flag = rest[i];
+      switch (flag) {
+        case '--out':
+        case '--output':
+          outPath = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--strategy':
+          strategy = parseEvolutionStrategy(takeEvolutionValue(rest, i, flag));
+          i += 1;
+          break;
+        default:
+          console.error(`Unknown option for evolve init: ${flag}`);
+          printEvolutionUsage();
+          process.exit(2);
+      }
+    }
+    try {
+      const root = evolutionRootFor(dirname(resolve(sourceOrPath)));
+      const result = writeEvolutionLoop(sourceOrPath, outPath ?? '', root, { strategy });
+      console.log(`Created evolution loop: ${result.loopDir}`);
+      console.log(`  Loop: ${result.loopPath}`);
+      console.log(`  Attempts: ${result.attemptsPath}`);
+      console.log(`  Frontier: ${result.frontierPath}`);
+      console.log('Note: this records loop state only; Open Scaffold core does not spawn runtimes, rank models, certify compliance, or approve release.');
+      return;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  }
+
+  if (subcommand === 'record') {
+    if (!sourceOrPath) {
+      printEvolutionUsage();
+      process.exit(2);
+    }
+    let runPath: string | null = null;
+    let evaluationPath: string | undefined;
+    let decision: EvolutionDecision | null = null;
+    let score: number | undefined;
+    let rationale = '';
+    for (let i = 0; i < rest.length; i += 1) {
+      const flag = rest[i];
+      switch (flag) {
+        case '--run':
+          runPath = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--evaluation':
+          evaluationPath = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--decision':
+          decision = parseEvolutionDecision(takeEvolutionValue(rest, i, flag));
+          i += 1;
+          break;
+        case '--score': {
+          const raw = takeEvolutionValue(rest, i, flag);
+          score = Number(raw);
+          if (!Number.isFinite(score)) {
+            console.error(`Invalid value for --score: ${raw}. Expected a number between 0 and 1.`);
+            process.exit(2);
+          }
+          i += 1;
+          break;
+        }
+        case '--rationale':
+          rationale = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        default:
+          console.error(`Unknown option for evolve record: ${flag}`);
+          printEvolutionUsage();
+          process.exit(2);
+      }
+    }
+    if (!runPath) {
+      console.error('Missing required option for evolve record: --run <run-packet>');
+      process.exit(2);
+    }
+    if (!decision) {
+      console.error('Missing required option for evolve record: --decision <promote|reject|retry|block>');
+      process.exit(2);
+    }
+    try {
+      const root = evolutionRootFor(resolve(sourceOrPath));
+      const result = recordEvolutionAttempt(sourceOrPath, { runPath, evaluationPath, decision, score, rationale }, root);
+      console.log(`Recorded evolution attempt: ${String(result.attempt.attempt_id)}`);
+      if (result.frontierUpdated) console.log(`Updated frontier: ${String(result.attempt.attempt_id)}`);
+      console.log('Note: this recorded an attempt decision only; scorer output is evidence, not automatic approval.');
+      return;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  }
+
+  if (subcommand === 'check') {
+    if (!sourceOrPath) {
+      printEvolutionUsage();
+      process.exit(2);
+    }
+    if (rest.length > 0) {
+      console.error(`Unknown option for evolve check: ${rest[0]}`);
+      printEvolutionUsage();
+      process.exit(2);
+    }
+    const root = evolutionRootFor(resolve(sourceOrPath));
+    const result = validateEvolutionLoopDir(sourceOrPath, root);
+    for (const failure of result.failures) {
+      console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
+    }
+    for (const warning of result.warnings) {
+      console.warn(`WARN ${warning.code}: ${warning.message}${warning.path ? ` (${warning.path})` : ''}`);
+    }
+    if (!result.ok) process.exit(1);
+    console.log(`PASS evolution loop structure valid; ${result.warnings.length} warning(s)`);
+    console.log('Note: this check validates curated loop state only; it does not execute attempts, rank models, certify compliance, or approve release.');
+    return;
+  }
+
+  printEvolutionUsage();
+  process.exit(2);
+}
+
 function runtimes(args: string[]): void {
   const [subcommand, ...rest] = args;
   if (subcommand === 'list') {
@@ -1278,6 +1454,9 @@ async function main(): Promise<void> {
       return;
     case 'audit':
       auditCommand(args);
+      return;
+    case 'evolve':
+      evolutionCommand(args);
       return;
     case 'evidence':
       evidenceCommand(args);

@@ -14,6 +14,7 @@ This document is the full ontology. Most readers do not need every protocol page
 - Wiring task/run identity into a coordinator or task system: [`docs/TASK_RUN_MODEL.md`](TASK_RUN_MODEL.md).
 - Understanding runtime handoff progressively: [`docs/RUNTIME_SELECTION.md`](RUNTIME_SELECTION.md) for choosing a lane, [`docs/RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md) for profile metadata, then [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md) and [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md) for adapter/runtime responsibilities.
 - Closing a slice and producing evidence: [`docs/SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md).
+- Recording multi-attempt improvement loops and frontier promotion: [`docs/EVOLUTION_LOOP.md`](EVOLUTION_LOOP.md).
 - Reading public mentions of named tools (Hermes, OMC, OMX, Discord, etc.): [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) for the public/private/adapter labels.
 
 ## Layers
@@ -31,6 +32,7 @@ Open Scaffold core owns the portable project substrate:
 - `docs/GLASS_COCKPIT_PROTOCOL.md` — runtime-neutral event vocabulary for status, blockers, questions, approvals, evidence receipts, PR links, and build-in-public streams.
 - `docs/RUNTIME_BINDING_CONTRACT.md` — binding lifecycle and responsibilities for OMC/OMX/plain-agent/human lanes that consume `run.json` work packages (run packets) outside core.
 - `docs/SLICE_CLOSE_PROTOCOL.md` — evidence receipts, postflight decisions, approval strength, correction routing, and next-slice inheritance.
+- `docs/EVOLUTION_LOOP.md` — multi-attempt loop state, attempt journals, frontier promotion, and improvement routing.
 - `verify.sh` / `osc verify` — methodology compliance checks.
 - `.github/` templates — issue and PR traceability for GitHub-centered workflows.
 
@@ -178,6 +180,7 @@ Claude Code, Codex, Gemini, Claw/OpenClaw, and custom agents can operate Open Sc
 OMC is a Claude Code execution/orchestration lane.
 OMX is a Codex execution/orchestration lane.
 OMX is not automatically the runtime engine for Hermes or OMC; it becomes one only when a coordinator dispatches a bounded package into an OMX/Codex session.
+Open Scaffold can invest heavily in an OMX-based agentic runtime/engine path through explicit runtime packages such as `packages/runtime-omx/` while keeping core contracts, evidence, and approval boundaries separate from process spawning.
 clawhip-style tooling is routing/status/event transport, not the planner or executor.
 Discord is a glass cockpit, not canonical state.
 A chat thread is a binding on a task/run, not the task/run itself.
@@ -211,6 +214,7 @@ User selects runtime
   -> Adapter/coordinator launches the actual runtime
   -> Runtime does the work
   -> Evidence comes back into Open Scaffold
+  -> Evaluation/audit envelopes and optional evolution-loop attempts/frontier record what happened
   -> Slice close records approval, corrections, or next-slice inheritance
 ```
 

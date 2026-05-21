@@ -104,6 +104,24 @@ describe('audit manifest generation', () => {
     expect(manifest.notes.join('\n')).toContain('does not certify correctness, compliance, approval, runtime execution, model quality, or external anchoring');
   });
 
+  it('renders evolution loop artifacts as explicit audit roles', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    mkdirSync(join(root, '.osc/evolution/demo-loop'), { recursive: true });
+    writeFileSync(join(root, '.osc/evolution/demo-loop/loop.json'), '{}\n');
+    writeFileSync(join(root, '.osc/evolution/demo-loop/attempts.jsonl'), '');
+    writeFileSync(join(root, '.osc/evolution/demo-loop/frontier.json'), '{}\n');
+
+    const manifest = JSON.parse(renderAuditManifest(planPath, [
+      { role: 'evolution_loop', path: '.osc/evolution/demo-loop/loop.json' },
+      { role: 'evolution_attempts', path: '.osc/evolution/demo-loop/attempts.jsonl' },
+      { role: 'evolution_frontier', path: '.osc/evolution/demo-loop/frontier.json' },
+    ], root, { now: new Date('2026-05-21T12:00:00.000Z') }));
+
+    expect(manifest.artifacts.map((artifact: any) => artifact.role)).toEqual(['plan', 'evolution_loop', 'evolution_attempts', 'evolution_frontier']);
+    expect(validateAuditManifestText(JSON.stringify(manifest, null, 2), join(root, 'audit.json'), root).ok).toBe(true);
+  });
+
   it('preserves the user-supplied repo-relative symlink path while still hashing the target bytes', () => {
     const root = tempRepo();
     const planPath = writePlan(root);
