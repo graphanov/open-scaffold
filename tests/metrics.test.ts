@@ -91,7 +91,9 @@ describe('osc metrics', () => {
     expect(metrics.evidence.with_evidence_count).toBe(3);
     expect(metrics.evidence.completeness_percentage).toBe(60);
     expect(metrics.approval.distribution).toEqual({ approved: 1, weak_approved: 1, rejected: 1, blocked: 0, unknown: 2 });
-    expect(metrics.cycle_time.mean_days).toBeCloseTo(9.33, 2);
+    expect(metrics.cycle_time.sample_size).toBe(5);
+    expect(metrics.cycle_time.insufficient_data_count).toBe(0);
+    expect(metrics.cycle_time.mean_days).toBeCloseTo(5.6, 2);
     expect(metrics.cycle_time.median_days).toBe(7);
     expect(metrics.cycle_time.p90_days).toBe(14);
     expect(metrics.velocity.lookback_weeks).toBe(4);
@@ -120,6 +122,12 @@ describe('osc metrics', () => {
 
   it('prints CLI JSON and table output', () => {
     const root = populatedScaffold();
+
+    const defaultTable = spawnSync(tsx, [cli, 'metrics'], { cwd: root, encoding: 'utf8' });
+    expect(defaultTable.status).toBe(0);
+    expect(defaultTable.stderr).toBe('');
+    expect(defaultTable.stdout).toContain('Plan distribution');
+    expect(defaultTable.stdout).toContain('Evidence completeness');
 
     const json = spawnSync(tsx, [cli, 'metrics', '--json', '--lookback', '4'], { cwd: root, encoding: 'utf8' });
     expect(json.status).toBe(0);

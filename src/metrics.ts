@@ -322,7 +322,7 @@ export function computeMetrics(options: MetricsOptions = {}): ScaffoldMetrics {
 
     if (plan.stage === 'done') {
       if (close.date && close.date >= windowStart && close.date <= now) closedInWindow += 1;
-      if (close.date && close.source !== 'mtime' && close.date >= createdAt) {
+      if (close.date && close.date >= createdAt) {
         cycleDurations.push(daysBetween(createdAt, close.date));
       } else {
         insufficientCycleData += 1;

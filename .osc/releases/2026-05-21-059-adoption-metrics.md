@@ -20,15 +20,16 @@ Added a local `osc metrics` command that turns scaffold state into numerical hea
 - `npm test -- --run tests/metrics.test.ts` — pass; 1 file / 6 tests.
 - `npm test -- --run` — pass; 32 files / 278 tests.
 - `npm run build` — pass; core TypeScript and runtime OMX TypeScript builds succeeded.
+- `node dist/cli.js metrics` — pass; default human-readable metrics table renders without flags.
 - `node dist/cli.js metrics --json | jq .summary.total_plans` — pass; JSON parsed and returned `89` for the current repository metrics view.
-- `node dist/cli.js metrics --json | jq .cycle_time.mean_days` — pass; JSON parsed and returned `0.96` for the current repository metrics view.
+- `node dist/cli.js metrics --json | jq .cycle_time.mean_days` — pass; JSON parsed and returned `0.99` for the current repository metrics view.
 - `node dist/cli.js metrics --lookback 4 --verbose` — pass; verbose per-plan output rendered without errors.
 - `npm pack --dry-run --json` — pass; package candidate `open-scaffold@0.4.11` includes `dist/metrics.js` and `dist/metrics.d.ts`.
 - `./verify.sh --strict` — pass; 10 pass / 0 fail / 0 warn.
 
 ## Outcome
 
-`osc metrics` now reads only local scaffold files and local git history when available. It reports factual counts and percentages without benchmarking or ranking team performance, and it falls back to file modification timestamps with a warning when git history is unavailable. The slice deliberately does not add charts, dashboards, metrics snapshots, databases, analytics services, network collectors, runtime spawning, npm publication, GitHub Release changes, or merge automation.
+`osc metrics` now reads only local scaffold files and local git history when available. It reports factual counts and percentages without benchmarking or ranking team performance, and it falls back to file modification timestamps with a warning when git history is unavailable. Codex review round 1 found two actionable edges before this note was finalized: the no-flag `osc metrics` path now renders the default table, and done plans without evidence-note dates now contribute mtime fallback cycle-time samples instead of being marked insufficient. The slice deliberately does not add charts, dashboards, metrics snapshots, databases, analytics services, network collectors, runtime spawning, npm publication, GitHub Release changes, or merge automation.
 
 ## Follow-up
 

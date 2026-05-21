@@ -1415,7 +1415,7 @@ function takeMetricsValue(args: string[], index: number, flag: string): string {
 }
 
 function metricsCommand(args: string[]): void {
-  if (args[0] === undefined || isHelpArg(args[0])) {
+  if (isHelpArg(args[0])) {
     printMetricsUsage('stdout');
     return;
   }
