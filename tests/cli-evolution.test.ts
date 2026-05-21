@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -98,10 +98,44 @@ describe('osc evolve CLI', () => {
     const loopDir = createdLine?.replace('Created evolution loop: ', '').trim();
 
     expect(loopDir).toBeTruthy();
-    expect(dirname(loopDir!)).toBe(join(root, '.osc/evolution'));
+    expect(realpathSync(dirname(loopDir!))).toBe(realpathSync(join(root, '.osc/evolution')));
     expect(loopDir).toMatch(/087-demo-evolution$/);
     expect(existsSync(join(loopDir!, 'loop.json'))).toBe(true);
     expect(existsSync(join(root, '.osc/evolution/loop.json'))).toBe(false);
+  });
+
+  it('preserves relative evolve paths from a subdirectory before using the scaffold root', () => {
+    const { root } = tempRepo();
+    const subdir = join(root, 'subdir');
+    mkdirSync(subdir, { recursive: true });
+
+    const output = execFileSync(tsx, [cli, 'evolve', 'init', '../.osc/plans/active/087-demo.md'], { cwd: subdir, encoding: 'utf8' });
+    const createdLine = output.split('\n').find((line) => line.startsWith('Created evolution loop: '));
+    const loopDir = createdLine?.replace('Created evolution loop: ', '').trim();
+    expect(loopDir).toBeTruthy();
+    expect(realpathSync(dirname(loopDir!))).toBe(realpathSync(join(root, '.osc/evolution')));
+
+    const relativeLoopDir = `../.osc/evolution/${basename(loopDir!)}`;
+    const record = execFileSync(tsx, [
+      cli,
+      'evolve',
+      'record',
+      relativeLoopDir,
+      '--run',
+      '../.osc/runs/demo-run/run.json',
+      '--evaluation',
+      '../docs/evidence/evaluation.json',
+      '--decision',
+      'promote',
+      '--rationale',
+      'Best subdir evidence.',
+    ], { cwd: subdir, encoding: 'utf8' });
+    expect(record).toContain('Recorded evolution attempt: demo-run');
+
+    const check = execFileSync(tsx, [cli, 'evolve', 'check', relativeLoopDir], { cwd: subdir, encoding: 'utf8' });
+    expect(check).toContain('PASS evolution loop structure valid');
+    const frontier = JSON.parse(readFileSync(join(loopDir!, 'frontier.json'), 'utf8'));
+    expect(frontier.current).toMatchObject({ attempt_id: 'demo-run', rationale: 'Best subdir evidence.' });
   });
 
   it('records a promoted attempt and updates frontier with explicit rationale', () => {

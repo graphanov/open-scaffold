@@ -1258,8 +1258,10 @@ function evolutionCommand(args: string[]): void {
       }
     }
     try {
-      const root = evolutionRootFor(dirname(resolve(sourceOrPath)));
-      const result = writeEvolutionLoop(sourceOrPath, outPath ?? '', root, { strategy });
+      const sourcePath = resolve(sourceOrPath);
+      const root = evolutionRootFor(dirname(sourcePath));
+      const outDir = outPath ? resolve(outPath) : '';
+      const result = writeEvolutionLoop(sourcePath, outDir, root, { strategy });
       console.log(`Created evolution loop: ${result.loopDir}`);
       console.log(`  Loop: ${result.loopPath}`);
       console.log(`  Attempts: ${result.attemptsPath}`);
@@ -1326,8 +1328,11 @@ function evolutionCommand(args: string[]): void {
       process.exit(2);
     }
     try {
-      const root = evolutionRootFor(resolve(sourceOrPath));
-      const result = recordEvolutionAttempt(sourceOrPath, { runPath, evaluationPath, decision, score, rationale }, root);
+      const loopDir = resolve(sourceOrPath);
+      const root = evolutionRootFor(loopDir);
+      const absoluteRunPath = resolve(runPath);
+      const absoluteEvaluationPath = evaluationPath ? resolve(evaluationPath) : undefined;
+      const result = recordEvolutionAttempt(loopDir, { runPath: absoluteRunPath, evaluationPath: absoluteEvaluationPath, decision, score, rationale }, root);
       console.log(`Recorded evolution attempt: ${String(result.attempt.attempt_id)}`);
       if (result.frontierUpdated) console.log(`Updated frontier: ${String(result.attempt.attempt_id)}`);
       console.log('Note: this recorded an attempt decision only; scorer output is evidence, not automatic approval.');
@@ -1348,8 +1353,9 @@ function evolutionCommand(args: string[]): void {
       printEvolutionUsage();
       process.exit(2);
     }
-    const root = evolutionRootFor(resolve(sourceOrPath));
-    const result = validateEvolutionLoopDir(sourceOrPath, root);
+    const loopDir = resolve(sourceOrPath);
+    const root = evolutionRootFor(loopDir);
+    const result = validateEvolutionLoopDir(loopDir, root);
     for (const failure of result.failures) {
       console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
     }
