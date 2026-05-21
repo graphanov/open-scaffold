@@ -128,6 +128,16 @@ function parseIsoDatePrefix(raw: string): Date | null {
   return parseIsoDateOnly(match[1]);
 }
 
+function assertValidIsoDatePrefix(raw: string, label: string): void {
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (!match) throw new Error(`Invalid ISO 8601 date for ${label}: ${raw}`);
+  try {
+    parseIsoDateOnly(match[1]);
+  } catch {
+    throw new Error(`Invalid ISO 8601 date for ${label}: ${raw}`);
+  }
+}
+
 export function parseSinceDate(value: string, now = new Date()): Date {
   const raw = value.trim();
   if (!raw) throw new Error('Missing date value for --since');
@@ -136,6 +146,7 @@ export function parseSinceDate(value: string, now = new Date()): Date {
   if (isoDateOnly) return isoDateOnly;
 
   if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+    assertValidIsoDatePrefix(raw, '--since');
     const parsed = new Date(raw);
     if (Number.isNaN(parsed.getTime())) throw new Error(`Invalid ISO 8601 date for --since: ${raw}`);
     return parsed;
@@ -253,10 +264,17 @@ function evidenceTextMatchesSlug(text: string, slug: string): boolean {
   return slugTokenPattern.test(text);
 }
 
-function evidenceForPlan(notes: EvidenceNote[], slug: string): EvidenceNote | null {
-  const matches = notes.filter((note) => evidencePathMatchesSlug(note.relativePath, slug) || evidenceTextMatchesSlug(note.text, slug));
+function newestEvidence(matches: EvidenceNote[]): EvidenceNote | null {
   if (matches.length === 0) return null;
   return matches.sort((a, b) => (a.date?.getTime() ?? 0) - (b.date?.getTime() ?? 0)).at(-1) ?? null;
+}
+
+function evidenceForPlan(notes: EvidenceNote[], slug: string): EvidenceNote | null {
+  const pathMatches = notes.filter((note) => evidencePathMatchesSlug(note.relativePath, slug));
+  const directMatch = newestEvidence(pathMatches);
+  if (directMatch) return directMatch;
+  const textMatches = notes.filter((note) => evidenceTextMatchesSlug(note.text, slug));
+  return newestEvidence(textMatches);
 }
 
 function approvalFromEvidence(note: EvidenceNote | null): ApprovalStatus {

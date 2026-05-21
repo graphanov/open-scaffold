@@ -31,13 +31,14 @@ function writePlan(root: string, stage: 'active' | 'backlog' | 'blocked' | 'done
   return path;
 }
 
-function writeEvidence(root: string, date: string, slug: string, approval: string) {
+function writeEvidence(root: string, date: string, slug: string, approval: string, extra = '') {
   writeFileSync(join(root, `.osc/releases/${date}-${slug}.md`), [
     `# Release / Evidence Note: ${slug}`,
     '',
     '## Summary',
     '',
     `Evidence for ${slug}.`,
+    extra,
     '',
     '## Outcome',
     '',
@@ -120,6 +121,7 @@ describe('osc metrics', () => {
     expect(parseSinceDate('last month', new Date('2026-03-31T12:00:00.000Z')).toISOString()).toBe('2026-02-28T00:00:00.000Z');
     expect(parseSinceDate('last month', new Date('2024-03-31T12:00:00.000Z')).toISOString()).toBe('2024-02-29T00:00:00.000Z');
     expect(parseSinceDate('last month', new Date('2026-01-31T12:00:00.000Z')).toISOString()).toBe('2025-12-31T00:00:00.000Z');
+    expect(() => parseSinceDate('2026-02-30T00:00:00Z')).toThrow(/Invalid ISO 8601 date/);
     expect(() => parseSinceDate('01/02/2026', now)).toThrow(/Ambiguous date/);
   });
 
@@ -142,6 +144,20 @@ describe('osc metrics', () => {
     expect(shorter?.evidence_note).toBe('.osc/releases/2026-05-09-001-foo.md');
     expect(longer?.has_evidence).toBe(true);
     expect(longer?.evidence_note).toBe('.osc/releases/2026-05-10-001-foo-bar.md');
+  });
+
+  it('prefers direct evidence files over newer text-only mentions', () => {
+    const root = tempScaffold('osc-metrics-evidence-priority-');
+    writePlan(root, 'done', '001-foo', '2026-05-01');
+    writePlan(root, 'done', '002-other', '2026-05-02');
+    writeEvidence(root, '2026-05-03', '001-foo', 'weak_approved');
+    writeEvidence(root, '2026-05-20', '002-other', 'approved', 'Mentions .osc/plans/done/001-foo.md as related prior work.');
+
+    const metrics = computeMetrics({ root, now });
+    const foo = metrics.plans.find((plan) => plan.slug === '001-foo');
+
+    expect(foo?.evidence_note).toBe('.osc/releases/2026-05-03-001-foo.md');
+    expect(foo?.approval_status).toBe('weak_approved');
   });
 
   it('prints CLI JSON and table output', () => {
