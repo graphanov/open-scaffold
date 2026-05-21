@@ -2,6 +2,11 @@
 > Chronological record of project wiki actions. Append-only.
 > Format: `## [YYYY-MM-DD] action | subject`
 
+## [2026-05-21] decide | Agentic orchestration model-lab hypothesis
+- Closed `031-agentic-orchestration-model-lab-vision` against the existing three-lane orchestration sparring evidence and runtime-selection comparison corpus.
+- Added `docs/wiki/concepts/model-task-fit.md` to preserve the model/task-fit idea as a contested lab-layer hypothesis, not an Open Scaffold core routing promise.
+- Preserved the current stance: orchestration is expressible by contract, model/task observations require reproducible lab evidence, and core remains the source-of-truth substrate.
+
 ## [2026-05-21] implement | Evolution loop contract
 - Added `docs/EVOLUTION_LOOP.md` and `osc evolve init|record|check` as a contract-first attempt/frontier ledger for multi-attempt improvement loops.
 - Clarified that the OMX-based agentic runtime/engine path can execute attempts externally while Open Scaffold core records plans, run packets, evaluations, audit/evolution state, and approval boundaries.

@@ -4,7 +4,7 @@ created: 2026-05-15
 updated: 2026-05-21
 type: concept
 tags: [open-scaffold, agent-orchestration, model-routing, evolutionary-loops]
-sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/AGENTIC_RUNTIME_LAYER.md, docs/EVOLUTION_LOOP.md, .osc/plans/backlog/031-agentic-orchestration-model-lab-vision.md, .osc/plans/done/087-closed-evolution-loop-contract.md, .osc/plans/done/046-executable-open-scaffold-architecture.md]
+sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/AGENTIC_RUNTIME_LAYER.md, docs/EVOLUTION_LOOP.md, .osc/plans/done/031-agentic-orchestration-model-lab-vision.md, .osc/plans/done/087-closed-evolution-loop-contract.md, .osc/plans/done/046-executable-open-scaffold-architecture.md, docs/wiki/concepts/model-task-fit.md]
 confidence: low
 contested: true
 ---
@@ -54,7 +54,7 @@ As of 2026-05-15, agentic orchestration is a contested product hypothesis, not a
 - **Multi-attempt evolution contract:** now concrete through `docs/EVOLUTION_LOOP.md` and `osc evolve init|record|check`: plan/run attempts can be journaled, evaluated, and promoted to a frontier without core spawning.
 - **OMX-based agentic runtime path:** the preferred serious runtime-engine investment path is explicit packages/adapters around OMX / oh-my-codex, with Open Scaffold core preserving contracts/evidence and `packages/runtime-omx/` owning OMX-specific execution mechanics.
 - **Multi-agent orchestration as contract:** possible V1.x research direction after adapter conformance evidence exists.
-- **Model evaluation lab and model/task-fit map:** not Open Scaffold core; possible sibling product or community-maintained reference if evidence and demand justify it.
+- **Model evaluation lab and model/task-fit map:** not Open Scaffold core; possible sibling product or community-maintained reference if reproducible evidence and demand justify it. See [[model-task-fit]] for the narrower hypothesis.
 - **Native multi-agent runtime:** explicitly deferred; reopen only with a proofability, auditability, or governed-execution driver.
 
 Open Scaffold core stays runtime-neutral and orchestration-neutral. Multi-lane orchestration may be performed by an external coordinator using the existing run packet, evidence receipt, and slice-close contracts. The scaffold provides the evidence substrate, not the orchestrator and not the lab.
@@ -73,4 +73,4 @@ The strongest version of the idea is:
 
 The concrete near-term product path is narrower: `osc evolve` records attempts/frontiers, while OMX-based runtime packages can become the serious execution engine layer that consumes Open Scaffold run packets and returns evidence.
 
-Related: [[agent-runtime-selection]], [[run-packets]], [[evidence-first-development]], [[human-in-the-loop-governance]], [[source-of-truth-first-development]].
+Related: [[agent-runtime-selection]], [[model-task-fit]], [[run-packets]], [[evidence-first-development]], [[human-in-the-loop-governance]], [[source-of-truth-first-development]].

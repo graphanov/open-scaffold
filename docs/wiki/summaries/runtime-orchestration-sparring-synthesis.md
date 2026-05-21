@@ -1,10 +1,10 @@
 ---
 title: Runtime And Orchestration Sparring Synthesis
 created: 2026-05-15
-updated: 2026-05-15
+updated: 2026-05-21
 type: summary
 tags: [open-scaffold, agent-orchestration, runtime, evidence, product-vision]
-sources: [.osc/plans/done/030-agent-runtime-selection-vision.md, .osc/plans/backlog/031-agentic-orchestration-model-lab-vision.md, docs/wiki/concepts/agent-runtime-selection.md, docs/wiki/concepts/agentic-orchestration.md]
+sources: [.osc/plans/done/030-agent-runtime-selection-vision.md, .osc/plans/done/031-agentic-orchestration-model-lab-vision.md, docs/wiki/concepts/agent-runtime-selection.md, docs/wiki/concepts/agentic-orchestration.md, docs/wiki/concepts/model-task-fit.md]
 confidence: medium
 contested: true
 ---
@@ -87,4 +87,10 @@ Promote runtime/orchestration capability only when there is evidence beyond owne
 - at least one external user or adapter author requests the next layer;
 - any native runtime or lab direction is justified by proofability, auditability, or governed execution.
 
-Related: [[agent-runtime-selection]], [[agentic-orchestration]], [[run-packets]], [[evidence-first-development]], [[human-in-the-loop-governance]].
+## 2026-05-21 closure update
+
+The orchestration/model-lab hypothesis is closed as a no-promotion decision for Open Scaffold core. The useful durable result is the layer split: core records contracts and evidence; adapters/coordinators execute orchestration; any model/task-fit map belongs in a lab or sibling package with reproducible methodology.
+
+The new [[model-task-fit]] concept preserves the research seam without claiming model routing, benchmark results, or supported-model recommendations.
+
+Related: [[agent-runtime-selection]], [[agentic-orchestration]], [[model-task-fit]], [[run-packets]], [[evidence-first-development]], [[human-in-the-loop-governance]].
