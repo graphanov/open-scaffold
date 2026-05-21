@@ -9,7 +9,7 @@ Added a local `osc metrics` command that turns scaffold state into numerical hea
 - Roadmap / issue / task: deterministic runner selected backlog plan `059-adoption-metrics`; no GitHub issue existed for this slice.
 - Plan: `.osc/plans/done/059-adoption-metrics.md`.
 - Run ID / run packet: `N/A` — direct runner implementation; no runtime run packet needed.
-- Branch / PR: branch `cli/adoption-metrics`; PR pending.
+- Branch / PR: branch `cli/adoption-metrics`; PR https://github.com/graphanov/open-scaffold/pull/86.
 - Version candidate: `open-scaffold@0.4.11` in `package.json` / `package-lock.json` for owner-gated npm publication after merge.
 - Automation provenance: Opened/advanced by Open Scaffold runner automation; selected source `backlog_plan`.
 - Owner gates: merge, npm publication, and GitHub Release creation/latest movement remain owner-gated.
