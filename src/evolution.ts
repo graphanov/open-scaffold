@@ -530,15 +530,13 @@ export function compareEvolutionLoop(loopDir: string, options: EvolutionCompareO
     return { kind: 'message', loop: loopInfo, message: 'Only one attempt recorded; nothing to compare yet.' };
   }
 
-  const defaultA = frontierIds.previous ?? (attempts.length >= 2 ? attempts[attempts.length - 2].attemptId : null);
-  const defaultB = frontierIds.current ?? (attempts.length >= 1 ? attempts[attempts.length - 1].attemptId : null);
-  const aTarget = hasExplicitTarget ? (options.a ?? 'frontier') : defaultA;
-  const bTarget = hasExplicitTarget ? (options.b ?? 'frontier') : defaultB;
-  if (!aTarget || !bTarget) {
-    return { kind: 'message', loop: loopInfo, message: 'No comparable frontier attempts recorded yet.' };
+  const defaultA = hasExplicitTarget ? (options.a ?? 'frontier') : frontierIds.previous;
+  const defaultB = hasExplicitTarget ? (options.b ?? 'frontier') : frontierIds.current;
+  if (!defaultA || !defaultB) {
+    return { kind: 'message', loop: loopInfo, message: 'No previous frontier/current frontier comparison is recorded yet.' };
   }
-  const a = resolveAttemptTarget(aTarget, attempts, frontierIds.current);
-  const b = resolveAttemptTarget(bTarget, attempts, frontierIds.current);
+  const a = resolveAttemptTarget(defaultA, attempts, frontierIds.current);
+  const b = resolveAttemptTarget(defaultB, attempts, frontierIds.current);
   const scoreDelta = a.score !== null && b.score !== null ? Number((b.score - a.score).toFixed(6)) : null;
   const evidence = evidenceDelta(a.evidenceRefs, b.evidenceRefs);
   const attemptById = new Map(attempts.map((attempt) => [attempt.attemptId, attempt]));
@@ -579,7 +577,25 @@ function linesOrNone(lines: string[], indent = '  '): string[] {
   return lines.length > 0 ? lines.map((line) => `${indent}${line}`) : [`${indent}—`];
 }
 
+function currentFrontierAttemptId(comparison: Extract<EvolutionCompareResult, { kind: 'comparison' }>): string | null {
+  return comparison.frontierHistory.length > 0 ? comparison.frontierHistory[comparison.frontierHistory.length - 1].attemptId : null;
+}
+
+function attemptLabel(attempt: EvolutionCompareAttempt, currentAttemptId: string | null): string {
+  const decision = attempt.decision ?? 'recorded';
+  return attempt.attemptId === currentAttemptId ? `${decision}, current frontier` : decision;
+}
+
+function historyMarkers(item: { attemptId: string }, comparison: Extract<EvolutionCompareResult, { kind: 'comparison' }>, currentAttemptId: string | null): string {
+  const markers = [];
+  if (item.attemptId === comparison.a.attemptId) markers.push('A');
+  if (item.attemptId === comparison.b.attemptId) markers.push('B');
+  if (item.attemptId === currentAttemptId) markers.push('current');
+  return markers.length > 0 ? ` ← ${markers.join('/')}` : '';
+}
+
 function renderTerminalComparison(comparison: Extract<EvolutionCompareResult, { kind: 'comparison' }>): string {
+  const currentAttemptId = currentFrontierAttemptId(comparison);
   const evidenceDeltaLabel = comparison.evidence.onlyInB.length - comparison.evidence.onlyInA.length;
   const evidenceDeltaText = evidenceDeltaLabel === 0 ? '0' : `${evidenceDeltaLabel > 0 ? '+' : ''}${evidenceDeltaLabel}`;
   const lines = [
@@ -618,7 +634,7 @@ function renderTerminalComparison(comparison: Extract<EvolutionCompareResult, { 
     '',
     'Frontier history',
     ...(comparison.frontierHistory.length > 0
-      ? comparison.frontierHistory.map((item) => `  ${item.attemptId} -> ${item.decision ?? 'recorded'} (${formatScore(item.score)})${item.attemptId === comparison.a.attemptId ? ' ← A' : ''}${item.attemptId === comparison.b.attemptId ? ' ← B/current' : ''}`)
+      ? comparison.frontierHistory.map((item) => `  ${item.attemptId} -> ${item.decision ?? 'recorded'} (${formatScore(item.score)})${historyMarkers(item, comparison, currentAttemptId)}`)
       : ['  —']),
     '',
     'Use --format markdown --out <path> to export this comparison for a PR or review thread.',
@@ -627,12 +643,13 @@ function renderTerminalComparison(comparison: Extract<EvolutionCompareResult, { 
 }
 
 function renderMarkdownComparison(comparison: Extract<EvolutionCompareResult, { kind: 'comparison' }>): string {
+  const currentAttemptId = currentFrontierAttemptId(comparison);
   const evidenceDeltaLabel = comparison.evidence.onlyInB.length - comparison.evidence.onlyInA.length;
   const evidenceDeltaText = evidenceDeltaLabel === 0 ? '0' : `${evidenceDeltaLabel > 0 ? '+' : ''}${evidenceDeltaLabel}`;
   const lines = [
     `# Evolution loop: ${comparison.loop.loopDir} — A vs B`,
     '',
-    `**Comparing:** \`${comparison.a.attemptId}\` (${comparison.a.decision ?? 'recorded'}) → \`${comparison.b.attemptId}\` (${comparison.b.decision ?? 'recorded'}, current frontier)`,
+    `**Comparing:** \`${comparison.a.attemptId}\` (${attemptLabel(comparison.a, currentAttemptId)}) → \`${comparison.b.attemptId}\` (${attemptLabel(comparison.b, currentAttemptId)})`,
     '',
     '| Field | A | B | Δ |',
     '|---|---|---|---|',
@@ -656,7 +673,7 @@ function renderMarkdownComparison(comparison: Extract<EvolutionCompareResult, { 
     '',
     '## Frontier history',
     '',
-    ...(comparison.frontierHistory.length > 0 ? comparison.frontierHistory.map((item) => `- \`${item.attemptId}\` → ${item.decision ?? 'recorded'} (${formatScore(item.score)})${item.attemptId === comparison.a.attemptId ? ' ← A' : ''}${item.attemptId === comparison.b.attemptId ? ' ← B/current' : ''}`) : ['- —']),
+    ...(comparison.frontierHistory.length > 0 ? comparison.frontierHistory.map((item) => `- \`${item.attemptId}\` → ${item.decision ?? 'recorded'} (${formatScore(item.score)})${historyMarkers(item, comparison, currentAttemptId)}`) : ['- —']),
   ];
   return `${lines.join('\n')}\n`;
 }

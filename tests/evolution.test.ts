@@ -416,4 +416,37 @@ describe('evolution comparison rendering', () => {
     expect(comparison.kind).toBe('message');
     expect(renderEvolutionComparison(comparison, 'terminal')).toContain('Only one attempt recorded; nothing to compare yet.');
   });
+
+  it('does not default to last two attempts when no frontier comparison exists', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runA = writeRunPacket(root, 'attempt-a');
+    const runB = writeRunPacket(root, 'attempt-b');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+    recordEvolutionAttempt(outDir, { runPath: runA, decision: 'reject', score: 0.25, rationale: 'Rejected first.', now: new Date('2026-05-21T08:10:00.000Z') }, root);
+    recordEvolutionAttempt(outDir, { runPath: runB, decision: 'retry', score: 0.4, rationale: 'Needs another attempt.', now: new Date('2026-05-21T08:20:00.000Z') }, root);
+
+    const comparison = compareEvolutionLoop(outDir, {}, root);
+
+    expect(comparison.kind).toBe('message');
+    expect(renderEvolutionComparison(comparison, 'terminal')).toContain('No previous frontier/current frontier comparison is recorded yet.');
+  });
+
+  it('marks side B as current frontier only when B is actually the current frontier', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runA = writeRunPacket(root, 'attempt-a');
+    const runB = writeRunPacket(root, 'attempt-b');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+    recordEvolutionAttempt(outDir, { runPath: runA, decision: 'promote', score: 0.75, rationale: 'Current frontier.', now: new Date('2026-05-21T08:10:00.000Z') }, root);
+    recordEvolutionAttempt(outDir, { runPath: runB, decision: 'reject', score: 0.5, rationale: 'Rejected non-frontier.', now: new Date('2026-05-21T08:20:00.000Z') }, root);
+
+    const comparison = compareEvolutionLoop(outDir, { a: 'frontier', b: 'attempt-b' }, root);
+    const markdown = renderEvolutionComparison(comparison, 'markdown');
+
+    expect(markdown).toContain('`attempt-a` (promote, current frontier) → `attempt-b` (reject)');
+    expect(markdown).not.toContain('`attempt-b` (reject, current frontier)');
+  });
 });
