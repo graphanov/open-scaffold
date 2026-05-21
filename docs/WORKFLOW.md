@@ -83,7 +83,7 @@ For multi-attempt improvement loops, create a curated evolution ledger after the
 
 ```bash
 osc evolve init .osc/plans/active/<plan>.md --out .osc/evolution/<loop-id> --strategy manual
-osc evolve record .osc/evolution/<loop-id> --run .osc/runs/<run-id>/run.json --evaluation docs/evidence/<eval>.json --decision promote --score 0.93 --rationale "Best evidence so far."
+osc evolve record .osc/evolution/<loop-id> --run .osc/runs/<run-id>/run.json --evaluation docs/evidence/<eval>.json --receipt .osc/runs/<run-id>/dispatch-receipt.json --evidence .osc/runs/<run-id>/runtime-omx-evidence.md --decision promote --score 0.93 --rationale "Best evidence so far."
 osc evolve check .osc/evolution/<loop-id>
 ```
 

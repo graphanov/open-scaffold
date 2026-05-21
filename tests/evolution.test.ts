@@ -94,6 +94,26 @@ function writeEvaluation(root: string, runId = 'demo-run') {
   return evalPath;
 }
 
+function writeDispatchReceipt(root: string, runId = 'demo-run') {
+  const runDir = join(root, `.osc/runs/${runId}`);
+  mkdirSync(runDir, { recursive: true });
+  const receiptPath = join(runDir, 'dispatch-receipt.json');
+  const evidencePath = join(runDir, 'runtime-omx-evidence.md');
+  const logPath = join(runDir, 'runtime-omx.log');
+  writeFileSync(receiptPath, JSON.stringify({
+    schema_version: 'open-scaffold.dispatch-receipt.v1',
+    receipt_id: `runtime-omx:no-spawn-preview:${runId}`,
+    run_id: runId,
+    adapter_id: 'runtime-omx',
+    runtime_backend: 'omx',
+    artifacts: [`.osc/runs/${runId}/runtime-omx-evidence.md`, `.osc/runs/${runId}/runtime-omx.log`],
+    status: 'dry_run',
+  }, null, 2));
+  writeFileSync(evidencePath, 'runtime omx evidence');
+  writeFileSync(logPath, 'runtime omx log');
+  return { receiptPath, evidencePath, logPath };
+}
+
 describe('evolution loop rendering', () => {
   it('renders contract-first loop files from a plan without runtime spawning claims', () => {
     const root = tempRepo();
@@ -209,6 +229,85 @@ describe('evolution attempt recording and validation', () => {
     expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe('');
     const frontier = JSON.parse(readFileSync(join(outDir, 'frontier.json'), 'utf8'));
     expect(frontier.current).toBeNull();
+  });
+
+  it('records adapter receipt and evidence refs on attempts and promoted frontier', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root, 'demo-run');
+    const evalPath = writeEvaluation(root, 'demo-run');
+    const { receiptPath, evidencePath, logPath } = writeDispatchReceipt(root, 'demo-run');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+
+    const options = {
+      runPath,
+      evaluationPath: evalPath,
+      receiptPaths: [receiptPath],
+      evidencePaths: [evidencePath, logPath],
+      decision: 'promote' as const,
+      score: 0.88,
+      rationale: 'Runtime OMX preview is the best attempt so far.',
+      now: new Date('2026-05-21T08:12:00.000Z'),
+    };
+    const result = recordEvolutionAttempt(outDir, options, root);
+
+    const attempts = readFileSync(join(outDir, 'attempts.jsonl'), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    const frontier = JSON.parse(readFileSync(join(outDir, 'frontier.json'), 'utf8'));
+
+    expect(result.attempt.adapter_receipts).toEqual(['.osc/runs/demo-run/dispatch-receipt.json']);
+    expect(attempts[0].evidence_refs).toEqual(expect.arrayContaining([
+      'docs/evidence/proof.md',
+      'docs/evidence/evaluation.json',
+      '.osc/runs/demo-run/dispatch-receipt.json',
+      '.osc/runs/demo-run/runtime-omx-evidence.md',
+      '.osc/runs/demo-run/runtime-omx.log',
+    ]));
+    expect(frontier.current.evidence_refs).toEqual(expect.arrayContaining([
+      '.osc/runs/demo-run/dispatch-receipt.json',
+      '.osc/runs/demo-run/runtime-omx-evidence.md',
+      '.osc/runs/demo-run/runtime-omx.log',
+    ]));
+  });
+
+  it('rejects mismatched adapter receipt run ids before appending attempt state', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root, 'demo-run');
+    const { receiptPath } = writeDispatchReceipt(root, 'other-run');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+
+    const options = {
+      runPath,
+      receiptPaths: [receiptPath],
+      decision: 'retry' as const,
+      rationale: 'Mismatched adapter receipt should not persist.',
+    };
+    expect(() => recordEvolutionAttempt(outDir, options, root)).toThrow(/Dispatch receipt run_id other-run does not match run packet demo-run/);
+    expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe('');
+    const frontier = JSON.parse(readFileSync(join(outDir, 'frontier.json'), 'utf8'));
+    expect(frontier.current).toBeNull();
+  });
+
+  it('rejects private adapter evidence refs before appending attempt state', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root, 'demo-run');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    mkdirSync(join(root, '.osc/research'), { recursive: true });
+    const privateRef = join(root, '.osc/research/private-runtime-log.md');
+    writeFileSync(privateRef, 'private runtime log');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+
+    const options = {
+      runPath,
+      evidencePaths: [privateRef],
+      decision: 'retry' as const,
+      rationale: 'Private adapter refs should not persist.',
+    };
+    expect(() => recordEvolutionAttempt(outDir, options, root)).toThrow(/private\/internal workspace state/);
+    expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe('');
   });
 
   it('validates a loop directory and rejects duplicate attempts plus unsafe boundary claims', () => {

@@ -41,7 +41,7 @@ Usage:
   osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]
   osc audit check <audit-manifest-path>
   osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>]
-  osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text>
+  osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text>
   osc evolve check <loop-dir>
   osc verify
   osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]
@@ -1195,7 +1195,7 @@ function evalCommand(args: string[]): void {
 }
 
 function printEvolutionUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> | osc evolve check <loop-dir>', stream);
+  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> | osc evolve check <loop-dir>', stream);
 }
 
 function takeEvolutionValue(args: string[], index: number, flag: string): string {
@@ -1281,6 +1281,8 @@ function evolutionCommand(args: string[]): void {
     }
     let runPath: string | null = null;
     let evaluationPath: string | undefined;
+    const receiptPaths: string[] = [];
+    const evidencePaths: string[] = [];
     let decision: EvolutionDecision | null = null;
     let score: number | undefined;
     let rationale = '';
@@ -1293,6 +1295,14 @@ function evolutionCommand(args: string[]): void {
           break;
         case '--evaluation':
           evaluationPath = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--receipt':
+          receiptPaths.push(takeEvolutionValue(rest, i, flag));
+          i += 1;
+          break;
+        case '--evidence':
+          evidencePaths.push(takeEvolutionValue(rest, i, flag));
           i += 1;
           break;
         case '--decision':
@@ -1332,7 +1342,17 @@ function evolutionCommand(args: string[]): void {
       const root = evolutionRootFor(loopDir);
       const absoluteRunPath = resolve(runPath);
       const absoluteEvaluationPath = evaluationPath ? resolve(evaluationPath) : undefined;
-      const result = recordEvolutionAttempt(loopDir, { runPath: absoluteRunPath, evaluationPath: absoluteEvaluationPath, decision, score, rationale }, root);
+      const absoluteReceiptPaths = receiptPaths.map((receiptPath) => resolve(receiptPath));
+      const absoluteEvidencePaths = evidencePaths.map((evidencePath) => resolve(evidencePath));
+      const result = recordEvolutionAttempt(loopDir, {
+        runPath: absoluteRunPath,
+        evaluationPath: absoluteEvaluationPath,
+        receiptPaths: absoluteReceiptPaths,
+        evidencePaths: absoluteEvidencePaths,
+        decision,
+        score,
+        rationale,
+      }, root);
       console.log(`Recorded evolution attempt: ${String(result.attempt.attempt_id)}`);
       if (result.frontierUpdated) console.log(`Updated frontier: ${String(result.attempt.attempt_id)}`);
       console.log('Note: this recorded an attempt decision only; scorer output is evidence, not automatic approval.');
