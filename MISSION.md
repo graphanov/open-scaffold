@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-21: closed 031-agentic-orchestration-model-lab-vision — closed model-lab hypothesis as evidence-gated non-core direction
 - 2026-05-21: closed 089-runtime-omx-evolution-ledger-package-sync — published 0.4.10 and aligned runtime OMX ledger package surfaces
 - 2026-05-21: closed 088-runtime-omx-evolution-ledger-bridge — Close 088 runtime OMX evolution ledger bridge
 - 2026-05-21: closed 087-closed-evolution-loop-contract — added evolution loop contract CLI

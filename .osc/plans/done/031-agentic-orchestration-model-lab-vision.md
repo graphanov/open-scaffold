@@ -2,7 +2,7 @@
 
 ## Status
 
-backlog — captured hypothesis, not approved implementation. 2026-05-15 sparring synthesis: no V1 promotion, no MISSION/ROADMAP edit, no AI-research-lab framing in public docs. This inherits the runtime-selection constraints from `.osc/runs/20260515T125857-v1-runtime-choice-sparring/HERMES_SYNTHESIS.md` and is blocked on V1.x adapter evidence: fake/local adapter package, adapter conformance fixture, and Milestone 9 adapter refresh before any multi-lane comparison or evidence-comparability work.
+done
 
 ## Context
 
