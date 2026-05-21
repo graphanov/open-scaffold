@@ -9,7 +9,7 @@ Added the contract-first `osc evolve` surface for multi-attempt improvement loop
 - Roadmap / issue / task: Open Scaffold plan `087-closed-evolution-loop-contract`; Kanban `t_ba998516`.
 - Plan: `.osc/plans/done/087-closed-evolution-loop-contract.md` after close in this branch.
 - Run ID / run packet: N/A — implemented directly by Hermes against the plan; no external runtime was spawned.
-- Branch / PR: `spec/closed-evolution-loop-contract`; PR pending at initial evidence capture.
+- Branch / PR: `spec/closed-evolution-loop-contract`; https://github.com/graphanov/open-scaffold/pull/79.
 
 ## Verification
 
