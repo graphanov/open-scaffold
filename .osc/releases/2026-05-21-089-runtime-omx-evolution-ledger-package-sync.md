@@ -10,7 +10,7 @@ Prepared the package/release sync for the runtime OMX evolution ledger bridge th
 - Preceding implementation: PR #80, `088-runtime-omx-evolution-ledger-bridge`, merge commit `7c04c125fc261d7de95c1019067b2356885db758`.
 - Plan: `.osc/plans/done/089-runtime-omx-evolution-ledger-package-sync.md`.
 - Run ID / run packet: N/A — release sync executed directly by Hermes against the plan; no external runtime was spawned.
-- Branch / PR: `release/runtime-omx-evolution-ledger-sync`; PR pending at candidate creation.
+- Branch / PR: `release/runtime-omx-evolution-ledger-sync`; https://github.com/graphanov/open-scaffold/pull/81.
 - Package candidate: `open-scaffold@0.4.10`.
 
 ## Verification
