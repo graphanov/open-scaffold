@@ -13,7 +13,11 @@ const coreForbiddenPatterns = [
   /\bexecSync\s*\(/,
 ];
 
-const coreProcessAllowedFiles = new Set([join(coreSrcRoot, 'evidence.ts')]);
+const coreProcessAllowedFiles = new Set([
+  join(coreSrcRoot, 'evidence.ts'),
+  // Metrics may shell out to local `git log` for commit-date timestamps; it must not spawn runtimes or use network commands.
+  join(coreSrcRoot, 'metrics.ts'),
+]);
 
 const runtimeForbiddenPatterns = [
   /node:http/,
@@ -41,9 +45,11 @@ function isCoreProcessAllowedFile(file: string): boolean {
 }
 
 describe('runtime-omx source boundary', () => {
-  it('only allowlists the intended core evidence collector file', () => {
+  it('only allowlists the intended core evidence and local metrics collector files', () => {
     expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'evidence.ts'))).toBe(true);
+    expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'metrics.ts'))).toBe(true);
     expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'nested', 'evidence.ts'))).toBe(false);
+    expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'nested', 'metrics.ts'))).toBe(false);
   });
 
   it('Open Scaffold core source remains free of runtime process launching code', () => {

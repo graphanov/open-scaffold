@@ -8,6 +8,7 @@ import { collectEvidence } from './evidence.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, recordEvolutionAttempt, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
+import { computeMetrics, formatMetrics, parseSinceDate } from './metrics.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
 import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
 import { validateScaffold } from './validation.js';
@@ -43,6 +44,7 @@ Usage:
   osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>]
   osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text>
   osc evolve check <loop-dir>
+  osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
   osc verify
   osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]
   osc runtimes list [--json]
@@ -1392,6 +1394,87 @@ function evolutionCommand(args: string[]): void {
   process.exit(2);
 }
 
+function printMetricsUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
+
+Options:
+  --json              Print a single machine-readable JSON object
+  --since <date>      Include only plans created on or after the date; supports YYYY-MM-DD, ISO 8601, "30 days ago", and "last month"
+  --lookback <weeks>  Close-velocity lookback window in weeks (default: 12)
+  --table             Force human-readable output even when --json is present
+  --verbose           Include per-plan slug, stage, age, evidence, and approval details`, stream);
+}
+
+function takeMetricsValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${flag}`);
+    process.exit(2);
+  }
+  return value;
+}
+
+function metricsCommand(args: string[]): void {
+  if (args[0] === undefined || isHelpArg(args[0])) {
+    printMetricsUsage('stdout');
+    return;
+  }
+
+  let json = false;
+  let table = false;
+  let verbose = false;
+  let since: Date | undefined;
+  let lookbackWeeks: number | undefined;
+
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--json':
+        json = true;
+        break;
+      case '--table':
+        table = true;
+        break;
+      case '--verbose':
+        verbose = true;
+        break;
+      case '--since':
+        try {
+          since = parseSinceDate(takeMetricsValue(args, i, flag));
+        } catch (error) {
+          console.error(error instanceof Error ? error.message : String(error));
+          process.exit(2);
+        }
+        i += 1;
+        break;
+      case '--lookback': {
+        const raw = takeMetricsValue(args, i, flag);
+        const parsed = Number(raw);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          console.error(`Invalid value for --lookback: ${raw}. Expected a positive number of weeks.`);
+          process.exit(2);
+        }
+        lookbackWeeks = parsed;
+        i += 1;
+        break;
+      }
+      default:
+        console.error(`Unknown option for metrics: ${flag}`);
+        printMetricsUsage();
+        process.exit(2);
+    }
+  }
+
+  try {
+    const metrics = computeMetrics({ root: process.cwd(), since, lookbackWeeks, verbose });
+    if (json && !table) console.log(JSON.stringify(metrics, null, 2));
+    else console.log(formatMetrics(metrics, { verbose }));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
 function runtimes(args: string[]): void {
   const [subcommand, ...rest] = args;
   if (subcommand === 'list') {
@@ -1483,6 +1566,9 @@ async function main(): Promise<void> {
       return;
     case 'evolve':
       evolutionCommand(args);
+      return;
+    case 'metrics':
+      metricsCommand(args);
       return;
     case 'evidence':
       evidenceCommand(args);
