@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog — depends on 058 (doctor-auto-fix) for clean scaffold state that metrics can read reliably, and 050 (npm-publish) for baseline `osc` availability. This is the second slice in the 058–064 batch, providing the aggregation layer that turns raw scaffold data into actionable numbers. After doctor keeps the scaffold healthy and evidence collection captures verification data, metrics answer the natural next question: "how are we doing?" — cycle time, close velocity, stale plan count, evidence completeness, and approval distribution.
+done
+
 
 ## Context
 
