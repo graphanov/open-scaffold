@@ -9,7 +9,7 @@ active
 
 Open Scaffold already ships the human-gated closed loop in `docs/SLICE_CLOSE_PROTOCOL.md` and the first mechanical evaluation/audit envelope surfaces via `osc eval` and `osc audit`. That loop currently answers whether one slice/run can close and what correction route it should take.
 
-`clarence-lee-sheng/oh-my-darwin` is a useful external reference because it makes the next layer visible: a repeated improvement loop with a meta-spec, attempt journal, scorer, frontier, stop condition, and explicit strategies such as greedy/tournament/novelty/MAP-Elites. The useful Open Scaffold lesson is the state contract, not the runtime. The source repo has no license at the time of inspection, so this plan is pattern-only: do not copy code, text, assets, or bundled skills.
+`clarence-lee-sheng/oh-my-darwin` was used only as public inspiration for the shape of repeated improvement loops, then adapted specifically into an Open Scaffold contract: repo-local loop metadata, append-only attempt summaries, frontier promotion evidence, and human gates. The useful Open Scaffold lesson is the state contract, not the runtime or implementation. The source repo has no license at the time of inspection, so this plan is inspiration-only: do not copy code, text, assets, or bundled skills.
 
 This plan turns the closed evolutionary loop into a concrete Open Scaffold feature without changing the core boundary: Open Scaffold records loop intent, attempts, evaluation outcomes, frontier promotion, and next-action routing; external coordinators/adapters/runtimes perform execution.
 
@@ -52,7 +52,7 @@ The CLI should initialize/check/record curated loop artifacts only. It must not 
 
 ## Constraints / Out of scope
 
-- Do not copy code/text from `oh-my-darwin`; use it only as public pattern inspiration because license status is unclear.
+- Do not copy code/text from `oh-my-darwin`; it is only public inspiration, adapted specifically into an Open Scaffold-owned state/evidence contract because license status is unclear.
 - Do not make Open Scaffold core responsible for agent spawning, process supervision, model routing, runtime auth, tmux/session state, or long-running loops.
 - Do not claim model/task-fit recommendations, benchmark authority, compliance certification, or autonomous approval.
 - Do not store raw runtime transcripts, secrets, private owner state, `.osc/research/`, `.osc-dev/`, `.hermes/`, `node_modules/`, or other private/internal paths in evolution artifacts.
@@ -90,7 +90,7 @@ The CLI should initialize/check/record curated loop artifacts only. It must not 
 3. `npm run build` — package builds.
 4. `./verify.sh --strict` — scaffold checks pass.
 5. `git diff --check` — no whitespace errors.
-6. Manual boundary grep: public docs must not claim native spawning, automatic model ranking, compliance certification, or copied `oh-my-darwin` implementation.
+6. Manual boundary grep: public docs must not claim native spawning, automatic model ranking, compliance certification, or copied implementation; any `oh-my-darwin` mention must say it was inspiration adapted specifically into an Open Scaffold-owned contract.
 
 ## Open questions
 

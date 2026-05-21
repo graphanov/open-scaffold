@@ -192,6 +192,25 @@ describe('evolution attempt recording and validation', () => {
     expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8').trim().split('\n')).toHaveLength(1);
   });
 
+  it('rejects evaluation envelopes from a different run before appending attempt state', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root, 'demo-run');
+    const evalPath = writeEvaluation(root, 'other-run');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+
+    expect(() => recordEvolutionAttempt(outDir, {
+      runPath,
+      evaluationPath: evalPath,
+      decision: 'promote',
+      rationale: 'Mismatched evidence should not persist.',
+    }, root)).toThrow(/Evaluation run_id other-run does not match run packet demo-run/);
+    expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe('');
+    const frontier = JSON.parse(readFileSync(join(outDir, 'frontier.json'), 'utf8'));
+    expect(frontier.current).toBeNull();
+  });
+
   it('validates a loop directory and rejects duplicate attempts plus unsafe boundary claims', () => {
     const root = tempRepo();
     const planPath = writePlan(root);

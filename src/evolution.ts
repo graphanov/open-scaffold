@@ -374,6 +374,10 @@ export function recordEvolutionAttempt(loopDir: string, options: RecordEvolution
   const run = readRunSummary(runAbsolute, root);
   const evalSummary = options.evaluationPath ? readEvaluationSummary(isAbsolute(options.evaluationPath) ? options.evaluationPath : resolve(root, options.evaluationPath), root) : null;
   const runId = asString(run.runId);
+  const evaluationRunId = evalSummary ? asString(evalSummary.runId) : null;
+  if (runId && evaluationRunId && runId !== evaluationRunId) {
+    throw new Error(`Evaluation run_id ${evaluationRunId} does not match run packet ${runId}.`);
+  }
   const attemptId = runId ?? `attempt-${shortDigest([asString(run.runPacket) ?? options.runPath])}`;
   const attempts = readAttempts(attemptsPath);
   if (attempts.some((attempt) => attempt.attempt_id === attemptId)) {
