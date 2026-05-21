@@ -9,7 +9,7 @@ Bridged `packages/runtime-omx` outputs into the `osc evolve record` ledger path 
 - Roadmap / issue / task: Open Scaffold plan `088-runtime-omx-evolution-ledger-bridge`; Kanban `t_fd291bf4`.
 - Plan: `.osc/plans/done/088-runtime-omx-evolution-ledger-bridge.md` after close in this branch.
 - Run ID / run packet: N/A — implemented directly by Hermes against the plan; no external runtime was spawned.
-- Branch / PR: `runtime/omx-evolution-ledger-bridge`; PR pending until this branch is pushed.
+- Branch / PR: `runtime/omx-evolution-ledger-bridge`; https://github.com/graphanov/open-scaffold/pull/80.
 
 ## Verification
 
