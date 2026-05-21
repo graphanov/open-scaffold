@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-21: closed 087-closed-evolution-loop-contract — added evolution loop contract CLI
 - 2026-05-20: closed 030-agent-runtime-selection-vision — reconciled runtime selection vision
 - 2026-05-20: closed 086-init-help-flags — Added init help flag handling
 - 2026-05-20: closed 085-runtime-list-json — added JSON output for runtime profile listing

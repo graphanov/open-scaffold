@@ -79,6 +79,16 @@ osc run .osc/plans/active/<plan>.md --dry-run --json
 
 `--dry-run` validates the plan, renders the `run.json` and package markdown in memory, lists files from the plan, and exits without creating `.osc/runs/` artifacts. Re-run without `--dry-run` only when the preview is acceptable.
 
+For multi-attempt improvement loops, create a curated evolution ledger after the first plan/run exists:
+
+```bash
+osc evolve init .osc/plans/active/<plan>.md --out .osc/evolution/<loop-id> --strategy manual
+osc evolve record .osc/evolution/<loop-id> --run .osc/runs/<run-id>/run.json --evaluation docs/evidence/<eval>.json --decision promote --score 0.93 --rationale "Best evidence so far."
+osc evolve check .osc/evolution/<loop-id>
+```
+
+The evolution ledger records attempts and frontier promotion only. External coordinators or OMX-based runtime packages execute attempts; Open Scaffold core does not spawn runtimes or rank models.
+
 > **With OMC harness:** `/ralph` for Claude Code autonomous completion loops; `/team` or `/ultrawork` for parallel fan-out across multiple Claude Code-oriented agents.
 >
 > **With OMX harness:** `$ralph` for Codex persistent completion loops; `$team` for tmux-backed Codex worker teams; `$ultrawork` for parallel execution; promote runtime evidence back into Open Scaffold.

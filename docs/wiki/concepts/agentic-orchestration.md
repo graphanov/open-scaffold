@@ -1,10 +1,10 @@
 ---
 title: Agentic Orchestration
 created: 2026-05-15
-updated: 2026-05-18
+updated: 2026-05-21
 type: concept
 tags: [open-scaffold, agent-orchestration, model-routing, evolutionary-loops]
-sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/AGENTIC_RUNTIME_LAYER.md, .osc/plans/backlog/031-agentic-orchestration-model-lab-vision.md, .osc/plans/done/046-executable-open-scaffold-architecture.md]
+sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/AGENTIC_RUNTIME_LAYER.md, docs/EVOLUTION_LOOP.md, .osc/plans/backlog/031-agentic-orchestration-model-lab-vision.md, .osc/plans/done/087-closed-evolution-loop-contract.md, .osc/plans/done/046-executable-open-scaffold-architecture.md]
 confidence: low
 contested: true
 ---
@@ -51,13 +51,15 @@ The safe near-term version is contract-first: define how orchestration evidence 
 As of 2026-05-15, agentic orchestration is a contested product hypothesis, not a v1 release promise.
 
 - **Slice-level closed loop:** already shipped through the scaffold's existing slice-close loop: slice → evidence → postflight → amendment/correction → next slice.
+- **Multi-attempt evolution contract:** now concrete through `docs/EVOLUTION_LOOP.md` and `osc evolve init|record|check`: plan/run attempts can be journaled, evaluated, and promoted to a frontier without core spawning.
+- **OMX-based agentic runtime path:** the preferred serious runtime-engine investment path is explicit packages/adapters around OMX / oh-my-codex, with Open Scaffold core preserving contracts/evidence and `packages/runtime-omx/` owning OMX-specific execution mechanics.
 - **Multi-agent orchestration as contract:** possible V1.x research direction after adapter conformance evidence exists.
 - **Model evaluation lab and model/task-fit map:** not Open Scaffold core; possible sibling product or community-maintained reference if evidence and demand justify it.
 - **Native multi-agent runtime:** explicitly deferred; reopen only with a proofability, auditability, or governed-execution driver.
 
 Open Scaffold core stays runtime-neutral and orchestration-neutral. Multi-lane orchestration may be performed by an external coordinator using the existing run packet, evidence receipt, and slice-close contracts. The scaffold provides the evidence substrate, not the orchestrator and not the lab.
 
-The accepted executable track does not change this boundary. `packages/runtime-omx/` is a first agentic runtime package target for OMX / oh-my-codex, starting with `$ralplan`; it is not a full multi-agent orchestration layer, model router, or native Open Scaffold runtime.
+The accepted executable track does not change this boundary. `packages/runtime-omx/` is the first agentic runtime package target for OMX / oh-my-codex, starting with `$ralplan`, and the evolution-loop contract gives that engine path a durable attempt/frontier ledger. It is still not a full multi-agent orchestration layer, model router, or native Open Scaffold runtime.
 
 ## Not the same as the scaffold's existing evolutionary loop
 
@@ -68,5 +70,7 @@ Multi-agent orchestration loops, evaluator-graded routing, and model/task-fit ma
 The strongest version of the idea is:
 
 > Open Scaffold should make multi-model work inspectable, comparable, and resumable through contract and evidence — not by running, routing, or rating the models.
+
+The concrete near-term product path is narrower: `osc evolve` records attempts/frontiers, while OMX-based runtime packages can become the serious execution engine layer that consumes Open Scaffold run packets and returns evidence.
 
 Related: [[agent-runtime-selection]], [[run-packets]], [[evidence-first-development]], [[human-in-the-loop-governance]], [[source-of-truth-first-development]].

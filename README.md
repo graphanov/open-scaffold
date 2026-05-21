@@ -54,6 +54,7 @@ Want the underlying files? Read [`docs/EXAMPLES.md`](docs/EXAMPLES.md#60-second-
 - **Work specs:** `.osc/plans/` holds small, immutable plans with acceptance criteria.
 - **Change history:** amendments record scope changes without rewriting the original plan.
 - **Work packages (run packets):** `.osc/runs/<run_id>/run.json` packages a plan for a chosen runtime lane.
+- **Evaluation and evolution:** `osc eval`, `osc audit`, and `osc evolve` record acceptance-criteria evaluation, artifact integrity, repeated attempts, and frontier promotion.
 - **Evidence:** `.osc/releases/` records what shipped, how it was verified, and what follows.
 - **Checks:** `./verify.sh` and `osc verify` catch stale state, broken evidence, and plan drift.
 - **Agent entry points:** `AGENTS.md` and `CLAUDE.md` tell coding agents how to operate without fresh explanations.
@@ -185,6 +186,16 @@ Here `--operator-surface` means the place humans see status and approvals, such 
 2. [`docs/RUNTIME_PROFILES.md`](docs/RUNTIME_PROFILES.md) — built-in and project-local runtime profiles;
 3. [`docs/RUNTIME_BINDING_CONTRACT.md`](docs/RUNTIME_BINDING_CONTRACT.md) — what an adapter/coordinator must do after the `run.json` package exists.
 
+For repeated attempts, record the loop separately instead of burying the frontier decision in chat:
+
+```bash
+npx open-scaffold evolve init .osc/plans/active/my-first-task.md --out .osc/evolution/my-first-task --strategy manual
+npx open-scaffold evolve record .osc/evolution/my-first-task --run .osc/runs/<run_id>/run.json --decision promote --rationale "Best evidence so far."
+npx open-scaffold evolve check .osc/evolution/my-first-task
+```
+
+`osc evolve` records attempt/frontier state only. External adapters or runtime packages execute attempts.
+
 ---
 
 ## Runtime-neutral by design
@@ -216,7 +227,7 @@ It is overkill for one-off scripts, disposable prototypes, or tasks that fit in 
 
 ## Where the roadmap is going
 
-The current product direction is: make the source-of-truth loop undeniable, then let external runtimes plug into it through profiles and adapters. Open Scaffold now supports runtime selection and runtime profiles, but core still does not install, spawn, supervise, or benchmark runtimes.
+The current product direction is: make the source-of-truth loop undeniable, then let external runtimes plug into it through profiles, adapters, and explicit agentic runtime packages. Open Scaffold now supports runtime selection, runtime profiles, evaluation/audit envelopes, and evolution-loop ledgers. The first serious runtime-engine investment path is OMX / oh-my-codex through `packages/runtime-omx/`, while core still does not silently install, spawn, supervise, or benchmark runtimes.
 
 Package note: the root `open-scaffold` npm package ships the core CLI, scaffold files, and docs. In-repo runtime package paths such as `packages/runtime-omx/` are GitHub source references today; they are not included in the root npm payload and would need a separate owner-approved runtime-package release before package users can install them from npm.
 
@@ -236,6 +247,7 @@ Near-term roadmap work should improve clarity, adapter evidence, and validation.
 - [`.osc/plans/WORKFLOW.md`](.osc/plans/WORKFLOW.md) — how plans move through backlog, active, done, and blocked.
 - [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — phase-to-tool guide.
 - [`docs/SLICE_CLOSE_PROTOCOL.md`](docs/SLICE_CLOSE_PROTOCOL.md) — evidence-backed completion / slice closure.
+- [`docs/EVOLUTION_LOOP.md`](docs/EVOLUTION_LOOP.md) — multi-attempt loops, attempt journals, and frontier promotion.
 - [`docs/GLASS_COCKPIT_PROTOCOL.md`](docs/GLASS_COCKPIT_PROTOCOL.md) — chat/control-room status surfaces.
 - [`docs/FAQ.md`](docs/FAQ.md) — deeper explanations.
 - [`docs/REFERENCE_TRUTH.md`](docs/REFERENCE_TRUTH.md) — labels for public, private, future, and adapter tool references.

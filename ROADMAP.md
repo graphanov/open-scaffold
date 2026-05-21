@@ -200,7 +200,7 @@ Status: direction captured through PR #39 scope amendment; first structure-only 
 
 Open Scaffold core should own portable standards for audit envelopes, evaluation envelopes, closed evaluation loops, and feedback-based improvement routing. This strengthens the existing slice-close protocol and runtime binding contract: a run should produce enough durable evidence for a postflight to evaluate acceptance criteria, capture human/reviewer feedback, route corrections, and reconstruct what was planned, executed, verified, approved, or carried forward.
 
-Current mechanics are intentionally lightweight and structure-only: `osc eval` drafts/checks acceptance-criteria evaluation envelopes, and `osc audit` drafts/checks local artifact digest manifests. Future mechanics such as envelope self-digests, parent links, Merkle audit manifests, external anchor adapters, or provider-specific receipt submission require separate plans and tests.
+Current mechanics are intentionally lightweight and structure-only: `osc eval` drafts/checks acceptance-criteria evaluation envelopes, `osc audit` drafts/checks local artifact digest manifests, and `osc evolve` records multi-attempt improvement loops with attempt journals and frontier promotion. Future mechanics such as envelope self-digests, parent links, Merkle audit manifests, external anchor adapters, richer runtime-event capture, or automated evaluator adapters require separate plans and tests.
 
 This direction does not promote native runtime ownership, model-lab benchmarking, automated compliance judgment, legal audit certification, runtime data permissions, or provider-specific ledger dependencies into core.
 
