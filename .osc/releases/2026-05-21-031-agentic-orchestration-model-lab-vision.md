@@ -9,7 +9,7 @@ Closed the agentic orchestration / model-lab vision slice as a no-promotion deci
 - Roadmap / issue / task: `ROADMAP.md` Milestone 9 runtime-status hypothesis; no GitHub issue selected by the slice selector.
 - Plan: `.osc/plans/done/031-agentic-orchestration-model-lab-vision.md`
 - Run ID / run packet: `.osc/runs/20260515T132056-agentic-orchestration-roadmap-sparring/`; comparison corpus `.osc/runs/20260515T125857-v1-runtime-choice-sparring/`.
-- Branch / PR: `vision/031-agentic-orchestration-model-lab`; PR pending.
+- Branch / PR: `vision/031-agentic-orchestration-model-lab`; https://github.com/graphanov/open-scaffold/pull/83.
 
 ## Verification
 
