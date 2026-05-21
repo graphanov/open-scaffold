@@ -13,7 +13,7 @@ Closed the agentic orchestration / model-lab vision slice as a no-promotion deci
 
 ## Verification
 
-- `python3 /Users/danimal/.hermes/scripts/open-scaffold-select-next.py --json` — selected `backlog_plan` `.osc/plans/backlog/031-agentic-orchestration-model-lab-vision.md` with no open PRs/issues and npm `0.4.10` aligned.
+- Selector context — autopilot selected `backlog_plan` plan 031 with no open PRs/issues and npm `0.4.10` aligned.
 - `for f in .osc/runs/20260515T132056-agentic-orchestration-roadmap-sparring/reports/*.md .osc/runs/20260515T125857-v1-runtime-choice-sparring/reports/*.md; do tail -n 5 "$f" | grep -c 'REPORT_COMPLETE'; done` — all six prior review reports include `REPORT_COMPLETE`.
 - `git diff --check && ./verify.sh --strict` — 10 pass, 0 fail, 0 warn.
 - `npm test -- --run` — 31 files passed, 272 tests passed.
