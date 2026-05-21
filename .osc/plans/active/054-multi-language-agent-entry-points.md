@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog — depends on 050 (npm publish) so translated files ship in the npm package. This is an adoption-expansion slice: AGENTS.md and CLAUDE.md are the two primary entry-point files that coding agents read to understand the project, and they are currently available only in English. Global developer communities in China, Japan, Korea, Brazil, and Spanish-speaking countries benefit from native-language entry points.
+active
+
 
 ## Context
 

@@ -20,6 +20,10 @@ Use it when AI work spans sessions, PRs, agents, or review gates — when you ne
 
 Runtime handoff is optional: Open Scaffold writes a `run.json` work package, an external adapter/runtime works outside core, evidence comes back, and humans approve. See [Step 5](#5-optional-package-a-plan-for-an-agentruntime).
 
+## Languages
+
+English is canonical. Machine-assisted agent entry-point translations are provided for Chinese ([AGENTS-zh.md](AGENTS-zh.md), [CLAUDE-zh.md](CLAUDE-zh.md)), Japanese ([AGENTS-ja.md](AGENTS-ja.md), [CLAUDE-ja.md](CLAUDE-ja.md)), Korean ([AGENTS-ko.md](AGENTS-ko.md), [CLAUDE-ko.md](CLAUDE-ko.md)), Spanish ([AGENTS-es.md](AGENTS-es.md), [CLAUDE-es.md](CLAUDE-es.md)), and Portuguese ([AGENTS-pt.md](AGENTS-pt.md), [CLAUDE-pt.md](CLAUDE-pt.md)). See [`docs/TRANSLATIONS.md`](docs/TRANSLATIONS.md) for contribution and maintenance rules.
+
 ---
 
 ## The problem
