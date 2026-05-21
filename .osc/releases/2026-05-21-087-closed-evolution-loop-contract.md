@@ -13,9 +13,9 @@ Added the contract-first `osc evolve` surface for multi-attempt improvement loop
 
 ## Verification
 
-- `npm test -- tests/evolution.test.ts tests/cli-evolution.test.ts` — 10 tests passed; RED phase failed first before implementation.
-- `npm test -- tests/evolution.test.ts tests/cli-evolution.test.ts tests/audit.test.ts` — 28 tests passed.
-- `npm test` — 31 files / 264 tests passed.
+- `npm test -- tests/evolution.test.ts tests/cli-evolution.test.ts` — 11 tests passed; RED phase failed first before implementation.
+- `npm test -- tests/evolution.test.ts tests/cli-evolution.test.ts tests/audit.test.ts` — 29 tests passed.
+- `npm test` — 31 files / 265 tests passed.
 - `npm run build` — core and runtime-omx builds passed.
 - `./verify.sh --strict` — 10 pass, 0 fail, 0 warn.
 - `git diff --check` — passed.
@@ -28,6 +28,7 @@ The branch ships a new core CLI contract (`osc evolve init|record|check`), deter
 
 - PR opened for review and Codex latest-head loop: https://github.com/graphanov/open-scaffold/pull/79.
 - Codex round 1 raised a P2 subdirectory relative-path issue for `osc evolve`; fixed by resolving user-supplied paths from the caller CWD before rebasing to the scaffold root and adding a subdirectory regression test.
+- Codex round 2 raised a P1 partial-write recovery issue for promoted attempts when `frontier.json` is corrupt; fixed by validating frontier before appending the attempt and adding a regression test that preserves retryability.
 - After merge, publish/package release remains owner-gated like other npm/public-surface changes.
 - Next likely product slice: connect `packages/runtime-omx/` attempts to the evolution ledger so OMX can be the first serious agentic runtime engine path.
 

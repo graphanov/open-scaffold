@@ -164,6 +164,34 @@ describe('evolution attempt recording and validation', () => {
     expect(frontier.boundary).toMatchObject({ approval_or_release_decision: false, model_benchmarking: false });
   });
 
+  it('validates frontier before appending a promoted attempt', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root);
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+    const validFrontier = readFileSync(join(outDir, 'frontier.json'), 'utf8');
+    writeFileSync(join(outDir, 'frontier.json'), '{not json');
+
+    expect(() => recordEvolutionAttempt(outDir, {
+      runPath,
+      decision: 'promote',
+      rationale: 'Best evidence so far.',
+      now: new Date('2026-05-21T08:10:00.000Z'),
+    }, root)).toThrow(/Invalid evolution frontier/);
+    expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe('');
+
+    writeFileSync(join(outDir, 'frontier.json'), validFrontier);
+    const result = recordEvolutionAttempt(outDir, {
+      runPath,
+      decision: 'promote',
+      rationale: 'Best evidence so far.',
+      now: new Date('2026-05-21T08:11:00.000Z'),
+    }, root);
+    expect(result.frontierUpdated).toBe(true);
+    expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8').trim().split('\n')).toHaveLength(1);
+  });
+
   it('validates a loop directory and rejects duplicate attempts plus unsafe boundary claims', () => {
     const root = tempRepo();
     const planPath = writePlan(root);

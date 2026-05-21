@@ -400,13 +400,21 @@ export function recordEvolutionAttempt(loopDir: string, options: RecordEvolution
     evidence_refs: evidenceRefs,
     boundary: boundary(),
   };
+  let frontier: Record<string, unknown> | null = null;
+  if (options.decision === 'promote') {
+    try {
+      const parsedFrontier = readJson(frontierPath);
+      if (!isRecord(parsedFrontier) || parsedFrontier.schema !== EVOLUTION_FRONTIER_SCHEMA) {
+        throw new Error(`Evolution frontier must declare schema: ${EVOLUTION_FRONTIER_SCHEMA}`);
+      }
+      frontier = parsedFrontier;
+    } catch (error) {
+      throw new Error(`Invalid evolution frontier: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
   appendFileSync(attemptsPath, `${JSON.stringify(attempt)}\n`, 'utf8');
   let frontierUpdated = false;
-  if (options.decision === 'promote') {
-    const frontier = readJson(frontierPath);
-    if (!isRecord(frontier) || frontier.schema !== EVOLUTION_FRONTIER_SCHEMA) {
-      throw new Error(`Evolution frontier must declare schema: ${EVOLUTION_FRONTIER_SCHEMA}`);
-    }
+  if (frontier) {
     const previous = frontier.current ?? null;
     frontier.updated_at = now.toISOString();
     frontier.current = {
