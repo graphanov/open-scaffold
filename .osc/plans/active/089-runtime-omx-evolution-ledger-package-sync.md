@@ -2,7 +2,7 @@
 
 ## Status
 
-done
+active
 
 ## Context
 
@@ -14,7 +14,7 @@ Publish and verify `open-scaffold@0.4.10` so npm `latest`, fresh `npx`, and GitH
 
 ## Constraints / Out of scope
 
-- Do not add new runtime behavior beyond the already-merged PR #80 bridge.
+- Do not add new runtime behavior beyond the PR #80 bridge that is already on `main`.
 - Do not publish npm or create a GitHub Release until the owner gate is explicitly satisfied.
 - Do not change trusted-publishing workflow semantics unless the existing publish gate fails because of workflow drift.
 - Do not claim hidden spawning, automatic frontier promotion, model ranking, compliance certification, or full OMX workflow support.
@@ -25,7 +25,7 @@ Publish and verify `open-scaffold@0.4.10` so npm `latest`, fresh `npx`, and GitH
 - `package.json` — bump the root package version from `0.4.9` to `0.4.10`.
 - `package-lock.json` — keep the lockfile package version in sync.
 - `.osc/releases/2026-05-21-089-runtime-omx-evolution-ledger-package-sync.md` — record package/release evidence, gates, and post-publish verification.
-- `.osc/plans/done/089-runtime-omx-evolution-ledger-package-sync.md` — this plan after package-sync candidate closure.
+- `.osc/plans/active/089-runtime-omx-evolution-ledger-package-sync.md` — track this package sync until the owner-gated publish/release follow-through is complete.
 - `MISSION.md` — receive the mechanical close stamp from `close.sh` after verification.
 
 ## Execution strategy

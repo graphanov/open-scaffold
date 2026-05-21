@@ -8,7 +8,7 @@ Prepared the package/release sync for the runtime OMX evolution ledger bridge th
 
 - Roadmap / issue / task: Open Scaffold plan `089-runtime-omx-evolution-ledger-package-sync`; Kanban `t_b3b28c80`.
 - Preceding implementation: PR #80, `088-runtime-omx-evolution-ledger-bridge`, merge commit `7c04c125fc261d7de95c1019067b2356885db758`.
-- Plan: `.osc/plans/done/089-runtime-omx-evolution-ledger-package-sync.md`.
+- Plan: `.osc/plans/active/089-runtime-omx-evolution-ledger-package-sync.md` until the owner-gated publish/release follow-through is complete.
 - Run ID / run packet: N/A — release sync executed directly by Hermes against the plan; no external runtime was spawned.
 - Branch / PR: `release/runtime-omx-evolution-ledger-sync`; https://github.com/graphanov/open-scaffold/pull/81.
 - Package candidate: `open-scaffold@0.4.10`.
@@ -21,7 +21,7 @@ Prepared the package/release sync for the runtime OMX evolution ledger bridge th
 - `npm version 0.4.10 --no-git-tag-version` — updated root `package.json` and `package-lock.json` to `0.4.10`.
 - `node dist/cli.js evolve --help` after build — local candidate help includes `--receipt <dispatch-receipt.json>` and repeatable `--evidence <path>`.
 - `git diff --check` — passed.
-- `./verify.sh --strict` — passed after plan closure with no warnings.
+- `./verify.sh --strict` — passed with no warnings after keeping plan 089 active for the remaining owner-gated publish/release follow-through.
 - `npm test -- --run` — 31 test files / 272 tests passed.
 - `npm run build` — core and runtime-omx builds passed.
 - `npm pack --dry-run --json` — produced `open-scaffold-0.4.10.tgz`, 102 files, unpacked size `697950`; included `dist/cli.js`, `dist/evolution.js`, `docs/EVOLUTION_LOOP.md`, and `docs/RUNTIME_BINDING_CONTRACT.md`; excluded `.osc-dev/`, `.osc/research/`, `.osc/runs/`, `.git/`, `node_modules/`, `02_Active_Projects/`, `.hermes/`, and runtime source paths such as `packages/runtime-omx/src/`.
@@ -32,7 +32,7 @@ Prepared the package/release sync for the runtime OMX evolution ledger bridge th
 
 ## Outcome
 
-The release-sync branch bumps the root package candidate to `0.4.10`, closes plan 089 as a candidate-prep slice, and records the package/public-surface gate for the already-merged runtime OMX evolution ledger bridge. The intended public outcome after owner merge/publish/release gates is:
+The release-sync branch bumps the root package candidate to `0.4.10` and records the package/public-surface gate for the PR #80 runtime OMX evolution ledger bridge. Plan 089 remains active until the owner-gated merge, trusted publish, fresh `npx` smoke, and GitHub Release follow-through are complete. The intended public outcome after owner merge/publish/release gates is:
 
 ```text
 npm latest: open-scaffold@0.4.10
