@@ -22,6 +22,7 @@ describe('npm package payload', () => {
     const [pack] = JSON.parse(output) as PackResult[];
     const paths = pack.files.map((file) => file.path).sort();
 
+    expect(paths).toContain('.osc/.gitignore');
     expect(paths).toContain('.osc/RULES.md');
     expect(paths).toContain('.osc/plans/WORKFLOW.md');
     expect(paths).toContain('.osc/plans/README.md');

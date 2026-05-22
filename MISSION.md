@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-23: closed 061-local-task-database — added local task database CLI
 - 2026-05-22: closed 060-mcp-server — added optional read-only MCP server
 - 2026-05-22: closed 094-evolution-ledger-demo-proof — added reproducible evolution-ledger demo proof
 - 2026-05-22: closed 093-pr89-public-surface-sync — published 0.4.13 and aligned public package/release surfaces

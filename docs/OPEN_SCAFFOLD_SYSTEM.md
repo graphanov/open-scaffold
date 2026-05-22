@@ -12,6 +12,7 @@ This document is the full ontology. Most readers do not need every protocol page
 
 - New here? Read the [README](../README.md), then [`docs/EXAMPLES.md`](EXAMPLES.md) for the 60-second viewer demo.
 - Wiring task/run identity into a coordinator or task system: [`docs/TASK_RUN_MODEL.md`](TASK_RUN_MODEL.md).
+- Using repo-local tasks before an external tracker: [`docs/TASKS.md`](TASKS.md).
 - Understanding runtime handoff progressively: [`docs/RUNTIME_SELECTION.md`](RUNTIME_SELECTION.md) for choosing a lane, [`docs/RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md) for profile metadata, then [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md) and [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md) for adapter/runtime responsibilities.
 - Closing a slice and producing evidence: [`docs/SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md).
 - Recording multi-attempt improvement loops and frontier promotion: [`docs/EVOLUTION_LOOP.md`](EVOLUTION_LOOP.md).
@@ -35,6 +36,7 @@ Open Scaffold core owns the portable project substrate:
 - `docs/SLICE_CLOSE_PROTOCOL.md` — evidence receipts, postflight decisions, approval strength, correction routing, and next-slice inheritance.
 - `docs/EVOLUTION_LOOP.md` — multi-attempt loop state, attempt journals, frontier promotion, and improvement routing.
 - `osc mcp serve` / `osc-mcp` — optional stdio MCP server that exposes local mission, plan, evidence, status, rules, and roadmap state to MCP-capable tools without requiring each agent to parse markdown directly.
+- `osc task` — optional local SQLite task bridge for day-one repo-local task tracking in `.osc/tasks.db`; see [`docs/TASKS.md`](TASKS.md).
 - `verify.sh` / `osc verify` — methodology compliance checks.
 - `.github/` templates — issue and PR traceability for GitHub-centered workflows.
 
@@ -104,7 +106,7 @@ Examples:
 - GitHub Issues
 - Linear
 - Jira
-- a local SQLite task queue
+- the optional local `.osc/tasks.db` task queue exposed by `osc task`
 - a custom orchestrator board
 
 Open Scaffold should define how roadmap items and plans link to these systems, but it should not assume one board is universal. The dispatch pattern is documented in [`docs/RUNTIME_HARNESS_DISPATCH.md`](RUNTIME_HARNESS_DISPATCH.md): core creates the package, coordinators/task bridges choose and launch the harness, and evidence returns to `.osc/runs`, GitHub, or release notes.
