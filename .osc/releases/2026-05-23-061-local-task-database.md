@@ -23,6 +23,7 @@ The feature stays local-only: no network access, no daemon, no background sync, 
 - `npm pack --dry-run --json` — passed; package payload includes `.osc/.gitignore` and excludes dogfood plan/release history.
 - `./verify.sh --strict` — passed, 10 pass / 0 fail / 0 warn after plan close and evidence update.
 - Built CLI smoke in a temporary initialized scaffold — passed: empty `task list --json`, `task new`, `task list --json`, `task claim`, `task comment`, `task complete`, `task show`, and `status` task counts.
+- Codex round-1 hardening — fixed native SQLite install risk by moving `better-sqlite3` to `optionalDependencies`, and fixed `osc status` outside scaffold roots with a regression test; latest local gates after the fix: `npx vitest run tests/tasks.test.ts`, `npm run build:core`, `npm pack --dry-run --json`, `./verify.sh --strict`, `git diff --check`, and `npm test -- --run`.
 
 ## Outcome
 

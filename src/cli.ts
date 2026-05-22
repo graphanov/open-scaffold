@@ -368,7 +368,13 @@ function init(args: string[]): void {
 
 function status(json: boolean): void {
   const state = inspectScaffold(process.cwd());
-  const taskSummary = getTaskSummary(process.cwd());
+  let taskSummary: ReturnType<typeof getTaskSummary> = null;
+  try {
+    taskSummary = getTaskSummary(process.cwd());
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.startsWith('No Open Scaffold root found')) throw error;
+  }
   if (json) {
     console.log(JSON.stringify({ ...state, tasks: taskSummary }, null, 2));
     return;

@@ -101,6 +101,17 @@ describe('osc task local database', () => {
     expect(runOsc(target, ['status'])).not.toContain('Tasks:');
   }, 20_000);
 
+  it('keeps status usable outside an Open Scaffold root', () => {
+    const target = tempDir('osc-no-scaffold-');
+
+    const result = spawnSync(tsx, [cli, 'status'], { cwd: target, encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Open Scaffold status');
+    expect(result.stdout).toContain('Mission: not defined');
+    expect(result.stdout).not.toContain('Tasks:');
+  }, 20_000);
+
   it('rejects invalid task options with clear errors', () => {
     const target = initializedScaffold();
 
