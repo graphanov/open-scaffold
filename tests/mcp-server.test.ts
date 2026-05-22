@@ -184,6 +184,7 @@ describe('Open Scaffold MCP JSON-RPC server', () => {
 
     const initialized = handleMcpJsonRpcLine('{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}', context);
     expect(initialized).toMatchObject({ jsonrpc: '2.0', id: 1, result: { serverInfo: { name: 'open-scaffold-mcp' } } });
+    expect((initialized as { result: { serverInfo: { version: string } } }).result.serverInfo.version).toMatch(/^\d+\.\d+\.\d+/);
 
     const tools = handleMcpJsonRpcLine('{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}', context);
     expect((tools as { result: { tools: Array<{ name: string }> } }).result.tools.map((tool) => tool.name)).toContain('get_plan');
@@ -196,6 +197,9 @@ describe('Open Scaffold MCP JSON-RPC server', () => {
 
     const malformed = handleMcpJsonRpcLine('{not json', context);
     expect(malformed).toMatchObject({ jsonrpc: '2.0', id: null, error: { code: -32700 } });
+
+    const invalidId = handleMcpJsonRpcLine('{"jsonrpc":"2.0","id":{},"method":"tools/list","params":{}}', context);
+    expect(invalidId).toMatchObject({ jsonrpc: '2.0', id: null, error: { code: -32600 } });
   });
 
   it('suppresses responses for notifications and handles JSON-RPC batches', () => {

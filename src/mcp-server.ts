@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import type { Readable, Writable } from 'node:stream';
@@ -57,7 +58,8 @@ export function handleMcpJsonRpcRequest(parsed: unknown, context: McpToolContext
   }
   const hasId = Object.prototype.hasOwnProperty.call(parsed, 'id');
   if (!hasId) return null;
-  const id = normalizeId(parsed.id);
+  if (!isValidId(parsed.id)) return errorResponse(null, -32600, 'Invalid Request');
+  const id = parsed.id;
 
   try {
     switch (parsed.method) {
@@ -70,6 +72,7 @@ export function handleMcpJsonRpcRequest(parsed: unknown, context: McpToolContext
           },
           serverInfo: {
             name: 'open-scaffold-mcp',
+            version: packageVersion(),
             title: 'Open Scaffold MCP Server',
           },
         });
@@ -218,6 +221,19 @@ function normalizeId(value: unknown): string | number | null {
   return null;
 }
 
+function isValidId(value: unknown): value is string | number | null {
+  return typeof value === 'string' || typeof value === 'number' || value === null;
+}
+
 function extractId(value: unknown): string | number | null {
   return isRecord(value) ? normalizeId(value.id) : null;
+}
+
+function packageVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version?: unknown };
+    return typeof pkg.version === 'string' && pkg.version.trim() ? pkg.version : '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
 }
