@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-22: closed 091-readme-work-record-evolution-ledger — clarified README around work records and evolution ledgers
 - 2026-05-22: closed 090-evolution-compare — added evolution compare CLI
 - 2026-05-21: closed 059-adoption-metrics — added local adoption metrics CLI
 - 2026-05-21: closed 054-multi-language-agent-entry-points — translated agent entry points shipped in PR #84
