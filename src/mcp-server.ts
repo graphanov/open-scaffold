@@ -124,8 +124,14 @@ export async function runMcpStdioServer(context: McpToolContext, input: Readable
       frameBuffer = Buffer.concat([frameBuffer, chunkBuffer]);
       const probe = frameBuffer.toString('utf8').trimStart();
       if (!probe) continue;
-      mode = probe.toLowerCase().startsWith('content-length:') ? 'framed' : 'line';
-      if (mode === 'line') {
+      const lowerProbe = probe.toLowerCase();
+      const hasCompleteFrameHeader = frameHeaderSeparator(frameBuffer) !== null;
+      if (hasCompleteFrameHeader && lowerProbe.startsWith('content-length:')) {
+        mode = 'framed';
+      } else if (lowerProbe.startsWith('content-length:') || 'content-length:'.startsWith(lowerProbe)) {
+        continue;
+      } else {
+        mode = 'line';
         lineBuffer = frameBuffer.toString('utf8');
         frameBuffer = Buffer.alloc(0);
       }

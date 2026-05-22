@@ -3,9 +3,10 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { Readable, Writable } from 'node:stream';
 import { callMcpTool, isSafeEvidenceRelativePath, listMcpTools, McpJsonRpcError } from '../src/mcp-tools.js';
 import { listMcpResources, readMcpResource } from '../src/mcp-resources.js';
-import { handleMcpJsonRpcLine } from '../src/mcp-server.js';
+import { handleMcpJsonRpcLine, runMcpStdioServer } from '../src/mcp-server.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -109,6 +110,18 @@ function parseFramedMessages(output: string): unknown[] {
     remaining = remaining.slice(bodyStart + length);
   }
   return messages;
+}
+
+async function runStdioChunks(root: string, chunks: string[]): Promise<string> {
+  let output = '';
+  const writable = new Writable({
+    write(chunk, _encoding, callback) {
+      output += chunk.toString();
+      callback();
+    },
+  });
+  await runMcpStdioServer({ root, allowWrite: false }, Readable.from(chunks), writable);
+  return output;
 }
 
 describe('Open Scaffold MCP tool handlers', () => {
@@ -374,4 +387,14 @@ describe('Open Scaffold MCP JSON-RPC server', () => {
     expect(messages[0]).toMatchObject({ id: 1, result: { serverInfo: { name: 'open-scaffold-mcp' } } });
     expect(messages[1].result.tools?.map((tool) => tool.name)).toContain('list_plans');
   }, 20_000);
+
+  it('keeps MCP frame detection pending across split content-length headers', async () => {
+    const root = scaffoldFixture();
+    const frame = framedMessage({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {} } });
+    const output = await runStdioChunks(root, [frame.slice(0, 4), frame.slice(4, 17), frame.slice(17)]);
+    const messages = parseFramedMessages(output) as Array<{ id: number; result: { serverInfo?: { name: string } } }>;
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatchObject({ id: 1, result: { serverInfo: { name: 'open-scaffold-mcp' } } });
+  });
 });
