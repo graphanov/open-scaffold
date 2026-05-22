@@ -4,7 +4,7 @@ Date: 2026-05-22
 Plan: `.osc/plans/active/093-pr89-public-surface-sync.md`
 Branch: `release/pr89-public-surface-sync`
 Package candidate: `open-scaffold@0.4.13`
-PR: pending
+PR: `https://github.com/graphanov/open-scaffold/pull/90`
 
 ## Summary
 
