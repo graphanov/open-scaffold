@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
-import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, win32 } from 'node:path';
 import { parsePlanFile, findScaffoldRoot } from './scaffold.js';
 import type { ValidationIssue, ValidationResult } from './validation.js';
 
@@ -536,7 +536,7 @@ interface CompareCriterionStatus {
 
 function readEvaluationCriteriaForCompare(root: string, evaluationRef: string | null): CompareCriterionStatus[] {
   if (!evaluationRef) return [];
-  const evaluationPath = isAbsolute(evaluationRef) ? evaluationRef : resolve(root, evaluationRef);
+  const evaluationPath = isAbsolute(evaluationRef) || win32.isAbsolute(evaluationRef) ? evaluationRef : resolve(root, evaluationRef);
   try {
     const parsed = readJson(evaluationPath);
     if (!isRecord(parsed) || parsed.schema !== EVALUATION_SCHEMA) return [];

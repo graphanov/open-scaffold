@@ -507,6 +507,45 @@ describe('evolution comparison rendering', () => {
     expect(markdown).toContain('| AC2 — Frontier promotion is explicit. | ✗ fail | ✓ pass ▲ |');
   });
 
+  it('does not reinterpret Windows absolute evaluation refs as repo-relative paths on POSIX', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runA = writeRunPacket(root, 'attempt-a');
+    const runB = writeRunPacket(root, 'attempt-b');
+    const evalB = writeEvaluation(root, 'attempt-b', { AC2: 'pass' });
+    const windowsRef = 'C:\\tmp\\attempt-b-evaluation.json';
+    writeFileSync(join(root, windowsRef), readFileSync(evalB, 'utf8'));
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z'), strategy: 'greedy' });
+    recordEvolutionAttempt(outDir, {
+      runPath: runA,
+      decision: 'promote',
+      score: 0.62,
+      rationale: 'First frontier had no evaluation envelope.',
+      now: new Date('2026-05-21T08:10:00.000Z'),
+    }, root);
+    recordEvolutionAttempt(outDir, {
+      runPath: runB,
+      decision: 'promote',
+      score: 0.94,
+      rationale: 'Second frontier records a Windows absolute evaluation ref.',
+      now: new Date('2026-05-21T08:20:00.000Z'),
+    }, root);
+    const attemptsPath = join(outDir, 'attempts.jsonl');
+    const attempts = readFileSync(attemptsPath, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    attempts[1].evaluation = windowsRef;
+    attempts[1].evaluation_id = 'eval-attempt-b';
+    writeFileSync(attemptsPath, `${attempts.map((attempt) => JSON.stringify(attempt)).join('\n')}\n`);
+
+    const comparison = compareEvolutionLoop(outDir, {}, root);
+    const markdown = renderEvolutionComparison(comparison, 'markdown');
+
+    expect(markdown).not.toContain('AC2 — Frontier promotion is explicit. | — | ✓ pass ▲');
+  });
+
   it('shows known acceptance criteria when only one side has an evaluation envelope', () => {
     const root = tempRepo();
     const planPath = writePlan(root);
