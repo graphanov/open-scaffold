@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, isAbsolute, join, relative, resolve, sep, win32 } from 'node:path';
 import {
   closePlan,
@@ -231,7 +231,7 @@ function listPlans(root: string, stage?: PlanStage): Array<{ slug: string; stage
   const stages = stage ? [stage] : PLAN_STAGES;
   return stages.flatMap((currentStage) =>
     state.plans[currentStage]
-      .filter((plan) => !isAmendmentSlug(plan.slug))
+      .filter((plan) => !isAmendmentSlug(plan.slug) && isRegularMcpFile(join(root, plan.path)))
       .map((plan) => ({ slug: plan.slug, stage: currentStage, path: plan.path })),
   );
 }
@@ -244,11 +244,19 @@ function findPlan(root: string, slug: string): PlanLocation {
   const normalized = safeSlug(slug);
   for (const stage of PLAN_STAGES) {
     const absolutePath = join(root, '.osc', 'plans', stage, `${normalized}.md`);
-    if (existsSync(absolutePath) && statSync(absolutePath).isFile()) {
+    if (existsSync(absolutePath) && isRegularMcpFile(absolutePath)) {
       return { slug: normalized, stage, absolutePath, relativePath: relative(root, absolutePath) };
     }
   }
   throw new McpJsonRpcError(-32004, `Plan not found: ${normalized}`);
+}
+
+function isRegularMcpFile(path: string): boolean {
+  try {
+    return lstatSync(path).isFile();
+  } catch {
+    return false;
+  }
 }
 
 function getPlan(root: string, slug: string): Record<string, unknown> {
@@ -370,7 +378,7 @@ function getEvidence(root: string, pathArg?: string, slug?: string): Record<stri
 
 function getStatus(root: string): Record<string, unknown> {
   const state = inspectScaffold(root);
-  const planCounts = Object.fromEntries(PLAN_STAGES.map((stage) => [stage, state.plans[stage].filter((plan) => !isAmendmentSlug(plan.slug)).length]));
+  const planCounts = Object.fromEntries(PLAN_STAGES.map((stage) => [stage, listPlans(root, stage).length]));
   const validation = validateScaffold(root);
   const verify = {
     available: true,

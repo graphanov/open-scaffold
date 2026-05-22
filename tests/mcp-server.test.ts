@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { callMcpTool, isSafeEvidenceRelativePath, listMcpTools, McpJsonRpcError } from '../src/mcp-tools.js';
@@ -139,11 +139,13 @@ describe('Open Scaffold MCP tool handlers', () => {
     const outside = join(root, '..', 'outside-secret.md');
     const symlinkedEvidence = join(root, '.osc/releases/2999-evil.md');
     const symlinkedSlugEvidence = join(root, '.osc/releases/2999-001-sample.md');
+    const symlinkedPlan = join(root, '.osc/plans/done/999-evil.md');
     writeFileSync(outside, 'do not expose this file');
     let symlinkCreated = false;
     try {
       symlinkSync(outside, symlinkedEvidence);
       symlinkSync(outside, symlinkedSlugEvidence);
+      symlinkSync(outside, symlinkedPlan);
       symlinkCreated = true;
     } catch {
       // Some platforms disable file symlink creation. The path-shape guard above still covers
@@ -156,6 +158,9 @@ describe('Open Scaffold MCP tool handlers', () => {
       const evidenceBySlug = callMcpTool('get_evidence', { slug: '001-sample' }, { root, allowWrite: false });
       expect((evidenceBySlug as { content: string }).content).toContain('Verified sample behavior.');
       expect((evidenceBySlug as { content: string }).content).not.toContain('do not expose this file');
+      expect(() => callMcpTool('get_plan', { slug: '999-evil' }, { root, allowWrite: false })).toThrow(McpJsonRpcError);
+      expect(callMcpTool('list_plans', { stage: 'done' }, { root, allowWrite: false })).toMatchObject({ plans: [] });
+      expect(callMcpTool('search_plans', { query: 'do not expose' }, { root, allowWrite: false })).toMatchObject({ results: [] });
       const latestEvidence = readMcpResource('osc://releases/latest', { root });
       expect(latestEvidence.text).toContain('Verified sample behavior.');
       expect(latestEvidence.text).not.toContain('do not expose this file');
@@ -208,6 +213,28 @@ describe('Open Scaffold MCP tool handlers', () => {
 
     const rules = readMcpResource('osc://rules', { root });
     expect(rules.text).toContain('Mission first');
+  });
+
+  it('refuses symlinked fixed markdown resources', () => {
+    const root = scaffoldFixture();
+    const outside = join(root, '..', 'resource-secret.md');
+    writeFileSync(outside, 'do not expose this resource');
+
+    let symlinkCreated = false;
+    try {
+      rmSync(join(root, 'ROADMAP.md'));
+      rmSync(join(root, '.osc/RULES.md'));
+      symlinkSync(outside, join(root, 'ROADMAP.md'));
+      symlinkSync(outside, join(root, '.osc/RULES.md'));
+      symlinkCreated = true;
+    } catch {
+      // Some platforms disable file symlink creation.
+    }
+
+    if (symlinkCreated) {
+      expect(() => readMcpResource('osc://roadmap', { root })).toThrow(McpJsonRpcError);
+      expect(() => readMcpResource('osc://rules', { root })).toThrow(McpJsonRpcError);
+    }
   });
 });
 

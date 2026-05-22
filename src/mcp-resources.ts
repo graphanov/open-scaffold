@@ -1,5 +1,5 @@
 import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep, win32 } from 'node:path';
 import { inspectScaffold, PLAN_STAGES, type PlanStage } from './scaffold.js';
 import { McpJsonRpcError, readMissionSummary } from './mcp-tools.js';
 
@@ -103,9 +103,21 @@ export function readMcpResource(uri: string, context: McpResourceContext): McpRe
 function readMarkdownResource(root: string, uri: string, relativePath: string): McpResourceContent {
   const path = resolve(root, relativePath);
   const relativeToRoot = relative(root, path);
-  if (relativeToRoot.startsWith('..')) throw new McpJsonRpcError(-32602, `Resource path escapes repository: ${relativePath}`);
+  if (!isSafeResourceRelativePath(relativeToRoot)) throw new McpJsonRpcError(-32602, `Resource path escapes repository: ${relativePath}`);
   if (!existsSync(path)) throw new McpJsonRpcError(-32004, `Resource file not found: ${relativePath}`);
+  if (!lstatSync(path).isFile()) throw new McpJsonRpcError(-32602, `Resource path must be a regular file under the repository: ${relativePath}`);
   return { uri, mimeType: 'text/markdown', text: readFileSync(path, 'utf8') };
+}
+
+function isSafeResourceRelativePath(relativePath: string): boolean {
+  return (
+    relativePath !== '' &&
+    relativePath !== '..' &&
+    !relativePath.startsWith(`..${sep}`) &&
+    !relativePath.startsWith(`..${win32.sep}`) &&
+    !isAbsolute(relativePath) &&
+    !win32.isAbsolute(relativePath)
+  );
 }
 
 function latestEvidenceFile(root: string): string | null {
