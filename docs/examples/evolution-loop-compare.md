@@ -12,6 +12,8 @@ one task
 
 Open Scaffold core records and compares the loop. It does **not** launch agents, rank models, certify compliance, or approve a release.
 
+For checked-in files you can run locally, see the companion fixture: [`examples/evolution-ledger-demo/`](../../examples/evolution-ledger-demo/).
+
 ## Scenario
 
 A small task has two attempts:

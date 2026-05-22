@@ -1,0 +1,75 @@
+{
+  "schema": "open-scaffold.evolution-loop.v1",
+  "loop_id": "20260522T100000Z-reviewable-csv-importer-evolution",
+  "idempotency_key": "evolve:fixture:reviewable-csv-importer:7c8a6e6c9f01f2ab",
+  "created_at": "2026-05-22T10:00:00.000Z",
+  "updated_at": "2026-05-22T10:30:00.000Z",
+  "subject": {
+    "source": "plan",
+    "plan": ".osc/plans/active/reviewable-csv-importer.md",
+    "plan_slug": "reviewable-csv-importer",
+    "task_id": null,
+    "run_id": null,
+    "run_packet": null
+  },
+  "objective": "Make the contacts CSV importer reviewable across repeated attempts.",
+  "constraints": {
+    "hard": [
+      "Do not spawn runtimes from Open Scaffold core.",
+      "Do not rank models or agents.",
+      "Do not treat the frontier as merge, publish, or release approval."
+    ],
+    "soft": [
+      "Keep the fixture small enough to inspect in one sitting."
+    ]
+  },
+  "acceptance_criteria": [
+    "Quoted fields with embedded commas parse correctly.",
+    "Malformed rows return an error that identifies the row and column of the offending token.",
+    "UTF-8 BOM is stripped and does not leak into the first parsed field."
+  ],
+  "scorer": {
+    "kind": "human",
+    "name": "operator",
+    "approval_authority": false,
+    "notes": "Scores are operator-graded evidence against acceptance criteria, not automatic approval."
+  },
+  "mutation_surface": [
+    "implementation",
+    "prompt-or-handoff",
+    "runtime-profile",
+    "docs",
+    "plan-amendment"
+  ],
+  "strategy": {
+    "name": "manual",
+    "executes_in_core": false,
+    "notes": "Open Scaffold records operator-driven attempt/frontier state only; external runtimes or humans execute attempts outside core."
+  },
+  "stop_condition": {
+    "max_attempts": null,
+    "all_acceptance_criteria_pass": true,
+    "human_approval": true,
+    "blocked_dependency": true,
+    "budget_limit": null,
+    "explicit_owner_stop": true
+  },
+  "source_refs": [
+    ".osc/plans/active/reviewable-csv-importer.md"
+  ],
+  "artifacts": {
+    "attempts": "attempts.jsonl",
+    "frontier": "frontier.json"
+  },
+  "boundary": {
+    "runtime_spawning": false,
+    "model_benchmarking": false,
+    "compliance_certification": false,
+    "approval_or_release_decision": false,
+    "external_anchoring": false
+  },
+  "notes": [
+    "This fixture records multi-attempt evolution state and frontier promotion. It does not spawn runtimes, rank models, certify compliance, or approve release.",
+    "The attempt records were authored for reproducibility; they demonstrate ledger shape, not agent or model performance."
+  ]
+}

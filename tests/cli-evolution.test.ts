@@ -7,6 +7,8 @@ import { basename, dirname, join, resolve } from 'node:path';
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const cli = join(repoRoot, 'src/cli.ts');
+const evolutionDemoLoop = join(repoRoot, 'examples/evolution-ledger-demo/.osc/evolution/reviewable-csv-importer');
+const evolutionDemoExpectedCompare = join(repoRoot, 'examples/evolution-ledger-demo/docs/evidence/evolution-compare-expected.md');
 
 function writeRunPacket(root: string, runId: string) {
   const runDir = join(root, `.osc/runs/${runId}`);
@@ -109,6 +111,22 @@ Improve the run contract.
   writeFileSync(adapterLogPath, 'runtime omx log');
   return { root, planPath, runPath, evalPath, receiptPath, adapterEvidencePath, adapterLogPath };
 }
+
+describe('checked-in evolution ledger demo fixture through the CLI', () => {
+  it('checks the committed fixture and renders the expected markdown exactly', () => {
+    const check = execFileSync(tsx, [cli, 'evolve', 'check', evolutionDemoLoop], { cwd: repoRoot, encoding: 'utf8' });
+    expect(check).toContain('PASS evolution loop structure valid; 0 warning(s)');
+
+    const markdown = execFileSync(tsx, [cli, 'evolve', 'compare', evolutionDemoLoop, '--format', 'markdown'], { cwd: repoRoot, encoding: 'utf8' });
+    const expected = readFileSync(evolutionDemoExpectedCompare, 'utf8');
+
+    expect(markdown).toBe(expected);
+    expect(markdown).toContain('# Evolution loop: reviewable-csv-importer — A vs B');
+    expect(markdown).toContain('| Score | 0.62 | 0.94 | +0.32 ▲ |');
+    expect(markdown).toContain('| AC2 — Malformed rows return an error that identifies the row and column of the offending token. | ✗ fail | ✓ pass ▲ |');
+    expect(markdown).toContain('**B (promote):** Promoted to current frontier. AC2 now reports row and column of the offending token; AC1 and AC3 remain passing. Operator promoted after manual review of the evaluation envelope.');
+  });
+});
 
 describe('osc evolve CLI', () => {
   it('initializes and checks an evolution loop without spawning a runtime', () => {

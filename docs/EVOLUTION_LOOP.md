@@ -82,6 +82,8 @@ one task -> attempt A -> attempt B -> osc evolve compare -> frontier rationale
 
 Read [`docs/examples/evolution-loop-compare.md`](examples/evolution-loop-compare.md) for a small public-safe example that shows two attempts, linked evaluation envelopes, a PR-ready markdown comparison, and an acceptance-criteria delta table.
 
+To run the same shape against checked-in files, see [`examples/evolution-ledger-demo/`](../examples/evolution-ledger-demo/). It ships recorded attempts, evaluation envelopes, a promoted frontier, and committed expected `osc evolve compare` output so the proof can be checked mechanically.
+
 ## Concepts
 
 ### Loop

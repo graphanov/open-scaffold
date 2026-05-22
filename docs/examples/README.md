@@ -9,6 +9,7 @@ The example paths:
 3. [GitHub-only workflow](#3-github-only-workflow) — issue → plan → PR → evidence with no chat coordinator.
 4. [Runtime harness handoff](#4-runtime-harness-handoff) — packaging work for an external runtime lane to execute.
 5. [Evolution loop compare](evolution-loop-compare.md) — two attempts → `osc evolve compare` → frontier rationale.
+   - [`examples/evolution-ledger-demo/`](../../examples/evolution-ledger-demo/) — runnable fixture: checked-in loop, attempts, evaluations, a promoted frontier, and committed expected compare output. Verified by the evolution CLI tests.
 
 If you want one complete non-recursive example first, start with [`downstream-walkthrough.md`](downstream-walkthrough.md). It shows the full mission → plan → optional `run.json` work package → evidence → close loop on a tiny shell CLI that is not Open Scaffold itself, then shows how a second session reconstructs the current state from files alone.
 

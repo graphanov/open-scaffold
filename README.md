@@ -113,7 +113,7 @@ npx open-scaffold evolve compare .osc/evolution/my-task \
 
 `osc evolve` records attempt/frontier state only. It does not launch agents, rank models, certify compliance, or approve releases.
 
-For the one-screen version, see [`docs/examples/evolution-loop-compare.md`](docs/examples/evolution-loop-compare.md).
+For the one-screen version, see [`docs/examples/evolution-loop-compare.md`](docs/examples/evolution-loop-compare.md). For a small fixture you can run locally, see [`examples/evolution-ledger-demo/`](examples/evolution-ledger-demo/).
 
 ---
 

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "open-scaffold.run.v1",
+  "runId": "attempt-a",
+  "taskId": "task-reviewable-csv-importer",
+  "plan": {
+    "slug": "reviewable-csv-importer",
+    "path": ".osc/plans/active/reviewable-csv-importer.md",
+    "goal": "Make the contacts CSV importer reviewable across repeated attempts.",
+    "acceptanceCriteria": [
+      "Quoted fields with embedded commas parse correctly.",
+      "Malformed rows return an error that identifies the row and column of the offending token.",
+      "UTF-8 BOM is stripped and does not leak into the first parsed field."
+    ]
+  },
+  "artifacts": {
+    "evidence": [
+      "docs/evidence/attempt-a-proof.md"
+    ]
+  }
+}

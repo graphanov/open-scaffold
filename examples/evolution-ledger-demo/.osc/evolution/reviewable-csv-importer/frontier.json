@@ -1,0 +1,41 @@
+{
+  "schema": "open-scaffold.evolution-frontier.v1",
+  "loop_id": "20260522T100000Z-reviewable-csv-importer-evolution",
+  "updated_at": "2026-05-22T10:30:00.000Z",
+  "current": {
+    "attempt_id": "attempt-c",
+    "run_id": "attempt-c",
+    "evaluation_id": "eval-attempt-c",
+    "score": 0.94,
+    "rationale": "Promoted to current frontier. AC2 now reports row and column of the offending token; AC1 and AC3 remain passing. Operator promoted after manual review of the evaluation envelope.",
+    "promoted_at": "2026-05-22T10:30:00.000Z",
+    "evidence_refs": [
+      "docs/evidence/attempt-c-proof.md",
+      "docs/evidence/attempt-c-evaluation.json"
+    ]
+  },
+  "history": [
+    {
+      "attempt_id": "attempt-a",
+      "run_id": "attempt-a",
+      "evaluation_id": "eval-attempt-a",
+      "score": 0.62,
+      "rationale": "First useful baseline; AC2 still returns a generic error. Promoted to set the frontier so improvement attempts can be measured against it.",
+      "promoted_at": "2026-05-22T10:10:00.000Z",
+      "evidence_refs": [
+        "docs/evidence/attempt-a-proof.md",
+        "docs/evidence/attempt-a-evaluation.json"
+      ]
+    }
+  ],
+  "boundary": {
+    "runtime_spawning": false,
+    "model_benchmarking": false,
+    "compliance_certification": false,
+    "approval_or_release_decision": false,
+    "external_anchoring": false
+  },
+  "notes": [
+    "Frontier promotion is a recorded operator decision, not proof of correctness or automatic approval."
+  ]
+}
