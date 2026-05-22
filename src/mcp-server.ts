@@ -28,10 +28,11 @@ export interface McpJsonRpcFailure {
 }
 
 export type McpJsonRpcResponse = McpJsonRpcSuccess | McpJsonRpcFailure;
+export type McpJsonRpcLineResult = McpJsonRpcResponse | McpJsonRpcResponse[] | null;
 
 type JsonRecord = Record<string, unknown>;
 
-export function handleMcpJsonRpcLine(line: string, context: McpToolContext): McpJsonRpcResponse | null {
+export function handleMcpJsonRpcLine(line: string, context: McpToolContext): McpJsonRpcLineResult {
   const trimmed = line.trim();
   if (!trimmed) return null;
   let parsed: unknown;
@@ -40,6 +41,13 @@ export function handleMcpJsonRpcLine(line: string, context: McpToolContext): Mcp
   } catch (error) {
     return errorResponse(null, -32700, 'Parse error', error instanceof Error ? error.message : String(error));
   }
+  if (Array.isArray(parsed)) {
+    if (parsed.length === 0) return errorResponse(null, -32600, 'Invalid Request');
+    const responses = parsed
+      .map((request) => handleMcpJsonRpcRequest(request, context))
+      .filter((response): response is McpJsonRpcResponse => response !== null);
+    return responses.length > 0 ? responses : null;
+  }
   return handleMcpJsonRpcRequest(parsed, context);
 }
 
@@ -47,7 +55,9 @@ export function handleMcpJsonRpcRequest(parsed: unknown, context: McpToolContext
   if (!isRecord(parsed) || parsed.jsonrpc !== '2.0' || typeof parsed.method !== 'string') {
     return errorResponse(extractId(parsed), -32600, 'Invalid Request');
   }
-  const id = parsed.id === undefined ? null : normalizeId(parsed.id);
+  const hasId = Object.prototype.hasOwnProperty.call(parsed, 'id');
+  if (!hasId) return null;
+  const id = normalizeId(parsed.id);
 
   try {
     switch (parsed.method) {

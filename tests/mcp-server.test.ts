@@ -198,6 +198,21 @@ describe('Open Scaffold MCP JSON-RPC server', () => {
     expect(malformed).toMatchObject({ jsonrpc: '2.0', id: null, error: { code: -32700 } });
   });
 
+  it('suppresses responses for notifications and handles JSON-RPC batches', () => {
+    const root = scaffoldFixture();
+    const context = { root, allowWrite: false };
+
+    const notification = handleMcpJsonRpcLine('{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}', context);
+    expect(notification).toBeNull();
+
+    const batch = handleMcpJsonRpcLine('[{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}},{"jsonrpc":"2.0","method":"notifications/initialized","params":{}},{"jsonrpc":"2.0","id":2,"method":"resources/list","params":{}}]', context);
+
+    expect(Array.isArray(batch)).toBe(true);
+    expect(batch).toHaveLength(2);
+    expect((batch as Array<{ id: number; result: unknown }>)[0].id).toBe(1);
+    expect((batch as Array<{ id: number; result: unknown }>)[1].id).toBe(2);
+  });
+
   it('wires osc mcp serve --validate and osc-mcp --validate to local scaffold status output', () => {
     const root = scaffoldFixture();
 
