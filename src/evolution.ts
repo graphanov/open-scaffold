@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { basename, extname, isAbsolute, join, relative, resolve } from 'node:path';
-import { parsePlanFile } from './scaffold.js';
+import { parsePlanFile, findScaffoldRoot } from './scaffold.js';
 import type { ValidationIssue, ValidationResult } from './validation.js';
 
 export const EVOLUTION_LOOP_SCHEMA = 'open-scaffold.evolution-loop.v1';
@@ -604,6 +604,7 @@ function frontierAttemptIds(frontier: Record<string, unknown>): { current: strin
 
 export function compareEvolutionLoop(loopDir: string, options: EvolutionCompareOptions = {}, root = process.cwd()): EvolutionCompareResult {
   const absoluteLoopDir = isAbsolute(loopDir) ? loopDir : resolve(root, loopDir);
+  const comparisonRoot = findScaffoldRoot(absoluteLoopDir) ?? root;
   const loopPath = join(absoluteLoopDir, 'loop.json');
   const attemptsPath = join(absoluteLoopDir, 'attempts.jsonl');
   const frontierPath = join(absoluteLoopDir, 'frontier.json');
@@ -658,7 +659,7 @@ export function compareEvolutionLoop(loopDir: string, options: EvolutionCompareO
     .filter((entry): entry is { attemptId: string; runId: string | null; score: number | null; promotedAt: string | null } => Boolean(entry.attemptId))
     .map((entry) => ({ ...entry, decision: attemptById.get(entry.attemptId)?.decision ?? null }));
 
-  const acceptanceCriteria = acceptanceCriteriaDelta(root, a, b);
+  const acceptanceCriteria = acceptanceCriteriaDelta(comparisonRoot, a, b);
 
   return {
     kind: 'comparison',

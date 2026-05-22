@@ -54,6 +54,7 @@ one task -> attempt A -> attempt B -> osc evolve compare -> frontier rationale
   - Preserves read-only compare behavior; `loop.json`, `attempts.jsonl`, and `frontier.json` are not mutated by compare.
 - `tests/evolution.test.ts`
   - Adds unit coverage for criteria delta rendering.
+  - Adds regression coverage for absolute loop-dir compare calls resolving evaluation refs from the loop scaffold root, not caller cwd.
   - Adds one-side-missing evaluation coverage.
   - Adds regression coverage for missing/stale evaluation file refs so compare remains readable for historical loops.
 - `tests/cli-evolution.test.ts`
@@ -102,7 +103,7 @@ After implementation:
 
 ```text
 Test Files  2 passed (2)
-Tests       25 passed (25)
+Tests       26 passed (26)
 ```
 
 ### Required verification gates
@@ -121,7 +122,7 @@ Result:
 
 ```text
 Test Files  2 passed (2)
-Tests       25 passed (25)
+Tests       26 passed (26)
 ```
 
 ```text
@@ -132,7 +133,7 @@ Result:
 
 ```text
 Test Files  32 passed (32)
-Tests       289 passed (289)
+Tests       290 passed (290)
 ```
 
 ```text

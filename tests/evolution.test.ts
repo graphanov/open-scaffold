@@ -16,6 +16,7 @@ import {
 function tempRepo() {
   const root = mkdtempSync(join(tmpdir(), 'osc-evolution-'));
   mkdirSync(join(root, '.osc/plans/active'), { recursive: true });
+  mkdirSync(join(root, '.osc/releases'), { recursive: true });
   mkdirSync(join(root, '.osc/runs/demo-run'), { recursive: true });
   mkdirSync(join(root, 'docs/evidence'), { recursive: true });
   writeFileSync(join(root, 'MISSION.md'), '# Mission\n\nBuild the thing.\n');
@@ -439,6 +440,38 @@ describe('evolution comparison rendering', () => {
     expect(markdown).toContain('| AC2 — Frontier promotion is explicit. | ✗ fail | ✓ pass ▲ |');
     expect(terminal).toContain('Acceptance criteria delta');
     expect(terminal).toContain('AC2: A=fail | B=pass ▲ — Frontier promotion is explicit.');
+  });
+
+  it('resolves compare evaluation refs from the loop scaffold root instead of caller cwd', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runA = writeRunPacket(root, 'attempt-a');
+    const runB = writeRunPacket(root, 'attempt-b');
+    const evalA = writeEvaluation(root, 'attempt-a', { AC2: 'fail' });
+    const evalB = writeEvaluation(root, 'attempt-b', { AC2: 'pass' });
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z'), strategy: 'greedy' });
+    recordEvolutionAttempt(outDir, {
+      runPath: runA,
+      evaluationPath: evalA,
+      decision: 'promote',
+      score: 0.62,
+      rationale: 'First frontier still failed AC2.',
+      now: new Date('2026-05-21T08:10:00.000Z'),
+    }, root);
+    recordEvolutionAttempt(outDir, {
+      runPath: runB,
+      evaluationPath: evalB,
+      decision: 'promote',
+      score: 0.94,
+      rationale: 'Second frontier passes AC2.',
+      now: new Date('2026-05-21T08:20:00.000Z'),
+    }, root);
+
+    const comparison = compareEvolutionLoop(outDir);
+    const markdown = renderEvolutionComparison(comparison, 'markdown');
+
+    expect(markdown).toContain('| AC2 — Frontier promotion is explicit. | ✗ fail | ✓ pass ▲ |');
   });
 
   it('shows known acceptance criteria when only one side has an evaluation envelope', () => {
