@@ -55,6 +55,7 @@ one task -> attempt A -> attempt B -> osc evolve compare -> frontier rationale
 - `tests/evolution.test.ts`
   - Adds unit coverage for criteria delta rendering.
   - Adds regression coverage for absolute loop-dir compare calls resolving evaluation refs from the loop scaffold root, not caller cwd.
+  - Adds regression coverage for partial historical scaffolds where the loop still lives under `.osc/` but strict root detection cannot find `.osc/releases`.
   - Adds one-side-missing evaluation coverage.
   - Adds regression coverage for missing/stale evaluation file refs so compare remains readable for historical loops.
 - `tests/cli-evolution.test.ts`
@@ -103,7 +104,7 @@ After implementation:
 
 ```text
 Test Files  2 passed (2)
-Tests       26 passed (26)
+Tests       27 passed (27)
 ```
 
 ### Required verification gates
@@ -122,7 +123,7 @@ Result:
 
 ```text
 Test Files  2 passed (2)
-Tests       26 passed (26)
+Tests       27 passed (27)
 ```
 
 ```text
@@ -133,7 +134,7 @@ Result:
 
 ```text
 Test Files  32 passed (32)
-Tests       290 passed (290)
+Tests       291 passed (291)
 ```
 
 ```text

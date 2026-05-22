@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
-import { basename, extname, isAbsolute, join, relative, resolve } from 'node:path';
+import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { parsePlanFile, findScaffoldRoot } from './scaffold.js';
 import type { ValidationIssue, ValidationResult } from './validation.js';
 
@@ -602,9 +602,19 @@ function frontierAttemptIds(frontier: Record<string, unknown>): { current: strin
   return { current, previous, history };
 }
 
+function inferScaffoldRootFromLoopDir(loopDir: string): string | null {
+  let current = resolve(loopDir);
+  while (true) {
+    if (basename(current) === '.osc') return dirname(current);
+    const parent = dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
 export function compareEvolutionLoop(loopDir: string, options: EvolutionCompareOptions = {}, root = process.cwd()): EvolutionCompareResult {
   const absoluteLoopDir = isAbsolute(loopDir) ? loopDir : resolve(root, loopDir);
-  const comparisonRoot = findScaffoldRoot(absoluteLoopDir) ?? root;
+  const comparisonRoot = findScaffoldRoot(absoluteLoopDir) ?? inferScaffoldRootFromLoopDir(absoluteLoopDir) ?? root;
   const loopPath = join(absoluteLoopDir, 'loop.json');
   const attemptsPath = join(absoluteLoopDir, 'attempts.jsonl');
   const frontierPath = join(absoluteLoopDir, 'frontier.json');
