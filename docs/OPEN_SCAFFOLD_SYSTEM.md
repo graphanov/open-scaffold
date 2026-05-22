@@ -15,6 +15,7 @@ This document is the full ontology. Most readers do not need every protocol page
 - Understanding runtime handoff progressively: [`docs/RUNTIME_SELECTION.md`](RUNTIME_SELECTION.md) for choosing a lane, [`docs/RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md) for profile metadata, then [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md) and [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md) for adapter/runtime responsibilities.
 - Closing a slice and producing evidence: [`docs/SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md).
 - Recording multi-attempt improvement loops and frontier promotion: [`docs/EVOLUTION_LOOP.md`](EVOLUTION_LOOP.md).
+- Exposing repo truth to MCP-capable tools: [`docs/MCP.md`](MCP.md).
 - Reading public mentions of named tools (Hermes, OMC, OMX, Discord, etc.): [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) for the public/private/adapter labels.
 
 ## Layers
@@ -33,10 +34,11 @@ Open Scaffold core owns the portable project substrate:
 - `docs/RUNTIME_BINDING_CONTRACT.md` — binding lifecycle and responsibilities for OMC/OMX/plain-agent/human lanes that consume `run.json` work packages (run packets) outside core.
 - `docs/SLICE_CLOSE_PROTOCOL.md` — evidence receipts, postflight decisions, approval strength, correction routing, and next-slice inheritance.
 - `docs/EVOLUTION_LOOP.md` — multi-attempt loop state, attempt journals, frontier promotion, and improvement routing.
+- `osc mcp serve` / `osc-mcp` — optional stdio MCP server that exposes local mission, plan, evidence, status, rules, and roadmap state to MCP-capable tools without requiring each agent to parse markdown directly.
 - `verify.sh` / `osc verify` — methodology compliance checks.
 - `.github/` templates — issue and PR traceability for GitHub-centered workflows.
 
-Core does **not** spawn agents. It defines the contract that agents and tools can use.
+Core does **not** spawn agents. It defines the contract that agents and tools can use. The MCP server is an interface over local repo truth, not a planner, task database, or runtime launcher.
 
 ### 2. Coordinators, orchestrators, and agents
 

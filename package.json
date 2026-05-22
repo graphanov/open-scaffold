@@ -1,6 +1,6 @@
 {
   "name": "open-scaffold",
-  "version": "0.4.13",
+  "version": "0.4.14",
   "description": "Runtime-neutral scaffold and prompt/artifact CLI for disciplined AI-agent development.",
   "license": "MIT",
   "repository": {
@@ -24,6 +24,7 @@
   "type": "module",
   "bin": {
     "osc": "dist/cli.js",
+    "osc-mcp": "dist/mcp-cli.js",
     "open-scaffold": "dist/cli.js"
   },
   "scripts": {

@@ -9,6 +9,7 @@ import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvel
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { computeMetrics, formatMetrics, parseSinceDate } from './metrics.js';
+import { runMcpCommand } from './mcp-server.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
 import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
 import { validateScaffold } from './validation.js';
@@ -45,6 +46,7 @@ Usage:
   osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text>
   osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>]
   osc evolve check <loop-dir>
+  osc mcp serve [--repo <path>] [--allow-write] [--validate]
   osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
   osc verify
   osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]
@@ -1629,6 +1631,11 @@ async function main(): Promise<void> {
     case 'evolve':
       evolutionCommand(args);
       return;
+    case 'mcp': {
+      const exitCode = await runMcpCommand(args, process.cwd());
+      if (exitCode !== 0) process.exit(exitCode);
+      return;
+    }
     case 'metrics':
       metricsCommand(args);
       return;
