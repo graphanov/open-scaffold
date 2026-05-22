@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, isAbsolute, join, relative, resolve, sep, win32 } from 'node:path';
 import {
   closePlan,
@@ -231,7 +231,7 @@ function listPlans(root: string, stage?: PlanStage): Array<{ slug: string; stage
   const stages = stage ? [stage] : PLAN_STAGES;
   return stages.flatMap((currentStage) =>
     state.plans[currentStage]
-      .filter((plan) => !isAmendmentSlug(plan.slug) && isRegularMcpFile(join(root, plan.path)))
+      .filter((plan) => !isAmendmentSlug(plan.slug) && isRegularMcpFile(join(root, plan.path), root))
       .map((plan) => ({ slug: plan.slug, stage: currentStage, path: plan.path })),
   );
 }
@@ -244,16 +244,18 @@ function findPlan(root: string, slug: string): PlanLocation {
   const normalized = safeSlug(slug);
   for (const stage of PLAN_STAGES) {
     const absolutePath = join(root, '.osc', 'plans', stage, `${normalized}.md`);
-    if (existsSync(absolutePath) && isRegularMcpFile(absolutePath)) {
+    if (existsSync(absolutePath) && isRegularMcpFile(absolutePath, root)) {
       return { slug: normalized, stage, absolutePath, relativePath: relative(root, absolutePath) };
     }
   }
   throw new McpJsonRpcError(-32004, `Plan not found: ${normalized}`);
 }
 
-function isRegularMcpFile(path: string): boolean {
+function isRegularMcpFile(path: string, root: string): boolean {
   try {
-    return lstatSync(path).isFile();
+    if (!lstatSync(path).isFile()) return false;
+    const relativeToRoot = relative(realpathSync(root), realpathSync(path));
+    return isSafeEvidenceRelativePath(relativeToRoot);
   } catch {
     return false;
   }
@@ -289,7 +291,7 @@ function bulletItems(text: string): string[] {
 
 export function readMissionSummary(root: string): Record<string, unknown> {
   const missionPath = join(root, 'MISSION.md');
-  if (!existsSync(missionPath)) return { defined: false, reason: 'MISSION.md not found', goals: [], non_goals: [], changelog: [] };
+  if (!existsSync(missionPath) || !isRegularMcpFile(missionPath, root)) return { defined: false, reason: 'MISSION.md not found or not a regular file under repository', goals: [], non_goals: [], changelog: [] };
   const raw = readFileSync(missionPath, 'utf8');
   const defined = !raw.includes('mission:unset') && !raw.includes('TODO: define mission');
   const sections = splitSections(raw);
@@ -315,7 +317,7 @@ function evidenceSlug(file: string): string {
 
 function listEvidence(root: string, slug?: string): Array<{ slug: string; file: string; path: string }> {
   const dir = join(root, '.osc', 'releases');
-  if (!existsSync(dir)) return [];
+  if (!existsSync(dir) || !isRegularEvidenceDirectory(dir, root)) return [];
   const normalizedSlug = slug ? safeSlug(slug) : undefined;
   return readdirSync(dir)
     .filter((file) => file.endsWith('.md') && file !== 'README.md')
@@ -333,8 +335,21 @@ function isRegularEvidenceFile(dir: string, file: string): boolean {
   }
 }
 
+function isRegularEvidenceDirectory(dir: string, root: string): boolean {
+  try {
+    if (!lstatSync(dir).isDirectory()) return false;
+    const relativeToRoot = relative(realpathSync(root), realpathSync(dir));
+    return isSafeEvidenceRelativePath(relativeToRoot);
+  } catch {
+    return false;
+  }
+}
+
 function safeEvidencePath(root: string, value: string): string {
   const releasesDir = resolve(root, '.osc', 'releases');
+  if (!existsSync(releasesDir)) throw new McpJsonRpcError(-32004, '.osc/releases not found');
+  if (!isRegularEvidenceDirectory(releasesDir, root)) throw new McpJsonRpcError(-32602, '.osc/releases must be a regular directory under the repository');
+  const canonicalReleasesDir = realpathSync(releasesDir);
   const candidate = value.includes('/') || value.includes(sep) ? resolve(root, value) : resolve(releasesDir, value);
   const relativeToReleases = relative(releasesDir, candidate);
   if (!isSafeEvidenceRelativePath(relativeToReleases)) {
@@ -343,6 +358,11 @@ function safeEvidencePath(root: string, value: string): string {
   if (!existsSync(candidate)) throw new McpJsonRpcError(-32004, `Evidence not found: ${value}`);
   const candidateStat = lstatSync(candidate);
   if (!candidateStat.isFile()) throw new McpJsonRpcError(-32602, `Evidence path must be a regular file under .osc/releases: ${value}`);
+  const canonicalCandidate = realpathSync(candidate);
+  const realRelativeToReleases = relative(canonicalReleasesDir, canonicalCandidate);
+  if (!isSafeEvidenceRelativePath(realRelativeToReleases)) {
+    throw new McpJsonRpcError(-32602, `Evidence path must stay under .osc/releases: ${value}`);
+  }
   return candidate;
 }
 

@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve, sep, win32 } from 'node:path';
 import { inspectScaffold, PLAN_STAGES, type PlanStage } from './scaffold.js';
 import { McpJsonRpcError, readMissionSummary } from './mcp-tools.js';
@@ -68,7 +68,7 @@ export function readMcpResource(uri: string, context: McpResourceContext): McpRe
   if (planMatch) {
     const stage = planMatch[1] as PlanStage;
     const state = inspectScaffold(root);
-    const plans = state.plans[stage].filter((plan) => !/-amendment-\d+$/.test(plan.slug));
+    const plans = state.plans[stage].filter((plan) => !/-amendment-\d+$/.test(plan.slug) && isRegularResourceFile(join(root, plan.path), root));
     return {
       uri,
       mimeType: 'application/json',
@@ -106,7 +106,29 @@ function readMarkdownResource(root: string, uri: string, relativePath: string): 
   if (!isSafeResourceRelativePath(relativeToRoot)) throw new McpJsonRpcError(-32602, `Resource path escapes repository: ${relativePath}`);
   if (!existsSync(path)) throw new McpJsonRpcError(-32004, `Resource file not found: ${relativePath}`);
   if (!lstatSync(path).isFile()) throw new McpJsonRpcError(-32602, `Resource path must be a regular file under the repository: ${relativePath}`);
+  const realRelativeToRoot = relative(realpathSync(root), realpathSync(path));
+  if (!isSafeResourceRelativePath(realRelativeToRoot)) throw new McpJsonRpcError(-32602, `Resource path escapes repository: ${relativePath}`);
   return { uri, mimeType: 'text/markdown', text: readFileSync(path, 'utf8') };
+}
+
+function isRegularResourceFile(path: string, root: string): boolean {
+  try {
+    if (!lstatSync(path).isFile()) return false;
+    const relativeToRoot = relative(realpathSync(root), realpathSync(path));
+    return isSafeResourceRelativePath(relativeToRoot);
+  } catch {
+    return false;
+  }
+}
+
+function isRegularResourceDirectory(path: string, root: string): boolean {
+  try {
+    if (!lstatSync(path).isDirectory()) return false;
+    const relativeToRoot = relative(realpathSync(root), realpathSync(path));
+    return isSafeResourceRelativePath(relativeToRoot);
+  } catch {
+    return false;
+  }
 }
 
 function isSafeResourceRelativePath(relativePath: string): boolean {
@@ -122,12 +144,15 @@ function isSafeResourceRelativePath(relativePath: string): boolean {
 
 function latestEvidenceFile(root: string): string | null {
   const dir = join(root, '.osc', 'releases');
-  if (!existsSync(dir)) return null;
+  if (!existsSync(dir) || !isRegularResourceDirectory(dir, root)) return null;
+  const canonicalDir = realpathSync(dir);
   return readdirSync(dir)
     .filter((file) => file.endsWith('.md') && file !== 'README.md')
     .filter((file) => {
       try {
-        return lstatSync(join(dir, file)).isFile();
+        const path = join(dir, file);
+        if (!lstatSync(path).isFile()) return false;
+        return isSafeResourceRelativePath(relative(canonicalDir, realpathSync(path)));
       } catch {
         return false;
       }

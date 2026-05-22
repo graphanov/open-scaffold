@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createInterface } from 'node:readline';
 import type { Readable, Writable } from 'node:stream';
 import { callMcpTool, listMcpTools, McpJsonRpcError, type McpToolContext } from './mcp-tools.js';
 import { listMcpResources, readMcpResource } from './mcp-resources.js';
@@ -114,11 +113,96 @@ export function renderMcpValidationStatus(root: string): string {
 }
 
 export async function runMcpStdioServer(context: McpToolContext, input: Readable = process.stdin, output: Writable = process.stdout): Promise<void> {
-  const reader = createInterface({ input, crlfDelay: Infinity });
-  for await (const line of reader) {
-    const response = handleMcpJsonRpcLine(line, context);
-    if (response) output.write(`${JSON.stringify(response)}\n`);
+  let mode: 'unknown' | 'framed' | 'line' = 'unknown';
+  let frameBuffer: Buffer<ArrayBufferLike> = Buffer.alloc(0);
+  let lineBuffer = '';
+
+  for await (const chunk of input) {
+    const chunkBuffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+
+    if (mode === 'unknown') {
+      frameBuffer = Buffer.concat([frameBuffer, chunkBuffer]);
+      const probe = frameBuffer.toString('utf8').trimStart();
+      if (!probe) continue;
+      mode = probe.toLowerCase().startsWith('content-length:') ? 'framed' : 'line';
+      if (mode === 'line') {
+        lineBuffer = frameBuffer.toString('utf8');
+        frameBuffer = Buffer.alloc(0);
+      }
+    } else if (mode === 'framed') {
+      frameBuffer = Buffer.concat([frameBuffer, chunkBuffer]);
+    } else {
+      lineBuffer += chunkBuffer.toString('utf8');
+    }
+
+    if (mode === 'framed') frameBuffer = processMcpFrameBuffer(frameBuffer, context, output);
+    if (mode === 'line') lineBuffer = processMcpLineBuffer(lineBuffer, context, output);
   }
+
+  if (mode === 'line' && lineBuffer.trim()) {
+    writeMcpJsonRpcResponse(output, handleMcpJsonRpcLine(lineBuffer, context), false);
+  }
+}
+
+function processMcpLineBuffer(buffer: string, context: McpToolContext, output: Writable): string {
+  let remaining = buffer;
+  while (true) {
+    const newline = remaining.search(/\r?\n/);
+    if (newline < 0) return remaining;
+    const line = remaining.slice(0, newline);
+    const nextOffset = remaining[newline] === '\r' && remaining[newline + 1] === '\n' ? newline + 2 : newline + 1;
+    remaining = remaining.slice(nextOffset);
+    writeMcpJsonRpcResponse(output, handleMcpJsonRpcLine(line, context), false);
+  }
+}
+
+function processMcpFrameBuffer(buffer: Buffer, context: McpToolContext, output: Writable): Buffer {
+  let remaining = buffer;
+  while (remaining.length > 0) {
+    const separator = frameHeaderSeparator(remaining);
+    if (!separator) return remaining;
+
+    const header = remaining.slice(0, separator.index).toString('utf8');
+    const length = contentLengthFromHeader(header);
+    const bodyStart = separator.index + separator.length;
+    if (length === null) {
+      writeMcpJsonRpcResponse(output, errorResponse(null, -32700, 'Parse error', 'Missing or invalid Content-Length header'), true);
+      remaining = remaining.slice(bodyStart);
+      continue;
+    }
+    if (remaining.length < bodyStart + length) return remaining;
+
+    const body = remaining.slice(bodyStart, bodyStart + length).toString('utf8');
+    remaining = remaining.slice(bodyStart + length);
+    writeMcpJsonRpcResponse(output, handleMcpJsonRpcLine(body, context), true);
+  }
+  return remaining;
+}
+
+function frameHeaderSeparator(buffer: Buffer): { index: number; length: number } | null {
+  const crlf = buffer.indexOf('\r\n\r\n');
+  const lf = buffer.indexOf('\n\n');
+  if (crlf < 0 && lf < 0) return null;
+  if (crlf >= 0 && (lf < 0 || crlf <= lf)) return { index: crlf, length: 4 };
+  return { index: lf, length: 2 };
+}
+
+function contentLengthFromHeader(header: string): number | null {
+  for (const line of header.split(/\r?\n/)) {
+    const match = /^content-length:\s*(\d+)\s*$/i.exec(line.trim());
+    if (match) return Number(match[1]);
+  }
+  return null;
+}
+
+function writeMcpJsonRpcResponse(output: Writable, response: McpJsonRpcLineResult, framed: boolean): void {
+  if (!response) return;
+  const serialized = JSON.stringify(response);
+  if (framed) {
+    output.write(`Content-Length: ${Buffer.byteLength(serialized, 'utf8')}\r\n\r\n${serialized}`);
+    return;
+  }
+  output.write(`${serialized}\n`);
 }
 
 export async function runMcpCommand(args: string[], root = process.cwd()): Promise<number> {

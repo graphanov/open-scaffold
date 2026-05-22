@@ -88,6 +88,29 @@ function samplePlan(slug: string, status: string, goal: string) {
   ].join('\n');
 }
 
+function framedMessage(payload: unknown): string {
+  const json = JSON.stringify(payload);
+  return `Content-Length: ${Buffer.byteLength(json, 'utf8')}\r\n\r\n${json}`;
+}
+
+function parseFramedMessages(output: string): unknown[] {
+  const messages: unknown[] = [];
+  let remaining = output;
+  while (remaining.trim()) {
+    const headerEnd = remaining.indexOf('\r\n\r\n');
+    expect(headerEnd).toBeGreaterThanOrEqual(0);
+    const header = remaining.slice(0, headerEnd);
+    const lengthMatch = /^Content-Length:\s*(\d+)$/im.exec(header);
+    expect(lengthMatch).not.toBeNull();
+    const length = Number(lengthMatch?.[1] ?? 0);
+    const bodyStart = headerEnd + 4;
+    const body = remaining.slice(bodyStart, bodyStart + length);
+    messages.push(JSON.parse(body));
+    remaining = remaining.slice(bodyStart + length);
+  }
+  return messages;
+}
+
 describe('Open Scaffold MCP tool handlers', () => {
   it('lists core tools and returns structured local scaffold state', () => {
     const root = scaffoldFixture();
@@ -224,8 +247,10 @@ describe('Open Scaffold MCP tool handlers', () => {
     try {
       rmSync(join(root, 'ROADMAP.md'));
       rmSync(join(root, '.osc/RULES.md'));
+      rmSync(join(root, 'MISSION.md'));
       symlinkSync(outside, join(root, 'ROADMAP.md'));
       symlinkSync(outside, join(root, '.osc/RULES.md'));
+      symlinkSync(outside, join(root, 'MISSION.md'));
       symlinkCreated = true;
     } catch {
       // Some platforms disable file symlink creation.
@@ -234,6 +259,31 @@ describe('Open Scaffold MCP tool handlers', () => {
     if (symlinkCreated) {
       expect(() => readMcpResource('osc://roadmap', { root })).toThrow(McpJsonRpcError);
       expect(() => readMcpResource('osc://rules', { root })).toThrow(McpJsonRpcError);
+      const mission = callMcpTool('get_mission', {}, { root, allowWrite: false });
+      expect(mission).toMatchObject({ defined: false, goals: [], changelog: [] });
+      expect(JSON.stringify(mission)).not.toContain('do not expose this resource');
+    }
+  });
+
+  it('refuses evidence reads through a symlinked releases directory', () => {
+    const root = scaffoldFixture();
+    const outsideReleases = join(root, '..', 'outside-releases');
+    mkdirSync(outsideReleases, { recursive: true });
+    writeFileSync(join(outsideReleases, '2999-evil.md'), 'do not expose this release');
+
+    let symlinkCreated = false;
+    try {
+      rmSync(join(root, '.osc/releases'), { recursive: true, force: true });
+      symlinkSync(outsideReleases, join(root, '.osc/releases'));
+      symlinkCreated = true;
+    } catch {
+      // Some platforms disable directory symlink creation.
+    }
+
+    if (symlinkCreated) {
+      expect(callMcpTool('list_evidence', { slug: 'evil' }, { root, allowWrite: false })).toMatchObject({ evidence: [] });
+      expect(() => callMcpTool('get_evidence', { path: '.osc/releases/2999-evil.md' }, { root, allowWrite: false })).toThrow(McpJsonRpcError);
+      expect(() => readMcpResource('osc://releases/latest', { root })).toThrow(McpJsonRpcError);
     }
   });
 });
@@ -309,5 +359,19 @@ describe('Open Scaffold MCP JSON-RPC server', () => {
 
     expect(lines[0]).toMatchObject({ id: 1, result: { serverInfo: { name: 'open-scaffold-mcp' } } });
     expect(lines[1].result.tools.map((tool: { name: string }) => tool.name)).toContain('list_plans');
+  }, 20_000);
+
+  it('responds over stdio with MCP content-length frames', () => {
+    const root = scaffoldFixture();
+    const input = [
+      framedMessage({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {} } }),
+      framedMessage({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }),
+    ].join('');
+
+    const run = execFileSync(tsx, [cli, 'mcp', 'serve'], { cwd: root, input, encoding: 'utf8' });
+    const messages = parseFramedMessages(run) as Array<{ id: number; result: { serverInfo?: { name: string }; tools?: Array<{ name: string }> } }>;
+
+    expect(messages[0]).toMatchObject({ id: 1, result: { serverInfo: { name: 'open-scaffold-mcp' } } });
+    expect(messages[1].result.tools?.map((tool) => tool.name)).toContain('list_plans');
   }, 20_000);
 });
