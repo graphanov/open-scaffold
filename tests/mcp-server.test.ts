@@ -3,7 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { callMcpTool, listMcpTools, McpJsonRpcError } from '../src/mcp-tools.js';
+import { callMcpTool, isSafeEvidenceRelativePath, listMcpTools, McpJsonRpcError } from '../src/mcp-tools.js';
 import { listMcpResources, readMcpResource } from '../src/mcp-resources.js';
 import { handleMcpJsonRpcLine } from '../src/mcp-server.js';
 
@@ -126,6 +126,15 @@ describe('Open Scaffold MCP tool handlers', () => {
 
     const evidence = callMcpTool('list_evidence', { slug: '001-sample' }, { root, allowWrite: false });
     expect(evidence).toMatchObject({ evidence: [{ slug: '001-sample', file: '2026-05-22-001-sample.md' }] });
+
+    const evidenceFile = callMcpTool('get_evidence', { path: '.osc/releases/2026-05-22-001-sample.md' }, { root, allowWrite: false });
+    expect(evidenceFile).toMatchObject({ slug: '001-sample', file: '2026-05-22-001-sample.md' });
+    expect(isSafeEvidenceRelativePath('2026-05-22-001-sample.md')).toBe(true);
+    expect(isSafeEvidenceRelativePath('../secret.md')).toBe(false);
+    expect(isSafeEvidenceRelativePath('..\\secret.md')).toBe(false);
+    expect(isSafeEvidenceRelativePath('/tmp/secret.md')).toBe(false);
+    expect(isSafeEvidenceRelativePath('D:\\secret.md')).toBe(false);
+    expect(isSafeEvidenceRelativePath('\\\\server\\share\\secret.md')).toBe(false);
 
     const search = callMcpTool('search_plans', { query: 'sample support' }, { root, allowWrite: false });
     expect(search).toMatchObject({ results: [{ slug: '001-sample', stage: 'active' }] });

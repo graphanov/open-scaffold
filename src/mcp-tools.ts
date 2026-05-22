@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, join, relative, resolve, sep } from 'node:path';
+import { basename, isAbsolute, join, relative, resolve, sep, win32 } from 'node:path';
 import {
   closePlan,
   createEvidenceNoteSkeleton,
@@ -320,11 +320,22 @@ function safeEvidencePath(root: string, value: string): string {
   const releasesDir = resolve(root, '.osc', 'releases');
   const candidate = value.includes('/') || value.includes(sep) ? resolve(root, value) : resolve(releasesDir, value);
   const relativeToReleases = relative(releasesDir, candidate);
-  if (relativeToReleases.startsWith('..') || relativeToReleases === '' || resolve(candidate) === releasesDir) {
+  if (!isSafeEvidenceRelativePath(relativeToReleases)) {
     throw new McpJsonRpcError(-32602, `Evidence path must stay under .osc/releases: ${value}`);
   }
   if (!existsSync(candidate) || !statSync(candidate).isFile()) throw new McpJsonRpcError(-32004, `Evidence not found: ${value}`);
   return candidate;
+}
+
+export function isSafeEvidenceRelativePath(relativePath: string): boolean {
+  return (
+    relativePath !== '' &&
+    relativePath !== '..' &&
+    !relativePath.startsWith(`..${sep}`) &&
+    !relativePath.startsWith(`..${win32.sep}`) &&
+    !isAbsolute(relativePath) &&
+    !win32.isAbsolute(relativePath)
+  );
 }
 
 function getEvidence(root: string, pathArg?: string, slug?: string): Record<string, unknown> {
