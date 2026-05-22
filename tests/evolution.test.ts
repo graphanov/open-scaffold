@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -469,6 +469,42 @@ describe('evolution comparison rendering', () => {
     const markdown = renderEvolutionComparison(comparison, 'markdown');
 
     expect(markdown).toContain('## Acceptance criteria delta');
+    expect(markdown).toContain('| AC1 — Loop state is created. | — | ✓ pass ▲ |');
+    expect(markdown).toContain('| AC2 — Frontier promotion is explicit. | — | ✓ pass ▲ |');
+  });
+
+  it('ignores missing evaluation envelopes while keeping comparison output available', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runA = writeRunPacket(root, 'attempt-a');
+    const runB = writeRunPacket(root, 'attempt-b');
+    const evalA = writeEvaluation(root, 'attempt-a', { AC2: 'fail' });
+    const evalB = writeEvaluation(root, 'attempt-b', { AC2: 'pass' });
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z'), strategy: 'greedy' });
+    recordEvolutionAttempt(outDir, {
+      runPath: runA,
+      evaluationPath: evalA,
+      decision: 'promote',
+      score: 0.62,
+      rationale: 'First frontier pointed at evaluation evidence that was later moved.',
+      now: new Date('2026-05-21T08:10:00.000Z'),
+    }, root);
+    recordEvolutionAttempt(outDir, {
+      runPath: runB,
+      evaluationPath: evalB,
+      decision: 'promote',
+      score: 0.94,
+      rationale: 'Second frontier still has evaluation evidence.',
+      now: new Date('2026-05-21T08:20:00.000Z'),
+    }, root);
+    rmSync(evalA);
+
+    const comparison = compareEvolutionLoop(outDir, {}, root);
+    const markdown = renderEvolutionComparison(comparison, 'markdown');
+
+    expect(markdown).toContain('# Evolution loop: demo-loop — A vs B');
+    expect(markdown).toContain('| Evaluation envelope | ✓ | ✓ | — |');
     expect(markdown).toContain('| AC1 — Loop state is created. | — | ✓ pass ▲ |');
     expect(markdown).toContain('| AC2 — Frontier promotion is explicit. | — | ✓ pass ▲ |');
   });

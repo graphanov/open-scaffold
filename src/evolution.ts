@@ -534,14 +534,12 @@ interface CompareCriterionStatus {
   status: string | null;
 }
 
-function readEvaluationCriteriaForCompare(root: string, evaluationRef: string | null, attemptId: string): CompareCriterionStatus[] {
+function readEvaluationCriteriaForCompare(root: string, evaluationRef: string | null): CompareCriterionStatus[] {
   if (!evaluationRef) return [];
   const evaluationPath = isAbsolute(evaluationRef) ? evaluationRef : resolve(root, evaluationRef);
   try {
     const parsed = readJson(evaluationPath);
-    if (!isRecord(parsed) || parsed.schema !== EVALUATION_SCHEMA) {
-      throw new Error(`Evaluation envelope must declare schema: ${EVALUATION_SCHEMA}`);
-    }
+    if (!isRecord(parsed) || parsed.schema !== EVALUATION_SCHEMA) return [];
     const criteria = Array.isArray(parsed.acceptance_criteria) ? parsed.acceptance_criteria.filter(isRecord) : [];
     return criteria.map((criterion, index) => {
       const id = asString(criterion.id) ?? `AC${index + 1}`;
@@ -551,14 +549,14 @@ function readEvaluationCriteriaForCompare(root: string, evaluationRef: string | 
         status: asString(criterion.status),
       };
     });
-  } catch (error) {
-    throw new Error(`Unable to read evaluation criteria for ${attemptId}: ${error instanceof Error ? error.message : String(error)}`);
+  } catch {
+    return [];
   }
 }
 
 function acceptanceCriteriaDelta(root: string, a: EvolutionCompareAttempt, b: EvolutionCompareAttempt) {
-  const aCriteria = readEvaluationCriteriaForCompare(root, a.evaluation, a.attemptId);
-  const bCriteria = readEvaluationCriteriaForCompare(root, b.evaluation, b.attemptId);
+  const aCriteria = readEvaluationCriteriaForCompare(root, a.evaluation);
+  const bCriteria = readEvaluationCriteriaForCompare(root, b.evaluation);
   const rows = new Map<string, EvolutionCompareCriterionDelta>();
   for (const criterion of aCriteria) {
     rows.set(criterion.id, {

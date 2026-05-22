@@ -55,6 +55,7 @@ one task -> attempt A -> attempt B -> osc evolve compare -> frontier rationale
 - `tests/evolution.test.ts`
   - Adds unit coverage for criteria delta rendering.
   - Adds one-side-missing evaluation coverage.
+  - Adds regression coverage for missing/stale evaluation file refs so compare remains readable for historical loops.
 - `tests/cli-evolution.test.ts`
   - Verifies markdown `--out` includes the criteria delta table.
 - `docs/examples/evolution-loop-compare.md`
@@ -101,7 +102,7 @@ After implementation:
 
 ```text
 Test Files  2 passed (2)
-Tests       24 passed (24)
+Tests       25 passed (25)
 ```
 
 ### Required verification gates
@@ -120,7 +121,7 @@ Result:
 
 ```text
 Test Files  2 passed (2)
-Tests       24 passed (24)
+Tests       25 passed (25)
 ```
 
 ```text
@@ -131,7 +132,7 @@ Result:
 
 ```text
 Test Files  32 passed (32)
-Tests       288 passed (288)
+Tests       289 passed (289)
 ```
 
 ```text
