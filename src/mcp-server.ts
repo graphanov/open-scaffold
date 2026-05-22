@@ -32,6 +32,7 @@ export type McpJsonRpcResponse = McpJsonRpcSuccess | McpJsonRpcFailure;
 export type McpJsonRpcLineResult = McpJsonRpcResponse | McpJsonRpcResponse[] | null;
 
 type JsonRecord = Record<string, unknown>;
+const MCP_PROTOCOL_VERSION = '2024-11-05';
 
 export function handleMcpJsonRpcLine(line: string, context: McpToolContext): McpJsonRpcLineResult {
   const trimmed = line.trim();
@@ -189,8 +190,8 @@ function isHelpArg(value: string | undefined): boolean {
 }
 
 function protocolVersion(params: unknown): string {
-  if (isRecord(params) && typeof params.protocolVersion === 'string' && params.protocolVersion.trim()) return params.protocolVersion;
-  return '2024-11-05';
+  if (isRecord(params) && params.protocolVersion === MCP_PROTOCOL_VERSION) return MCP_PROTOCOL_VERSION;
+  return MCP_PROTOCOL_VERSION;
 }
 
 function successResponse(id: string | number | null, result: unknown): McpJsonRpcSuccess {
@@ -221,8 +222,8 @@ function normalizeId(value: unknown): string | number | null {
   return null;
 }
 
-function isValidId(value: unknown): value is string | number | null {
-  return typeof value === 'string' || typeof value === 'number' || value === null;
+function isValidId(value: unknown): value is string | number {
+  return typeof value === 'string' || typeof value === 'number';
 }
 
 function extractId(value: unknown): string | number | null {
