@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { inspectScaffold, PLAN_STAGES, type PlanStage } from './scaffold.js';
 import { McpJsonRpcError, readMissionSummary } from './mcp-tools.js';
@@ -113,6 +113,13 @@ function latestEvidenceFile(root: string): string | null {
   if (!existsSync(dir)) return null;
   return readdirSync(dir)
     .filter((file) => file.endsWith('.md') && file !== 'README.md')
+    .filter((file) => {
+      try {
+        return lstatSync(join(dir, file)).isFile();
+      } catch {
+        return false;
+      }
+    })
     .sort()
     .at(-1) ?? null;
 }

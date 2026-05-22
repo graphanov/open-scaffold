@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, isAbsolute, join, relative, resolve, sep, win32 } from 'node:path';
 import {
   closePlan,
@@ -323,7 +323,9 @@ function safeEvidencePath(root: string, value: string): string {
   if (!isSafeEvidenceRelativePath(relativeToReleases)) {
     throw new McpJsonRpcError(-32602, `Evidence path must stay under .osc/releases: ${value}`);
   }
-  if (!existsSync(candidate) || !statSync(candidate).isFile()) throw new McpJsonRpcError(-32004, `Evidence not found: ${value}`);
+  if (!existsSync(candidate)) throw new McpJsonRpcError(-32004, `Evidence not found: ${value}`);
+  const candidateStat = lstatSync(candidate);
+  if (!candidateStat.isFile()) throw new McpJsonRpcError(-32602, `Evidence path must be a regular file under .osc/releases: ${value}`);
   return candidate;
 }
 

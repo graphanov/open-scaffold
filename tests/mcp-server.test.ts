@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { callMcpTool, isSafeEvidenceRelativePath, listMcpTools, McpJsonRpcError } from '../src/mcp-tools.js';
@@ -135,6 +135,24 @@ describe('Open Scaffold MCP tool handlers', () => {
     expect(isSafeEvidenceRelativePath('/tmp/secret.md')).toBe(false);
     expect(isSafeEvidenceRelativePath('D:\\secret.md')).toBe(false);
     expect(isSafeEvidenceRelativePath('\\\\server\\share\\secret.md')).toBe(false);
+
+    const outside = join(root, '..', 'outside-secret.md');
+    const symlinkedEvidence = join(root, '.osc/releases/2999-evil.md');
+    writeFileSync(outside, 'do not expose this file');
+    let symlinkCreated = false;
+    try {
+      symlinkSync(outside, symlinkedEvidence);
+      symlinkCreated = true;
+    } catch {
+      // Some platforms disable file symlink creation. The path-shape guard above still covers
+      // cross-root strings; symlink-specific assertions run when the fixture can create one.
+    }
+    if (symlinkCreated) {
+      expect(() => callMcpTool('get_evidence', { path: '.osc/releases/2999-evil.md' }, { root, allowWrite: false })).toThrow(McpJsonRpcError);
+      const latestEvidence = readMcpResource('osc://releases/latest', { root });
+      expect(latestEvidence.text).toContain('Verified sample behavior.');
+      expect(latestEvidence.text).not.toContain('do not expose this file');
+    }
 
     const search = callMcpTool('search_plans', { query: 'sample support' }, { root, allowWrite: false });
     expect(search).toMatchObject({ results: [{ slug: '001-sample', stage: 'active' }] });
