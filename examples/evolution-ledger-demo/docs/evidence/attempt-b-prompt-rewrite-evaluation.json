@@ -1,0 +1,89 @@
+{
+  "schema": "open-scaffold.evaluation.v1",
+  "evaluation_id": "eval-attempt-b-prompt-rewrite",
+  "subject": {
+    "source": "run",
+    "plan": ".osc/plans/active/reviewable-csv-importer.md",
+    "plan_slug": "reviewable-csv-importer",
+    "task_id": "task-reviewable-csv-importer",
+    "run_id": "attempt-b-prompt-rewrite",
+    "run_packet": ".osc/runs/attempt-b-prompt-rewrite/run.json"
+  },
+  "scorer": {
+    "kind": "human",
+    "name": "operator",
+    "notes": "Operator-graded against the acceptance criteria list; this score is evidence, not automatic approval."
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC1",
+      "text": "Quoted fields with embedded commas parse correctly.",
+      "status": "pass",
+      "evaluator": {
+        "kind": "human",
+        "name": "operator",
+        "ref": null
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "ref": "docs/evidence/attempt-b-prompt-rewrite-proof.md",
+          "summary": "Fixture evidence reviewed against the acceptance criterion."
+        }
+      ],
+      "rationale": "Quoted contact names with embedded commas still parsed correctly."
+    },
+    {
+      "id": "AC2",
+      "text": "Malformed rows return an error that identifies the row and column of the offending token.",
+      "status": "fail",
+      "evaluator": {
+        "kind": "human",
+        "name": "operator",
+        "ref": null
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "ref": "docs/evidence/attempt-b-prompt-rewrite-proof.md",
+          "summary": "Fixture evidence reviewed against the acceptance criterion."
+        }
+      ],
+      "rationale": "The prompt rewrite still returned a generic malformed-row error."
+    },
+    {
+      "id": "AC3",
+      "text": "UTF-8 BOM is stripped and does not leak into the first parsed field.",
+      "status": "fail",
+      "evaluator": {
+        "kind": "human",
+        "name": "operator",
+        "ref": null
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "ref": "docs/evidence/attempt-b-prompt-rewrite-proof.md",
+          "summary": "Fixture evidence reviewed against the acceptance criterion."
+        }
+      ],
+      "rationale": "BOM handling regressed; the first parsed field retained the BOM marker."
+    }
+  ],
+  "decision": {
+    "status": "approved",
+    "approver": "operator",
+    "rationale": "Evaluation envelope reviewed for the fixture demonstration."
+  },
+  "improvement": {
+    "route": "retry",
+    "target": null,
+    "carried_forward": [
+      "Fix AC2 without regressing AC1 or AC3."
+    ],
+    "do_not_assume": [
+      "No model benchmark claim.",
+      "No automatic release approval."
+    ]
+  }
+}

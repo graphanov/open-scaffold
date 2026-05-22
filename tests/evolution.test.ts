@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import {
   EVOLUTION_LOOP_SCHEMA,
   compareEvolutionLoop,
@@ -12,6 +12,10 @@ import {
   validateEvolutionLoopDir,
   writeEvolutionLoop,
 } from '../src/evolution.js';
+
+const repoRoot = resolve(import.meta.dirname, '..');
+const evolutionDemoRoot = join(repoRoot, 'examples/evolution-ledger-demo');
+const evolutionDemoLoop = join(evolutionDemoRoot, '.osc/evolution/reviewable-csv-importer');
 
 function tempRepo() {
   const root = mkdtempSync(join(tmpdir(), 'osc-evolution-'));
@@ -128,6 +132,57 @@ function writeDispatchReceipt(root: string, runId = 'demo-run') {
   writeFileSync(logPath, 'runtime omx log');
   return { receiptPath, evidencePath, logPath };
 }
+
+describe('checked-in evolution ledger demo fixture', () => {
+  it('validates without warnings and keeps boundary claims off', () => {
+    const result = validateEvolutionLoopDir(evolutionDemoLoop, evolutionDemoRoot);
+    const attempts = readFileSync(join(evolutionDemoLoop, 'attempts.jsonl'), 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as { decision?: string; attempt_id?: string });
+
+    expect(result.failures).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(attempts.map((attempt) => attempt.attempt_id)).toEqual(['attempt-a', 'attempt-b-prompt-rewrite', 'attempt-c']);
+    expect(attempts.map((attempt) => attempt.decision)).toContain('reject');
+  });
+
+  it('compares previous frontier to current frontier with a fail-to-pass acceptance-criteria delta', () => {
+    const comparison = compareEvolutionLoop(evolutionDemoLoop, {}, evolutionDemoRoot);
+
+    expect(comparison.kind).toBe('comparison');
+    if (comparison.kind !== 'comparison') throw new Error('expected comparison');
+    expect(comparison.loop).toMatchObject({ loopDir: 'reviewable-csv-importer', strategy: 'manual', attemptCount: 3 });
+    expect(comparison.a.attemptId).toBe('attempt-a');
+    expect(comparison.b.attemptId).toBe('attempt-c');
+    expect(comparison.scoreDelta).toBeCloseTo(0.32);
+    expect(comparison.boundaryDifferences).toEqual([]);
+    expect(comparison.a.boundary).toMatchObject({
+      runtime_spawning: false,
+      model_benchmarking: false,
+      compliance_certification: false,
+      approval_or_release_decision: false,
+      external_anchoring: false,
+    });
+    expect(comparison.b.boundary).toMatchObject({
+      runtime_spawning: false,
+      model_benchmarking: false,
+      compliance_certification: false,
+      approval_or_release_decision: false,
+      external_anchoring: false,
+    });
+    expect(comparison.frontierHistory.map((item: { attemptId: string }) => item.attemptId)).toEqual(['attempt-a', 'attempt-c']);
+
+    const ac2 = comparison.acceptanceCriteria.rows.find((row: { id: string }) => row.id === 'AC2');
+    expect(ac2).toMatchObject({
+      text: 'Malformed rows return an error that identifies the row and column of the offending token.',
+      aStatus: 'fail',
+      bStatus: 'pass',
+    });
+    const ac1 = comparison.acceptanceCriteria.rows.find((row: { id: string }) => row.id === 'AC1');
+    expect(ac1).toMatchObject({ aStatus: 'pass', bStatus: 'pass' });
+  });
+});
 
 describe('evolution loop rendering', () => {
   it('renders contract-first loop files from a plan without runtime spawning claims', () => {
