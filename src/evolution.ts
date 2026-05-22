@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
-import { basename, extname, isAbsolute, join, relative, resolve } from 'node:path';
-import { parsePlanFile } from './scaffold.js';
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, win32 } from 'node:path';
+import { parsePlanFile, findScaffoldRoot } from './scaffold.js';
 import type { ValidationIssue, ValidationResult } from './validation.js';
 
 export const EVOLUTION_LOOP_SCHEMA = 'open-scaffold.evolution-loop.v1';
@@ -418,6 +418,13 @@ export interface EvolutionCompareAttempt {
   boundary: Record<string, unknown>;
 }
 
+export interface EvolutionCompareCriterionDelta {
+  id: string;
+  text: string;
+  aStatus: string | null;
+  bStatus: string | null;
+}
+
 export type EvolutionCompareResult =
   | {
       kind: 'message';
@@ -432,6 +439,7 @@ export type EvolutionCompareResult =
       scoreDelta: number | null;
       evidence: { onlyInA: string[]; onlyInB: string[]; inBoth: string[] };
       evaluation: { a: { present: boolean; path: string | null; id: string | null; decision: string | null }; b: { present: boolean; path: string | null; id: string | null; decision: string | null } };
+      acceptanceCriteria: { rows: EvolutionCompareCriterionDelta[]; aPresent: boolean; bPresent: boolean };
       boundaryDifferences: Array<{ field: string; a: unknown; b: unknown }>;
       frontierHistory: Array<{ attemptId: string; runId: string | null; score: number | null; promotedAt: string | null; decision: string | null }>;
     };
@@ -469,6 +477,40 @@ function formatDelta(delta: number | null): string {
   return `${rounded > 0 ? '+' : ''}${rounded} ${rounded > 0 ? '▲' : '▼'}`;
 }
 
+function formatCriterionStatus(status: string | null): string {
+  switch (status) {
+    case 'pass':
+      return '✓ pass';
+    case 'fail':
+      return '✗ fail';
+    case 'partial':
+      return '◐ partial';
+    case 'blocked':
+      return 'blocked';
+    case 'not_evaluated':
+      return 'not evaluated';
+    case null:
+      return '—';
+    default:
+      return status;
+  }
+}
+
+function formatPlainCriterionStatus(status: string | null): string {
+  return status ?? '—';
+}
+
+function criterionDeltaMarker(aStatus: string | null, bStatus: string | null): string {
+  if (aStatus === bStatus || bStatus === null) return '';
+  if (bStatus === 'pass' && aStatus !== 'pass') return ' ▲';
+  if (aStatus === 'pass' && bStatus !== 'pass') return ' ▼';
+  return ' changed';
+}
+
+function escapeMarkdownTableCell(value: string): string {
+  return value.replace(/\|/g, '\\|').replace(/\n/g, '<br>');
+}
+
 function evidenceDelta(aRefs: string[], bRefs: string[]) {
   const aSet = new Set(aRefs);
   const bSet = new Set(bRefs);
@@ -486,6 +528,65 @@ function boundaryDelta(a: Record<string, unknown>, b: Record<string, unknown>) {
     .map((field) => ({ field, a: a[field], b: b[field] }));
 }
 
+interface CompareCriterionStatus {
+  id: string;
+  text: string;
+  status: string | null;
+}
+
+function readEvaluationCriteriaForCompare(root: string, evaluationRef: string | null): CompareCriterionStatus[] {
+  if (!evaluationRef) return [];
+  const evaluationPath = isAbsolute(evaluationRef) || win32.isAbsolute(evaluationRef) ? evaluationRef : resolve(root, evaluationRef);
+  try {
+    const parsed = readJson(evaluationPath);
+    if (!isRecord(parsed) || parsed.schema !== EVALUATION_SCHEMA) return [];
+    const criteria = Array.isArray(parsed.acceptance_criteria) ? parsed.acceptance_criteria.filter(isRecord) : [];
+    return criteria.map((criterion, index) => {
+      const id = asString(criterion.id) ?? `AC${index + 1}`;
+      return {
+        id,
+        text: asString(criterion.text) ?? id,
+        status: asString(criterion.status),
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+function acceptanceCriteriaDelta(root: string, a: EvolutionCompareAttempt, b: EvolutionCompareAttempt) {
+  const aCriteria = readEvaluationCriteriaForCompare(root, a.evaluation);
+  const bCriteria = readEvaluationCriteriaForCompare(root, b.evaluation);
+  const rows = new Map<string, EvolutionCompareCriterionDelta>();
+  for (const criterion of aCriteria) {
+    rows.set(criterion.id, {
+      id: criterion.id,
+      text: criterion.text,
+      aStatus: criterion.status,
+      bStatus: null,
+    });
+  }
+  for (const criterion of bCriteria) {
+    const existing = rows.get(criterion.id);
+    if (existing) {
+      existing.text = existing.text || criterion.text;
+      existing.bStatus = criterion.status;
+    } else {
+      rows.set(criterion.id, {
+        id: criterion.id,
+        text: criterion.text,
+        aStatus: null,
+        bStatus: criterion.status,
+      });
+    }
+  }
+  return {
+    rows: [...rows.values()],
+    aPresent: Boolean(a.evaluation),
+    bPresent: Boolean(b.evaluation),
+  };
+}
+
 function resolveAttemptTarget(target: string, attempts: EvolutionCompareAttempt[], currentFrontierId: string | null): EvolutionCompareAttempt {
   const resolvedTarget = target === 'frontier' ? currentFrontierId : target;
   if (!resolvedTarget) throw new Error('No current frontier attempt is recorded.');
@@ -501,8 +602,19 @@ function frontierAttemptIds(frontier: Record<string, unknown>): { current: strin
   return { current, previous, history };
 }
 
+function inferScaffoldRootFromLoopDir(loopDir: string): string | null {
+  let current = resolve(loopDir);
+  while (true) {
+    if (basename(current) === '.osc') return dirname(current);
+    const parent = dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
 export function compareEvolutionLoop(loopDir: string, options: EvolutionCompareOptions = {}, root = process.cwd()): EvolutionCompareResult {
   const absoluteLoopDir = isAbsolute(loopDir) ? loopDir : resolve(root, loopDir);
+  const comparisonRoot = findScaffoldRoot(absoluteLoopDir) ?? inferScaffoldRootFromLoopDir(absoluteLoopDir) ?? root;
   const loopPath = join(absoluteLoopDir, 'loop.json');
   const attemptsPath = join(absoluteLoopDir, 'attempts.jsonl');
   const frontierPath = join(absoluteLoopDir, 'frontier.json');
@@ -557,6 +669,8 @@ export function compareEvolutionLoop(loopDir: string, options: EvolutionCompareO
     .filter((entry): entry is { attemptId: string; runId: string | null; score: number | null; promotedAt: string | null } => Boolean(entry.attemptId))
     .map((entry) => ({ ...entry, decision: attemptById.get(entry.attemptId)?.decision ?? null }));
 
+  const acceptanceCriteria = acceptanceCriteriaDelta(comparisonRoot, a, b);
+
   return {
     kind: 'comparison',
     loop: loopInfo,
@@ -568,6 +682,7 @@ export function compareEvolutionLoop(loopDir: string, options: EvolutionCompareO
       a: { present: Boolean(a.evaluation), path: a.evaluation, id: a.evaluationId, decision: a.evaluationDecision },
       b: { present: Boolean(b.evaluation), path: b.evaluation, id: b.evaluationId, decision: b.evaluationDecision },
     },
+    acceptanceCriteria,
     boundaryDifferences: boundaryDelta(a.boundary, b.boundary),
     frontierHistory,
   };
@@ -619,6 +734,11 @@ function renderTerminalComparison(comparison: Extract<EvolutionCompareResult, { 
     `  A (${comparison.a.decision ?? 'unknown'}): ${comparison.a.rationale || '—'}`,
     `  B (${comparison.b.decision ?? 'unknown'}): ${comparison.b.rationale || '—'}`,
     '',
+    ...(comparison.acceptanceCriteria.rows.length > 0 ? [
+      'Acceptance criteria delta',
+      ...comparison.acceptanceCriteria.rows.map((row) => `  ${row.id}: A=${formatPlainCriterionStatus(row.aStatus)} | B=${formatPlainCriterionStatus(row.bStatus)}${criterionDeltaMarker(row.aStatus, row.bStatus)} — ${row.text}`),
+      '',
+    ] : []),
     'Evidence files',
     '  Only in A:',
     ...linesOrNone(comparison.evidence.onlyInA, '    '),
@@ -665,6 +785,18 @@ function renderMarkdownComparison(comparison: Extract<EvolutionCompareResult, { 
     '',
     `**B (${comparison.b.decision ?? 'recorded'}):** ${comparison.b.rationale || '—'}`,
     '',
+    ...(comparison.acceptanceCriteria.rows.length > 0 ? [
+      '## Acceptance criteria delta',
+      '',
+      '| Criterion | A | B |',
+      '|---|---|---|',
+      ...comparison.acceptanceCriteria.rows.map((row) => {
+        const criterion = `${row.id} — ${row.text}`;
+        const marker = criterionDeltaMarker(row.aStatus, row.bStatus);
+        return `| ${escapeMarkdownTableCell(criterion)} | ${formatCriterionStatus(row.aStatus)} | ${formatCriterionStatus(row.bStatus)}${marker} |`;
+      }),
+      '',
+    ] : []),
     '## Evidence files',
     '',
     `- Only in A: ${comparison.evidence.onlyInA.length > 0 ? comparison.evidence.onlyInA.map((ref) => `\`${ref}\``).join(', ') : '—'}`,
