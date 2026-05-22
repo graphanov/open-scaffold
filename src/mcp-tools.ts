@@ -311,9 +311,18 @@ function listEvidence(root: string, slug?: string): Array<{ slug: string; file: 
   const normalizedSlug = slug ? safeSlug(slug) : undefined;
   return readdirSync(dir)
     .filter((file) => file.endsWith('.md') && file !== 'README.md')
+    .filter((file) => isRegularEvidenceFile(dir, file))
     .sort()
     .filter((file) => !normalizedSlug || evidenceSlug(file) === normalizedSlug)
     .map((file) => ({ slug: evidenceSlug(file), file, path: relative(root, join(dir, file)) }));
+}
+
+function isRegularEvidenceFile(dir: string, file: string): boolean {
+  try {
+    return lstatSync(join(dir, file)).isFile();
+  } catch {
+    return false;
+  }
 }
 
 function safeEvidencePath(root: string, value: string): string {
@@ -346,7 +355,8 @@ function getEvidence(root: string, pathArg?: string, slug?: string): Record<stri
   else if (slug) {
     const matches = listEvidence(root, slug);
     const latest = matches.at(-1);
-    if (latest) evidencePath = join(root, latest.path);
+    if (!latest) throw new McpJsonRpcError(-32004, `Evidence not found: ${slug}`);
+    evidencePath = safeEvidencePath(root, latest.path);
   }
   if (!evidencePath) throw new McpJsonRpcError(-32602, 'Provide either path or slug for get_evidence');
   const file = basename(evidencePath);

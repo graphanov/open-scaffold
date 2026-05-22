@@ -138,10 +138,12 @@ describe('Open Scaffold MCP tool handlers', () => {
 
     const outside = join(root, '..', 'outside-secret.md');
     const symlinkedEvidence = join(root, '.osc/releases/2999-evil.md');
+    const symlinkedSlugEvidence = join(root, '.osc/releases/2999-001-sample.md');
     writeFileSync(outside, 'do not expose this file');
     let symlinkCreated = false;
     try {
       symlinkSync(outside, symlinkedEvidence);
+      symlinkSync(outside, symlinkedSlugEvidence);
       symlinkCreated = true;
     } catch {
       // Some platforms disable file symlink creation. The path-shape guard above still covers
@@ -149,6 +151,11 @@ describe('Open Scaffold MCP tool handlers', () => {
     }
     if (symlinkCreated) {
       expect(() => callMcpTool('get_evidence', { path: '.osc/releases/2999-evil.md' }, { root, allowWrite: false })).toThrow(McpJsonRpcError);
+    if (symlinkCreated) {
+      expect(() => callMcpTool('get_evidence', { path: '.osc/releases/2999-evil.md' }, { root, allowWrite: false })).toThrow(McpJsonRpcError);
+      const evidenceBySlug = callMcpTool('get_evidence', { slug: '001-sample' }, { root, allowWrite: false });
+      expect((evidenceBySlug as { content: string }).content).toContain('Verified sample behavior.');
+      expect((evidenceBySlug as { content: string }).content).not.toContain('do not expose this file');
       const latestEvidence = readMcpResource('osc://releases/latest', { root });
       expect(latestEvidence.text).toContain('Verified sample behavior.');
       expect(latestEvidence.text).not.toContain('do not expose this file');
