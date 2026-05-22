@@ -151,8 +151,8 @@ describe('Open Scaffold MCP tool handlers', () => {
     }
     if (symlinkCreated) {
       expect(() => callMcpTool('get_evidence', { path: '.osc/releases/2999-evil.md' }, { root, allowWrite: false })).toThrow(McpJsonRpcError);
-    if (symlinkCreated) {
-      expect(() => callMcpTool('get_evidence', { path: '.osc/releases/2999-evil.md' }, { root, allowWrite: false })).toThrow(McpJsonRpcError);
+      expect(callMcpTool('list_evidence', { slug: 'evil' }, { root, allowWrite: false })).toMatchObject({ evidence: [] });
+      expect(() => callMcpTool('get_evidence', { slug: 'evil' }, { root, allowWrite: false })).toThrow(McpJsonRpcError);
       const evidenceBySlug = callMcpTool('get_evidence', { slug: '001-sample' }, { root, allowWrite: false });
       expect((evidenceBySlug as { content: string }).content).toContain('Verified sample behavior.');
       expect((evidenceBySlug as { content: string }).content).not.toContain('do not expose this file');
