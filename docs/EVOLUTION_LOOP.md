@@ -72,6 +72,16 @@ osc evolve check .osc/evolution/demo-loop
 
 `osc evolve` does not create a run, launch a runtime, call an LLM, publish benchmark rankings, certify compliance, approve a merge, or decide product taste. It only records curated loop state.
 
+## See it in one screen
+
+The quickest way to understand the value is the compare walkthrough:
+
+```text
+one task -> attempt A -> attempt B -> osc evolve compare -> frontier rationale
+```
+
+Read [`docs/examples/evolution-loop-compare.md`](examples/evolution-loop-compare.md) for a small public-safe example that shows two attempts, linked evaluation envelopes, a PR-ready markdown comparison, and an acceptance-criteria delta table.
+
 ## Concepts
 
 ### Loop

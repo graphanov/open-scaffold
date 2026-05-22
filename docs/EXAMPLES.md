@@ -2,7 +2,7 @@
 
 Short examples for understanding Open Scaffold without reading every protocol page.
 
-For four worked example modes — solo developer, team control-room, GitHub-only workflow, and runtime harness handoff — see [`examples/README.md`](examples/README.md). The 60-second demo below is the solo-developer reading path; the runtime handoff path now starts with `--runtime` selection and project-local runtime profiles.
+For four worked operating modes — solo developer, team control-room, GitHub-only workflow, and runtime harness handoff — see [`examples/README.md`](examples/README.md). For the evolution-ledger wedge, see [`examples/evolution-loop-compare.md`](examples/evolution-loop-compare.md): two attempts, `osc evolve compare`, and a PR-ready frontier rationale.
 
 For the next reproducible proof layer, see [Lifecycle E2E Smoke Strategy](E2E_SMOKE.md). It defines and links the local smoke test that proves a fresh downstream project can move through mission → plan → verification → evidence → close without Hermes, Discord, or private infrastructure.
 

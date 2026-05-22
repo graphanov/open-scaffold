@@ -1,13 +1,14 @@
 # Examples
 
-Four worked example modes a fresh user or agent can read end-to-end. Each mode is a thin walkthrough that links to existing protocol docs and shipped fixtures rather than inventing new machinery.
+Five worked example paths a fresh user or agent can read end-to-end. The first four are operating modes; the fifth shows the evolution-ledger comparison wedge directly. Each path links to existing protocol docs and shipped fixtures rather than inventing new machinery.
 
-The four modes:
+The example paths:
 
 1. [Solo developer](#1-solo-developer) — one human, one repo, AI assist.
 2. [Team control-room](#2-team-control-room) — multiple humans/agents coordinating with the repo as truth.
 3. [GitHub-only workflow](#3-github-only-workflow) — issue → plan → PR → evidence with no chat coordinator.
 4. [Runtime harness handoff](#4-runtime-harness-handoff) — packaging work for an external runtime lane to execute.
+5. [Evolution loop compare](evolution-loop-compare.md) — two attempts → `osc evolve compare` → frontier rationale.
 
 If you want one complete non-recursive example first, start with [`downstream-walkthrough.md`](downstream-walkthrough.md). It shows the full mission → plan → optional `run.json` work package → evidence → close loop on a tiny shell CLI that is not Open Scaffold itself, then shows how a second session reconstructs the current state from files alone.
 

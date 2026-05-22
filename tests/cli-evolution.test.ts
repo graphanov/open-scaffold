@@ -72,6 +72,24 @@ Improve the run contract.
     schema: 'open-scaffold.evaluation.v1',
     evaluation_id: 'eval-001',
     subject: { source: 'run', plan: '.osc/plans/active/087-demo.md', plan_slug: '087-demo', task_id: 'task-123', run_id: 'demo-run', run_packet: '.osc/runs/demo-run/run.json' },
+    acceptance_criteria: [
+      {
+        id: 'AC1',
+        text: 'Loop state is created.',
+        status: 'pass',
+        evaluator: { kind: 'human', name: 'reviewer', ref: null },
+        evidence: [{ kind: 'path', ref: 'docs/evidence/demo-run-proof.md', summary: 'Synthetic CLI evidence.' }],
+        rationale: 'Loop state exists.',
+      },
+      {
+        id: 'AC2',
+        text: 'Frontier promotion is explicit.',
+        status: 'fail',
+        evaluator: { kind: 'human', name: 'reviewer', ref: null },
+        evidence: [{ kind: 'path', ref: 'docs/evidence/demo-run-proof.md', summary: 'Synthetic CLI evidence.' }],
+        rationale: 'Frontier rationale needs a clearer comparison.',
+      },
+    ],
     decision: { status: 'approved', approver: 'human', rationale: 'Evidence reviewed.' },
     improvement: { route: 'close', target: null, carried_forward: [], do_not_assume: ['No model benchmark claim.'] },
   }, null, 2));
@@ -226,14 +244,40 @@ describe('osc evolve CLI', () => {
     expect(frontier.current).toBeNull();
   });
 
-  it('compares evolution attempts and writes markdown output', () => {
-    const { root, planPath, runPath } = tempRepo();
+  it('compares evolution attempts and writes markdown output with acceptance criteria delta', () => {
+    const { root, planPath, runPath, evalPath } = tempRepo();
     const runB = writeRunPacket(root, 'attempt-b');
+    const evalB = join(root, 'docs/evidence/attempt-b-evaluation.json');
+    writeFileSync(evalB, JSON.stringify({
+      schema: 'open-scaffold.evaluation.v1',
+      evaluation_id: 'eval-attempt-b',
+      subject: { source: 'run', plan: '.osc/plans/active/087-demo.md', plan_slug: '087-demo', task_id: 'task-123', run_id: 'attempt-b', run_packet: '.osc/runs/attempt-b/run.json' },
+      acceptance_criteria: [
+        {
+          id: 'AC1',
+          text: 'Loop state is created.',
+          status: 'pass',
+          evaluator: { kind: 'human', name: 'reviewer', ref: null },
+          evidence: [{ kind: 'path', ref: 'docs/evidence/attempt-b-proof.md', summary: 'Synthetic CLI evidence.' }],
+          rationale: 'Loop state exists.',
+        },
+        {
+          id: 'AC2',
+          text: 'Frontier promotion is explicit.',
+          status: 'pass',
+          evaluator: { kind: 'human', name: 'reviewer', ref: null },
+          evidence: [{ kind: 'path', ref: 'docs/evidence/attempt-b-proof.md', summary: 'Synthetic CLI evidence.' }],
+          rationale: 'Frontier rationale is explicit.',
+        },
+      ],
+      decision: { status: 'approved', approver: 'human', rationale: 'Evidence reviewed.' },
+      improvement: { route: 'close', target: null, carried_forward: [], do_not_assume: ['No model benchmark claim.'] },
+    }, null, 2));
     const outDir = join(root, '.osc/evolution/demo-loop');
     const reportPath = join(root, 'docs/evidence/evolution-compare.md');
     execFileSync(tsx, [cli, 'evolve', 'init', planPath, '--out', outDir, '--strategy', 'greedy'], { cwd: root, encoding: 'utf8' });
-    execFileSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runPath, '--decision', 'promote', '--score', '0.62', '--rationale', 'First promoted frontier.'], { cwd: root, encoding: 'utf8' });
-    execFileSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runB, '--decision', 'promote', '--score', '0.94', '--rationale', 'Better frontier.'], { cwd: root, encoding: 'utf8' });
+    execFileSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runPath, '--evaluation', evalPath, '--decision', 'promote', '--score', '0.62', '--rationale', 'First promoted frontier.'], { cwd: root, encoding: 'utf8' });
+    execFileSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runB, '--evaluation', evalB, '--decision', 'promote', '--score', '0.94', '--rationale', 'Better frontier.'], { cwd: root, encoding: 'utf8' });
 
     const output = execFileSync(tsx, [cli, 'evolve', 'compare', outDir, '--format', 'markdown', '--out', reportPath], { cwd: root, encoding: 'utf8' });
 
@@ -242,6 +286,8 @@ describe('osc evolve CLI', () => {
     expect(report).toContain('# Evolution loop: demo-loop — A vs B');
     expect(report).toContain('| Score | 0.62 | 0.94 | +0.32 ▲ |');
     expect(report).toContain('**B (promote):** Better frontier.');
+    expect(report).toContain('## Acceptance criteria delta');
+    expect(report).toContain('| AC2 — Frontier promotion is explicit. | ✗ fail | ✓ pass ▲ |');
   });
 
   it('rejects unknown strategies and prints evolve usage', () => {

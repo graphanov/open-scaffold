@@ -84,12 +84,24 @@ function writeRunPacket(root: string, runId = 'demo-run') {
   return runPath;
 }
 
-function writeEvaluation(root: string, runId = 'demo-run') {
-  const evalPath = join(root, 'docs/evidence/evaluation.json');
+function writeEvaluation(root: string, runId = 'demo-run', statuses: Record<string, 'pass' | 'partial' | 'fail' | 'blocked' | 'not_evaluated'> = {}) {
+  const evalPath = join(root, `docs/evidence/${runId}-evaluation.json`);
+  const criteria = [
+    { id: 'AC1', text: 'Loop state is created.', status: statuses.AC1 ?? 'pass' },
+    { id: 'AC2', text: 'Frontier promotion is explicit.', status: statuses.AC2 ?? 'pass' },
+  ];
   writeFileSync(evalPath, JSON.stringify({
     schema: 'open-scaffold.evaluation.v1',
-    evaluation_id: 'eval-001',
+    evaluation_id: `eval-${runId}`,
     subject: { source: 'run', plan: '.osc/plans/active/087-demo.md', plan_slug: '087-demo', task_id: 'task-123', run_id: runId, run_packet: `.osc/runs/${runId}/run.json` },
+    acceptance_criteria: criteria.map((criterion) => ({
+      id: criterion.id,
+      text: criterion.text,
+      status: criterion.status,
+      evaluator: { kind: 'human', name: 'reviewer', ref: null },
+      evidence: [{ kind: 'path', ref: 'docs/evidence/proof.md', summary: 'Synthetic test evidence.' }],
+      rationale: `${criterion.id} ${criterion.status}`,
+    })),
     decision: { status: 'approved', approver: 'human', rationale: 'Evidence reviewed.' },
     improvement: { route: 'close', target: null, carried_forward: [], do_not_assume: ['No model benchmark claim.'] },
   }, null, 2));
@@ -181,7 +193,7 @@ describe('evolution attempt recording and validation', () => {
 
     expect(result.attempt.attempt_id).toBe('demo-run');
     expect(attempts).toHaveLength(1);
-    expect(attempts[0]).toMatchObject({ run_id: 'demo-run', evaluation_id: 'eval-001', decision: 'promote', score: 0.92 });
+    expect(attempts[0]).toMatchObject({ run_id: 'demo-run', evaluation_id: 'eval-demo-run', decision: 'promote', score: 0.92 });
     expect(frontier.current).toMatchObject({ attempt_id: 'demo-run', run_id: 'demo-run', score: 0.92, rationale: 'Best evidence so far.' });
     expect(frontier.boundary).toMatchObject({ approval_or_release_decision: false, model_benchmarking: false });
   });
@@ -260,7 +272,7 @@ describe('evolution attempt recording and validation', () => {
     expect(result.attempt.adapter_receipts).toEqual(['.osc/runs/demo-run/dispatch-receipt.json']);
     expect(attempts[0].evidence_refs).toEqual(expect.arrayContaining([
       'docs/evidence/proof.md',
-      'docs/evidence/evaluation.json',
+      'docs/evidence/demo-run-evaluation.json',
       '.osc/runs/demo-run/dispatch-receipt.json',
       '.osc/runs/demo-run/runtime-omx-evidence.md',
       '.osc/runs/demo-run/runtime-omx.log',
@@ -390,6 +402,75 @@ describe('evolution comparison rendering', () => {
     const json = JSON.parse(renderEvolutionComparison(comparison, 'json'));
     expect(json.a.attemptId).toBe('attempt-a');
     expect(json.b.attemptId).toBe('attempt-b');
+  });
+
+  it('renders acceptance criteria deltas from linked evaluation envelopes', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runA = writeRunPacket(root, 'attempt-a');
+    const runB = writeRunPacket(root, 'attempt-b');
+    const evalA = writeEvaluation(root, 'attempt-a', { AC2: 'fail' });
+    const evalB = writeEvaluation(root, 'attempt-b', { AC2: 'pass' });
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z'), strategy: 'greedy' });
+    recordEvolutionAttempt(outDir, {
+      runPath: runA,
+      evaluationPath: evalA,
+      decision: 'promote',
+      score: 0.62,
+      rationale: 'First frontier still failed AC2.',
+      now: new Date('2026-05-21T08:10:00.000Z'),
+    }, root);
+    recordEvolutionAttempt(outDir, {
+      runPath: runB,
+      evaluationPath: evalB,
+      decision: 'promote',
+      score: 0.94,
+      rationale: 'Second frontier passes AC2.',
+      now: new Date('2026-05-21T08:20:00.000Z'),
+    }, root);
+
+    const comparison = compareEvolutionLoop(outDir, {}, root);
+    const markdown = renderEvolutionComparison(comparison, 'markdown');
+    const terminal = renderEvolutionComparison(comparison, 'terminal');
+
+    expect(markdown).toContain('## Acceptance criteria delta');
+    expect(markdown).toContain('| AC1 — Loop state is created. | ✓ pass | ✓ pass |');
+    expect(markdown).toContain('| AC2 — Frontier promotion is explicit. | ✗ fail | ✓ pass ▲ |');
+    expect(terminal).toContain('Acceptance criteria delta');
+    expect(terminal).toContain('AC2: A=fail | B=pass ▲ — Frontier promotion is explicit.');
+  });
+
+  it('shows known acceptance criteria when only one side has an evaluation envelope', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runA = writeRunPacket(root, 'attempt-a');
+    const runB = writeRunPacket(root, 'attempt-b');
+    const evalB = writeEvaluation(root, 'attempt-b', { AC1: 'pass', AC2: 'pass' });
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z'), strategy: 'greedy' });
+    recordEvolutionAttempt(outDir, {
+      runPath: runA,
+      decision: 'promote',
+      score: 0.62,
+      rationale: 'First frontier had no evaluation envelope.',
+      now: new Date('2026-05-21T08:10:00.000Z'),
+    }, root);
+    recordEvolutionAttempt(outDir, {
+      runPath: runB,
+      evaluationPath: evalB,
+      decision: 'promote',
+      score: 0.94,
+      rationale: 'Second frontier added evaluation coverage.',
+      now: new Date('2026-05-21T08:20:00.000Z'),
+    }, root);
+
+    const comparison = compareEvolutionLoop(outDir, {}, root);
+    const markdown = renderEvolutionComparison(comparison, 'markdown');
+
+    expect(markdown).toContain('## Acceptance criteria delta');
+    expect(markdown).toContain('| AC1 — Loop state is created. | — | ✓ pass ▲ |');
+    expect(markdown).toContain('| AC2 — Frontier promotion is explicit. | — | ✓ pass ▲ |');
   });
 
   it('throws a clear error for unknown explicit compare targets', () => {
