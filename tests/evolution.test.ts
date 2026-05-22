@@ -4,8 +4,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   EVOLUTION_LOOP_SCHEMA,
+  compareEvolutionLoop,
   loadEvolutionSource,
   recordEvolutionAttempt,
+  renderEvolutionComparison,
   renderEvolutionLoopFiles,
   validateEvolutionLoopDir,
   writeEvolutionLoop,
@@ -329,5 +331,122 @@ describe('evolution attempt recording and validation', () => {
     expect(result.failures.map((failure) => failure.code)).toContain('evolution.boundary.unsupported_true');
     expect(result.failures.map((failure) => failure.code)).toContain('evolution.source_ref.private_path');
     expect(result.failures.map((failure) => failure.code)).toContain('evolution.attempt.duplicate_id');
+  });
+});
+
+describe('evolution comparison rendering', () => {
+  it('compares the previous frontier attempt against the current frontier by default', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runA = writeRunPacket(root, 'attempt-a');
+    const runB = writeRunPacket(root, 'attempt-b');
+    const evalB = writeEvaluation(root, 'attempt-b');
+    const evidenceB = join(root, 'docs/evidence/attempt-b-extra.md');
+    writeFileSync(evidenceB, 'attempt b extra proof');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z'), strategy: 'greedy' });
+    recordEvolutionAttempt(outDir, {
+      runPath: runA,
+      decision: 'promote',
+      score: 0.62,
+      rationale: 'Handled easy cases but failed BOM input.',
+      now: new Date('2026-05-21T08:10:00.000Z'),
+    }, root);
+    recordEvolutionAttempt(outDir, {
+      runPath: runB,
+      evaluationPath: evalB,
+      evidencePaths: [evidenceB],
+      decision: 'promote',
+      score: 0.94,
+      rationale: 'Handled BOM input and all edge cases.',
+      now: new Date('2026-05-21T08:20:00.000Z'),
+    }, root);
+
+    const comparison = compareEvolutionLoop(outDir, {}, root);
+
+    expect(comparison.kind).toBe('comparison');
+    if (comparison.kind !== 'comparison') throw new Error('expected comparison');
+    expect(comparison.a.attemptId).toBe('attempt-a');
+    expect(comparison.b.attemptId).toBe('attempt-b');
+    expect(comparison.loop.strategy).toBe('greedy');
+    expect(comparison.scoreDelta).toBeCloseTo(0.32);
+    expect(comparison.evidence.onlyInB).toContain('docs/evidence/attempt-b-extra.md');
+    expect(comparison.evaluation.b.present).toBe(true);
+    expect(comparison.frontierHistory.map((item) => item.attemptId)).toEqual(['attempt-a', 'attempt-b']);
+
+    const terminal = renderEvolutionComparison(comparison, 'terminal');
+    expect(terminal).toContain('Evolution Loop: demo-loop');
+    expect(terminal).toContain('A -> attempt-a');
+    expect(terminal).toContain('B -> attempt-b');
+    expect(terminal).toContain('+0.32');
+    expect(terminal).toContain('Only in B');
+    expect(terminal).toContain('Frontier history');
+
+    const markdown = renderEvolutionComparison(comparison, 'markdown');
+    expect(markdown).toContain('# Evolution loop: demo-loop — A vs B');
+    expect(markdown).toContain('| Score | 0.62 | 0.94 | +0.32 ▲ |');
+    expect(markdown).toContain('**B (promote):** Handled BOM input and all edge cases.');
+
+    const json = JSON.parse(renderEvolutionComparison(comparison, 'json'));
+    expect(json.a.attemptId).toBe('attempt-a');
+    expect(json.b.attemptId).toBe('attempt-b');
+  });
+
+  it('throws a clear error for unknown explicit compare targets', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root, 'attempt-a');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+    recordEvolutionAttempt(outDir, { runPath, decision: 'promote', rationale: 'Only attempt.', now: new Date('2026-05-21T08:10:00.000Z') }, root);
+
+    expect(() => compareEvolutionLoop(outDir, { a: 'missing-attempt', b: 'frontier' }, root)).toThrow(/Unknown evolution attempt target: missing-attempt/);
+  });
+
+  it('returns a successful message for single-attempt loops instead of failing', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root, 'attempt-a');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+    recordEvolutionAttempt(outDir, { runPath, decision: 'promote', score: 0.75, rationale: 'Only attempt.', now: new Date('2026-05-21T08:10:00.000Z') }, root);
+
+    const comparison = compareEvolutionLoop(outDir, {}, root);
+
+    expect(comparison.kind).toBe('message');
+    expect(renderEvolutionComparison(comparison, 'terminal')).toContain('Only one attempt recorded; nothing to compare yet.');
+  });
+
+  it('does not default to last two attempts when no frontier comparison exists', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runA = writeRunPacket(root, 'attempt-a');
+    const runB = writeRunPacket(root, 'attempt-b');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+    recordEvolutionAttempt(outDir, { runPath: runA, decision: 'reject', score: 0.25, rationale: 'Rejected first.', now: new Date('2026-05-21T08:10:00.000Z') }, root);
+    recordEvolutionAttempt(outDir, { runPath: runB, decision: 'retry', score: 0.4, rationale: 'Needs another attempt.', now: new Date('2026-05-21T08:20:00.000Z') }, root);
+
+    const comparison = compareEvolutionLoop(outDir, {}, root);
+
+    expect(comparison.kind).toBe('message');
+    expect(renderEvolutionComparison(comparison, 'terminal')).toContain('No previous frontier/current frontier comparison is recorded yet.');
+  });
+
+  it('marks side B as current frontier only when B is actually the current frontier', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runA = writeRunPacket(root, 'attempt-a');
+    const runB = writeRunPacket(root, 'attempt-b');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+    recordEvolutionAttempt(outDir, { runPath: runA, decision: 'promote', score: 0.75, rationale: 'Current frontier.', now: new Date('2026-05-21T08:10:00.000Z') }, root);
+    recordEvolutionAttempt(outDir, { runPath: runB, decision: 'reject', score: 0.5, rationale: 'Rejected non-frontier.', now: new Date('2026-05-21T08:20:00.000Z') }, root);
+
+    const comparison = compareEvolutionLoop(outDir, { a: 'frontier', b: 'attempt-b' }, root);
+    const markdown = renderEvolutionComparison(comparison, 'markdown');
+
+    expect(markdown).toContain('`attempt-a` (promote, current frontier) → `attempt-b` (reject)');
+    expect(markdown).not.toContain('`attempt-b` (reject, current frontier)');
   });
 });

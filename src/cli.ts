@@ -6,7 +6,7 @@ import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type Execut
 import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
 import { collectEvidence } from './evidence.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
-import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, recordEvolutionAttempt, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
+import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { computeMetrics, formatMetrics, parseSinceDate } from './metrics.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
@@ -43,6 +43,7 @@ Usage:
   osc audit check <audit-manifest-path>
   osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>]
   osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text>
+  osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>]
   osc evolve check <loop-dir>
   osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
   osc verify
@@ -1197,7 +1198,7 @@ function evalCommand(args: string[]): void {
 }
 
 function printEvolutionUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> | osc evolve check <loop-dir>', stream);
+  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> | osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>] | osc evolve check <loop-dir>', stream);
 }
 
 function takeEvolutionValue(args: string[], index: number, flag: string): string {
@@ -1219,6 +1220,13 @@ function parseEvolutionStrategy(value: string): EvolutionStrategy {
 function parseEvolutionDecision(value: string): EvolutionDecision {
   if ((EVOLUTION_DECISIONS as readonly string[]).includes(value)) return value as EvolutionDecision;
   console.error(`Invalid value for --decision: ${value}. Expected one of: ${EVOLUTION_DECISIONS.join(', ')}`);
+  printEvolutionUsage();
+  process.exit(2);
+}
+
+function parseEvolutionCompareFormat(value: string): EvolutionCompareFormat {
+  if (value === 'terminal' || value === 'markdown' || value === 'json') return value;
+  console.error(`Invalid value for --format: ${value}. Expected one of: terminal, markdown, json`);
   printEvolutionUsage();
   process.exit(2);
 }
@@ -1358,6 +1366,60 @@ function evolutionCommand(args: string[]): void {
       console.log(`Recorded evolution attempt: ${String(result.attempt.attempt_id)}`);
       if (result.frontierUpdated) console.log(`Updated frontier: ${String(result.attempt.attempt_id)}`);
       console.log('Note: this recorded an attempt decision only; scorer output is evidence, not automatic approval.');
+      return;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  }
+
+  if (subcommand === 'compare') {
+    if (!sourceOrPath) {
+      printEvolutionUsage();
+      process.exit(2);
+    }
+    let a: string | undefined;
+    let b: string | undefined;
+    let format: EvolutionCompareFormat = 'terminal';
+    let outPath: string | undefined;
+    for (let i = 0; i < rest.length; i += 1) {
+      const flag = rest[i];
+      switch (flag) {
+        case '--a':
+          a = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--b':
+          b = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--format':
+          format = parseEvolutionCompareFormat(takeEvolutionValue(rest, i, flag));
+          i += 1;
+          break;
+        case '--out':
+        case '--output':
+          outPath = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        default:
+          console.error(`Unknown option for evolve compare: ${flag}`);
+          printEvolutionUsage();
+          process.exit(2);
+      }
+    }
+    try {
+      const loopDir = resolve(sourceOrPath);
+      const root = evolutionRootFor(loopDir);
+      const comparison = compareEvolutionLoop(loopDir, { a, b }, root);
+      const rendered = renderEvolutionComparison(comparison, format);
+      if (outPath) {
+        const resolvedOut = resolve(outPath);
+        writeFileSync(resolvedOut, rendered, 'utf8');
+        console.log(`Wrote evolution comparison: ${resolvedOut}`);
+      } else {
+        process.stdout.write(rendered.endsWith('\n') ? rendered : `${rendered}\n`);
+      }
       return;
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error));

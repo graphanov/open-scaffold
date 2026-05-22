@@ -54,11 +54,12 @@ Want the underlying files? Read [`docs/EXAMPLES.md`](docs/EXAMPLES.md#60-second-
 
 ## What you get
 
+- **Evolution ledger:** `osc evolve` records repeated attempts, frontier promotion, and `osc evolve compare` explains why one attempt beat another.
+- **Evaluation and audit envelopes:** `osc eval` and `osc audit` keep acceptance-criteria checks and artifact integrity attached to the work.
 - **Direction:** `MISSION.md` and `ROADMAP.md` keep intent visible.
 - **Work specs:** `.osc/plans/` holds small, immutable plans with acceptance criteria.
 - **Change history:** amendments record scope changes without rewriting the original plan.
 - **Work packages (run packets):** `.osc/runs/<run_id>/run.json` packages a plan for a chosen runtime lane.
-- **Evaluation and evolution:** `osc eval`, `osc audit`, and `osc evolve` record acceptance-criteria evaluation, artifact integrity, repeated attempts, and frontier promotion.
 - **Evidence:** `.osc/releases/` records what shipped, how it was verified, and what follows.
 - **Checks:** `./verify.sh` and `osc verify` catch stale state, broken evidence, and plan drift.
 - **Agent entry points:** `AGENTS.md` and `CLAUDE.md` tell coding agents how to operate without fresh explanations.
@@ -195,10 +196,11 @@ For repeated attempts, record the loop separately instead of burying the frontie
 ```bash
 npx open-scaffold evolve init .osc/plans/active/my-first-task.md --out .osc/evolution/my-first-task --strategy manual
 npx open-scaffold evolve record .osc/evolution/my-first-task --run .osc/runs/<run_id>/run.json --decision promote --rationale "Best evidence so far."
+npx open-scaffold evolve compare .osc/evolution/my-first-task --format markdown --out .osc/releases/evolution-compare.md
 npx open-scaffold evolve check .osc/evolution/my-first-task
 ```
 
-`osc evolve` records attempt/frontier state only. External adapters or runtime packages execute attempts.
+`osc evolve` records attempt/frontier state only. `osc evolve compare` renders the ledger for review without rerunning attempts. External adapters or runtime packages execute attempts.
 
 ---
 

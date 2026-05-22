@@ -8,6 +8,22 @@ const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const cli = join(repoRoot, 'src/cli.ts');
 
+function writeRunPacket(root: string, runId: string) {
+  const runDir = join(root, `.osc/runs/${runId}`);
+  mkdirSync(runDir, { recursive: true });
+  const runPath = join(runDir, 'run.json');
+  const proofPath = join(root, `docs/evidence/${runId}-proof.md`);
+  writeFileSync(runPath, JSON.stringify({
+    schemaVersion: 'open-scaffold.run.v1',
+    runId,
+    taskId: 'task-123',
+    plan: { slug: '087-demo', path: '.osc/plans/active/087-demo.md', acceptanceCriteria: ['Loop state is created.', 'Frontier promotion is explicit.'] },
+    artifacts: { evidence: [`docs/evidence/${runId}-proof.md`] },
+  }, null, 2));
+  writeFileSync(proofPath, `${runId} proof`);
+  return runPath;
+}
+
 function tempRepo() {
   const root = mkdtempSync(join(tmpdir(), 'osc-cli-evolution-'));
   mkdirSync(join(root, '.osc/plans/active'), { recursive: true });
@@ -50,15 +66,7 @@ Improve the run contract.
 
 - None.
 `);
-  const runPath = join(root, '.osc/runs/demo-run/run.json');
-  writeFileSync(runPath, JSON.stringify({
-    schemaVersion: 'open-scaffold.run.v1',
-    runId: 'demo-run',
-    taskId: 'task-123',
-    plan: { slug: '087-demo', path: '.osc/plans/active/087-demo.md', acceptanceCriteria: ['Loop state is created.', 'Frontier promotion is explicit.'] },
-    artifacts: { evidence: ['docs/evidence/proof.md'] },
-  }, null, 2));
-  writeFileSync(join(root, 'docs/evidence/proof.md'), 'proof');
+  const runPath = writeRunPacket(root, 'demo-run');
   const evalPath = join(root, 'docs/evidence/evaluation.json');
   writeFileSync(evalPath, JSON.stringify({
     schema: 'open-scaffold.evaluation.v1',
@@ -216,6 +224,24 @@ describe('osc evolve CLI', () => {
     expect(result.stderr).toContain('Promotion, rejection, retry, and block decisions require a rationale');
     const frontier = JSON.parse(readFileSync(join(outDir, 'frontier.json'), 'utf8'));
     expect(frontier.current).toBeNull();
+  });
+
+  it('compares evolution attempts and writes markdown output', () => {
+    const { root, planPath, runPath } = tempRepo();
+    const runB = writeRunPacket(root, 'attempt-b');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    const reportPath = join(root, 'docs/evidence/evolution-compare.md');
+    execFileSync(tsx, [cli, 'evolve', 'init', planPath, '--out', outDir, '--strategy', 'greedy'], { cwd: root, encoding: 'utf8' });
+    execFileSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runPath, '--decision', 'promote', '--score', '0.62', '--rationale', 'First promoted frontier.'], { cwd: root, encoding: 'utf8' });
+    execFileSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runB, '--decision', 'promote', '--score', '0.94', '--rationale', 'Better frontier.'], { cwd: root, encoding: 'utf8' });
+
+    const output = execFileSync(tsx, [cli, 'evolve', 'compare', outDir, '--format', 'markdown', '--out', reportPath], { cwd: root, encoding: 'utf8' });
+
+    expect(output).toContain('Wrote evolution comparison:');
+    const report = readFileSync(reportPath, 'utf8');
+    expect(report).toContain('# Evolution loop: demo-loop — A vs B');
+    expect(report).toContain('| Score | 0.62 | 0.94 | +0.32 ▲ |');
+    expect(report).toContain('**B (promote):** Better frontier.');
   });
 
   it('rejects unknown strategies and prints evolve usage', () => {
