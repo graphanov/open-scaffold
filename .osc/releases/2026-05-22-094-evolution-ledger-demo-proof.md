@@ -11,7 +11,7 @@ The slice keeps Open Scaffold's boundary intact: the demo records and renders lo
 - Roadmap / issue / task: Kanban `open-scaffold` task `t_79a23c8a`; roadmap direction after `v0.4.13` evolution-loop comparison visibility.
 - Plan: `.osc/plans/done/094-evolution-ledger-demo-proof.md`
 - Run ID / run packet: `N/A` for this evidence note; the public fixture itself contains demo run packets under `examples/evolution-ledger-demo/.osc/runs/`.
-- Branch / PR: `docs/evolution-ledger-demo-proof`; PR pending at evidence-note creation and owner-gated before merge.
+- Branch / PR: `docs/evolution-ledger-demo-proof`; `graphanov/open-scaffold#93` (`https://github.com/graphanov/open-scaffold/pull/93`); owner-gated before merge.
 
 ## How to inspect
 
