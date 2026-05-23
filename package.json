@@ -50,6 +50,7 @@
     ".osc/specs/.gitkeep",
     "docs",
     "README.md",
+    "SECURITY.md",
     "LICENSE",
     "amend.sh",
     "bootstrap.sh",
