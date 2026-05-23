@@ -15,7 +15,7 @@ Added push-only glass-cockpit webhook support through `osc cockpit config`, `osc
 
 - `git diff --check` — passed.
 - `./verify.sh --strict` — 10 pass, 0 fail, 0 warn.
-- `npm test -- --run` — 35 test files passed; 322 tests passed.
+- `npm test -- --run` — 35 test files passed; 323 tests passed.
 - `npm run build` — passed for core and runtime-omx TypeScript builds.
 - `npm pack --dry-run --json` — passed; package payload includes `.osc/cockpit.example.json`.
 - `node dist/cli.js cockpit config`, `node dist/cli.js cockpit test --dry-run`, `node dist/cli.js cockpit post --event status --message "Test message" --dry-run`, `node dist/cli.js cockpit post --event blocker --message "should send" --dry-run`, and missing-config `node dist/cli.js cockpit test` — passed.

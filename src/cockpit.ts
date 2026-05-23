@@ -276,7 +276,7 @@ function refsToDiscordFields(refs: Record<string, string>): Array<{ name: string
 }
 
 function refsToSlackFields(refs: Record<string, string>): Array<{ type: 'mrkdwn'; text: string }> {
-  return Object.entries(refs).map(([name, value]) => ({ type: 'mrkdwn', text: `*${name}*\n\`${truncate(value, 2800)}\`` }));
+  return Object.entries(refs).map(([name, value]) => ({ type: 'mrkdwn', text: `*${name}*\n\`${truncate(value, 1900)}\`` }));
 }
 
 function footerText(root: string): string {
