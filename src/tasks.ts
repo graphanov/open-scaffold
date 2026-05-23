@@ -107,7 +107,7 @@ function loadSqliteConstructor(): new (path: string) => SqliteDatabase {
     return require('better-sqlite3') as new (path: string) => SqliteDatabase;
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Local task database requires the better-sqlite3 native dependency. Re-run npm install, try npm install --build-from-source, or use GitHub Issues for task tracking. (${detail})`);
+    throw new Error(`Local task database commands require the optional better-sqlite3 native dependency. Re-run npm install with optional dependencies enabled, try npm install --build-from-source, or use GitHub Issues / another task bridge for task tracking. Core Open Scaffold workflows do not require the local task database. (${detail})`);
   }
 }
 
@@ -129,7 +129,7 @@ function openDatabase(root: string, create: boolean): SqliteDatabase | null {
     initializeSchema(db);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Could not open local task database at .osc/tasks.db. Reinstall better-sqlite3 or remove the broken local DB file. (${detail})`);
+    throw new Error(`Could not open local task database at .osc/tasks.db. Reinstall the optional better-sqlite3 dependency with optional dependencies enabled, try npm install --build-from-source, or remove the broken local DB file. Core Open Scaffold workflows can continue without local task database commands. (${detail})`);
   }
   return db;
 }

@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-23: closed 097-omo-security-hardening — hardened release-path and dependency security posture
 - 2026-05-23: closed 096-glass-cockpit-webhooks-public-surface-sync — Publish open-scaffold@0.4.17 and align GitHub Latest Release for cockpit webhooks.
 - 2026-05-23: closed 062-glass-cockpit-webhooks — added push-only Discord and Slack cockpit webhooks
 - 2026-05-23: closed 095-local-task-database-public-surface-sync — published 0.4.16 and aligned local task database public surfaces

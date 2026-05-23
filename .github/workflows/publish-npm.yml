@@ -34,7 +34,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Ensure npm supports trusted publishing
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.14.1
 
       - name: Install dependencies
         run: npm ci

@@ -64,6 +64,7 @@ open-scaffold-runtime-omx .osc/runs/<run_id>/run.json --allow-spawn
 Launch safety checks:
 
 - `--allow-spawn` must be present;
+- `--omx-command` is a trusted-operator override for local/manual use only; do not populate it from untrusted files, remote input, or generated run-packet content;
 - `omx --version` must report `oh-my-codex >= 0.17.3`;
 - `runtime.branch` must be a non-main disposable branch such as `runtime/<slug>`;
 - `runtime.worktreePath` must exist and resolve inside `runtime.repoPath`;
