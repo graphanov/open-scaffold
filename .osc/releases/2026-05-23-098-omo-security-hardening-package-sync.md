@@ -19,7 +19,7 @@ That work reached `main` after `open-scaffold@0.4.17` and GitHub Release `v0.4.1
 - Source hardening merge commit: `8b88c1bb44a26057012daf6cac248dbb3414dfc5`
 - Release-sync plan: `.osc/plans/active/098-omo-security-hardening-package-sync.md`
 - Release-sync branch: `release/098-omo-security-hardening-package-sync`
-- Release-sync PR: to be recorded after branch publication
+- Release-sync PR: https://github.com/graphanov/open-scaffold/pull/105
 - Trusted publishing run: to be recorded after owner-approved merge and workflow dispatch
 - GitHub Release: to be recorded after owner-approved release creation/update
 
