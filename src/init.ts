@@ -37,6 +37,7 @@ const standardOnlyFiles = [
   'CLAUDE.md',
   'amend.sh',
   'docs/WORKFLOW.md',
+  'docs/TASKS.md',
   'docs/MINIMUM_VIABLE_SCAFFOLD.md',
   'docs/SLICE_CLOSE_PROTOCOL.md',
 ] as const;
