@@ -1,10 +1,9 @@
-# 095 — Local Task Database Public-Surface Sync Candidate
+# 095 — Local Task Database Public-Surface Sync
 
 Date: 2026-05-23
-Plan: `.osc/plans/active/095-local-task-database-public-surface-sync.md`
-Branch: `fix/packaged-init-gitignore-fallback`
-Package version: `open-scaffold@0.4.16`
-Release: pending owner-gated follow-through
+Plan: `.osc/plans/done/095-local-task-database-public-surface-sync.md`
+Final package version: `open-scaffold@0.4.16`
+Release: https://github.com/graphanov/open-scaffold/releases/tag/v0.4.16
 
 ## Summary
 
@@ -15,11 +14,14 @@ PR #96 added the optional local SQLite task database CLI to repo `main`. PR #97 
 - Source feature slice: PR #96 — `Add local task database CLI`
 - Source feature evidence: `.osc/releases/2026-05-23-061-local-task-database.md`
 - Source feature plan: `.osc/plans/done/061-local-task-database.md`
-- Release-sync plan: `.osc/plans/active/095-local-task-database-public-surface-sync.md`
+- Release-sync plan: `.osc/plans/done/095-local-task-database-public-surface-sync.md`
 - Release-sync branch: `release/local-task-database-public-surface-sync`
 - Release-sync PR: https://github.com/graphanov/open-scaffold/pull/97
 - Hotfix branch: `fix/packaged-init-gitignore-fallback`
-- Release-sync amendment: `.osc/plans/active/095-local-task-database-public-surface-sync-amendment-1.md`
+- Hotfix PR: https://github.com/graphanov/open-scaffold/pull/98
+- Release-sync amendment: `.osc/plans/done/095-local-task-database-public-surface-sync-amendment-1.md`
+- Trusted publishing run: https://github.com/graphanov/open-scaffold/actions/runs/26328487716
+- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v0.4.16
 
 ## Pre-release and post-0.4.15 drift baseline
 
@@ -43,7 +45,7 @@ failure: Template source missing for .osc/.gitignore because the extracted packa
 GitHub Latest Release: still v0.4.14 because the 0.4.15 release gate was intentionally not completed after the init blocker
 ```
 
-## Candidate changes
+## Hotfix changes
 
 - `package.json`
   - Candidate version: `0.4.16`.
@@ -53,14 +55,14 @@ GitHub Latest Release: still v0.4.14 because the 0.4.15 release gate was intenti
   - Copies packaged `.osc/.npmignore` as downstream `.osc/.gitignore` when npm rewrites the template filename during tarball extraction.
 - `tests/package-payload.test.ts`
   - Adds an extracted-tarball `osc init` regression test instead of relying only on dry-run file names.
-- `.osc/plans/active/095-local-task-database-public-surface-sync-amendment-1.md`
+- `.osc/plans/done/095-local-task-database-public-surface-sync-amendment-1.md`
   - Records the public-package verification learning and hotfix direction.
 - `.osc/releases/2026-05-23-095-local-task-database-public-surface-sync.md`
   - This candidate evidence note, updated with the 0.4.15 blocker and 0.4.16 follow-through.
 
 ## Outcome
 
-This branch is a release-sync hotfix candidate. It does not publish npm, create or update a GitHub Release, merge itself, resume Control Room runner autonomy, or change Open Scaffold's runtime boundary.
+Completed. `open-scaffold@0.4.16` is published on npm as `latest`, fresh isolated-cache `npx` smokes pass for both `task --help` and `init --tier min`, GitHub Release `v0.4.16 — Local task database CLI` is marked Latest, and plan `095` has been moved to `done/` for closeout.
 
 ## Verification
 
@@ -104,12 +106,17 @@ Regression coverage added:
 npm package payload > runs init successfully from an extracted npm tarball — passed
 ```
 
+Final public-surface verification:
+
+```text
+trusted publishing run 26328487716 — success, published open-scaffold@0.4.16
+npm latest — 0.4.16
+fresh isolated-cache npx open-scaffold@latest --help — passed
+fresh isolated-cache npx open-scaffold@latest task --help — passed and listed task subcommands
+fresh isolated-cache npx open-scaffold@latest init --tier min --target <tmp> — passed and created .osc/.gitignore containing tasks.db*
+GitHub Release v0.4.16 — created and marked Latest
+```
+
 ## Remaining gates
 
-- Open hotfix PR.
-- CI and latest-head Codex review must pass with zero unresolved current review threads.
-- Owner-approved merge is already granted by the release-sync proceed instruction, but the PR must still be mechanically clean before merge.
-- After merge, trusted npm publishing must be dispatched and verified for `open-scaffold@0.4.16`.
-- Fresh isolated-cache `npx open-scaffold@latest task --help` and `init --tier min --target <tmp>` must pass after publication.
-- GitHub Release `v0.4.16` must be created or updated and marked Latest after publication.
-- Plan `095` should move to `done/` only after registry, fresh `npx`, and GitHub Latest Release proof exist.
+None for this release-sync slice. Control Room runner automation remains a separate resume/re-qualification gate.
