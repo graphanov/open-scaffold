@@ -29,7 +29,7 @@ One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line piv
 
 <!-- append YYYY-MM-DD entries below this line -->
 - 2026-05-23: closed 095-local-task-database-public-surface-sync — published 0.4.16 and aligned local task database public surfaces
-- 2026-05-23: record packaged init hotfix after public npx verification — see .osc/plans/active/095-local-task-database-public-surface-sync-amendment-1.md
+- 2026-05-23: record packaged init hotfix after public npx verification — see .osc/plans/done/095-local-task-database-public-surface-sync-amendment-1.md
 - 2026-05-23: closed 061-local-task-database — added local task database CLI
 - 2026-05-22: closed 060-mcp-server — added optional read-only MCP server
 - 2026-05-22: closed 094-evolution-ledger-demo-proof — added reproducible evolution-ledger demo proof
