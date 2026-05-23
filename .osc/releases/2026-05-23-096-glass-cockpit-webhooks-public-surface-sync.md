@@ -1,8 +1,9 @@
 # 096 — Glass Cockpit Webhooks Public-Surface Sync
 
 Date: 2026-05-23
-Plan: `.osc/plans/active/096-glass-cockpit-webhooks-public-surface-sync.md`
-Candidate package version: `open-scaffold@0.4.17`
+Plan: `.osc/plans/done/096-glass-cockpit-webhooks-public-surface-sync.md`
+Final package version: `open-scaffold@0.4.17`
+Release: https://github.com/graphanov/open-scaffold/releases/tag/v0.4.17
 
 ## Summary
 
@@ -16,11 +17,12 @@ This release-sync slice prepares `open-scaffold@0.4.17` and records the proof ne
 - Source feature evidence: `.osc/releases/2026-05-23-062-glass-cockpit-webhooks.md`
 - Source feature plan: `.osc/plans/done/062-glass-cockpit-webhooks.md`
 - Source feature merge commit: `928c7d7a8013de215261cfbfedc13095774a09cf`
-- Release-sync plan: `.osc/plans/active/096-glass-cockpit-webhooks-public-surface-sync.md`
+- Release-sync plan: `.osc/plans/done/096-glass-cockpit-webhooks-public-surface-sync.md`
 - Release-sync branch: `release/glass-cockpit-webhooks-public-surface-sync`
 - Release-sync PR: https://github.com/graphanov/open-scaffold/pull/101
-- Trusted publishing run: pending at candidate-prep time
-- GitHub Release: pending at candidate-prep time
+- Release-sync closeout branch: `release/glass-cockpit-webhooks-closeout`
+- Trusted publishing run: https://github.com/graphanov/open-scaffold/actions/runs/26342576290
+- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v0.4.17
 
 ## Pre-release drift baseline
 
@@ -47,7 +49,7 @@ fresh isolated-cache npx open-scaffold@latest cockpit --help: exit 2, Unknown co
 
 ## Outcome
 
-Pending. This candidate is not complete until the release-sync PR is reviewed and merged, trusted npm publishing succeeds, fresh public `npx open-scaffold@latest cockpit --help` exposes the cockpit command, GitHub Release `v0.4.17` is Latest, and the plan is closed with final evidence.
+Completed. `open-scaffold@0.4.17` is published on npm as `latest`, fresh isolated-cache `npx` smokes pass for `--help`, `cockpit --help`, and `init --tier min`, GitHub Release `v0.4.17 — Glass cockpit webhooks` is marked Latest, and plan `096` has been moved to `done/` for closeout.
 
 ## Verification
 
@@ -62,7 +64,26 @@ npm run build — passed, core and runtime-omx TypeScript builds
 npm run --silent osc -- cockpit --help — passed and listed cockpit config/test/post
 npm pack --dry-run --json — open-scaffold-0.4.17.tgz, 123 files, unpackedSize 851406
 npm publish --dry-run — + open-scaffold@0.4.17
-latest-head Codex review — pending after PR opens
+PR #101 CI — success
+Codex latest-head review — clean comment at 2026-05-23T20:15:59Z, no inline comments, zero unresolved review threads
+```
+
+Post-merge publish verification from `main`:
+
+```text
+git diff --check — passed
+./verify.sh --strict — 10 pass, 0 fail, 0 warn
+npm test -- --reporter=verbose — 35 files / 326 tests passed
+npm run build — passed
+npm run --silent osc -- cockpit --help — passed
+npm pack --dry-run --json — open-scaffold-0.4.17.tgz, 123 files, unpackedSize 851406
+npm publish --dry-run — + open-scaffold@0.4.17
+trusted publishing run 26342576290 — success, published open-scaffold@0.4.17
+npm latest — 0.4.17 / latest
+fresh isolated-cache npx open-scaffold@latest --help — passed and listed cockpit commands
+fresh isolated-cache npx open-scaffold@latest cockpit --help — passed and listed cockpit config/test/post
+fresh isolated-cache npx open-scaffold@latest init --tier min --target <tmp> — passed and created .osc/.gitignore containing tasks.db*
+GitHub Release v0.4.17 — created and marked Latest
 ```
 
 Package payload spot-check from `npm pack --dry-run --json`:
@@ -76,20 +97,15 @@ forbidden .osc/plans/active 0
 .osc/releases payload .osc/releases/README.md only
 ```
 
-Final public-surface verification targets:
+Final public-surface verification:
 
 ```text
-trusted publishing run — pending
-npm latest — pending 0.4.17
-fresh isolated-cache npx open-scaffold@latest cockpit --help — pending success
-GitHub Release v0.4.17 — pending Latest
+trusted publishing run 26342576290 — success
+npm latest — 0.4.17
+fresh isolated-cache npx open-scaffold@latest cockpit --help — passed
+GitHub Release v0.4.17 — Latest
 ```
 
 ## Remaining gates
 
-- Release-sync PR review/merge.
-- Trusted npm publishing for `open-scaffold@0.4.17`.
-- Fresh public `npx` cockpit smoke.
-- GitHub Release `v0.4.17` as Latest.
-- Final plan closeout after public proof.
-- Control Room proof resume remains separate and should start from refreshed selector/current truth after this release-sync completes.
+None for this release-sync slice. Control Room runner automation remains a separate resume/re-qualification gate and should start from refreshed selector/current truth after this closeout lands.
