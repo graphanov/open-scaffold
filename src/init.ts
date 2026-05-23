@@ -91,7 +91,14 @@ function isExecutableTemplate(file: string): boolean {
 function sourcePathFor(file: string): string | null {
   if (file === 'MISSION.md') return null;
   if (file.endsWith('/.gitkeep')) return null;
-  return join(packageRoot(), file);
+
+  const source = join(packageRoot(), file);
+  if (file === '.osc/.gitignore' && !existsSync(source)) {
+    const npmPackedFallback = join(packageRoot(), '.osc/.npmignore');
+    if (existsSync(npmPackedFallback)) return npmPackedFallback;
+  }
+
+  return source;
 }
 
 function missionTemplate(project?: ExistingProjectDetection): string {

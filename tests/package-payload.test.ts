@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { resolve } from 'node:path';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 
 interface PackedFile {
   path: string;
 }
 
 interface PackResult {
+  filename: string;
   files: PackedFile[];
 }
 
@@ -42,4 +45,40 @@ describe('npm package payload', () => {
 
     expect(forbidden).toEqual([]);
   }, 20_000);
+
+  it('runs init successfully from an extracted npm tarball', () => {
+    const packDir = mkdtempSync(join(tmpdir(), 'open-scaffold-pack-'));
+    const extractDir = mkdtempSync(join(tmpdir(), 'open-scaffold-extract-'));
+    const target = mkdtempSync(join(tmpdir(), 'open-scaffold-init-'));
+
+    try {
+      const output = execFileSync('npm', ['pack', '--json', '--pack-destination', packDir], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      const [pack] = JSON.parse(output) as PackResult[];
+      const tarball = resolve(packDir, pack.filename);
+
+      execFileSync('tar', ['-xzf', tarball, '-C', extractDir], {
+        cwd: repoRoot,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      const packageDir = join(extractDir, 'package');
+      expect(existsSync(join(packageDir, '.osc/.gitignore')) || existsSync(join(packageDir, '.osc/.npmignore'))).toBe(true);
+
+      execFileSync('node', [join(packageDir, 'dist/cli.js'), 'init', '--tier', 'min', '--target', target], {
+        cwd: packageDir,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      const ignore = readFileSync(join(target, '.osc/.gitignore'), 'utf8');
+      expect(ignore).toContain('tasks.db*');
+    } finally {
+      rmSync(packDir, { recursive: true, force: true });
+      rmSync(extractDir, { recursive: true, force: true });
+      rmSync(target, { recursive: true, force: true });
+    }
+  }, 40_000);
 });
