@@ -11,16 +11,16 @@ The feature stays local-only: no network access, no daemon, no background sync, 
 - Roadmap / issue / task: backlog plan selected by Open Scaffold runner automation.
 - Plan: `.osc/plans/done/061-local-task-database.md`
 - Run ID / run packet: N/A — direct runner implementation against selected backlog plan.
-- Branch / PR: `feat/061-local-task-database`; PR pending.
+- Branch / PR: `feat/061-local-task-database`; https://github.com/graphanov/open-scaffold/pull/96.
 
 ## Verification
 
 - `git diff --check` — passed.
-- `npx vitest run tests/tasks.test.ts` — passed, 5 tests.
-- `npx vitest run tests/tasks.test.ts tests/package-payload.test.ts` — passed, 6 tests across 2 files.
-- `npm test -- --run` — passed, 311 tests across 34 files.
+- `npx vitest run tests/tasks.test.ts` — passed, 6 tests.
+- `npx vitest run tests/tasks.test.ts tests/package-payload.test.ts` — passed, 7 tests across 2 files.
+- `npm test -- --run` — passed, 312 tests across 34 files.
 - `npm run build` — passed, core and runtime-omx TypeScript builds.
-- `npm pack --dry-run --json` — passed; package payload includes `.osc/.gitignore` and excludes dogfood plan/release history.
+- `npm pack --dry-run --json` — passed; package `open-scaffold-0.4.14.tgz` includes `.osc/.gitignore` and `docs/TASKS.md`, and excludes dogfood plan/release history.
 - `./verify.sh --strict` — passed, 10 pass / 0 fail / 0 warn after plan close and evidence update.
 - Built CLI smoke in a temporary initialized scaffold — passed: empty `task list --json`, `task new`, `task list --json`, `task claim`, `task comment`, `task complete`, `task show`, and `status` task counts.
 - Codex round-1 hardening — fixed native SQLite install risk by moving `better-sqlite3` to `optionalDependencies`, and fixed `osc status` outside scaffold roots with a regression test; latest local gates after the fix: `npx vitest run tests/tasks.test.ts`, `npm run build:core`, `npm pack --dry-run --json`, `./verify.sh --strict`, `git diff --check`, and `npm test -- --run`.
@@ -39,5 +39,5 @@ Merge, npm publication, and GitHub Release changes remain owner-gated.
 
 ## Follow-up
 
-- Open PR and run the standard latest-head Codex review loop.
+- Merge remains owner-gated.
 - If this merges, decide separately whether a package/release-train sync is needed for the new CLI surface.
