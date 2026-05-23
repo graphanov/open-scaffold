@@ -139,6 +139,13 @@ const discordColors: Record<CockpitEventType, number> = {
   cancellation: 0x95a5a6,
 };
 
+const DISCORD_EMBED_TOTAL_LIMIT = 6000;
+const DISCORD_TITLE_LIMIT = 256;
+const DISCORD_DESCRIPTION_LIMIT = 4096;
+const DISCORD_FOOTER_SOFT_LIMIT = 512;
+const DISCORD_FIELD_VALUE_SOFT_LIMIT = 600;
+const WEBHOOK_TIMEOUT_MS = 10_000;
+
 function packageRoot(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), '..');
 }
@@ -272,7 +279,11 @@ export function buildCockpitEnvelope(options: CockpitPostOptions, root = resolve
 }
 
 function refsToDiscordFields(refs: Record<string, string>): Array<{ name: string; value: string; inline: boolean }> {
-  return Object.entries(refs).map(([name, value]) => ({ name, value: truncate(value, 1024), inline: true }));
+  return Object.entries(refs).map(([name, value]) => ({
+    name: truncate(name, DISCORD_TITLE_LIMIT),
+    value: truncate(value, DISCORD_FIELD_VALUE_SOFT_LIMIT),
+    inline: true,
+  }));
 }
 
 function refsToSlackFields(refs: Record<string, string>): Array<{ type: 'mrkdwn'; text: string }> {
@@ -287,17 +298,31 @@ function truncate(value: string, max: number): string {
   return value.length <= max ? value : `${value.slice(0, Math.max(0, max - 1))}…`;
 }
 
+function discordFieldsLength(fields: Array<{ name: string; value: string }>): number {
+  return fields.reduce((total, field) => total + field.name.length + field.value.length, 0);
+}
+
+function fitDiscordDescription(body: string, title: string, fields: Array<{ name: string; value: string }>, footer: string): string {
+  const used = title.length + footer.length + discordFieldsLength(fields);
+  const availableForDescription = Math.max(0, DISCORD_EMBED_TOTAL_LIMIT - used);
+  return truncate(body, Math.min(DISCORD_DESCRIPTION_LIMIT, availableForDescription));
+}
+
 export function buildDiscordPayload(options: CockpitPostOptions, root = resolveRoot()): Record<string, unknown> {
   const envelope = buildCockpitEnvelope(options, root);
+  const title = truncate(envelope.title, DISCORD_TITLE_LIMIT);
+  const fields = refsToDiscordFields(envelope.refs);
+  const footer = truncate(footerText(root), DISCORD_FOOTER_SOFT_LIMIT);
+  const description = fitDiscordDescription(envelope.body, title, fields, footer);
   return {
     username: 'Open Scaffold',
     embeds: [
       {
-        title: truncate(envelope.title, 256),
-        description: truncate(envelope.body, 4096),
+        title,
+        description,
         color: discordColors[envelope.event_type],
-        fields: refsToDiscordFields(envelope.refs),
-        footer: { text: truncate(footerText(root), 2048) },
+        fields,
+        footer: { text: footer },
         timestamp: envelope.created_at,
       },
     ],
@@ -336,6 +361,7 @@ async function sendWebhook(target: CockpitTarget, payload: unknown): Promise<{ o
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
     });
     if (response.ok) return { ok: true };
     const body = await response.text().catch(() => '');

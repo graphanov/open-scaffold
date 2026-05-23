@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { createServer, type Server } from 'node:http';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -46,6 +46,8 @@ function runOsc(root: string, args: string[]) {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
@@ -124,7 +126,31 @@ describe('osc cockpit webhooks', () => {
     expect(discord.embeds[0].title.endsWith('…')).toBe(true);
     expect(discord.embeds[0].description).toHaveLength(4_096);
     expect(discord.embeds[0].description.endsWith('…')).toBe(true);
-    expect(discord.embeds[0].footer.text.length).toBeLessThanOrEqual(2_048);
+    expect(discord.embeds[0].footer.text.length).toBeLessThanOrEqual(512);
+  });
+
+  it('keeps Discord embed text under the 6000-character aggregate limit', () => {
+    const root = tempScaffold();
+    const longBody = 'd'.repeat(5_000);
+    const longRef = `https://example.com/${'r'.repeat(3_000)}`;
+
+    const discord = buildDiscordPayload({
+      event: 'completion_report',
+      message: longBody,
+      runId: longRef,
+      planSlug: longRef,
+      taskId: longRef,
+      pr: longRef,
+      evidencePath: longRef,
+    }, root) as { embeds: Array<{ title: string; description: string; footer: { text: string }; fields: Array<{ name: string; value: string }> }> };
+    const embed = discord.embeds[0];
+    const totalLength = embed.title.length
+      + embed.description.length
+      + embed.footer.text.length
+      + embed.fields.reduce((sum, field) => sum + field.name.length + field.value.length, 0);
+
+    expect(totalLength).toBeLessThanOrEqual(6_000);
+    for (const field of embed.fields) expect(field.value.length).toBeLessThanOrEqual(600);
   });
 
   it('keeps Slack field text under the Block Kit field limit', () => {
@@ -194,6 +220,21 @@ describe('osc cockpit webhooks', () => {
     } finally {
       await new Promise<void>((resolveClose) => server.close(() => resolveClose()));
     }
+  });
+
+  it('passes an abort signal to webhook POST requests', async () => {
+    const root = tempScaffold();
+    writeConfig(root, 'https://discord.com/api/webhooks/1234567890/test');
+    const fetchSpy = vi.fn(async () => ({ ok: true, text: async () => '' } as Response));
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const summary = await postCockpitEvent({ event: 'status', message: 'timeout guarded' }, root);
+
+    expect(summary.results[0]).toMatchObject({ status: 'sent' });
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://discord.com/api/webhooks/1234567890/test',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 
   it('sends a real one-shot HTTP POST and reports success', async () => {
