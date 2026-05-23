@@ -17,6 +17,7 @@ describe('tiered scaffold initialization', () => {
     expect(result.tier).toBe('min');
     expect(result.filesCreated.sort()).toEqual([...tierFiles.min].sort());
     expect(readFileSync(join(target, 'MISSION.md'), 'utf8')).toContain('<!-- mission:unset -->');
+    expect(readFileSync(join(target, '.osc/cockpit.example.json'), 'utf8')).toContain('discord');
     expect(readFileSync(join(target, '.osc/plans/WORKFLOW.md'), 'utf8')).toContain('Plan Workflow');
     expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('Amendments');
     expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).not.toContain('amend.sh');

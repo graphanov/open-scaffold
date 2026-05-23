@@ -9,6 +9,7 @@ export type ScaffoldTier = (typeof scaffoldTiers)[number];
 const minFiles = [
   'MISSION.md',
   '.osc/.gitignore',
+  '.osc/cockpit.example.json',
   '.osc/RULES.md',
   '.osc/plans/WORKFLOW.md',
   '.osc/plans/README.md',

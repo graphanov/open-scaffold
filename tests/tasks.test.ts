@@ -184,5 +184,6 @@ describe('osc task local database', () => {
     const ignore = readFileSync(join(target, '.osc/.gitignore'), 'utf8');
 
     expect(ignore).toContain('tasks.db*');
+    expect(ignore).toContain('cockpit.json');
   }, 20_000);
 });

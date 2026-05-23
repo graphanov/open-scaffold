@@ -40,6 +40,7 @@
   "files": [
     "dist",
     ".osc/.gitignore",
+    ".osc/cockpit.example.json",
     ".osc/RULES.md",
     ".osc/plans/WORKFLOW.md",
     ".osc/plans/README.md",

@@ -26,6 +26,7 @@ describe('npm package payload', () => {
     const paths = pack.files.map((file) => file.path).sort();
 
     expect(paths).toContain('.osc/.gitignore');
+    expect(paths).toContain('.osc/cockpit.example.json');
     expect(paths).toContain('.osc/RULES.md');
     expect(paths).toContain('.osc/plans/WORKFLOW.md');
     expect(paths).toContain('.osc/plans/README.md');
@@ -75,6 +76,8 @@ describe('npm package payload', () => {
 
       const ignore = readFileSync(join(target, '.osc/.gitignore'), 'utf8');
       expect(ignore).toContain('tasks.db*');
+      expect(ignore).toContain('cockpit.json');
+      expect(existsSync(join(target, '.osc/cockpit.example.json'))).toBe(true);
     } finally {
       rmSync(packDir, { recursive: true, force: true });
       rmSync(extractDir, { recursive: true, force: true });
