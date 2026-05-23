@@ -42,8 +42,8 @@ open-scaffold@latest npm tarball: no package/SECURITY.md entry
   - Candidate version: `0.4.18`.
 - `package-lock.json`
   - Candidate root package version aligned to `0.4.18`.
-- `.osc/plans/active/098-omo-security-hardening-package-sync.md`
-  - Tracked release-sync acceptance criteria until final public proof existed.
+- `.osc/plans/done/098-omo-security-hardening-package-sync.md`
+  - Tracks the release-sync plan after closeout moved it from `active/` to `done/`; during candidate review it tracked acceptance criteria until final public proof existed.
 - `.osc/releases/2026-05-23-098-omo-security-hardening-package-sync.md`
   - This evidence note.
 
