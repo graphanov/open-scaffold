@@ -3,6 +3,7 @@ import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
+import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
 import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
 import { collectEvidence } from './evidence.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
@@ -54,6 +55,9 @@ Usage:
   osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text>
   osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>]
   osc evolve check <loop-dir>
+  osc cockpit config
+  osc cockpit test [--dry-run]
+  osc cockpit post --event <event> [--message <text>] [--run-id <id>] [--plan <slug>] [--task-id <id>] [--pr <url>] [--evidence-path <path>] [--dry-run]
   osc mcp serve [--repo <path>] [--allow-write] [--validate]
   osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
   osc verify
@@ -1795,6 +1799,129 @@ function runtimes(args: string[]): void {
   process.exit(2);
 }
 
+function printCockpitUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc cockpit config
+  osc cockpit test [--dry-run]
+  osc cockpit post --event <${COCKPIT_EVENT_TYPES.join('|')}> [--message <text>] [--run-id <id>] [--plan <slug>] [--task-id <id>] [--pr <url>] [--evidence-path <path>] [--dry-run]`, stream);
+}
+
+function takeCockpitValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    throw new CockpitUsageError(`Missing value for ${flag}`);
+  }
+  return value;
+}
+
+function parseCockpitPostOptions(args: string[]): CockpitPostOptions {
+  let event: CockpitEventType | undefined;
+  let message: string | undefined;
+  let runId: string | undefined;
+  let planSlug: string | undefined;
+  let taskId: string | undefined;
+  let pr: string | undefined;
+  let evidencePath: string | undefined;
+  let dryRun = false;
+
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--event':
+        event = parseChoice(takeCockpitValue(args, i, flag), COCKPIT_EVENT_TYPES, flag) as CockpitEventType;
+        i += 1;
+        break;
+      case '--message':
+        message = takeCockpitValue(args, i, flag);
+        i += 1;
+        break;
+      case '--run-id':
+        runId = takeCockpitValue(args, i, flag);
+        i += 1;
+        break;
+      case '--plan':
+        planSlug = takeCockpitValue(args, i, flag);
+        i += 1;
+        break;
+      case '--task-id':
+        taskId = takeCockpitValue(args, i, flag);
+        i += 1;
+        break;
+      case '--pr':
+        pr = takeCockpitValue(args, i, flag);
+        i += 1;
+        break;
+      case '--evidence-path':
+        evidencePath = takeCockpitValue(args, i, flag);
+        i += 1;
+        break;
+      case '--dry-run':
+        dryRun = true;
+        break;
+      default:
+        throw new CockpitUsageError(`Unknown option for cockpit post: ${flag}`);
+    }
+  }
+  if (!event) throw new CockpitUsageError(`Missing required option: --event <${COCKPIT_EVENT_TYPES.join('|')}>`);
+  return { event, message, runId, planSlug, taskId, pr, evidencePath, dryRun };
+}
+
+function parseCockpitTestOptions(args: string[]): { dryRun: boolean } {
+  let dryRun = false;
+  for (const arg of args) {
+    if (arg === '--dry-run') dryRun = true;
+    else throw new CockpitUsageError(`Unknown option for cockpit test: ${arg}`);
+  }
+  return { dryRun };
+}
+
+async function cockpitCommand(args: string[]): Promise<void> {
+  const [subcommand, ...rest] = args;
+  if (subcommand === undefined || isHelpArg(subcommand)) {
+    printCockpitUsage('stdout');
+    return;
+  }
+
+  try {
+    if (subcommand === 'config') {
+      if (rest.length > 0) throw new CockpitUsageError(`Unknown option for cockpit config: ${rest[0]}`);
+      process.stdout.write(formatCockpitConfig(loadCockpitConfig(process.cwd())));
+      return;
+    }
+
+    if (subcommand === 'test') {
+      const options = parseCockpitTestOptions(rest);
+      const summary = await postCockpitEvent({ event: 'status', message: 'Open Scaffold cockpit test message.', dryRun: options.dryRun, testMode: true }, process.cwd());
+      process.stdout.write(formatCockpitDispatchSummary(summary));
+      if (hasCockpitDispatchFailures(summary)) process.exit(1);
+      return;
+    }
+
+    if (subcommand === 'post') {
+      const options = parseCockpitPostOptions(rest);
+      const summary = await postCockpitEvent(options, process.cwd());
+      process.stdout.write(formatCockpitDispatchSummary(summary));
+      if (hasCockpitDispatchFailures(summary)) process.exit(1);
+      return;
+    }
+  } catch (error) {
+    if (error instanceof CockpitUsageError) {
+      console.error(error.message);
+      printCockpitUsage();
+      process.exit(2);
+    }
+    if (error instanceof CockpitConfigError) {
+      console.error(error.message);
+      process.exit(1);
+    }
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+
+  console.error(`Unknown cockpit subcommand: ${subcommand}`);
+  printCockpitUsage();
+  process.exit(2);
+}
+
 async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
   switch (command) {
@@ -1841,6 +1968,9 @@ async function main(): Promise<void> {
     }
     case 'metrics':
       metricsCommand(args);
+      return;
+    case 'cockpit':
+      await cockpitCommand(args);
       return;
     case 'evidence':
       evidenceCommand(args);

@@ -116,7 +116,7 @@ Run `./verify.sh` for a zero-dependency methodology compliance report (mission d
 
 ### 5. Publish/review (when code or public docs change)
 
-Open a traceable GitHub PR for meaningful changes. The PR should link issue/task, plan/spec, `run.json` work package when delegated, verification, evidence, and review gates. If the Codex connector is enabled, trigger review by opening the PR for review, marking a draft ready, or commenting `@codex review`. See `docs/GITHUB_WORKFLOW.md`.
+Open a traceable GitHub PR for meaningful changes. The PR should link issue/task, plan/spec, `run.json` work package when delegated, verification, evidence, and review gates. If the Codex connector is enabled, trigger review by opening the PR for review, marking a draft ready, or commenting `@codex review`. When a configured Discord or Slack cockpit should see the update, use `osc cockpit post --event pr_link --pr <url>` or `osc cockpit post --event completion_report --run-id <id> --plan <slug> --pr <url>` after redaction review. See `docs/GITHUB_WORKFLOW.md`.
 
 ### 6. Capture amendments (when you "get smarter")
 

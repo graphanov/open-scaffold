@@ -404,6 +404,46 @@ Avoid:
 
 Glass cockpit events are the visible stream across those protocols. They do not replace any of them.
 
+## Implementation: `osc cockpit`
+
+Open Scaffold includes a minimal push-only webhook implementation for the protocol:
+
+```bash
+osc cockpit config
+osc cockpit test --dry-run
+osc cockpit test
+osc cockpit post --event status --message "Plan 062 in progress: implementing webhook dispatch" --dry-run
+osc cockpit post --event completion_report --run-id 20260518T120000Z-062 --plan 062-glass-cockpit-webhooks --pr "https://github.com/graphanov/open-scaffold/pull/56"
+osc cockpit post --event evidence_receipt --evidence-path ".osc/releases/2026-05-18-062-glass-cockpit-webhooks.md"
+osc cockpit post --event blocker --message "Blocked: waiting for webhook URL approval"
+osc cockpit post --event approval_request --message "Please review PR #56: 20 backlog items"
+```
+
+Configure webhook targets by copying `.osc/cockpit.example.json` to `.osc/cockpit.json` and replacing the placeholder URLs. `.osc/cockpit.json` is ignored by git because it contains credentials.
+
+```json
+{
+  "targets": [
+    {
+      "platform": "discord",
+      "webhookUrl": "https://discord.com/api/webhooks/...",
+      "events": ["status", "completion_report"]
+    },
+    {
+      "platform": "slack",
+      "webhookUrl": "https://hooks.slack.com/services/...",
+      "events": ["blocker", "approval_request"]
+    }
+  ]
+}
+```
+
+`osc cockpit config` prints configured targets with masked webhook URLs. `osc cockpit test --dry-run` and `osc cockpit post --dry-run` print the exact Discord embed or Slack Block Kit payload without sending anything. When no `.osc/cockpit.json` exists, cockpit commands exit successfully with `No cockpit targets configured. See .osc/cockpit.example.json`.
+
+Discord targets receive embed payloads with color-coded event types: green for completion/evidence/release, red for blockers, yellow for approval/questions, blue for status/session/PR updates, and gray for neutral events. Slack targets receive Block Kit messages with the same title, body, structured references, and footer.
+
+The v1 implementation is deliberately narrow: one-shot HTTP POST only. It does not receive messages, run a daemon, handle slash commands, store chat state, or make Discord/Slack canonical project truth.
+
 ## Product implication
 
 Open Scaffold should make semi-autonomous work visible without making visibility the truth:
