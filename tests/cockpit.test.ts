@@ -101,6 +101,18 @@ describe('osc cockpit webhooks', () => {
     expect(JSON.stringify(slack.blocks)).toContain(`repo: ${root}`);
   });
 
+  it('truncates Slack section text to the Block Kit limit', () => {
+    const root = tempScaffold();
+    const longBody = 'x'.repeat(3_500);
+
+    const slack = buildSlackPayload({ event: 'status', message: longBody }, root) as { blocks: Array<{ type: string; text?: { text: string } }>; text: string };
+    const section = slack.blocks.find((block) => block.type === 'section' && block.text);
+
+    expect(section?.text?.text).toHaveLength(3_000);
+    expect(section?.text?.text.endsWith('…')).toBe(true);
+    expect(slack.text.length).toBeLessThanOrEqual(3_000);
+  });
+
   it('dry-runs exact payloads and skips targets whose events list does not include the event', () => {
     const root = tempScaffold();
     writeConfig(root);

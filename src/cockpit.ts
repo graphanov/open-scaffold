@@ -306,14 +306,15 @@ export function buildDiscordPayload(options: CockpitPostOptions, root = resolveR
 
 export function buildSlackPayload(options: CockpitPostOptions, root = resolveRoot()): Record<string, unknown> {
   const envelope = buildCockpitEnvelope(options, root);
+  const body = truncate(envelope.body, 3000);
   const fields = refsToSlackFields(envelope.refs);
   const blocks: unknown[] = [
     { type: 'header', text: { type: 'plain_text', text: truncate(envelope.title, 150), emoji: true } },
-    { type: 'section', text: { type: 'mrkdwn', text: envelope.body } },
+    { type: 'section', text: { type: 'mrkdwn', text: body } },
   ];
   if (fields.length > 0) blocks.push({ type: 'section', fields });
   blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: footerText(root) }] });
-  return { text: `${envelope.title}: ${envelope.body}`, blocks };
+  return { text: truncate(`${envelope.title}: ${body}`, 3000), blocks };
 }
 
 export function buildCockpitPayload(platform: CockpitPlatform, options: CockpitPostOptions, root = resolveRoot()): Record<string, unknown> {
