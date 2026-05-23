@@ -16,15 +16,16 @@ The feature stays local-only: no network access, no daemon, no background sync, 
 ## Verification
 
 - `git diff --check` — passed.
-- `npx vitest run tests/tasks.test.ts` — passed, 6 tests.
-- `npx vitest run tests/tasks.test.ts tests/package-payload.test.ts` — passed, 7 tests across 2 files.
-- `npm test -- --run` — passed, 312 tests across 34 files.
+- `npx vitest run tests/tasks.test.ts` — passed, 7 tests.
+- `npx vitest run tests/init.test.ts tests/tasks.test.ts tests/package-payload.test.ts` — passed, 24 tests across 3 files.
+- `npm test -- --run` — passed, 313 tests across 34 files.
 - `npm run build` — passed, core and runtime-omx TypeScript builds.
 - `npm pack --dry-run --json` — passed; package `open-scaffold-0.4.14.tgz` includes `.osc/.gitignore` and `docs/TASKS.md`, and excludes dogfood plan/release history.
 - `./verify.sh --strict` — passed, 10 pass / 0 fail / 0 warn after plan close and evidence update.
 - Built CLI smoke in a temporary initialized scaffold — passed: empty `task list --json`, `task new`, `task list --json`, `task claim`, `task comment`, `task complete`, `task show`, and `status` task counts.
 - Codex round-1 hardening — fixed native SQLite install risk by moving `better-sqlite3` to `optionalDependencies`, and fixed `osc status` outside scaffold roots with a regression test; latest local gates after the fix: `npx vitest run tests/tasks.test.ts`, `npm run build:core`, `npm pack --dry-run --json`, `./verify.sh --strict`, `git diff --check`, and `npm test -- --run`.
 - Codex round-2 hardening — added `docs/TASKS.md` to the standard/max initialized scaffold file set so `docs/WORKFLOW.md` links resolve downstream; latest local gates after the fix: `npx vitest run tests/init.test.ts tests/tasks.test.ts tests/package-payload.test.ts` (23 tests), `npm test -- --run` (312 tests), `npm run build`, `npm pack --dry-run --json`, `./verify.sh --strict`, `git diff --check`, and a built-CLI standard/max init smoke.
+- Codex round-3 hardening — wrapped `createTask` insert and public-id assignment in a SQLite transaction, with a trigger-based regression test proving a failed id update leaves no `NULL` task id row; latest local gates after the fix: `npx vitest run tests/init.test.ts tests/tasks.test.ts tests/package-payload.test.ts` (24 tests), `npm test -- --run` (313 tests), `npm run build`, `npm pack --dry-run --json`, `./verify.sh --strict`, and `git diff --check`.
 
 ## Outcome
 

@@ -244,14 +244,25 @@ export function createTask(title: string, options: { priority?: string; plan?: s
   if (!db) throw new Error('Could not initialize local task database.');
   try {
     const stamp = nowIso();
-    const inserted = db.prepare('INSERT INTO tasks (title, status, priority, plan_slug, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
-      .run(cleanTitle, 'todo', priority, plan, stamp, stamp);
-    const localId = Number(inserted.lastInsertRowid);
-    const id = formatTaskId(localId);
-    db.prepare('UPDATE tasks SET id = ? WHERE local_id = ?').run(id, localId);
-    const task = getTaskById(db, id);
-    if (!task) throw new Error(`Created task ${id} but could not read it back.`);
-    return task;
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const inserted = db.prepare('INSERT INTO tasks (title, status, priority, plan_slug, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(cleanTitle, 'todo', priority, plan, stamp, stamp);
+      const localId = Number(inserted.lastInsertRowid);
+      const id = formatTaskId(localId);
+      db.prepare('UPDATE tasks SET id = ? WHERE local_id = ?').run(id, localId);
+      const task = getTaskById(db, id);
+      if (!task) throw new Error(`Created task ${id} but could not read it back.`);
+      db.exec('COMMIT');
+      return task;
+    } catch (error) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        // Preserve the original task creation error if rollback itself fails.
+      }
+      throw error;
+    }
   } finally {
     db.close();
   }

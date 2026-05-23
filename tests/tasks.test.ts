@@ -2,11 +2,28 @@ import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const cli = join(repoRoot, 'src/cli.ts');
+const require = createRequire(import.meta.url);
+
+type SqliteStatement<T = unknown> = {
+  get(...values: unknown[]): T | undefined;
+};
+
+type SqliteDatabase = {
+  exec(sql: string): void;
+  prepare<T = unknown>(sql: string): SqliteStatement<T>;
+  close(): void;
+};
+
+function openTaskDb(target: string): SqliteDatabase {
+  const Database = require('better-sqlite3') as new (path: string) => SqliteDatabase;
+  return new Database(join(target, '.osc/tasks.db'));
+}
 
 function tempDir(prefix = 'osc-tasks-') {
   return mkdtempSync(join(tmpdir(), prefix));
@@ -75,6 +92,38 @@ describe('osc task local database', () => {
     const persisted = JSON.parse(runOsc(target, ['task', 'list', '--plan', '060-mcp-server', '--json'])) as Array<Record<string, unknown>>;
     expect(persisted).toHaveLength(1);
     expect(persisted[0].id).toBe('T-001');
+  }, 20_000);
+
+  it('rolls back task creation if public id assignment fails', () => {
+    const target = initializedScaffold();
+    runOsc(target, ['task', 'new', 'Seed task']);
+
+    const db = openTaskDb(target);
+    try {
+      db.exec(`
+        CREATE TRIGGER fail_task_id_update
+        BEFORE UPDATE OF id ON tasks
+        WHEN NEW.id IS NOT NULL
+        BEGIN
+          SELECT RAISE(ABORT, 'simulated id failure');
+        END;
+      `);
+    } finally {
+      db.close();
+    }
+
+    const failed = spawnSync(tsx, [cli, 'task', 'new', 'Should rollback'], { cwd: target, encoding: 'utf8' });
+    expect(failed.status).not.toBe(0);
+    expect(failed.stderr).toContain('simulated id failure');
+
+    const check = openTaskDb(target);
+    try {
+      const row = check.prepare<{ count: number }>("SELECT COUNT(*) AS count FROM tasks WHERE title = 'Should rollback' OR id IS NULL").get();
+      expect(row?.count).toBe(0);
+    } finally {
+      check.close();
+    }
+    expect(JSON.parse(runOsc(target, ['task', 'list', '--json']))).toHaveLength(1);
   }, 20_000);
 
   it('supports status transitions and status summary integration', () => {
