@@ -45,7 +45,7 @@ failure: Template source missing for .osc/.gitignore because the extracted packa
 GitHub Latest Release: still v0.4.14 because the 0.4.15 release gate was intentionally not completed after the init blocker
 ```
 
-## Candidate changes
+## Hotfix changes
 
 - `package.json`
   - Candidate version: `0.4.16`.
@@ -55,7 +55,7 @@ GitHub Latest Release: still v0.4.14 because the 0.4.15 release gate was intenti
   - Copies packaged `.osc/.npmignore` as downstream `.osc/.gitignore` when npm rewrites the template filename during tarball extraction.
 - `tests/package-payload.test.ts`
   - Adds an extracted-tarball `osc init` regression test instead of relying only on dry-run file names.
-- `.osc/plans/active/095-local-task-database-public-surface-sync-amendment-1.md`
+- `.osc/plans/done/095-local-task-database-public-surface-sync-amendment-1.md`
   - Records the public-package verification learning and hotfix direction.
 - `.osc/releases/2026-05-23-095-local-task-database-public-surface-sync.md`
   - This candidate evidence note, updated with the 0.4.15 blocker and 0.4.16 follow-through.
