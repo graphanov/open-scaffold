@@ -9,7 +9,7 @@ Added push-only glass-cockpit webhook support through `osc cockpit config`, `osc
 - Roadmap / issue / task: selector mode `backlog_plan`; no GitHub issue existed for this slice.
 - Plan: .osc/plans/done/062-glass-cockpit-webhooks.md
 - Run ID / run packet: N/A — direct runner implementation for the selected plan.
-- Branch / PR: feat/062-glass-cockpit-webhooks; PR pending.
+- Branch / PR: feat/062-glass-cockpit-webhooks; https://github.com/graphanov/open-scaffold/pull/100
 
 ## Verification
 
