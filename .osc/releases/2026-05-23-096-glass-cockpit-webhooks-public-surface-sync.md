@@ -18,7 +18,7 @@ This release-sync slice prepares `open-scaffold@0.4.17` and records the proof ne
 - Source feature merge commit: `928c7d7a8013de215261cfbfedc13095774a09cf`
 - Release-sync plan: `.osc/plans/active/096-glass-cockpit-webhooks-public-surface-sync.md`
 - Release-sync branch: `release/glass-cockpit-webhooks-public-surface-sync`
-- Release-sync PR: pending at candidate-prep time
+- Release-sync PR: https://github.com/graphanov/open-scaffold/pull/101
 - Trusted publishing run: pending at candidate-prep time
 - GitHub Release: pending at candidate-prep time
 
