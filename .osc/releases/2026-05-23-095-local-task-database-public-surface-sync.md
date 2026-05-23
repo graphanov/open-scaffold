@@ -17,7 +17,7 @@ PR #96 added the optional local SQLite task database CLI to repo `main`, but the
 - Source feature plan: `.osc/plans/done/061-local-task-database.md`
 - Release-sync plan: `.osc/plans/active/095-local-task-database-public-surface-sync.md`
 - Release-sync branch: `release/local-task-database-public-surface-sync`
-- Release-sync PR: pending
+- Release-sync PR: https://github.com/graphanov/open-scaffold/pull/97
 
 ## Pre-release drift baseline
 
