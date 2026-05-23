@@ -12,6 +12,7 @@ import { computeMetrics, formatMetrics, parseSinceDate } from './metrics.js';
 import { runMcpCommand } from './mcp-server.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
 import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
+import { addTaskComment, createTask, formatTaskDetails, formatTaskSummary, formatTaskTable, getTaskDetails, getTaskSummary, linkTaskPlan, listTasks, taskToJson, transitionTask, TASK_PRIORITIES, TASK_STATUSES, TaskUsageError, type TaskStatus } from './tasks.js';
 import { validateScaffold } from './validation.js';
 import { formatPlanValidationIssues, hasBlockingIssues, resolvePlanValidationPath, validatePlanFile } from './plan-validate.js';
 import { askInteractiveAnswers, assertWizardReady, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
@@ -24,6 +25,13 @@ Usage:
   osc init --from-existing --tier min --target <dir> [--force]
   osc init --min|--standard|--max --target <dir> [--force]
   osc status [--json]
+  osc task new <title> [--priority <high|medium|low>] [--plan <slug>]
+  osc task list [--status <status>] [--priority <priority>] [--plan <slug>] [--json]
+  osc task show <task-id>
+  osc task claim|start|complete|cancel <task-id>
+  osc task block <task-id> --reason <text>
+  osc task comment <task-id> <comment>
+  osc task link <task-id> --plan <slug>
   osc plan <plan-path>
   osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]
   osc plan new --from-template list
@@ -360,8 +368,15 @@ function init(args: string[]): void {
 
 function status(json: boolean): void {
   const state = inspectScaffold(process.cwd());
+  let taskSummary: ReturnType<typeof getTaskSummary> = null;
+  try {
+    taskSummary = getTaskSummary(process.cwd());
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.startsWith('No Open Scaffold root found')) throw error;
+  }
   if (json) {
-    console.log(JSON.stringify(state, null, 2));
+    console.log(JSON.stringify({ ...state, tasks: taskSummary }, null, 2));
     return;
   }
   console.log('Open Scaffold status');
@@ -372,6 +387,7 @@ function status(json: boolean): void {
     console.log(`${stage}: ${plans.length}`);
     for (const plan of plans) console.log(`  - ${plan.slug}`);
   }
+  if (taskSummary) console.log(formatTaskSummary(taskSummary));
 }
 
 function exitForScaffoldHelperError(error: unknown): never {
@@ -1539,6 +1555,190 @@ function metricsCommand(args: string[]): void {
   }
 }
 
+function printTaskUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc task new <title> [--priority <${TASK_PRIORITIES.join('|')}>] [--plan <slug>]
+  osc task list [--status <${TASK_STATUSES.join('|')}>] [--priority <${TASK_PRIORITIES.join('|')}>] [--plan <slug>] [--json]
+  osc task show <task-id>
+  osc task claim|start|complete|cancel <task-id>
+  osc task block <task-id> --reason <text>
+  osc task comment <task-id> <comment>
+  osc task link <task-id> --plan <slug>`, stream);
+}
+
+function takeTaskValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${flag}`);
+    process.exit(2);
+  }
+  return value;
+}
+
+function exitForTaskError(error: unknown): never {
+  console.error(error instanceof Error ? error.message : String(error));
+  if (error instanceof TaskUsageError) process.exit(2);
+  process.exit(1);
+}
+
+function taskCommand(args: string[]): void {
+  const [subcommand, ...rest] = args;
+  if (subcommand === undefined || isHelpArg(subcommand)) {
+    printTaskUsage('stdout');
+    return;
+  }
+
+  try {
+    if (subcommand === 'new') {
+      const title = requireArg(rest, 'title');
+      let priority: string | undefined;
+      let plan: string | undefined;
+      for (let i = 1; i < rest.length; i += 1) {
+        const flag = rest[i];
+        switch (flag) {
+          case '--priority':
+            priority = takeTaskValue(rest, i, flag);
+            i += 1;
+            break;
+          case '--plan':
+            plan = takeTaskValue(rest, i, flag);
+            i += 1;
+            break;
+          default:
+            console.error(`Unknown option for task new: ${flag}`);
+            printTaskUsage();
+            process.exit(2);
+        }
+      }
+      const task = createTask(title, { priority, plan }, process.cwd());
+      console.log(`Created task ${task.id}: ${task.title}`);
+      return;
+    }
+
+    if (subcommand === 'list') {
+      let json = false;
+      let status: string | undefined;
+      let priority: string | undefined;
+      let plan: string | undefined;
+      for (let i = 0; i < rest.length; i += 1) {
+        const flag = rest[i];
+        switch (flag) {
+          case '--json':
+            json = true;
+            break;
+          case '--status':
+            status = takeTaskValue(rest, i, flag);
+            i += 1;
+            break;
+          case '--priority':
+            priority = takeTaskValue(rest, i, flag);
+            i += 1;
+            break;
+          case '--plan':
+            plan = takeTaskValue(rest, i, flag);
+            i += 1;
+            break;
+          default:
+            console.error(`Unknown option for task list: ${flag}`);
+            printTaskUsage();
+            process.exit(2);
+        }
+      }
+      const tasks = listTasks({ status, priority, plan }, process.cwd());
+      if (json) console.log(JSON.stringify(tasks.map(taskToJson), null, 2));
+      else process.stdout.write(formatTaskTable(tasks));
+      return;
+    }
+
+    if (subcommand === 'show') {
+      const id = requireArg(rest, 'task-id');
+      if (rest.length > 1) {
+        console.error(`Unknown option for task show: ${rest[1]}`);
+        printTaskUsage();
+        process.exit(2);
+      }
+      process.stdout.write(formatTaskDetails(getTaskDetails(id, process.cwd())));
+      return;
+    }
+
+    if (subcommand === 'claim' || subcommand === 'start' || subcommand === 'complete' || subcommand === 'cancel') {
+      const id = requireArg(rest, 'task-id');
+      if (rest.length > 1) {
+        console.error(`Unknown option for task ${subcommand}: ${rest[1]}`);
+        printTaskUsage();
+        process.exit(2);
+      }
+      const nextStatus: TaskStatus = subcommand === 'complete' ? 'done' : subcommand === 'cancel' ? 'cancelled' : 'in-progress';
+      const task = transitionTask(id, nextStatus, {}, process.cwd());
+      console.log(`${task.id} is now ${task.status}`);
+      return;
+    }
+
+    if (subcommand === 'block') {
+      const id = requireArg(rest, 'task-id');
+      let reason: string | undefined;
+      for (let i = 1; i < rest.length; i += 1) {
+        const flag = rest[i];
+        if (flag === '--reason') {
+          reason = takeTaskValue(rest, i, flag);
+          i += 1;
+        } else {
+          console.error(`Unknown option for task block: ${flag}`);
+          printTaskUsage();
+          process.exit(2);
+        }
+      }
+      if (!reason) {
+        console.error('Missing required option: --reason <text>');
+        process.exit(2);
+      }
+      const task = transitionTask(id, 'blocked', { reason }, process.cwd());
+      console.log(`${task.id} is now ${task.status}`);
+      return;
+    }
+
+    if (subcommand === 'comment') {
+      const id = requireArg(rest, 'task-id');
+      const body = rest.slice(1).join(' ').trim();
+      if (!body) {
+        console.error('Missing required argument: comment');
+        process.exit(2);
+      }
+      addTaskComment(id, body, process.cwd());
+      console.log(`Added comment to ${id.toUpperCase()}`);
+      return;
+    }
+
+    if (subcommand === 'link') {
+      const id = requireArg(rest, 'task-id');
+      let plan: string | undefined;
+      for (let i = 1; i < rest.length; i += 1) {
+        const flag = rest[i];
+        if (flag === '--plan') {
+          plan = takeTaskValue(rest, i, flag);
+          i += 1;
+        } else {
+          console.error(`Unknown option for task link: ${flag}`);
+          printTaskUsage();
+          process.exit(2);
+        }
+      }
+      if (!plan) {
+        console.error('Missing required option: --plan <slug>');
+        process.exit(2);
+      }
+      const task = linkTaskPlan(id, plan, process.cwd());
+      console.log(`Linked ${task.id} to plan ${task.plan}`);
+      return;
+    }
+  } catch (error) {
+    exitForTaskError(error);
+  }
+
+  console.error(`Unknown task subcommand: ${subcommand}`);
+  printTaskUsage();
+  process.exit(2);
+}
+
 function runtimes(args: string[]): void {
   const [subcommand, ...rest] = args;
   if (subcommand === 'list') {
@@ -1609,6 +1809,9 @@ async function main(): Promise<void> {
       return;
     case 'status':
       status(args.includes('--json'));
+      return;
+    case 'task':
+      taskCommand(args);
       return;
     case 'plan':
       await planCommand(args);

@@ -40,6 +40,7 @@ describe('tiered scaffold initialization', () => {
     for (const file of tierFiles.min) expect(result.filesCreated).toContain(file);
     expect(readFileSync(join(target, 'README.md'), 'utf8')).toContain('Open Scaffold');
     expect(readFileSync(join(target, 'docs/MINIMUM_VIABLE_SCAFFOLD.md'), 'utf8')).toContain('minimum viable scaffold');
+    expect(readFileSync(join(target, 'docs/TASKS.md'), 'utf8')).toContain('Local Tasks');
   });
 
   it('generates the max scaffold as a superset of standard', () => {

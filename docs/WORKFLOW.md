@@ -70,6 +70,17 @@ Then fill every TODO before implementation. The helpers create and move structur
 
 Implement what the plan says. Independent tasks can run in parallel. Every change must trace back to a plan file or amendment.
 
+For day-one local task tracking without an external board, use `osc task` as a repo-local task bridge:
+
+```bash
+osc task new "Fix login redirect bug" --priority high --plan <plan-slug>
+osc task list --status todo
+osc task claim T-001
+osc task complete T-001
+```
+
+Tasks live in local `.osc/tasks.db` and can link to plans, but they do not replace plan acceptance criteria or GitHub Issues for public/shared work. See [`docs/TASKS.md`](TASKS.md).
+
 Before creating a durable run packet, preview what Open Scaffold would package:
 
 ```bash

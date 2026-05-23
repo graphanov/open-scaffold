@@ -39,6 +39,7 @@
   },
   "files": [
     "dist",
+    ".osc/.gitignore",
     ".osc/RULES.md",
     ".osc/plans/WORKFLOW.md",
     ".osc/plans/README.md",
@@ -63,5 +64,8 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^4.1.6"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^12.10.0"
   }
 }

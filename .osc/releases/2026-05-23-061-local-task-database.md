@@ -1,0 +1,45 @@
+# Release / Evidence Note: 061-local-task-database
+
+## Summary
+
+Added an optional local task database for Open Scaffold. `osc task` now supports creating, listing, filtering, showing, claiming/starting, completing, blocking, cancelling, commenting on, and plan-linking local tasks backed by `.osc/tasks.db`.
+
+The feature stays local-only: no network access, no daemon, no background sync, and no claim that it replaces shared task systems such as GitHub Issues, Linear, Jira, or coordinator-owned Kanban boards.
+
+## Traceability
+
+- Roadmap / issue / task: backlog plan selected by Open Scaffold runner automation.
+- Plan: `.osc/plans/done/061-local-task-database.md`
+- Run ID / run packet: N/A — direct runner implementation against selected backlog plan.
+- Branch / PR: `feat/061-local-task-database`; https://github.com/graphanov/open-scaffold/pull/96.
+
+## Verification
+
+- `git diff --check` — passed.
+- `npx vitest run tests/tasks.test.ts` — passed, 7 tests.
+- `npx vitest run tests/init.test.ts tests/tasks.test.ts tests/package-payload.test.ts` — passed, 24 tests across 3 files.
+- `npm test -- --run` — passed, 313 tests across 34 files.
+- `npm run build` — passed, core and runtime-omx TypeScript builds.
+- `npm pack --dry-run --json` — passed; package `open-scaffold-0.4.14.tgz` includes `.osc/.gitignore` and `docs/TASKS.md`, and excludes dogfood plan/release history.
+- `./verify.sh --strict` — passed, 10 pass / 0 fail / 0 warn after plan close and evidence update.
+- Built CLI smoke in a temporary initialized scaffold — passed: empty `task list --json`, `task new`, `task list --json`, `task claim`, `task comment`, `task complete`, `task show`, and `status` task counts.
+- Codex round-1 hardening — fixed native SQLite install risk by moving `better-sqlite3` to `optionalDependencies`, and fixed `osc status` outside scaffold roots with a regression test; latest local gates after the fix: `npx vitest run tests/tasks.test.ts`, `npm run build:core`, `npm pack --dry-run --json`, `./verify.sh --strict`, `git diff --check`, and `npm test -- --run`.
+- Codex round-2 hardening — added `docs/TASKS.md` to the standard/max initialized scaffold file set so `docs/WORKFLOW.md` links resolve downstream; latest local gates after the fix: `npx vitest run tests/init.test.ts tests/tasks.test.ts tests/package-payload.test.ts` (23 tests), `npm test -- --run` (312 tests), `npm run build`, `npm pack --dry-run --json`, `./verify.sh --strict`, `git diff --check`, and a built-CLI standard/max init smoke.
+- Codex round-3 hardening — wrapped `createTask` insert and public-id assignment in a SQLite transaction, with a trigger-based regression test proving a failed id update leaves no `NULL` task id row; latest local gates after the fix: `npx vitest run tests/init.test.ts tests/tasks.test.ts tests/package-payload.test.ts` (24 tests), `npm test -- --run` (313 tests), `npm run build`, `npm pack --dry-run --json`, `./verify.sh --strict`, and `git diff --check`.
+
+## Outcome
+
+The slice implements the local task bridge described in plan 061:
+
+- new `src/tasks.ts` SQLite-backed local task storage using `better-sqlite3`;
+- `src/cli.ts` `osc task` subcommands and task summary in `osc status`;
+- initialized scaffolds receive `.osc/.gitignore` with `tasks.db*`;
+- `docs/TASKS.md`, `docs/WORKFLOW.md`, and `docs/OPEN_SCAFFOLD_SYSTEM.md` explain the task DB boundary and usage;
+- tests cover graceful no-DB listing, CRUD/filtering, status transitions, comments, plan linking, persistence, status summary integration, invalid options, and scaffold ignore-rule shipping.
+
+Merge, npm publication, and GitHub Release changes remain owner-gated.
+
+## Follow-up
+
+- Merge remains owner-gated.
+- If this merges, decide separately whether a package/release-train sync is needed for the new CLI surface.
