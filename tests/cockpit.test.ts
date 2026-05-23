@@ -113,6 +113,20 @@ describe('osc cockpit webhooks', () => {
     expect(slack.text.length).toBeLessThanOrEqual(3_000);
   });
 
+  it('truncates Discord embed title and description to Discord limits', () => {
+    const root = tempScaffold();
+    const longTitle = 't'.repeat(500);
+    const longBody = 'd'.repeat(5_000);
+
+    const discord = buildDiscordPayload({ event: 'status', title: longTitle, message: longBody }, root) as { embeds: Array<{ title: string; description: string; footer: { text: string } }> };
+
+    expect(discord.embeds[0].title).toHaveLength(256);
+    expect(discord.embeds[0].title.endsWith('…')).toBe(true);
+    expect(discord.embeds[0].description).toHaveLength(4_096);
+    expect(discord.embeds[0].description.endsWith('…')).toBe(true);
+    expect(discord.embeds[0].footer.text.length).toBeLessThanOrEqual(2_048);
+  });
+
   it('keeps Slack field text under the Block Kit field limit', () => {
     const root = tempScaffold();
     const longRef = `https://example.com/${'x'.repeat(3_000)}`;

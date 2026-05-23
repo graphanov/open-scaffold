@@ -293,11 +293,11 @@ export function buildDiscordPayload(options: CockpitPostOptions, root = resolveR
     username: 'Open Scaffold',
     embeds: [
       {
-        title: envelope.title,
-        description: envelope.body,
+        title: truncate(envelope.title, 256),
+        description: truncate(envelope.body, 4096),
         color: discordColors[envelope.event_type],
         fields: refsToDiscordFields(envelope.refs),
-        footer: { text: footerText(root) },
+        footer: { text: truncate(footerText(root), 2048) },
         timestamp: envelope.created_at,
       },
     ],
