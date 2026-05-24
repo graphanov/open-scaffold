@@ -1,0 +1,17 @@
+{
+  "name": "Open Scaffold",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "remoteUser": "node",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "postCreateCommand": "npm install && npm run build && npm install -g .",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  }
+}

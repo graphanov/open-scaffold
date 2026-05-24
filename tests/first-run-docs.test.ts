@@ -63,4 +63,15 @@ describe('first-run documentation truth', () => {
       osc: 'dist/cli.js',
     });
   });
+
+  it('documents optional dev container support without replacing npx setup', () => {
+    const readme = read('README.md');
+    const devcontainer = read('docs/DEV_CONTAINER.md');
+
+    expect(readme).toContain('Dev Container');
+    expect(readme).toContain('npx open-scaffold init --tier min');
+    expect(devcontainer).toContain('docker build -t osc-devcontainer -f .devcontainer/Dockerfile .devcontainer/');
+    expect(devcontainer).toContain('Containers');
+    expect(devcontainer).not.toContain('Daniel');
+  });
 });

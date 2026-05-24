@@ -42,6 +42,20 @@ describe('tiered scaffold initialization', () => {
     expect(readFileSync(join(target, 'README.md'), 'utf8')).toContain('Open Scaffold');
     expect(readFileSync(join(target, 'docs/MINIMUM_VIABLE_SCAFFOLD.md'), 'utf8')).toContain('minimum viable scaffold');
     expect(readFileSync(join(target, 'docs/TASKS.md'), 'utf8')).toContain('Local Tasks');
+    expect(existsSync(join(target, '.devcontainer/devcontainer.json'))).toBe(true);
+    expect(existsSync(join(target, '.devcontainer/Dockerfile'))).toBe(true);
+    expect(existsSync(join(target, '.devcontainer/README.md'))).toBe(true);
+    expect(readFileSync(join(target, '.devcontainer/devcontainer.json'), 'utf8')).toContain('postCreateCommand');
+    expect(readFileSync(join(target, 'docs/DEV_CONTAINER.md'), 'utf8')).toContain('Dev Container');
+  });
+
+  it('keeps devcontainer support out of the minimum tier', () => {
+    const target = tempTarget();
+
+    initializeScaffold({ tier: 'min', target });
+
+    expect(existsSync(join(target, '.devcontainer/devcontainer.json'))).toBe(false);
+    expect(existsSync(join(target, 'docs/DEV_CONTAINER.md'))).toBe(false);
   });
 
   it('generates the max scaffold as a superset of standard', () => {
