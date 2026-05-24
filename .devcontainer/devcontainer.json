@@ -6,7 +6,7 @@
   },
   "remoteUser": "node",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-  "postCreateCommand": "npm install && npm run build && npm install -g .",
+  "postCreateCommand": "if [ -f package.json ]; then npm install && npm run build && npm install -g .; else osc --version; fi",
   "customizations": {
     "vscode": {
       "extensions": [

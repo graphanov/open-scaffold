@@ -45,7 +45,9 @@ describe('tiered scaffold initialization', () => {
     expect(existsSync(join(target, '.devcontainer/devcontainer.json'))).toBe(true);
     expect(existsSync(join(target, '.devcontainer/Dockerfile'))).toBe(true);
     expect(existsSync(join(target, '.devcontainer/README.md'))).toBe(true);
-    expect(readFileSync(join(target, '.devcontainer/devcontainer.json'), 'utf8')).toContain('postCreateCommand');
+    const devcontainer = readFileSync(join(target, '.devcontainer/devcontainer.json'), 'utf8');
+    expect(devcontainer).toContain('postCreateCommand');
+    expect(devcontainer).toContain('[ -f package.json ]');
     expect(readFileSync(join(target, 'docs/DEV_CONTAINER.md'), 'utf8')).toContain('Dev Container');
   });
 

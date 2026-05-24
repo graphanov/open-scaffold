@@ -16,9 +16,11 @@ describe('devcontainer profile', () => {
 
     expect(config.build).toMatchObject({ dockerfile: 'Dockerfile', context: '.' });
     expect(config.remoteUser).toBe('node');
+    expect(config.postCreateCommand).toContain('[ -f package.json ]');
     expect(config.postCreateCommand).toContain('npm install');
     expect(config.postCreateCommand).toContain('npm run build');
     expect(config.postCreateCommand).toContain('npm install -g .');
+    expect(config.postCreateCommand).toContain('osc --version');
     expect(config.customizations?.vscode?.extensions).toContain('ms-vscode.vscode-typescript-next');
   });
 

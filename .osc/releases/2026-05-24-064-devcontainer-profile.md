@@ -2,7 +2,7 @@
 
 ## Summary
 
-Added an optional Dev Container profile for Open Scaffold development. The profile provides Node.js 22, npm, git, and `osc`, documents VS Code/Codespaces/plain-Docker usage, and makes standard-tier `osc init` generate `.devcontainer/` for downstream projects while keeping min-tier scaffolds small.
+Added an optional Dev Container profile for Open Scaffold development. The profile provides Node.js 22, npm, git, and `osc`, documents VS Code/Codespaces/plain-Docker usage, and makes standard-tier `osc init` generate `.devcontainer/` for downstream projects while keeping min-tier scaffolds small. The post-create command now skips npm workspace setup when a generated downstream scaffold has no `package.json`.
 
 ## Traceability
 
@@ -14,10 +14,11 @@ Added an optional Dev Container profile for Open Scaffold development. The profi
 
 ## Verification
 
-- `npm test -- tests/devcontainer.test.ts tests/init.test.ts tests/cli-init.test.ts tests/first-run-docs.test.ts tests/package-payload.test.ts` — 5 files / 57 tests passed.
+- `npm test -- tests/devcontainer.test.ts tests/init.test.ts tests/cli-init.test.ts tests/first-run-docs.test.ts tests/package-payload.test.ts tests/github-actions-workflows.test.ts` — 6 files / 58 tests passed.
+- `npm test` — 37 files / 332 tests passed.
 - `npm run build`; `node dist/cli.js --version` — build passed and CLI printed `0.4.18`.
-- `git diff --check`; `./verify.sh --strict`; `npm test`; `npm pack --dry-run --json` with devcontainer asset assertion — all passed.
-- `node dist/cli.js init --tier standard --target <temp>` with devcontainer asset assertions — passed.
+- `git diff --check`; `./verify.sh --strict`; changed-plan validation simulation; `npm pack --dry-run --json` with devcontainer asset assertion — all passed.
+- `node dist/cli.js init --tier standard --target <temp>` with guarded devcontainer post-create assertion — passed.
 - `docker build -t osc-test -f .devcontainer/Dockerfile .devcontainer/`; `docker run --rm osc-test ...` — blocked because the runner environment had no active Docker daemon.
 
 ## Outcome
