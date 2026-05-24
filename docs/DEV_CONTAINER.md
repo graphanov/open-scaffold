@@ -22,7 +22,7 @@ osc status
 npm test
 ```
 
-The image installs the published `open-scaffold` package so `osc` exists as soon as the container starts. When the mounted workspace has a `package.json`, the post-create step runs `npm install`, `npm run build`, and `npm install -g .` so `osc` points at the checked-out source; generated downstream scaffolds without a Node package keep using the preinstalled CLI instead of failing setup.
+The image installs the published `open-scaffold` package so `osc` exists as soon as the container starts. When the mounted workspace is the Open Scaffold package itself, the post-create step runs `npm install`, `npm run build`, and `npm install -g .` so `osc` points at the checked-out source; generated downstream scaffolds and arbitrary Node projects keep using the preinstalled CLI instead of running project-local npm scripts.
 
 ## GitHub Codespaces
 

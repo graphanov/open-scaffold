@@ -2,7 +2,7 @@
 
 ## Summary
 
-Added an optional Dev Container profile for Open Scaffold development. The profile provides Node.js 22, npm, git, and `osc`, documents VS Code/Codespaces/plain-Docker usage, and makes standard-tier `osc init` generate `.devcontainer/` for downstream projects while keeping min-tier scaffolds small. The post-create command now skips npm workspace setup when a generated downstream scaffold has no `package.json`.
+Added an optional Dev Container profile for Open Scaffold development. The profile provides Node.js 22, npm, git, and `osc`, documents VS Code/Codespaces/plain-Docker usage, and makes standard-tier `osc init` generate `.devcontainer/` for downstream projects while keeping min-tier scaffolds small. The post-create command now runs npm workspace setup only when the mounted package is Open Scaffold itself, avoiding downstream project script/global-install side effects.
 
 ## Traceability
 

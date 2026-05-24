@@ -16,7 +16,8 @@ describe('devcontainer profile', () => {
 
     expect(config.build).toMatchObject({ dockerfile: 'Dockerfile', context: '.' });
     expect(config.remoteUser).toBe('node');
-    expect(config.postCreateCommand).toContain('[ -f package.json ]');
+    expect(config.postCreateCommand).toContain("p.name === 'open-scaffold'");
+    expect(config.postCreateCommand).toContain('p.bin && p.bin.osc');
     expect(config.postCreateCommand).toContain('npm install');
     expect(config.postCreateCommand).toContain('npm run build');
     expect(config.postCreateCommand).toContain('npm install -g .');
