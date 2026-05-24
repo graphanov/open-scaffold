@@ -1,0 +1,76 @@
+name: Plan validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".osc/plans/active/*.md"
+      - ".osc/plans/active/**/*.md"
+      - ".osc/plans/backlog/*.md"
+      - ".osc/plans/backlog/**/*.md"
+      - ".osc/plans/blocked/*.md"
+      - ".osc/plans/blocked/**/*.md"
+      - ".osc/plans/done/*.md"
+      - ".osc/plans/done/**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-plans:
+    name: Validate changed plans
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.12.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build CLI
+        run: npm run build
+
+      - name: Find changed plan files
+        id: changed-plans
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="origin/${{ github.base_ref || 'main' }}"
+          git diff --name-only --diff-filter=ACMRT "$base"...HEAD -- \
+            '.osc/plans/active/*.md' \
+            '.osc/plans/active/**/*.md' \
+            '.osc/plans/backlog/*.md' \
+            '.osc/plans/backlog/**/*.md' \
+            '.osc/plans/blocked/*.md' \
+            '.osc/plans/blocked/**/*.md' \
+            '.osc/plans/done/*.md' \
+            '.osc/plans/done/**/*.md' | sort > changed-plans.txt
+          count="$(wc -l < changed-plans.txt | tr -d ' ')"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          if [[ "$count" == "0" ]]; then
+            echo "No changed plan files to validate."
+          else
+            echo "Changed plan files:"
+            cat changed-plans.txt
+          fi
+
+      - name: Validate changed plans
+        if: steps.changed-plans.outputs.count != '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r plan; do
+            [[ -n "$plan" ]] || continue
+            echo "::group::osc plan validate $plan"
+            node dist/cli.js plan validate "$plan"
+            echo "::endgroup::"
+          done < changed-plans.txt
