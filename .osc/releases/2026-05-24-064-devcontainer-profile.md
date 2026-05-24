@@ -10,7 +10,7 @@ Added an optional Dev Container profile for Open Scaffold development. The profi
 - Plan: `.osc/plans/active/064-devcontainer-profile.md` pending owner review and final Docker smoke.
 - Amendment: `.osc/plans/active/064-devcontainer-profile-amendment-1.md` records the published-package base image plus workspace post-create install decision.
 - Run ID / run packet: N/A — implemented directly from the selected backlog plan.
-- Branch / PR: `feature/064-devcontainer-profile`; PR pending at time of evidence creation.
+- Branch / PR: `feature/064-devcontainer-profile`; https://github.com/graphanov/open-scaffold/pull/108.
 
 ## Verification
 
