@@ -47,8 +47,9 @@ jobs:
             echo "Tag $tag does not match package.json version $version. Expected v$version." >&2
             exit 1
           fi
-          if npm view "open-scaffold@$version" version >/dev/null 2>&1; then
-            echo "open-scaffold@$version is already published." >&2
+          name="$(node -p "require('./package.json').name")"
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "$name@$version is already published." >&2
             exit 1
           fi
 

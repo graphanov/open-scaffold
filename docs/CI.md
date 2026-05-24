@@ -38,7 +38,7 @@ This keeps release/evidence notes from becoming stale proof claims.
 
 ## Stale active plans
 
-`stale-plans.yml` runs weekly and can also be started manually from the Actions tab. It scans `.osc/plans/active/*.md`, computes the last git modification date, and opens an issue titled:
+`stale-plans.yml` runs weekly and can also be started manually from the Actions tab. It scans `.osc/plans/active/*.md`, computes the latest git modification date across each parent plan and its amendment files, and opens an issue titled:
 
 ```text
 Stale active plans — week of YYYY-MM-DD

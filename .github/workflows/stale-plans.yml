@@ -60,9 +60,7 @@ jobs:
           active_dir = pathlib.Path('.osc/plans/active')
           stale = []
 
-          for path in sorted(active_dir.glob('*.md')):
-              if re.search(r'-amendment-\d+\.md$', path.name):
-                  continue
+          def git_or_stat_modified(path: pathlib.Path) -> dt.datetime:
               completed = subprocess.run(
                   ['git', 'log', '-1', '--format=%ct', '--', str(path)],
                   text=True,
@@ -70,9 +68,15 @@ jobs:
                   check=False,
               )
               if completed.returncode == 0 and completed.stdout.strip():
-                  modified = dt.datetime.fromtimestamp(int(completed.stdout.strip()), tz=dt.timezone.utc)
-              else:
-                  modified = dt.datetime.fromtimestamp(path.stat().st_mtime, tz=dt.timezone.utc)
+                  return dt.datetime.fromtimestamp(int(completed.stdout.strip()), tz=dt.timezone.utc)
+              return dt.datetime.fromtimestamp(path.stat().st_mtime, tz=dt.timezone.utc)
+
+          for path in sorted(active_dir.glob('*.md')):
+              if re.search(r'-amendment-\d+\.md$', path.name):
+                  continue
+              plan_stem = path.stem
+              related_files = [path, *sorted(active_dir.glob(f'{plan_stem}-amendment-*.md'))]
+              modified = max(git_or_stat_modified(related) for related in related_files)
               age_days = (now - modified).days
               if age_days > threshold:
                   stale.append({
