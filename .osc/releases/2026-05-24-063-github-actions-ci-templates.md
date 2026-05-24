@@ -9,7 +9,7 @@ Added GitHub Actions guardrail templates for changed plan validation, evidence n
 - Roadmap / issue / task: selected backlog plan `063-github-actions-ci-templates`.
 - Plan: `.osc/plans/done/063-github-actions-ci-templates.md`.
 - Run ID / run packet: N/A — direct repository automation slice, no external runtime packet.
-- Branch / PR: `ci/063-github-actions-ci-templates`; PR pending.
+- Branch / PR: `ci/063-github-actions-ci-templates`; https://github.com/graphanov/open-scaffold/pull/107.
 
 ## Verification
 
