@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - ".osc/releases/*.md"
       - ".osc/releases/**/*.md"
   workflow_dispatch:
 
@@ -26,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           base="origin/${{ github.base_ref || 'main' }}"
-          git diff --name-only --diff-filter=ACMRT "$base"...HEAD -- '.osc/releases/**/*.md' | sort > changed-evidence.txt
+          git diff --name-only --diff-filter=ACMRT "$base"...HEAD -- '.osc/releases/*.md' '.osc/releases/**/*.md' | sort > changed-evidence.txt
           count="$(wc -l < changed-evidence.txt | tr -d ' ')"
           echo "count=$count" >> "$GITHUB_OUTPUT"
           if [[ "$count" == "0" ]]; then
