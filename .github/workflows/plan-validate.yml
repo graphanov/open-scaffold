@@ -4,7 +4,10 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - ".osc/plans/**/*.md"
+      - ".osc/plans/active/**/*.md"
+      - ".osc/plans/backlog/**/*.md"
+      - ".osc/plans/blocked/**/*.md"
+      - ".osc/plans/done/**/*.md"
   workflow_dispatch:
 
 permissions:
@@ -38,7 +41,11 @@ jobs:
         run: |
           set -euo pipefail
           base="origin/${{ github.base_ref || 'main' }}"
-          git diff --name-only --diff-filter=ACMRT "$base"...HEAD -- '.osc/plans/**/*.md' | sort > changed-plans.txt
+          git diff --name-only --diff-filter=ACMRT "$base"...HEAD -- \
+            '.osc/plans/active/**/*.md' \
+            '.osc/plans/backlog/**/*.md' \
+            '.osc/plans/blocked/**/*.md' \
+            '.osc/plans/done/**/*.md' | sort > changed-plans.txt
           count="$(wc -l < changed-plans.txt | tr -d ' ')"
           echo "count=$count" >> "$GITHUB_OUTPUT"
           if [[ "$count" == "0" ]]; then

@@ -9,14 +9,14 @@ These workflows are active in this repository and can also be copied into downst
 | Workflow | Trigger | Purpose |
 | --- | --- | --- |
 | `.github/workflows/ci.yml` | PRs and pushes to `main` | Full build, test, strict verifier, and CLI verifier. |
-| `.github/workflows/plan-validate.yml` | PRs touching `.osc/plans/**/*.md` | Validates changed plan files with `osc plan validate`. Errors fail the PR; warnings remain visible but non-blocking. |
+| `.github/workflows/plan-validate.yml` | PRs touching staged plan files under `.osc/plans/{active,backlog,blocked,done}/` | Validates changed plan files with `osc plan validate`. Errors fail the PR; warnings remain visible but non-blocking. |
 | `.github/workflows/evidence-validate.yml` | PRs touching `.osc/releases/**/*.md` | Runs `./verify.sh --strict` and checks changed evidence notes for required sections and stale `pending` claims. |
 | `.github/workflows/stale-plans.yml` | Weekly Monday 09:00 UTC and manual dispatch | Detects active plans older than the configured threshold and opens or updates a GitHub Issue. |
 | `.github/workflows/npm-publish.yml` | Version tag pushes matching `v*` | Builds, tests, verifies, checks the tag against `package.json`, then publishes to npm using `NPM_TOKEN`. |
 
 ## Plan validation
 
-`plan-validate.yml` checks out full history, builds the local CLI, finds changed plan files against the PR base branch, and runs:
+`plan-validate.yml` checks out full history, builds the local CLI, finds changed stage plan files against the PR base branch, and runs:
 
 ```bash
 node dist/cli.js plan validate <changed-plan>
