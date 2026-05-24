@@ -1,0 +1,74 @@
+name: Evidence validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".osc/releases/**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-evidence:
+    name: Validate evidence notes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Find changed evidence notes
+        id: changed-evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="origin/${{ github.base_ref || 'main' }}"
+          git diff --name-only --diff-filter=ACMRT "$base"...HEAD -- '.osc/releases/**/*.md' | sort > changed-evidence.txt
+          count="$(wc -l < changed-evidence.txt | tr -d ' ')"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          if [[ "$count" == "0" ]]; then
+            echo "No changed evidence notes to validate."
+          else
+            echo "Changed evidence notes:"
+            cat changed-evidence.txt
+          fi
+
+      - name: Run scaffold strict verifier
+        if: steps.changed-evidence.outputs.count != '0'
+        run: ./verify.sh --strict
+
+      - name: Validate changed evidence-note sections and freshness
+        if: steps.changed-evidence.outputs.count != '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          required_sections = ('Summary', 'Traceability', 'Verification', 'Outcome')
+          stale_pattern = re.compile(r'(PR #[0-9]+ merged|issue #[0-9]+ closed|Tag:\s*v[0-9]|GitHub Release:\s*https?://)', re.I)
+          failures = []
+
+          for line in pathlib.Path('changed-evidence.txt').read_text().splitlines():
+              if not line or line.endswith('/README.md'):
+                  continue
+              path = pathlib.Path(line)
+              if not path.exists():
+                  continue
+              text = path.read_text()
+              for section in required_sections:
+                  if not re.search(rf'^## .*{re.escape(section)}\b', text, re.M | re.I):
+                      failures.append(f'{line}: missing ## {section}')
+              if re.search(r'pending', text, re.I) and stale_pattern.search(text):
+                  failures.append(f'{line}: says pending while citing merged/closed/released evidence')
+
+          if failures:
+              print('\n'.join(failures), file=sys.stderr)
+              sys.exit(1)
+          print('Changed evidence notes passed section/freshness checks.')
+          PY

@@ -91,6 +91,18 @@ Open the PR with traceability back to the task/run chain. The PR body should inc
 - Evidence paths.
 - Review gates: CI, Codex review, human approval.
 
+## CI guardrails
+
+Open Scaffold projects should keep repository truth mechanically checked in GitHub, not only in local agent sessions. The default workflow set is documented in [`docs/CI.md`](CI.md):
+
+- `ci.yml` runs build, tests, strict scaffold verification, and CLI verification.
+- `plan-validate.yml` validates changed `.osc/plans/**/*.md` files on PRs.
+- `evidence-validate.yml` runs strict evidence checks for `.osc/releases/**/*.md` changes.
+- `stale-plans.yml` runs weekly and opens a GitHub Issue for stale active plans instead of mutating plan state automatically.
+- `npm-publish.yml` is tag-gated and uses `NPM_TOKEN`; publish, release, and deployment remain owner gates.
+
+CI failures should be resolved before merge unless the failure is explicitly classified as external infrastructure. CI does not replace Codex review or human approval.
+
 ## Codex review connector
 
 If the ChatGPT/Codex GitHub connector is enabled for the repository, Codex review is triggered by the connector, not necessarily by assigning a normal GitHub user as a reviewer. If the connector is not installed for the repo, mark Codex review as intentionally skipped in the PR and record the rationale.

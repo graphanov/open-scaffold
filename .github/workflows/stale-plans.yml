@@ -1,0 +1,128 @@
+name: Stale active plans
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+    inputs:
+      stale-days:
+        description: "Active-plan age threshold in days"
+        required: false
+        default: "30"
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  stale-plans:
+    name: Open issue for stale active plans
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.12.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build CLI
+        run: npm run build
+
+      - name: Capture scaffold metrics
+        run: node dist/cli.js metrics --json --verbose > scaffold-metrics.json
+
+      - name: Detect stale active plans
+        id: stale
+        shell: bash
+        env:
+          STALE_DAYS: ${{ github.event.inputs['stale-days'] || '30' }}
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import datetime as dt
+          import json
+          import os
+          import pathlib
+          import re
+          import subprocess
+
+          threshold = int(os.environ.get('STALE_DAYS', '30'))
+          now = dt.datetime.now(dt.timezone.utc)
+          active_dir = pathlib.Path('.osc/plans/active')
+          stale = []
+
+          for path in sorted(active_dir.glob('*.md')):
+              if re.search(r'-amendment-\d+\.md$', path.name):
+                  continue
+              completed = subprocess.run(
+                  ['git', 'log', '-1', '--format=%ct', '--', str(path)],
+                  text=True,
+                  capture_output=True,
+                  check=False,
+              )
+              if completed.returncode == 0 and completed.stdout.strip():
+                  modified = dt.datetime.fromtimestamp(int(completed.stdout.strip()), tz=dt.timezone.utc)
+              else:
+                  modified = dt.datetime.fromtimestamp(path.stat().st_mtime, tz=dt.timezone.utc)
+              age_days = (now - modified).days
+              if age_days > threshold:
+                  stale.append({
+                      'path': str(path),
+                      'name': path.name,
+                      'last_modified': modified.date().isoformat(),
+                      'age_days': age_days,
+                  })
+
+          pathlib.Path('stale-plans.json').write_text(json.dumps(stale, indent=2) + '\n')
+          if stale:
+              rows = '\n'.join(
+                  f"- `{item['path']}` — last modified {item['last_modified']} ({item['age_days']} days old)"
+                  for item in stale
+              )
+              body = '\n'.join([
+                  'Stale active plans were detected by the weekly Open Scaffold CI check.',
+                  '',
+                  f'Threshold: active plan older than {threshold} days since last git modification.',
+                  '',
+                  rows,
+                  '',
+                  'Suggested action: review each plan and either continue it, move it to `blocked/`, or close it to `done/` with evidence.',
+                  '',
+              ])
+              pathlib.Path('stale-issue.md').write_text(body)
+          PY
+
+          count="$(python3 -c 'import json; print(len(json.load(open("stale-plans.json"))))')"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          week="$(date -u +%F)"
+          echo "week=$week" >> "$GITHUB_OUTPUT"
+          if [[ "$count" == "0" ]]; then
+            echo "No stale active plans found."
+          else
+            cat stale-plans.json
+          fi
+
+      - name: Open or reuse stale-plan issue
+        if: steps.stale.outputs.count != '0'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: Stale active plans — week of ${{ steps.stale.outputs.week }}
+        run: |
+          set -euo pipefail
+          existing="$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')"
+          if [[ -n "$existing" ]]; then
+            echo "Stale-plan issue already exists: #$existing"
+            gh issue comment "$existing" --body-file stale-issue.md
+          else
+            gh issue create --title "$TITLE" --body-file stale-issue.md
+          fi
