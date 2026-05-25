@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { Buffer } from 'node:buffer';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { formatDashboardText, loadDashboardData, stalenessLevel } from '../src/dashboard.js';
+import { DashboardKeyParser, formatDashboardText, loadDashboardData, stalenessLevel } from '../src/dashboard.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -102,6 +103,22 @@ describe('dashboard data and formatting', () => {
     expect(text).toContain('No active plans. Create one with `osc plan new <slug> --stage active`');
     expect(text).toContain('q quit');
     expect(text).toContain('r refresh');
+  });
+
+  it('keeps split arrow-key escape sequences from being treated as quit', () => {
+    const parser = new DashboardKeyParser();
+
+    expect(parser.push(Buffer.from('\x1b'))).toBe('pending');
+    expect(parser.push(Buffer.from('['))).toBe('pending');
+    expect(parser.push(Buffer.from('A'))).toBe('up');
+    expect(parser.flushPendingEscape()).toBe('none');
+  });
+
+  it('flushes a standalone Escape key as quit after the split-sequence window', () => {
+    const parser = new DashboardKeyParser();
+
+    expect(parser.push(Buffer.from('\x1b'))).toBe('pending');
+    expect(parser.flushPendingEscape()).toBe('quit');
   });
 
   it('prints a static dashboard in non-interactive CLI mode and aliases status --dashboard', () => {

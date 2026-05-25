@@ -313,14 +313,58 @@ export function formatDashboardText(data: DashboardData, options: DashboardForma
   return fitted.join('\n');
 }
 
-function parseKey(buffer: Buffer): 'up' | 'down' | 'enter' | 'refresh' | 'quit' | 'none' {
-  const value = buffer.toString('utf8');
-  if (value === '\u0003' || value === 'q' || value === 'Q' || value === '\x1b') return 'quit';
+export type DashboardKey = 'up' | 'down' | 'enter' | 'refresh' | 'quit' | 'none';
+export type DashboardKeyResult = DashboardKey | 'pending';
+
+function parseCompleteKey(value: string): DashboardKey {
+  if (value === '\u0003' || value === 'q' || value === 'Q') return 'quit';
   if (value === 'r' || value === 'R') return 'refresh';
   if (value === '\r' || value === '\n') return 'enter';
   if (value === '\x1b[A') return 'up';
   if (value === '\x1b[B') return 'down';
   return 'none';
+}
+
+function isPartialEscapeSequence(value: string): boolean {
+  return value === '\x1b' || value === '\x1b[';
+}
+
+export class DashboardKeyParser {
+  private pendingEscapeSequence: string | null = null;
+
+  push(buffer: Buffer): DashboardKeyResult {
+    const value = buffer.toString('utf8');
+    if (!value) return 'none';
+
+    if (this.pendingEscapeSequence) {
+      const combined = `${this.pendingEscapeSequence}${value}`;
+      const parsed = parseCompleteKey(combined);
+      if (parsed !== 'none') {
+        this.pendingEscapeSequence = null;
+        return parsed;
+      }
+      if (isPartialEscapeSequence(combined)) {
+        this.pendingEscapeSequence = combined;
+        return 'pending';
+      }
+      this.pendingEscapeSequence = null;
+      return parseCompleteKey(value);
+    }
+
+    if (isPartialEscapeSequence(value)) {
+      this.pendingEscapeSequence = value;
+      return 'pending';
+    }
+
+    return parseCompleteKey(value);
+  }
+
+  flushPendingEscape(): DashboardKey {
+    const pending = this.pendingEscapeSequence;
+    this.pendingEscapeSequence = null;
+    if (pending === '\x1b') return 'quit';
+    return 'none';
+  }
 }
 
 export async function runDashboard(options: DashboardRunOptions = {}): Promise<void> {
@@ -355,18 +399,36 @@ export async function runDashboard(options: DashboardRunOptions = {}): Promise<v
     render();
   };
 
-  await new Promise<void>((resolve) => {
+  await new Promise<void>((resolve, reject) => {
     const stdin = process.stdin;
-    const cleanup = () => {
-      if (timer) clearInterval(timer);
-      stdin.off('data', onData);
+    const keyParser = new DashboardKeyParser();
+    let pendingEscapeTimer: NodeJS.Timeout | null = null;
+    let onData: ((buffer: Buffer) => void) | null = null;
+    let settled = false;
+
+    const clearPendingEscapeTimer = () => {
+      if (pendingEscapeTimer) clearTimeout(pendingEscapeTimer);
+      pendingEscapeTimer = null;
+    };
+
+    const cleanup = (error?: unknown) => {
+      if (settled) return;
+      settled = true;
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      clearPendingEscapeTimer();
+      if (onData) stdin.off('data', onData);
       if (typeof stdin.setRawMode === 'function') stdin.setRawMode(false);
       stdin.pause();
       process.stdout.write('\x1b[?25h\x1b[?1049l');
-      resolve();
+      if (error) reject(error);
+      else resolve();
     };
-    const onData = (buffer: Buffer) => {
-      const key = parseKey(buffer);
+
+    const handleKey = (key: DashboardKey) => {
+      if (key === 'none') return;
       if (key === 'quit') {
         cleanup();
         return;
@@ -386,11 +448,51 @@ export async function runDashboard(options: DashboardRunOptions = {}): Promise<v
       }
     };
 
+    const flushPendingEscape = () => {
+      pendingEscapeTimer = null;
+      try {
+        handleKey(keyParser.flushPendingEscape());
+      } catch (error) {
+        cleanup(error);
+      }
+    };
+
+    const schedulePendingEscapeFlush = () => {
+      clearPendingEscapeTimer();
+      pendingEscapeTimer = setTimeout(flushPendingEscape, 25);
+    };
+
+    onData = (buffer: Buffer) => {
+      try {
+        clearPendingEscapeTimer();
+        const key = keyParser.push(buffer);
+        if (key === 'pending') {
+          schedulePendingEscapeFlush();
+          return;
+        }
+        handleKey(key);
+      } catch (error) {
+        cleanup(error);
+      }
+    };
+
     process.stdout.write('\x1b[?1049h\x1b[?25l');
     if (typeof stdin.setRawMode === 'function') stdin.setRawMode(true);
     stdin.resume();
     stdin.on('data', onData);
-    if (options.watch) timer = setInterval(refresh, Math.max(1, intervalSeconds) * 1000);
-    render();
+    if (options.watch) {
+      timer = setInterval(() => {
+        try {
+          refresh();
+        } catch (error) {
+          cleanup(error);
+        }
+      }, Math.max(1, intervalSeconds) * 1000);
+    }
+    try {
+      render();
+    } catch (error) {
+      cleanup(error);
+    }
   });
 }
