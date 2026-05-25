@@ -9,7 +9,7 @@ Added `osc plan graph`, a read-only plan dependency graph command with ASCII, Me
 - Roadmap / issue / task: repo backlog slice selected by runner automation; no GitHub issue was open for this slice.
 - Plan: `.osc/plans/done/067-plan-dependency-graph.md`
 - Run ID / run packet: `N/A` — implemented directly by runner automation for the selected backlog plan.
-- Branch / PR: `feat/067-plan-dependency-graph`; PR pending.
+- Branch / PR: `feat/067-plan-dependency-graph`; https://github.com/graphanov/open-scaffold/pull/111
 
 ## Verification
 
