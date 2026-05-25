@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import {
   buildPlanGraph,
   extractDependencyReferences,
+  normalizePlanReference,
   renderPlanGraphAscii,
   renderPlanGraphMermaid,
   type PlanGraphEdge,
@@ -120,6 +121,49 @@ describe('plan dependency graph', () => {
     expect(mermaid).not.toContain('<script');
     expect(mermaid).not.toContain('http://');
     expect(mermaid).not.toContain('https://');
+  });
+
+  it('normalizes only safe plan references', () => {
+    expect(normalizePlanReference('001-feature.md')).toBe('001-feature');
+    expect(normalizePlanReference('.osc/plans/done/009-parent-plan.md')).toBe('009-parent-plan');
+    expect(normalizePlanReference('../foo')).toBeNull();
+    expect(normalizePlanReference('bad*slug')).toBeNull();
+  });
+
+  it('keeps Mermaid node IDs collision-free for similar slugs', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', 'a-b', 'depends on: a_b');
+    writePlan(root, 'backlog', 'a_b');
+
+    const mermaid = renderPlanGraphMermaid(buildPlanGraph({ root, stage: 'active' }));
+
+    expect(mermaid).toContain('p_61_2d_62["a-b (active)"]');
+    expect(mermaid).toContain('p_61_5f_62["a_b (backlog)"]');
+    expect(mermaid).toContain('p_61_2d_62 -->|depends_on| p_61_5f_62');
+  });
+
+  it('honors direction filters for non-focused stage graphs', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '001-feature', 'depends on: 002-refactor');
+    writePlan(root, 'backlog', '002-refactor');
+
+    const upstreamOnly = buildPlanGraph({ root, stage: 'active', direction: 'upstream' });
+    const downstreamOnly = buildPlanGraph({ root, stage: 'active', direction: 'downstream' });
+
+    expect(upstreamOnly.edges.map(edgeKey)).toEqual([]);
+    expect(upstreamOnly.nodes.map((node) => node.slug)).toEqual(['001-feature']);
+    expect(downstreamOnly.edges.map(edgeKey)).toEqual(['001-feature->002-refactor:depends_on']);
+  });
+
+  it('rejects invalid CLI --plan values instead of returning an unfocused graph', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '001-feature');
+
+    const result = spawnSync(tsx, [cli, 'plan', 'graph', '--format', 'json', '--plan', '../foo'], { cwd: root, encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Invalid value for --plan: ../foo');
   });
 
   it('prints machine-readable JSON from the CLI and filters focused upstream/downstream neighborhoods', () => {

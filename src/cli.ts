@@ -18,7 +18,7 @@ import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanS
 import { addTaskComment, createTask, formatTaskDetails, formatTaskSummary, formatTaskTable, getTaskDetails, getTaskSummary, linkTaskPlan, listTasks, taskToJson, transitionTask, TASK_PRIORITIES, TASK_STATUSES, TaskUsageError, type TaskStatus } from './tasks.js';
 import { validateScaffold } from './validation.js';
 import { formatPlanValidationIssues, hasBlockingIssues, resolvePlanValidationPath, validatePlanFile } from './plan-validate.js';
-import { buildPlanGraph, renderPlanGraphAscii, renderPlanGraphMermaid, type PlanGraphDirection, type PlanGraphFormat, type PlanGraphStageFilter } from './plan-graph.js';
+import { buildPlanGraph, normalizePlanReference, renderPlanGraphAscii, renderPlanGraphMermaid, type PlanGraphDirection, type PlanGraphFormat, type PlanGraphStageFilter } from './plan-graph.js';
 import { askInteractiveAnswers, assertWizardReady, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
 
 function printHelp(): void {
@@ -553,7 +553,13 @@ function parsePlanGraphOptions(args: string[]): { format: PlanGraphFormat; stage
           printPlanGraphUsage();
           process.exit(2);
         }
-        plan = value;
+        const normalized = normalizePlanReference(value);
+        if (!normalized) {
+          console.error(`Invalid value for --plan: ${value}`);
+          printPlanGraphUsage();
+          process.exit(2);
+        }
+        plan = normalized;
         i += 1;
         break;
       }

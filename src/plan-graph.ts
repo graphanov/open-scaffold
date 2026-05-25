@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, join, relative } from 'node:path';
+import { join, relative } from 'node:path';
 import { findScaffoldRoot, parsePlanFile, PLAN_STAGES, splitSections, type PlanStage } from './scaffold.js';
 
 export const PLAN_GRAPH_SCHEMA = 'open-scaffold.plan-graph.v1';
@@ -72,7 +72,7 @@ function sectionTextForDependencyScan(markdown: string): string {
   return selected.length > 0 ? selected.join('\n') : markdown;
 }
 
-function normalizePlanReference(raw: string): string | null {
+export function normalizePlanReference(raw: string): string | null {
   const trimmed = raw
     .trim()
     .replace(/^\[|\]$/g, '')
@@ -80,7 +80,14 @@ function normalizePlanReference(raw: string): string | null {
     .replace(/[>`'"),.;:]+$/g, '');
   if (!trimmed) return null;
   const withoutAnchor = trimmed.split('#')[0];
-  const fileOrSlug = basename(withoutAnchor).replace(/\.md$/i, '');
+  let fileOrSlug: string;
+  if (withoutAnchor.includes('/') || withoutAnchor.includes('\\')) {
+    const match = withoutAnchor.match(/^\.osc\/plans\/(?:active|backlog|blocked|done)\/([^/\\]+)$/);
+    if (!match) return null;
+    fileOrSlug = (match[1] as string).replace(/\.md$/i, '');
+  } else {
+    fileOrSlug = withoutAnchor.replace(/\.md$/i, '');
+  }
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(fileOrSlug)) return null;
   return fileOrSlug;
 }
@@ -282,6 +289,7 @@ export function buildPlanGraph(options: BuildPlanGraphOptions = {}): PlanGraph {
   const stage = options.stage ?? 'open';
   const direction = options.direction ?? 'both';
   const focus = options.plan ? normalizePlanReference(options.plan) : null;
+  if (options.plan && !focus) throw new Error(`Invalid plan reference: ${options.plan}`);
   const records = loadPlans(root);
   const warnings: string[] = [];
   const orderedNodeSlugs: string[] = [];
@@ -325,9 +333,14 @@ export function buildPlanGraph(options: BuildPlanGraphOptions = {}): PlanGraph {
   } else {
     for (const rootSlug of rootSlugs(records, options.stage)) {
       includeNode(rootSlug);
-      const directEdges = allEdges.filter((edge) => edge.from === rootSlug);
-      const downstreamEdges = collectReachableEdges(allEdges, rootSlug, 'downstream');
-      for (const edge of [...directEdges, ...downstreamEdges]) includeGraphEdge(edge);
+      const includeDownstream = direction === 'downstream' || direction === 'both';
+      const includeUpstream = direction === 'upstream' || direction === 'both';
+      const directEdges = allEdges.filter((edge) => {
+        const pair = dependencyPair(edge);
+        return (includeDownstream && pair.dependent === rootSlug) || (includeUpstream && pair.dependency === rootSlug);
+      });
+      const reachableEdges = collectReachableEdges(allEdges, rootSlug, direction);
+      for (const edge of [...directEdges, ...reachableEdges]) includeGraphEdge(edge);
     }
   }
 
@@ -382,7 +395,10 @@ export function renderPlanGraphAscii(graph: PlanGraph): string {
 }
 
 function mermaidId(slug: string): string {
-  return `p_${slug.replace(/[^A-Za-z0-9_]/g, '_')}`;
+  const encoded = Array.from(slug)
+    .map((character) => (character.codePointAt(0) as number).toString(16).padStart(2, '0'))
+    .join('_');
+  return `p_${encoded}`;
 }
 
 function escapeMermaidLabel(value: string): string {
