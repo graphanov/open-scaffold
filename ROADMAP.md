@@ -393,7 +393,7 @@ Acceptance criteria:
 
 ### Milestone 18 — v1.0.0 stability launch
 
-Status: repository-side v1.0.0 release candidate prepared by `.osc/plans/done/069-v1-launch.md`, `.osc/releases/2026-05-25-v1-launch.md`, and PR #113. Owner-gated merge, npm publication, and GitHub Release latest movement remain required before v1.0.0 is live.
+Status: repository-side v1.0.0 release candidate prepared by `.osc/plans/done/069-v1-launch.md`, `.osc/releases/2026-05-25-v1-launch.md`, and merged PR #113. Owner-gated npm publication and GitHub Release latest movement remain required before v1.0.0 is live.
 
 Goal: make the stable adoption contract explicit before the first major release.
 
@@ -407,7 +407,6 @@ Deliverables:
 
 Owner gates:
 
-- Merge the release-candidate PR.
 - Publish `open-scaffold@1.0.0` to npm.
 - Create or mark the `v1.0.0` GitHub Release as **Latest**.
 - Decide whether to launch publicly through a blog, social channel, GitHub Pages, or another site.

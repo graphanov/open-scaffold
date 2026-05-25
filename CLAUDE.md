@@ -2,7 +2,7 @@
 
 # Project Context
 
-This project is [open-scaffold](https://github.com/graphanov/open-scaffold), a runtime-neutral repo-native operating system for agent-orchestrated development. It ships with a persistent project structure — mission, roadmap, immutable plans, amendment protocols, decisions, evidence, run packets, and session handover practices — so that any agent or orchestrator can operate in this repository from commit #1 without re-explanation. Read this file first, then consult `MISSION.md` for what the project actually is.
+This project is [open-scaffold](https://github.com/graphanov/open-scaffold), a repo-native work record for AI-assisted software. It keeps mission, roadmap, plans, amendments, evidence, run packets, and session handover practices in git-tracked files so any capable agent or orchestrator can enter this repository without relying on vanished chat context. Read this file first, then consult `MISSION.md` for what the project actually is.
 
 ## Layered architecture
 

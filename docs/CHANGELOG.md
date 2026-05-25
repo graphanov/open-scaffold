@@ -2,11 +2,11 @@
 
 This is a curated human-readable changelog. It compresses the detailed `MISSION.md` changelog, `.osc/releases/` evidence notes, GitHub PR history, and GitHub Releases into adoption-facing release groups.
 
-For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared; publication still depends on owner-gated merge, npm, and GitHub Release actions.
+For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared; publication still depends on owner-gated npm and GitHub Release actions.
 
 ## v1.0.0 — Stable protocol release candidate
 
-Status: repository candidate prepared; npm publication and GitHub Release latest movement are owner-gated external actions.
+Status: repository candidate merged; npm publication and GitHub Release latest movement are owner-gated external actions.
 
 Highlights:
 
@@ -14,7 +14,7 @@ Highlights:
 - Adds a landing page at `docs/index.html` for the 30-second explanation: problem, audience, first command.
 - Promotes the stable surface: scaffold state folders, 7-section plans, mission/roadmap/evidence files, `verify.sh`, and day-two CLI commands.
 - Separates experimental surfaces: runtime profiles, MCP, cockpit webhooks, task database helpers, dashboards, runtime packages, and future native spawning.
-- Keeps merge, npm publication, GitHub Release latest movement, and any launch announcement as owner gates.
+- Keeps npm publication, GitHub Release latest movement, and any launch announcement as owner gates.
 
 Evidence:
 
