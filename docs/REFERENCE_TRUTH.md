@@ -26,6 +26,7 @@ Use these labels when public docs mention a tool whose availability or role coul
 | OMC / oh-my-claudecode | Runtime lane / adapter candidate | Claude Code-oriented harness lane that can consume Open Scaffold run packets through an adapter outside core. |
 | OMX / oh-my-codex | Runtime lane / adapter candidate | Codex-oriented harness lane that can consume Open Scaffold run packets through an adapter outside core. |
 | Command Center / private cockpit examples | Private deployment example | Owner-local dogfood evidence only. Do not copy private state, auth assumptions, or project-specific machinery into public core. |
+| Python reference parser | Public example | Optional read-only parser for Python tooling and vendored scripts. It mirrors core plan/scaffold parsing semantics but does not replace the TypeScript CLI or mutate plans. |
 | Hedera Consensus Service / Sigstore-Rekor / timestamping services | External anchor adapter | Possible future providers for anchoring audit-envelope roots or digests. They are not core dependencies, not required for adoption, and not proof of legal compliance by themselves. |
 
 ## Writing rule
