@@ -96,6 +96,20 @@ describe('plan dependency graph', () => {
     expect(graph.warnings.some((warning) => warning.includes('Circular dependency detected'))).toBe(true);
   });
 
+  it('warns when blocks references a missing plan', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '020-blocker', 'blocks: missing-dependent');
+
+    const graph = buildPlanGraph({ root, plan: '020-blocker' });
+
+    expect(graph.edges.map(edgeKey)).toEqual(['020-blocker->missing-dependent:blocks']);
+    expect(graph.nodes.map((node) => `${node.slug}:${node.stage}`)).toEqual([
+      '020-blocker:active',
+      'missing-dependent:unresolved',
+    ]);
+    expect(graph.warnings).toContain('Unresolved dependency: 020-blocker references missing-dependent');
+  });
+
   it('scans explicit dependency markers outside context and open questions', () => {
     const root = tempScaffold();
     writeFileSync(

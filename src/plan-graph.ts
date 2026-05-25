@@ -349,8 +349,8 @@ export function buildPlanGraph(options: BuildPlanGraphOptions = {}): PlanGraph {
   }
 
   for (const edge of graphEdges) {
-    const pair = dependencyPair(edge);
-    if (!records.has(pair.dependency)) warnings.push(`Unresolved dependency: ${pair.dependent} references ${pair.dependency}`);
+    if (!records.has(edge.from)) warnings.push(`Unresolved dependency: ${edge.to} references ${edge.from}`);
+    if (!records.has(edge.to)) warnings.push(`Unresolved dependency: ${edge.from} references ${edge.to}`);
   }
 
   const knownSlugs = new Set(orderedNodeSlugs);
