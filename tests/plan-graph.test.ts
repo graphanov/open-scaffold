@@ -80,6 +80,7 @@ describe('plan dependency graph', () => {
       '003-docs:backlog',
       '004-foundation:done',
       '005-standalone:active',
+      'missing-plan:unresolved',
     ]);
     expect(graph.edges.map(edgeKey)).toEqual([
       '001-feature->002-refactor:depends_on',
@@ -90,6 +91,26 @@ describe('plan dependency graph', () => {
     ]);
     expect(graph.warnings).toContain('Unresolved dependency: 001-feature references missing-plan');
     expect(graph.warnings.some((warning) => warning.includes('Circular dependency detected'))).toBe(true);
+  });
+
+  it('scans explicit dependency markers outside context and open questions', () => {
+    const root = tempScaffold();
+    writeFileSync(
+      join(root, '.osc/plans/active/012-release.md'),
+      planText('012-release', 'active').replace(
+        '## Verification steps\n\n1. Run tests.',
+        '## Verification steps\n\ndepends on: 013-verification-blocker\n\n1. Run tests.',
+      ),
+    );
+    writePlan(root, 'backlog', '013-verification-blocker');
+
+    const graph = buildPlanGraph({ root, plan: '012-release' });
+
+    expect(graph.edges.map(edgeKey)).toEqual(['012-release->013-verification-blocker:depends_on']);
+    expect(graph.nodes.map((node) => `${node.slug}:${node.stage}`)).toEqual([
+      '012-release:active',
+      '013-verification-blocker:backlog',
+    ]);
   });
 
   it('includes non-root blockers when active-stage plans depend on them', () => {

@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { findScaffoldRoot, parsePlanFile, PLAN_STAGES, splitSections, type PlanStage } from './scaffold.js';
+import { findScaffoldRoot, parsePlanFile, PLAN_STAGES, type PlanStage } from './scaffold.js';
 
 export const PLAN_GRAPH_SCHEMA = 'open-scaffold.plan-graph.v1';
 
@@ -67,9 +67,7 @@ function isPlanFile(file: string): boolean {
 }
 
 function sectionTextForDependencyScan(markdown: string): string {
-  const sections = splitSections(markdown);
-  const selected = [sections.get('Context') ?? '', sections.get('Open questions') ?? ''].filter((section) => section.trim());
-  return selected.length > 0 ? selected.join('\n') : markdown;
+  return markdown;
 }
 
 export function normalizePlanReference(raw: string): string | null {
@@ -295,6 +293,7 @@ export function buildPlanGraph(options: BuildPlanGraphOptions = {}): PlanGraph {
   const records = loadPlans(root);
   const warnings: string[] = [];
   const orderedNodeSlugs: string[] = [];
+  const unresolvedNodeSlugs: string[] = [];
   const includedSlugs = new Set<string>();
   const graphEdges: PlanGraphEdge[] = [];
   const seenGraphEdges = new Set<string>();
@@ -311,9 +310,10 @@ export function buildPlanGraph(options: BuildPlanGraphOptions = {}): PlanGraph {
   }
 
   function includeNode(slug: string): void {
-    if (!records.has(slug) || includedSlugs.has(slug)) return;
+    if (includedSlugs.has(slug)) return;
     includedSlugs.add(slug);
-    orderedNodeSlugs.push(slug);
+    if (records.has(slug)) orderedNodeSlugs.push(slug);
+    else unresolvedNodeSlugs.push(slug);
   }
 
   function includeGraphEdge(edge: PlanGraphEdge): void {
@@ -347,12 +347,16 @@ export function buildPlanGraph(options: BuildPlanGraphOptions = {}): PlanGraph {
   }
 
   for (const edge of graphEdges) {
-    if (!records.has(edge.to)) warnings.push(`Unresolved dependency: ${edge.from} references ${edge.to}`);
+    const pair = dependencyPair(edge);
+    if (!records.has(pair.dependency)) warnings.push(`Unresolved dependency: ${pair.dependent} references ${pair.dependency}`);
   }
 
   const knownSlugs = new Set(orderedNodeSlugs);
   warnings.push(...detectCycles(graphEdges, knownSlugs));
-  const nodes = orderedNodeSlugs.map((slug) => (records.get(slug) as PlanRecord).node);
+  const nodes = [
+    ...orderedNodeSlugs.map((slug) => (records.get(slug) as PlanRecord).node),
+    ...unresolvedNodeSlugs.map((slug) => ({ slug, stage: 'unresolved' as const, path: null, goal: '' })),
+  ];
 
   return {
     schema: PLAN_GRAPH_SCHEMA,
