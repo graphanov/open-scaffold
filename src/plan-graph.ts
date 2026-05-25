@@ -166,8 +166,7 @@ function loadPlans(root: string): Map<string, PlanRecord> {
   return records;
 }
 
-function rootSlugs(records: Map<string, PlanRecord>, stage?: PlanGraphStageFilter, focus?: string, direction: PlanGraphDirection = 'both'): string[] {
-  if (focus && direction === 'downstream') return [focus];
+function rootSlugs(records: Map<string, PlanRecord>, stage?: PlanGraphStageFilter, focus?: string): string[] {
   const wantedStages: PlanStage[] = stage === 'all' ? STAGE_ORDER : stage ? [stage] : ['active', 'backlog'];
   const roots: string[] = [];
   for (const wantedStage of wantedStages) {
@@ -325,7 +324,7 @@ export function buildPlanGraph(options: BuildPlanGraphOptions = {}): PlanGraph {
     }
   }
 
-  for (const slug of rootSlugs(records, options.stage, focus ?? undefined, direction)) walk(slug);
+  for (const slug of rootSlugs(records, options.stage, focus ?? undefined)) walk(slug);
 
   const knownSlugs = new Set(orderedNodeSlugs);
   warnings.push(...detectCycles(edges, knownSlugs));

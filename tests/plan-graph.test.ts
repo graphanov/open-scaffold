@@ -127,6 +127,9 @@ describe('plan dependency graph', () => {
     const downstream = spawnSync(tsx, [cli, 'plan', 'graph', '--format', 'json', '--plan', '001-feature', '--direction', 'downstream'], { cwd: root, encoding: 'utf8' });
     expect(JSON.parse(downstream.stdout).edges.map(edgeKey)).toEqual(['001-feature->002-refactor:depends_on']);
 
+    const blockedDownstream = spawnSync(tsx, [cli, 'plan', 'graph', '--format', 'json', '--plan', '003-docs', '--direction', 'downstream'], { cwd: root, encoding: 'utf8' });
+    expect(JSON.parse(blockedDownstream.stdout).edges.map(edgeKey)).toEqual(['002-refactor->003-docs:blocks']);
+
     const upstream = spawnSync(tsx, [cli, 'plan', 'graph', '--format', 'json', '--plan', '002-refactor', '--direction', 'upstream'], { cwd: root, encoding: 'utf8' });
     expect(JSON.parse(upstream.stdout).edges.map(edgeKey)).toEqual([
       '001-feature->002-refactor:depends_on',
