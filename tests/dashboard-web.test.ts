@@ -75,10 +75,16 @@ describe('web dashboard', () => {
 
 Dashboard evidence exists.
 `);
+    writeFileSync(join(root, '.osc/releases/README.md'), `# Release notes
+
+PR: https://github.com/example/repo/pull/999
+`);
 
     const data = collectWebDashboardData(root, new Date('2026-05-25T12:00:00Z'));
     const html = renderWebDashboard(data);
 
+    expect(data.evidence.map((note) => note.file)).toEqual(['2026-05-25-001-dashboard.md']);
+    expect(data.identityChain.prs).toBe(0);
     expect(html).toContain('Open Scaffold Dashboard');
     expect(html).toContain('001-dashboard');
     expect(html).toContain('Dashboard evidence exists.');
@@ -111,6 +117,13 @@ Dashboard evidence exists.
   it('serves the dashboard over localhost', async () => {
     const root = tempScaffold();
     writeFileSync(join(root, '.osc/plans/active/001-dashboard.md'), plan);
+    writeFileSync(join(root, '.osc/releases/2026-05-25-001-dashboard.md'), `# Release / Evidence Note: 001-dashboard
+
+## Summary
+
+Dashboard evidence exists.
+`);
+    writeFileSync(join(root, '.osc/releases/README.md'), '# Release notes\n');
     const handle = await serveDashboard({ root, port: 0, now: new Date('2026-05-25T12:00:00Z') });
     try {
       const response = await fetch(handle.url);
@@ -118,6 +131,13 @@ Dashboard evidence exists.
       expect(response.status).toBe(200);
       expect(html).toContain('Open Scaffold Dashboard');
       expect(handle.url).toMatch(/^http:\/\/localhost:\d+$/);
+
+      const evidenceResponse = await fetch(`${handle.url}/releases/2026-05-25-001-dashboard.md`);
+      expect(evidenceResponse.status).toBe(200);
+      expect(await evidenceResponse.text()).toContain('Dashboard evidence exists.');
+
+      const readmeResponse = await fetch(`${handle.url}/releases/README.md`);
+      expect(readmeResponse.status).toBe(404);
     } finally {
       await handle.close();
     }

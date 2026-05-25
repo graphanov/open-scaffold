@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { AddressInfo } from 'node:net';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -94,6 +94,10 @@ export interface DashboardServerHandle {
 
 const PLAN_STAGES: PlanStage[] = ['active', 'backlog', 'blocked', 'done'];
 
+function isEvidenceNoteFile(file: string): boolean {
+  return file.endsWith('.md') && file.toLowerCase() !== 'readme.md';
+}
+
 function resolveRoot(start = process.cwd()): string {
   return findScaffoldRoot(start) ?? resolve(start);
 }
@@ -185,7 +189,7 @@ function collectEvidence(root: string, limit = 8): DashboardEvidenceNote[] {
   const releasesDir = join(root, '.osc', 'releases');
   if (!existsSync(releasesDir)) return [];
   return readdirSync(releasesDir)
-    .filter((file) => file.endsWith('.md'))
+    .filter(isEvidenceNoteFile)
     .sort((a, b) => b.localeCompare(a))
     .slice(0, limit)
     .map((file) => {
@@ -217,7 +221,7 @@ function countEvidenceWithPr(root: string): number {
   const releasesDir = join(root, '.osc', 'releases');
   if (!existsSync(releasesDir)) return 0;
   return readdirSync(releasesDir)
-    .filter((file) => file.endsWith('.md'))
+    .filter(isEvidenceNoteFile)
     .filter((file) => /pull\/\d+|Branch \/ PR|PR:/i.test(readFileSync(join(releasesDir, file), 'utf8')))
     .length;
 }
@@ -423,6 +427,31 @@ export async function serveDashboard(options: ServeDashboardOptions = {}): Promi
       return;
     }
     if (url.pathname !== '/' && url.pathname !== '/dashboard.html') {
+      if (url.pathname.startsWith('/releases/')) {
+        let file = '';
+        try {
+          file = decodeURIComponent(url.pathname.slice('/releases/'.length));
+        } catch {
+          response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+          response.end('Not found');
+          return;
+        }
+        if (!isEvidenceNoteFile(file) || file.includes('/') || file.includes('\\')) {
+          response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+          response.end('Not found');
+          return;
+        }
+        const releasePath = join(root, '.osc', 'releases', file);
+        if (!existsSync(releasePath) || !lstatSync(releasePath).isFile()) {
+          response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+          response.end('Not found');
+          return;
+        }
+        response.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8', 'cache-control': 'no-store' });
+        if (request.method === 'HEAD') response.end();
+        else response.end(readFileSync(releasePath, 'utf8'));
+        return;
+      }
       response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
       response.end('Not found');
       return;
