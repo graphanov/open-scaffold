@@ -28,6 +28,8 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-25: closed 069-v1-launch — prepared v1.0.0 release candidate with stability docs and owner publication gates
+- 2026-05-25: limit automation to v1 release-candidate preparation; publication remains owner-gated — see .osc/plans/done/069-v1-launch-amendment-1.md
 - 2026-05-25: closed 068-python-reference-parser — added Python reference parser
 - 2026-05-25: closed 067-plan-dependency-graph — added plan dependency graph CLI
 - 2026-05-25: closed 066-web-dashboard — added static web dashboard CLI

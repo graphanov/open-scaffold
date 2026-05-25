@@ -147,6 +147,35 @@ node dist/cli.js init --tier standard --target <your-project>
 
 Optional container path: clone the repo, open it with VS Code Dev Containers or GitHub Codespaces, and the bundled `.devcontainer/` provides Node.js 22, npm, git, and `osc`. See [`docs/DEV_CONTAINER.md`](docs/DEV_CONTAINER.md) for Docker-only use and customization.
 
+## v1.0.0 Stable release candidate
+
+Open Scaffold v1.0.0 means the repo protocol and day-two CLI are stable enough to adopt with semver expectations. It does **not** mean every experimental integration is frozen.
+
+Stable:
+
+- CLI: `osc init`, `osc status`, `osc plan new`, `osc plan validate`, `osc plan move`, `osc amend`, `osc close`, `osc evidence new`, `osc evidence collect`, and `osc verify`.
+- Protocol: `MISSION.md`, `ROADMAP.md`, `.osc/plans/`, the 7-section plan schema, folder-as-status workflow, amendments, evidence notes, and run-packet records.
+- Verification floor: `verify.sh` plus package tests/builds for this repository.
+
+Experimental:
+
+- Runtime profiles and runtime-selection helpers beyond no-spawn run-packet metadata.
+- MCP, glass cockpit webhooks, local task database helpers, TUI/web dashboards, runtime packages, and Python parser packaging.
+
+Future / not included:
+
+- Native autonomous spawning in core.
+- Compliance certification.
+- Provider/model benchmarking or ranking.
+
+Use cases the stable contract supports today:
+
+- solo developers who need multi-session AI work to be resumable;
+- teams that want PRs to carry intent, evidence, and approval state;
+- consulting or audit-sensitive delivery where later readers need to reconstruct what happened.
+
+The live public release is true only after the owner approves merge, npm publication, and GitHub Release latest movement. See [`docs/STABILITY.md`](docs/STABILITY.md), [`docs/CHANGELOG.md`](docs/CHANGELOG.md), and the landing page [`docs/index.html`](docs/index.html).
+
 ### 2. Define the mission
 
 ```bash
@@ -277,6 +306,9 @@ Skip it for:
 ## Key docs
 
 - [`docs/WHY_OPEN_SCAFFOLD.md`](docs/WHY_OPEN_SCAFFOLD.md) — visual story and fit.
+- [`docs/index.html`](docs/index.html) — one-page landing page for the 30-second explanation.
+- [`docs/STABILITY.md`](docs/STABILITY.md) — v1.0.0 stable, experimental, and future surfaces.
+- [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — curated release history.
 - [`docs/DEV_CONTAINER.md`](docs/DEV_CONTAINER.md) — optional container setup for consistent team onboarding.
 - [`docs/EVOLUTION_LOOP.md`](docs/EVOLUTION_LOOP.md) — attempts, frontier promotion, and `osc evolve`.
 - [`docs/EXAMPLES.md`](docs/EXAMPLES.md) — examples and viewer demos.
