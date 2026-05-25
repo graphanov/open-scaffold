@@ -479,7 +479,7 @@ export async function serveDashboard(options: ServeDashboardOptions = {}): Promi
   const actualPort = typeof address === 'object' && address ? (address as AddressInfo).port : port;
   return {
     server,
-    url: `http://localhost:${actualPort}`,
+    url: `http://127.0.0.1:${actualPort}`,
     close: () => new Promise<void>((resolveClose, rejectClose) => {
       server.close((error) => {
         if (error) rejectClose(error);

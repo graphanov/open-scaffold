@@ -138,7 +138,7 @@ PR: https://github.com/example/repo/pull/999
     expect(existsSync(join(root, '.osc/dashboard.html'))).toBe(true);
   }, 20_000);
 
-  it('serves the dashboard over localhost', async () => {
+  it('serves the dashboard over the bound loopback interface', async () => {
     const root = tempScaffold();
     writeFileSync(join(root, '.osc/plans/active/001-dashboard.md'), plan);
     writeFileSync(join(root, '.osc/releases/2026-05-25-001-dashboard.md'), `# Release / Evidence Note: 001-dashboard
@@ -154,7 +154,7 @@ Dashboard evidence exists.
       const html = await response.text();
       expect(response.status).toBe(200);
       expect(html).toContain('Open Scaffold Dashboard');
-      expect(handle.url).toMatch(/^http:\/\/localhost:\d+$/);
+      expect(handle.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
 
       const evidenceResponse = await fetch(`${handle.url}/releases/2026-05-25-001-dashboard.md`);
       expect(evidenceResponse.status).toBe(200);
