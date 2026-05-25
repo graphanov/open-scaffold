@@ -117,6 +117,10 @@ export function inspectMission(root: string): MissionState {
   return { path, defined: true };
 }
 
+function isPlanAmendmentFile(file: string): boolean {
+  return /-amendment-\d+\.md$/.test(file);
+}
+
 export function inspectScaffold(root = process.cwd()): ScaffoldState {
   const plans: Record<PlanStage, PlanSummary[]> = {
     active: [],
@@ -130,6 +134,7 @@ export function inspectScaffold(root = process.cwd()): ScaffoldState {
     for (const file of readdirSync(dir).sort()) {
       if (!file.endsWith('.md')) continue;
       if (file === 'README.md' || file === 'WORKFLOW.md' || file === 'handoff-template.md') continue;
+      if (isPlanAmendmentFile(file)) continue;
       const full = join(dir, file);
       if (!statSync(full).isFile()) continue;
       plans[stage].push({ slug: basename(file, '.md'), path: relative(root, full), stage });

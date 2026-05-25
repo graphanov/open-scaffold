@@ -78,6 +78,7 @@ describe('open-scaffold parser', () => {
   it('inspects .osc stage folders and mission state', () => {
     const root = tempRepo();
     writeFileSync(join(root, '.osc/plans/active/001-sample.md'), samplePlan);
+    writeFileSync(join(root, '.osc/plans/active/001-sample-amendment-1.md'), '# Amendment 1\n');
 
     const state = inspectScaffold(root);
 

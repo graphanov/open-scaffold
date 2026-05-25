@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
 import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
+import { runDashboard, type DashboardRunOptions } from './dashboard.js';
 import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
+import { openDashboardUrl, serveDashboard, writeWebDashboard } from './dashboard-web.js';
 import { collectEvidence } from './evidence.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
@@ -16,6 +18,7 @@ import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanS
 import { addTaskComment, createTask, formatTaskDetails, formatTaskSummary, formatTaskTable, getTaskDetails, getTaskSummary, linkTaskPlan, listTasks, taskToJson, transitionTask, TASK_PRIORITIES, TASK_STATUSES, TaskUsageError, type TaskStatus } from './tasks.js';
 import { validateScaffold } from './validation.js';
 import { formatPlanValidationIssues, hasBlockingIssues, resolvePlanValidationPath, validatePlanFile } from './plan-validate.js';
+import { buildPlanGraph, normalizePlanReference, renderPlanGraphAscii, renderPlanGraphMermaid, type PlanGraphDirection, type PlanGraphFormat, type PlanGraphStageFilter } from './plan-graph.js';
 import { askInteractiveAnswers, assertWizardReady, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
 
 function printHelp(): void {
@@ -25,7 +28,8 @@ Usage:
   osc init --tier <min|standard|max> --target <dir> [--force]
   osc init --from-existing --tier min --target <dir> [--force]
   osc init --min|--standard|--max --target <dir> [--force]
-  osc status [--json]
+  osc status [--json|--dashboard]
+  osc dashboard [--watch] [--interval <seconds>]
   osc task new <title> [--priority <high|medium|low>] [--plan <slug>]
   osc task list [--status <status>] [--priority <priority>] [--plan <slug>] [--json]
   osc task show <task-id>
@@ -39,6 +43,7 @@ Usage:
   osc plan validate <slug-or-path> [--json] [--strict]
   osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
   osc plan move <slug> --to <active|backlog|blocked>
+  osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]
   osc amend <plan-slug> [--message <text>]
   osc evidence new <slug>
   osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
@@ -58,6 +63,8 @@ Usage:
   osc cockpit config
   osc cockpit test [--dry-run]
   osc cockpit post --event <event> [--message <text>] [--run-id <id>] [--plan <slug>] [--task-id <id>] [--pr <url>] [--evidence-path <path>] [--dry-run]
+  osc dashboard --web [--out <path>]
+  osc dashboard --serve [--port <port>] [--open]
   osc mcp serve [--repo <path>] [--allow-write] [--validate]
   osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
   osc verify
@@ -379,7 +386,62 @@ function init(args: string[]): void {
   }
 }
 
-function status(json: boolean): void {
+function printDashboardUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc dashboard [--watch] [--interval <seconds>]', stream);
+}
+
+function parseDashboardOptions(args: string[]): DashboardRunOptions {
+  const options: DashboardRunOptions = {};
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--watch':
+        options.watch = true;
+        break;
+      case '--interval': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--')) {
+          console.error('Missing value for --interval');
+          process.exit(2);
+        }
+        const intervalSeconds = Number.parseInt(value, 10);
+        if (!Number.isFinite(intervalSeconds) || intervalSeconds < 1) {
+          console.error(`Invalid value for --interval: ${value}. Expected a positive number of seconds.`);
+          process.exit(2);
+        }
+        options.intervalSeconds = intervalSeconds;
+        i += 1;
+        break;
+      }
+      default:
+        console.error(`Unknown option for dashboard: ${flag}`);
+        printDashboardUsage();
+        process.exit(2);
+    }
+  }
+  return options;
+}
+
+async function dashboardCommand(args: string[]): Promise<void> {
+  if (isHelpArg(args[0])) {
+    printDashboardUsage('stdout');
+    return;
+  }
+  await runDashboard(parseDashboardOptions(args));
+}
+
+async function status(args: string[]): Promise<void> {
+  if (args.includes('--dashboard')) {
+    await dashboardCommand(args.filter((arg) => arg !== '--dashboard'));
+    return;
+  }
+  const unknown = args.filter((arg) => arg !== '--json');
+  if (unknown.length > 0) {
+    console.error(`Unknown option for status: ${unknown[0]}`);
+    printUsage('Usage: osc status [--json|--dashboard]');
+    process.exit(2);
+  }
+  const json = args.includes('--json');
   const state = inspectScaffold(process.cwd());
   let taskSummary: ReturnType<typeof getTaskSummary> = null;
   try {
@@ -423,7 +485,8 @@ function printPlanUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   osc plan new --from-template list
   osc plan validate <slug-or-path> [--json] [--strict]
   osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
-  osc plan move <slug> --to <active|backlog|blocked>`, stream);
+  osc plan move <slug> --to <active|backlog|blocked>
+  osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]`, stream);
 }
 
 function printPlanNewUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
@@ -436,6 +499,82 @@ function printPlanValidateUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
 
 function printPlanMoveUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage('Usage: osc plan move <slug> --to <active|backlog|blocked>', stream);
+}
+
+function printPlanGraphUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]', stream);
+}
+
+function parsePlanGraphOptions(args: string[]): { format: PlanGraphFormat; stage?: PlanGraphStageFilter; direction: PlanGraphDirection; plan?: string } {
+  let format: PlanGraphFormat = 'ascii';
+  let stage: PlanGraphStageFilter | undefined;
+  let direction: PlanGraphDirection = 'both';
+  let plan: string | undefined;
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--format': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--') || !['ascii', 'mermaid', 'json'].includes(value)) {
+          console.error('Missing or invalid value for --format. Expected ascii, mermaid, or json.');
+          printPlanGraphUsage();
+          process.exit(2);
+        }
+        format = value as PlanGraphFormat;
+        i += 1;
+        break;
+      }
+      case '--stage': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--') || !['active', 'backlog', 'all'].includes(value)) {
+          console.error('Missing or invalid value for --stage. Expected active, backlog, or all.');
+          printPlanGraphUsage();
+          process.exit(2);
+        }
+        stage = value as PlanGraphStageFilter;
+        i += 1;
+        break;
+      }
+      case '--direction': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--') || !['downstream', 'upstream', 'both'].includes(value)) {
+          console.error('Missing or invalid value for --direction. Expected downstream, upstream, or both.');
+          printPlanGraphUsage();
+          process.exit(2);
+        }
+        direction = value as PlanGraphDirection;
+        i += 1;
+        break;
+      }
+      case '--plan': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--')) {
+          console.error('Missing value for --plan');
+          printPlanGraphUsage();
+          process.exit(2);
+        }
+        const normalized = normalizePlanReference(value);
+        if (!normalized) {
+          console.error(`Invalid value for --plan: ${value}`);
+          printPlanGraphUsage();
+          process.exit(2);
+        }
+        plan = normalized;
+        i += 1;
+        break;
+      }
+      default:
+        console.error(`Unknown option for plan graph: ${flag}`);
+        printPlanGraphUsage();
+        process.exit(2);
+    }
+  }
+  if (stage === 'all' && direction !== 'both' && !plan) {
+    console.error('Invalid option combination: --stage all only supports --direction both unless --plan is provided. Use --plan for focused upstream/downstream views.');
+    printPlanGraphUsage();
+    process.exit(2);
+  }
+  return { format, stage, direction, plan };
 }
 
 function parsePlanNewOptions(args: string[]): PlanNewOptions {
@@ -605,6 +744,28 @@ async function planCommand(args: string[]): Promise<void> {
         console.log('Next: review the template placeholders and replace angle-bracket prompts before implementation.');
       } else {
         console.log('Next: fill the TODO prompts before implementation; do not treat the skeleton as acceptance criteria.');
+      }
+      return;
+    } catch (error) {
+      exitForScaffoldHelperError(error);
+    }
+  }
+
+  if (subcommand === 'graph') {
+    if (isHelpArg(rest[0])) {
+      printPlanGraphUsage('stdout');
+      return;
+    }
+    const options = parsePlanGraphOptions(rest);
+    try {
+      const graph = buildPlanGraph({ root: process.cwd(), stage: options.stage, direction: options.direction, plan: options.plan });
+      for (const warning of graph.warnings) console.error(`WARN ${warning}`);
+      if (options.format === 'json') {
+        console.log(JSON.stringify(graph, null, 2));
+      } else if (options.format === 'mermaid') {
+        process.stdout.write(renderPlanGraphMermaid(graph));
+      } else {
+        process.stdout.write(renderPlanGraphAscii(graph));
       }
       return;
     } catch (error) {
@@ -1808,6 +1969,131 @@ function runtimes(args: string[]): void {
   process.exit(2);
 }
 
+interface WebDashboardOptions {
+  mode: 'web' | 'serve';
+  out?: string;
+  port?: number;
+  open: boolean;
+}
+
+function printWebDashboardUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc dashboard --web [--out <path>] | osc dashboard --serve [--port <port>] [--open]', stream);
+}
+
+function takeWebDashboardValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${flag}`);
+    printWebDashboardUsage();
+    process.exit(2);
+  }
+  return value;
+}
+
+function parseWebDashboardOptions(args: string[]): WebDashboardOptions {
+  let mode: 'web' | 'serve' | undefined;
+  let out: string | undefined;
+  let port: number | undefined;
+  let open = false;
+
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--web':
+        if (mode && mode !== 'web') {
+          console.error('Choose either --web or --serve, not both.');
+          printWebDashboardUsage();
+          process.exit(2);
+        }
+        mode = 'web';
+        break;
+      case '--serve':
+        if (mode && mode !== 'serve') {
+          console.error('Choose either --web or --serve, not both.');
+          printWebDashboardUsage();
+          process.exit(2);
+        }
+        mode = 'serve';
+        break;
+      case '--out':
+        out = takeWebDashboardValue(args, i, flag);
+        i += 1;
+        break;
+      case '--port': {
+        const raw = takeWebDashboardValue(args, i, flag);
+        const parsed = Number.parseInt(raw, 10);
+        if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
+          console.error(`Invalid value for --port: ${raw}. Expected a port between 0 and 65535.`);
+          process.exit(2);
+        }
+        port = parsed;
+        i += 1;
+        break;
+      }
+      case '--open':
+        open = true;
+        break;
+      default:
+        console.error(`Unknown option for dashboard: ${flag}`);
+        printWebDashboardUsage();
+        process.exit(2);
+    }
+  }
+
+  if (!mode) {
+    console.error('Missing required option: --web or --serve');
+    printWebDashboardUsage();
+    process.exit(2);
+  }
+  if (mode === 'web' && port !== undefined) {
+    console.error('--port is only supported with --serve');
+    process.exit(2);
+  }
+  if (mode === 'web' && open) {
+    console.error('--open is only supported with --serve');
+    process.exit(2);
+  }
+  if (mode === 'serve' && out) {
+    console.error('--out is only supported with --web');
+    process.exit(2);
+  }
+
+  return { mode, out, port, open };
+}
+
+function isWebDashboardInvocation(args: string[]): boolean {
+  return args.some((arg) => ['--web', '--serve', '--out', '--port', '--open'].includes(arg));
+}
+
+async function webDashboardCommand(args: string[]): Promise<void> {
+  if (args.length === 0 || isHelpArg(args[0])) {
+    printWebDashboardUsage('stdout');
+    return;
+  }
+  const options = parseWebDashboardOptions(args);
+  try {
+    if (options.mode === 'web') {
+      const result = writeWebDashboard({ root: process.cwd(), out: options.out });
+      const relativePath = relative(process.cwd(), result.path);
+      console.log(`Generated web dashboard: ${relativePath.startsWith('..') ? result.path : relativePath}`);
+      console.log(`Bytes: ${result.bytes}`);
+      return;
+    }
+
+    const handle = await serveDashboard({ root: process.cwd(), port: options.port });
+    console.log(`Serving Open Scaffold dashboard at ${handle.url}`);
+    if (options.open) openDashboardUrl(handle.url);
+    process.once('SIGINT', () => {
+      handle.close()
+        .then(() => process.exit(0))
+        .catch(() => process.exit(1));
+    });
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
 function printCockpitUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage(`Usage: osc cockpit config
   osc cockpit test [--dry-run]
@@ -1949,7 +2235,14 @@ async function main(): Promise<void> {
       init(args);
       return;
     case 'status':
-      status(args.includes('--json'));
+      await status(args);
+      return;
+    case 'dashboard':
+      if (isWebDashboardInvocation(args)) {
+        await webDashboardCommand(args);
+      } else {
+        await dashboardCommand(args);
+      }
       return;
     case 'task':
       taskCommand(args);
