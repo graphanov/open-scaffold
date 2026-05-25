@@ -391,6 +391,27 @@ Acceptance criteria:
 - The wiki explains compiled project knowledge; live task state, PR state, release evidence, and private context stay out of `docs/wiki/`.
 - `./verify.sh --strict`, `npm test`, `npm run build`, and `git diff --check` pass.
 
+### Milestone 18 — v1.0.0 stability launch
+
+Status: repository-side v1.0.0 release candidate prepared by `.osc/plans/done/069-v1-launch.md`, `.osc/releases/2026-05-25-v1-launch.md`, and PR pending until opened. Owner-gated merge, npm publication, and GitHub Release latest movement remain required before v1.0.0 is live.
+
+Goal: make the stable adoption contract explicit before the first major release.
+
+Deliverables:
+
+- Bump the repository package candidate to `1.0.0`.
+- Add `docs/STABILITY.md` with stable, experimental, future, semver, migration, and publication-gate guidance.
+- Add `docs/CHANGELOG.md` as a curated release history from v0.1-style foundation through the v1.0.0 candidate.
+- Add `docs/index.html` as a landing page that answers the problem, audience, and first command within 30 seconds.
+- Update `README.md`, `MISSION.md`, `AGENTS.md`, and `CLAUDE.md` so the v1.0.0 candidate is visible without claiming publication before the owner gates.
+
+Owner gates:
+
+- Merge the release-candidate PR.
+- Publish `open-scaffold@1.0.0` to npm.
+- Create or mark the `v1.0.0` GitHub Release as **Latest**.
+- Decide whether to launch publicly through a blog, social channel, GitHub Pages, or another site.
+
 ## Parking lot
 
 - Deferred compliance-grade agentic OS / hashgraph-style regulated-SDLC exploration; reopen only through an explicit ADR/plan.
