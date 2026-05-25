@@ -1868,28 +1868,28 @@ function runtimes(args: string[]): void {
   process.exit(2);
 }
 
-interface DashboardOptions {
+interface WebDashboardOptions {
   mode: 'web' | 'serve';
   out?: string;
   port?: number;
   open: boolean;
 }
 
-function printDashboardUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+function printWebDashboardUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage('Usage: osc dashboard --web [--out <path>] | osc dashboard --serve [--port <port>] [--open]', stream);
 }
 
-function takeDashboardValue(args: string[], index: number, flag: string): string {
+function takeWebDashboardValue(args: string[], index: number, flag: string): string {
   const value = args[index + 1];
   if (!value || value.startsWith('--')) {
     console.error(`Missing value for ${flag}`);
-    printDashboardUsage();
+    printWebDashboardUsage();
     process.exit(2);
   }
   return value;
 }
 
-function parseDashboardOptions(args: string[]): DashboardOptions {
+function parseWebDashboardOptions(args: string[]): WebDashboardOptions {
   let mode: 'web' | 'serve' | undefined;
   let out: string | undefined;
   let port: number | undefined;
@@ -1901,7 +1901,7 @@ function parseDashboardOptions(args: string[]): DashboardOptions {
       case '--web':
         if (mode && mode !== 'web') {
           console.error('Choose either --web or --serve, not both.');
-          printDashboardUsage();
+          printWebDashboardUsage();
           process.exit(2);
         }
         mode = 'web';
@@ -1909,17 +1909,17 @@ function parseDashboardOptions(args: string[]): DashboardOptions {
       case '--serve':
         if (mode && mode !== 'serve') {
           console.error('Choose either --web or --serve, not both.');
-          printDashboardUsage();
+          printWebDashboardUsage();
           process.exit(2);
         }
         mode = 'serve';
         break;
       case '--out':
-        out = takeDashboardValue(args, i, flag);
+        out = takeWebDashboardValue(args, i, flag);
         i += 1;
         break;
       case '--port': {
-        const raw = takeDashboardValue(args, i, flag);
+        const raw = takeWebDashboardValue(args, i, flag);
         const parsed = Number.parseInt(raw, 10);
         if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
           console.error(`Invalid value for --port: ${raw}. Expected a port between 0 and 65535.`);
@@ -1934,14 +1934,14 @@ function parseDashboardOptions(args: string[]): DashboardOptions {
         break;
       default:
         console.error(`Unknown option for dashboard: ${flag}`);
-        printDashboardUsage();
+        printWebDashboardUsage();
         process.exit(2);
     }
   }
 
   if (!mode) {
     console.error('Missing required option: --web or --serve');
-    printDashboardUsage();
+    printWebDashboardUsage();
     process.exit(2);
   }
   if (mode === 'web' && port !== undefined) {
@@ -1960,12 +1960,16 @@ function parseDashboardOptions(args: string[]): DashboardOptions {
   return { mode, out, port, open };
 }
 
-async function dashboardCommand(args: string[]): Promise<void> {
+function isWebDashboardInvocation(args: string[]): boolean {
+  return args.some((arg) => ['--web', '--serve', '--out', '--port', '--open'].includes(arg));
+}
+
+async function webDashboardCommand(args: string[]): Promise<void> {
   if (args.length === 0 || isHelpArg(args[0])) {
-    printDashboardUsage('stdout');
+    printWebDashboardUsage('stdout');
     return;
   }
-  const options = parseDashboardOptions(args);
+  const options = parseWebDashboardOptions(args);
   try {
     if (options.mode === 'web') {
       const result = writeWebDashboard({ root: process.cwd(), out: options.out });
@@ -2133,7 +2137,11 @@ async function main(): Promise<void> {
       await status(args);
       return;
     case 'dashboard':
-      await dashboardCommand(args);
+      if (isWebDashboardInvocation(args)) {
+        await webDashboardCommand(args);
+      } else {
+        await dashboardCommand(args);
+      }
       return;
     case 'task':
       taskCommand(args);
@@ -2166,9 +2174,6 @@ async function main(): Promise<void> {
     }
     case 'metrics':
       metricsCommand(args);
-      return;
-    case 'dashboard':
-      await dashboardCommand(args);
       return;
     case 'cockpit':
       await cockpitCommand(args);
