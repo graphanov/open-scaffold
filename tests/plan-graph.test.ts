@@ -89,6 +89,20 @@ describe('plan dependency graph', () => {
     expect(graph.warnings.some((warning) => warning.includes('Circular dependency detected'))).toBe(true);
   });
 
+  it('includes non-root blockers when active-stage plans depend on them', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '010-active-work');
+    writePlan(root, 'backlog', '011-blocking-foundation', 'blocks: 010-active-work');
+
+    const graph = buildPlanGraph({ root, stage: 'active' });
+
+    expect(graph.nodes.map((node) => `${node.slug}:${node.stage}`)).toEqual([
+      '010-active-work:active',
+      '011-blocking-foundation:backlog',
+    ]);
+    expect(graph.edges.map(edgeKey)).toEqual(['011-blocking-foundation->010-active-work:blocks']);
+  });
+
   it('renders ASCII and Mermaid graphs without external dependencies', () => {
     const root = tempScaffold();
     writePlan(root, 'active', '001-feature', 'depends on: 002-refactor');

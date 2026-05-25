@@ -286,8 +286,19 @@ export function buildPlanGraph(options: BuildPlanGraphOptions = {}): PlanGraph {
   const warnings: string[] = [];
   const orderedNodeSlugs: string[] = [];
   const includedSlugs = new Set<string>();
-  const edges: PlanGraphEdge[] = [];
-  const seenEdges = new Set<string>();
+  const graphEdges: PlanGraphEdge[] = [];
+  const seenGraphEdges = new Set<string>();
+  const allEdges: PlanGraphEdge[] = [];
+  const seenAllEdges = new Set<string>();
+
+  for (const [slug, record] of records.entries()) {
+    for (const edge of extractDependencyReferences(sectionTextForDependencyScan(record.text), slug)) {
+      const key = `${edge.from}->${edge.to}:${edge.relationship}`;
+      if (seenAllEdges.has(key)) continue;
+      seenAllEdges.add(key);
+      allEdges.push(edge);
+    }
+  }
 
   function includeNode(slug: string): void {
     if (!records.has(slug) || includedSlugs.has(slug)) return;
@@ -295,46 +306,38 @@ export function buildPlanGraph(options: BuildPlanGraphOptions = {}): PlanGraph {
     orderedNodeSlugs.push(slug);
   }
 
-  function includeEdge(edge: PlanGraphEdge): void {
+  function includeGraphEdge(edge: PlanGraphEdge): void {
     const key = `${edge.from}->${edge.to}:${edge.relationship}`;
-    if (seenEdges.has(key)) return;
-    seenEdges.add(key);
-    edges.push(edge);
+    if (seenGraphEdges.has(key)) return;
+    seenGraphEdges.add(key);
+    graphEdges.push(edge);
+    includeNode(edge.from);
+    includeNode(edge.to);
   }
 
-  function walk(start: string): void {
-    const queue = [start];
-    const expanded = new Set<string>();
-    while (queue.length > 0) {
-      const slug = queue.shift() as string;
-      const record = records.get(slug);
-      if (!record) {
-        if (slug === start) warnings.push(`Plan not found: ${slug}`);
-        continue;
-      }
-      includeNode(slug);
-      if (expanded.has(slug)) continue;
-      expanded.add(slug);
-      const refs = extractDependencyReferences(sectionTextForDependencyScan(record.text), slug);
-      for (const edge of refs) {
-        includeEdge(edge);
-        if (!records.has(edge.to)) warnings.push(`Unresolved dependency: ${edge.from} references ${edge.to}`);
-        else queue.push(edge.to);
-      }
+  if (focus) {
+    if (records.has(focus)) includeNode(focus);
+    else warnings.push(`Plan not found: ${focus}`);
+    for (const edge of collectReachableEdges(allEdges, focus, direction)) includeGraphEdge(edge);
+  } else if (options.stage === 'all') {
+    for (const slug of records.keys()) includeNode(slug);
+    for (const edge of allEdges) includeGraphEdge(edge);
+  } else {
+    for (const rootSlug of rootSlugs(records, options.stage)) {
+      includeNode(rootSlug);
+      const directEdges = allEdges.filter((edge) => edge.from === rootSlug);
+      const downstreamEdges = collectReachableEdges(allEdges, rootSlug, 'downstream');
+      for (const edge of [...directEdges, ...downstreamEdges]) includeGraphEdge(edge);
     }
   }
 
-  for (const slug of rootSlugs(records, options.stage, focus ?? undefined)) walk(slug);
+  for (const edge of graphEdges) {
+    if (!records.has(edge.to)) warnings.push(`Unresolved dependency: ${edge.from} references ${edge.to}`);
+  }
 
   const knownSlugs = new Set(orderedNodeSlugs);
-  warnings.push(...detectCycles(edges, knownSlugs));
-
-  const graphEdges = focus ? collectReachableEdges(edges, focus, direction) : edges;
-  const nodes = filterNodesForEdges(
-    orderedNodeSlugs.map((slug) => (records.get(slug) as PlanRecord).node),
-    graphEdges,
-    focus,
-  );
+  warnings.push(...detectCycles(graphEdges, knownSlugs));
+  const nodes = orderedNodeSlugs.map((slug) => (records.get(slug) as PlanRecord).node);
 
   return {
     schema: PLAN_GRAPH_SCHEMA,

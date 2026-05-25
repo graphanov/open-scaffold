@@ -16,9 +16,9 @@ Added `osc plan graph`, a read-only plan dependency graph command with ASCII, Me
 - `node dist/cli.js plan graph --format json --stage active` — passed; produced machine-readable JSON with 1 active node, 0 edges, and 0 warnings after closing plan 067.
 - `node dist/cli.js plan graph --format mermaid --stage active` — passed; produced a Mermaid `flowchart TD` without external URLs.
 - `node dist/cli.js plan graph` — passed; produced an ASCII graph including `067-plan-dependency-graph`.
-- Focused downstream regression for `blocks: <focus>` relationships — covered by `tests/plan-graph.test.ts` after Codex review feedback.
+- Focused downstream and active-stage blocker regressions for `blocks: <focus>` relationships — covered by `tests/plan-graph.test.ts` after Codex review feedback.
 - `git diff --check` — passed.
-- `npm test -- --run` — passed, 38 files / 337 tests.
+- `npm test -- --run` — passed, 38 files / 338 tests.
 - `npm run build` — passed.
 - `npm pack --dry-run --json` — passed; package payload includes `dist/cli.js`, `dist/plan-graph.js`, and `docs/WORKFLOW.md`.
 - `./verify.sh --strict` — passed, 10 pass / 0 fail / 0 warn.
