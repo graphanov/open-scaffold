@@ -84,6 +84,19 @@ Use for:
 
 Default visibility: curated.
 
+### Terminal dashboard
+
+`osc dashboard` is the simplest local glass cockpit: a read-only terminal view over the repo-owned state. It shows mission status, plan counts, active-plan freshness, recent evidence notes, verification health, and optional task summary data without becoming a second source of truth.
+
+Use for:
+
+- quick local orientation before starting or resuming a slice;
+- checking active-plan staleness and evidence recency;
+- watching repo state with `osc dashboard --watch` during manual work;
+- sharing a human-readable state view without opening a browser or running a daemon.
+
+The dashboard must point back to durable paths such as `.osc/plans/*` and `.osc/releases/*`. It must remain read-only in v1: plan edits, approvals, publication, and task transitions still happen through the existing CLI, GitHub, or task bridge surfaces.
+
 ## Event envelope
 
 Every cockpit event should be able to fit this shape:

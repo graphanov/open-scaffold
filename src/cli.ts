@@ -4,6 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
 import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
+import { runDashboard, type DashboardRunOptions } from './dashboard.js';
 import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
 import { collectEvidence } from './evidence.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
@@ -25,7 +26,8 @@ Usage:
   osc init --tier <min|standard|max> --target <dir> [--force]
   osc init --from-existing --tier min --target <dir> [--force]
   osc init --min|--standard|--max --target <dir> [--force]
-  osc status [--json]
+  osc status [--json|--dashboard]
+  osc dashboard [--watch] [--interval <seconds>]
   osc task new <title> [--priority <high|medium|low>] [--plan <slug>]
   osc task list [--status <status>] [--priority <priority>] [--plan <slug>] [--json]
   osc task show <task-id>
@@ -379,7 +381,62 @@ function init(args: string[]): void {
   }
 }
 
-function status(json: boolean): void {
+function printDashboardUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc dashboard [--watch] [--interval <seconds>]', stream);
+}
+
+function parseDashboardOptions(args: string[]): DashboardRunOptions {
+  const options: DashboardRunOptions = {};
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--watch':
+        options.watch = true;
+        break;
+      case '--interval': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--')) {
+          console.error('Missing value for --interval');
+          process.exit(2);
+        }
+        const intervalSeconds = Number.parseInt(value, 10);
+        if (!Number.isFinite(intervalSeconds) || intervalSeconds < 1) {
+          console.error(`Invalid value for --interval: ${value}. Expected a positive number of seconds.`);
+          process.exit(2);
+        }
+        options.intervalSeconds = intervalSeconds;
+        i += 1;
+        break;
+      }
+      default:
+        console.error(`Unknown option for dashboard: ${flag}`);
+        printDashboardUsage();
+        process.exit(2);
+    }
+  }
+  return options;
+}
+
+async function dashboardCommand(args: string[]): Promise<void> {
+  if (isHelpArg(args[0])) {
+    printDashboardUsage('stdout');
+    return;
+  }
+  await runDashboard(parseDashboardOptions(args));
+}
+
+async function status(args: string[]): Promise<void> {
+  if (args.includes('--dashboard')) {
+    await dashboardCommand(args.filter((arg) => arg !== '--dashboard'));
+    return;
+  }
+  const unknown = args.filter((arg) => arg !== '--json');
+  if (unknown.length > 0) {
+    console.error(`Unknown option for status: ${unknown[0]}`);
+    printUsage('Usage: osc status [--json|--dashboard]');
+    process.exit(2);
+  }
+  const json = args.includes('--json');
   const state = inspectScaffold(process.cwd());
   let taskSummary: ReturnType<typeof getTaskSummary> = null;
   try {
@@ -1949,7 +2006,10 @@ async function main(): Promise<void> {
       init(args);
       return;
     case 'status':
-      status(args.includes('--json'));
+      await status(args);
+      return;
+    case 'dashboard':
+      await dashboardCommand(args);
       return;
     case 'task':
       taskCommand(args);
