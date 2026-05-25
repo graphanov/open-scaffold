@@ -213,6 +213,9 @@ describe('plan dependency graph', () => {
 
     expect(() => buildPlanGraph({ root, stage: 'all', direction: 'upstream' })).toThrow(/--stage all only supports --direction both/);
 
+    const focused = buildPlanGraph({ root, stage: 'all', direction: 'downstream', plan: '001-feature' });
+    expect(focused.edges.map(edgeKey)).toEqual(['001-feature->002-refactor:depends_on']);
+
     const result = spawnSync(tsx, [cli, 'plan', 'graph', '--stage', 'all', '--direction', 'upstream'], { cwd: root, encoding: 'utf8' });
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('--stage all only supports --direction both');

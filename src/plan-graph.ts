@@ -287,8 +287,8 @@ export function buildPlanGraph(options: BuildPlanGraphOptions = {}): PlanGraph {
   const root = resolveRoot(options.root);
   const stage = options.stage ?? 'open';
   const direction = options.direction ?? 'both';
-  if (options.stage === 'all' && direction !== 'both') {
-    throw new Error('Plan graph --stage all only supports --direction both. Use --plan or --stage active/backlog for upstream/downstream views.');
+  if (options.stage === 'all' && direction !== 'both' && !options.plan) {
+    throw new Error('Plan graph --stage all only supports --direction both unless --plan is provided. Use --plan for focused upstream/downstream views.');
   }
   const focus = options.plan ? normalizePlanReference(options.plan) : null;
   if (options.plan && !focus) throw new Error(`Invalid plan reference: ${options.plan}`);
