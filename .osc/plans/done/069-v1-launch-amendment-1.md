@@ -18,6 +18,6 @@ Prepare the repository-side v1.0.0 launch candidate: package metadata, stability
 
 ## Impact on acceptance criteria
 
-- Criteria 1, 2, 3, and 17 become owner-gated post-merge checks instead of automation-complete checks. The PR must include commands and evidence for dry-run/package readiness, but live registry and GitHub Release verification happen after owner-approved merge and publication.
-- Criteria 4 through 16 remain in scope for this PR and must pass locally before the branch is reported ready.
+- Criteria 1, 2, 3, and 15 become owner-gated post-merge checks instead of automation-complete checks. The PR must include commands and evidence for dry-run/package readiness, but live registry and GitHub Release verification happen after owner-approved merge and publication.
+- Criteria 4 through 14 remain in scope for this PR and must pass locally before the branch is reported ready.
 - Verification step 2 changes from a live `npx open-scaffold@1.0.0` install to a local tarball smoke until the owner publishes the package.
