@@ -569,6 +569,11 @@ function parsePlanGraphOptions(args: string[]): { format: PlanGraphFormat; stage
         process.exit(2);
     }
   }
+  if (stage === 'all' && direction !== 'both') {
+    console.error('Invalid option combination: --stage all only supports --direction both. Use --plan or --stage active/backlog for upstream/downstream views.');
+    printPlanGraphUsage();
+    process.exit(2);
+  }
   return { format, stage, direction, plan };
 }
 

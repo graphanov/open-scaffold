@@ -97,8 +97,7 @@ function extractTargets(raw: string): string[] {
   const fragments = linked.split(/[,;]|\band\b/i);
   const targets: string[] = [];
   for (const fragment of fragments) {
-    const match = fragment.match(/(?:\.osc\/plans\/(?:active|backlog|blocked|done)\/)?([A-Za-z0-9][A-Za-z0-9._-]*)(?:\.md)?/);
-    const target = match ? normalizePlanReference(match[0]) : null;
+    const target = normalizePlanReference(fragment);
     if (target && !targets.includes(target)) targets.push(target);
   }
   return targets;
@@ -288,6 +287,9 @@ export function buildPlanGraph(options: BuildPlanGraphOptions = {}): PlanGraph {
   const root = resolveRoot(options.root);
   const stage = options.stage ?? 'open';
   const direction = options.direction ?? 'both';
+  if (options.stage === 'all' && direction !== 'both') {
+    throw new Error('Plan graph --stage all only supports --direction both. Use --plan or --stage active/backlog for upstream/downstream views.');
+  }
   const focus = options.plan ? normalizePlanReference(options.plan) : null;
   if (options.plan && !focus) throw new Error(`Invalid plan reference: ${options.plan}`);
   const records = loadPlans(root);

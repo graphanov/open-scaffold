@@ -49,6 +49,7 @@ describe('plan dependency graph', () => {
       'See plan 008-public-docs before updating README.',
       'inherits from: .osc/plans/done/009-parent-plan.md',
       'depends on: [decision](https://example.com/decision), 010-real-plan',
+      'depends on: owner approval',
     ].join('\n');
 
     expect(extractDependencyReferences(text).map((edge) => edgeKey(edge))).toEqual([
@@ -187,6 +188,18 @@ describe('plan dependency graph', () => {
     expect(result.status).toBe(2);
     expect(result.stdout).toBe('');
     expect(result.stderr).toContain('Invalid value for --plan: ../foo');
+  });
+
+  it('rejects direction-scoped all-stage graphs because there is no focus root', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '001-feature', 'depends on: 002-refactor');
+    writePlan(root, 'backlog', '002-refactor');
+
+    expect(() => buildPlanGraph({ root, stage: 'all', direction: 'upstream' })).toThrow(/--stage all only supports --direction both/);
+
+    const result = spawnSync(tsx, [cli, 'plan', 'graph', '--stage', 'all', '--direction', 'upstream'], { cwd: root, encoding: 'utf8' });
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('--stage all only supports --direction both');
   });
 
   it('prints machine-readable JSON from the CLI and filters focused upstream/downstream neighborhoods', () => {
