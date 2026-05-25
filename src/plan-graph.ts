@@ -94,7 +94,7 @@ function extractTargets(raw: string): string[] {
   const withoutExternalLinks = raw.replace(/\[[^\]]+\]\((?:[a-z][a-z0-9+.-]*:)?\/\/[^)]+\)/gi, '');
   const withoutBareUrls = withoutExternalLinks.replace(/\b[a-z][a-z0-9+.-]*:\/\/\S+/gi, '');
   const linked = withoutBareUrls.replace(/\[[^\]]+\]\(([^)]+)\)/g, '$1');
-  const fragments = linked.split(/[,;]|\band\b/i);
+  const fragments = linked.split(/[,;]|\s+and\s+/i);
   const targets: string[] = [];
   for (const fragment of fragments) {
     const target = normalizePlanReference(fragment);

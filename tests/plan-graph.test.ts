@@ -49,6 +49,7 @@ describe('plan dependency graph', () => {
       'See plan 008-public-docs before updating README.',
       'inherits from: .osc/plans/done/009-parent-plan.md',
       'depends on: [decision](https://example.com/decision), 010-real-plan',
+      'depends on: 011-auth-and-billing',
       'depends on: owner approval',
     ].join('\n');
 
@@ -62,6 +63,7 @@ describe('plan dependency graph', () => {
       'source->008-public-docs:follows',
       'source->009-parent-plan:follows',
       'source->010-real-plan:depends_on',
+      'source->011-auth-and-billing:depends_on',
     ]);
   });
 
