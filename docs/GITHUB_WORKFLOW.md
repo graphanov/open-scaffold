@@ -99,7 +99,7 @@ Open Scaffold projects should keep repository truth mechanically checked in GitH
 - `plan-validate.yml` validates changed `.osc/plans/**/*.md` files on PRs.
 - `evidence-validate.yml` runs strict evidence checks for `.osc/releases/**/*.md` changes.
 - `stale-plans.yml` runs weekly and opens a GitHub Issue for stale active plans instead of mutating plan state automatically.
-- `publish-npm.yml` is the preferred manual trusted-publishing path; `npm-publish.yml` remains a legacy tag/token path. Publication, release, and deployment remain owner gates.
+- `publish-npm.yml` is the only active npm publish path and uses manual trusted publishing. Version tags and GitHub Releases are release markers only; publication, release, and deployment remain owner gates.
 
 CI failures should be resolved before merge unless the failure is explicitly classified as external infrastructure. CI does not replace Codex review or human approval.
 

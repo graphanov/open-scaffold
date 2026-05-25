@@ -12,8 +12,7 @@ These workflows are active in this repository and can also be copied into downst
 | `.github/workflows/plan-validate.yml` | PRs touching staged plan files under `.osc/plans/{active,backlog,blocked,done}/` | Validates changed plan files with `osc plan validate`. Errors fail the PR; warnings remain visible but non-blocking. |
 | `.github/workflows/evidence-validate.yml` | PRs touching `.osc/releases/**/*.md` | Runs `./verify.sh --strict` and checks changed evidence notes for required sections and stale `pending` claims. |
 | `.github/workflows/stale-plans.yml` | Weekly Monday 09:00 UTC and manual dispatch | Detects active plans older than the configured threshold and opens or updates a GitHub Issue. |
-| `.github/workflows/publish-npm.yml` | Manual dispatch | Preferred v1 publish path: builds, tests, verifies, checks the requested version, then publishes with npm trusted publishing and provenance. |
-| `.github/workflows/npm-publish.yml` | Version tag pushes matching `v*` | Legacy/token publish path: builds, tests, verifies, checks the tag against `package.json`, then publishes with `NPM_TOKEN` when that path is intentionally enabled. |
+| `.github/workflows/publish-npm.yml` | Manual dispatch | The only active npm publish path: builds, tests, verifies, checks the requested version, then publishes with npm trusted publishing and provenance. |
 
 ## Plan validation
 
@@ -55,9 +54,9 @@ To customize the threshold:
 
 ## npm publishing
 
-Open Scaffold currently documents two publish paths. Do not run both for the same release.
+Open Scaffold uses one active npm publish path: manual GitHub Actions trusted publishing.
 
-### Preferred v1 path: trusted publishing
+### Trusted publishing
 
 `publish-npm.yml` is manually dispatched by the owner. It uses GitHub Actions OIDC / npm trusted publishing with least-privilege permissions:
 
@@ -75,17 +74,7 @@ Required setup:
 
 The workflow refuses to publish if `package.json` does not match the requested version or if that package version is already on npm.
 
-### Legacy path: token + version tag
-
-`npm-publish.yml` is intentionally tag-gated. It does not run on regular pushes or pull requests.
-
-Required setup:
-
-1. Add an npm automation token as the repository secret `NPM_TOKEN`.
-2. Ensure `package.json` has the version that should be released.
-3. Push a matching tag such as `v1.0.0`.
-
-The workflow refuses to publish if the tag does not match `package.json` or if that package version is already on npm.
+Version tags and GitHub Releases are publication markers only. They do not publish npm packages. The old token-based `npm-publish.yml` tag workflow was retired after v1 because creating the GitHub Release tag can otherwise trigger a duplicate publish run.
 
 ## Enabling, disabling, and adapting
 
