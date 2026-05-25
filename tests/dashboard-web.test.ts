@@ -69,6 +69,28 @@ describe('web dashboard', () => {
   it('renders scaffold state into a self-contained dashboard without external refs in the source', () => {
     const root = tempScaffold();
     writeFileSync(join(root, '.osc/plans/active/001-dashboard.md'), plan);
+    writeFileSync(join(root, '.osc/plans/active/001-dashboard-amendment-1.md'), `# Amendment 1: 001-dashboard
+
+## Parent
+
+001-dashboard
+
+## Date
+
+2026-05-25
+
+## Learning
+
+This should not become a dashboard plan card.
+
+## New direction
+
+Keep parent plan as the only dashboard card.
+
+## Impact on acceptance criteria
+
+None.
+`);
     writeFileSync(join(root, '.osc/releases/2026-05-25-001-dashboard.md'), `# Release / Evidence Note: 001-dashboard
 
 ## Summary
@@ -83,10 +105,12 @@ PR: https://github.com/example/repo/pull/999
     const data = collectWebDashboardData(root, new Date('2026-05-25T12:00:00Z'));
     const html = renderWebDashboard(data);
 
+    expect(data.plans.active.map((plan) => plan.slug)).toEqual(['001-dashboard']);
     expect(data.evidence.map((note) => note.file)).toEqual(['2026-05-25-001-dashboard.md']);
     expect(data.identityChain.prs).toBe(0);
     expect(html).toContain('Open Scaffold Dashboard');
     expect(html).toContain('001-dashboard');
+    expect(html).not.toContain('001-dashboard-amendment-1');
     expect(html).toContain('Dashboard evidence exists.');
     expect(html).toContain('href="');
     expect(html).toContain('releases/2026-05-25-001-dashboard.md');

@@ -98,6 +98,10 @@ function isEvidenceNoteFile(file: string): boolean {
   return file.endsWith('.md') && file.toLowerCase() !== 'readme.md';
 }
 
+function isAmendmentSlug(slug: string): boolean {
+  return /-amendment-\d+$/.test(slug);
+}
+
 function resolveRoot(start = process.cwd()): string {
   return findScaffoldRoot(start) ?? resolve(start);
 }
@@ -175,7 +179,9 @@ function collectPlans(root: string): Record<PlanStage, DashboardPlanCard[]> {
     done: [],
   };
   for (const stage of PLAN_STAGES) {
-    plans[stage] = state.plans[stage].map((plan) => parsePlanCard(root, plan.path, stage));
+    plans[stage] = state.plans[stage]
+      .filter((plan) => !isAmendmentSlug(plan.slug))
+      .map((plan) => parsePlanCard(root, plan.path, stage));
   }
   return plans;
 }
