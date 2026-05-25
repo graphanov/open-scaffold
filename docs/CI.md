@@ -12,7 +12,8 @@ These workflows are active in this repository and can also be copied into downst
 | `.github/workflows/plan-validate.yml` | PRs touching staged plan files under `.osc/plans/{active,backlog,blocked,done}/` | Validates changed plan files with `osc plan validate`. Errors fail the PR; warnings remain visible but non-blocking. |
 | `.github/workflows/evidence-validate.yml` | PRs touching `.osc/releases/**/*.md` | Runs `./verify.sh --strict` and checks changed evidence notes for required sections and stale `pending` claims. |
 | `.github/workflows/stale-plans.yml` | Weekly Monday 09:00 UTC and manual dispatch | Detects active plans older than the configured threshold and opens or updates a GitHub Issue. |
-| `.github/workflows/npm-publish.yml` | Version tag pushes matching `v*` | Builds, tests, verifies, checks the tag against `package.json`, then publishes to npm using `NPM_TOKEN`. |
+| `.github/workflows/publish-npm.yml` | Manual dispatch | Preferred v1 publish path: builds, tests, verifies, checks the requested version, then publishes with npm trusted publishing and provenance. |
+| `.github/workflows/npm-publish.yml` | Version tag pushes matching `v*` | Legacy/token publish path: builds, tests, verifies, checks the tag against `package.json`, then publishes with `NPM_TOKEN` when that path is intentionally enabled. |
 
 ## Plan validation
 
@@ -54,24 +55,44 @@ To customize the threshold:
 
 ## npm publishing
 
+Open Scaffold currently documents two publish paths. Do not run both for the same release.
+
+### Preferred v1 path: trusted publishing
+
+`publish-npm.yml` is manually dispatched by the owner. It uses GitHub Actions OIDC / npm trusted publishing with least-privilege permissions:
+
+```yaml
+permissions:
+  contents: read
+  id-token: write
+```
+
+Required setup:
+
+1. Configure npm trusted publishing for this repository and workflow filename.
+2. Ensure `package.json` has the version that should be released.
+3. Run the workflow manually with `expected-version` and `npm-tag` inputs.
+
+The workflow refuses to publish if `package.json` does not match the requested version or if that package version is already on npm.
+
+### Legacy path: token + version tag
+
 `npm-publish.yml` is intentionally tag-gated. It does not run on regular pushes or pull requests.
 
 Required setup:
 
 1. Add an npm automation token as the repository secret `NPM_TOKEN`.
 2. Ensure `package.json` has the version that should be released.
-3. Push a matching tag such as `v0.4.19`.
+3. Push a matching tag such as `v1.0.0`.
 
 The workflow refuses to publish if the tag does not match `package.json` or if that package version is already on npm.
-
-Projects using npm trusted publishing can keep a separate manual trusted-publishing workflow instead. Do not run both publish paths for the same release without an owner decision.
 
 ## Enabling, disabling, and adapting
 
 - To disable a workflow, rename the file extension away from `.yml` or remove its trigger block.
 - To keep workflows as templates only, move them out of `.github/workflows/` before committing.
-- For private npm registries, change `registry-url` and the publish token secret name in `npm-publish.yml`.
-- For non-Node projects, keep plan/evidence/stale-plan workflows and replace only the build/test steps in `ci.yml` and `npm-publish.yml`.
+- For private npm registries, change `registry-url` and the publish token or trusted-publishing setup in the selected publish workflow.
+- For non-Node projects, keep plan/evidence/stale-plan workflows and replace only the build/test steps in `ci.yml` and the selected publish workflow.
 
 ## Local testing
 

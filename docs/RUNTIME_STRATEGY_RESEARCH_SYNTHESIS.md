@@ -1,5 +1,7 @@
 # Runtime Strategy Research Synthesis
 
+> Status: research synthesis, not the v1 stable contract. The v1 product keeps runtime launch outside Open Scaffold core; native spawning remains future research unless promoted by a separate plan, safety review, and owner approval.
+
 This synthesis consolidates the Milestone 16 framework research lanes produced from `docs/RUNTIME_STRATEGY_RESEARCH_CRITERIA.md`. Named runtimes and coordinators in this research are evidence sources, runtime lanes, private deployment examples, or adapter candidates as labeled in [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md); they are not Open Scaffold core dependencies.
 
 Raw worker reports are local evidence, not yet public project truth. The report inventory and evidence-quality caveats are summarized in `docs/RUNTIME_STRATEGY_RESEARCH_EVIDENCE.md`.

@@ -14,15 +14,15 @@ Questions that did not fit in the main README but are still worth answering.
 
 ### Can I run this for 5 hours straight and come back to a finished product?
 
-> No. Anyone who says their framework does that is selling you something. What you *can* do: write a plan, give it to an outside tool or runner, and come back to work that still traces back to your acceptance criteria. Examples include a private coordinator deployment such as Hermes/Claw, OMC with `/autopilot`/`/ralph` for Claude Code, or OMX with `$team`/`$ralph`/`$ultrawork` for Codex. These are runtime lanes or private deployment examples, not Open Scaffold dependencies; see [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md). The difference the scaffold makes is **recoverability** — because the plan is on disk, you can read what the agent did, compare against the ACs, and know exactly where to resume. Without it, a 5-hour run is a 5-hour black box.
+> Not by Open Scaffold itself. Open Scaffold is not a hands-off product factory. What you *can* do: write a plan, give it to an outside tool or runner, and come back to work that still traces back to your acceptance criteria. Examples include a private coordinator deployment such as Hermes/Claw, OMC with `/autopilot`/`/ralph` for Claude Code, or OMX with `$team`/`$ralph`/`$ultrawork` for Codex. These are runtime lanes or private deployment examples, not Open Scaffold dependencies; see [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md). The difference the scaffold makes is **recoverability** — because the plan is on disk, you can read what the agent did, compare against the ACs, and know exactly where to resume. Without it, a long run is hard to audit.
 
 ### Does this reduce token usage / cost?
 
-> Usually, yes — indirectly. Plans mean less context-stuffing ("remember yesterday when..."). Immutability means no back-and-forth about what was already decided. `verify.sh` catches methodology drift mechanically instead of via a review round. Not benchmarked, so treat it as a hypothesis — but the "wait, we already decided this" loops are the expensive ones, and the scaffold is designed to eliminate them.
+> Often, indirectly — but this is not benchmarked yet. Plans mean less context-stuffing ("remember yesterday when..."). Immutability means fewer loops about what was already decided. `verify.sh` catches methodology drift mechanically instead of relying only on another review round. Treat cost reduction as a workflow hypothesis to measure in your own repo, not as a guaranteed benchmark.
 
 ### Will my agent actually follow the protocol, or will it just ignore the files?
 
-> Depends on the agent and how you prompt it. Claude Code and Codex read [CLAUDE.md](../CLAUDE.md) and [AGENTS.md](../AGENTS.md) automatically. Cursor, Aider, and most others will too if you tell them to once. Compliance holds up because the instructions are direct and `verify.sh` is mechanical — not a judgment call. If your agent is the type that routinely ignores explicit instructions, no scaffold will save you.
+> Depends on the agent and how you prompt it. Claude Code and Codex read [CLAUDE.md](../CLAUDE.md) and [AGENTS.md](../AGENTS.md) automatically. Cursor, Aider, and most others will too if you tell them to once. The protocol holds up better because the instructions are direct and `verify.sh` is mechanical — not only a judgment call. If your agent routinely ignores explicit instructions, no scaffold can fully solve that.
 
 ### Why are CLAUDE.md and AGENTS.md hand-duplicated instead of generated from one source?
 
@@ -38,11 +38,11 @@ Questions that did not fit in the main README but are still worth answering.
 
 ### What if I'm bad at writing plans? Does this fall apart?
 
-> No. The [handoff template](../.osc/plans/handoff-template.md) is a fill-in-the-blanks form with 7 sections. If you can answer "what am I trying to do, how will I know it worked, what's out of scope," you can write a plan. If you can't answer those, you probably shouldn't be coding yet — which is exactly the point.
+> No. The [handoff template](../.osc/plans/handoff-template.md) is a fill-in-the-blanks form with 7 sections. If you can answer "what am I trying to do, how will I know it worked, what's out of scope," you can write a plan. If you can't answer those yet, pause before coding — that uncertainty is exactly what the plan is supposed to expose.
 
 ### Is this just going to slow me down? I'm used to vibing.
 
-> Yes — by about 15 minutes on day one. That's the tax. After that, it speeds you up because session two doesn't start with "OK so where were we..." You trade 15 upfront minutes for zero re-explanation cost forever. For anything you'll work on more than once, the trade is obvious.
+> A little on day one. That is the tax. After that, it should speed you up because session two does not start with "OK so where were we..." You trade a short setup step for lower re-explanation cost on future sessions. For anything you will work on more than once, the trade is usually worth it.
 
 ### Can I adopt this mid-project, or is it only for new repos?
 
@@ -64,11 +64,9 @@ Questions that did not fit in the main README but are still worth answering.
 
 > You have to commit them. Immutability means "committed to version control." An uncommitted plan is a draft; a committed plan is a record. Uncommitted plans can be edited silently, which is exactly what the protocol exists to prevent.
 
-### What power level will I achieve when using this?
+### What changes after I adopt it?
 
-> Over 9000, obviously.
->
-> More usefully: you'll stop losing context between sessions, stop re-explaining constraints, and stop waking up to "what did I decide last Tuesday?" For a multi-session project, that's a bigger deal than it sounds.
+> You stop losing as much context between sessions, stop re-explaining the same constraints, and stop waking up to "what did I decide last Tuesday?" For a multi-session project, that is a bigger deal than it sounds.
 
 ### Who built this?
 

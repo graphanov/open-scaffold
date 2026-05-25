@@ -118,7 +118,9 @@ For the one-screen version, see [`docs/examples/evolution-loop-compare.md`](docs
 
 ---
 
-## Recommended default flow
+## Quickstart
+
+This is the smallest useful path: add the scaffold, define the mission, create one active plan, verify, record evidence, and close the slice.
 
 ### 1. Add Open Scaffold to a repo
 
@@ -146,35 +148,6 @@ node dist/cli.js init --tier standard --target <your-project>
 ```
 
 Optional container path: clone the repo, open it with VS Code Dev Containers or GitHub Codespaces, and the bundled `.devcontainer/` provides Node.js 22, npm, git, and `osc`. See [`docs/DEV_CONTAINER.md`](docs/DEV_CONTAINER.md) for Docker-only use and customization.
-
-## v1.0.0 Stable release candidate
-
-Open Scaffold v1.0.0 means the repo protocol and day-two CLI are stable enough to adopt with semver expectations. It does **not** mean every experimental integration is frozen.
-
-Stable:
-
-- CLI: `osc init`, `osc status`, `osc plan new`, `osc plan validate`, `osc plan move`, `osc amend`, `osc close`, `osc evidence new`, `osc evidence collect`, and `osc verify`.
-- Protocol: `MISSION.md`, `ROADMAP.md`, `.osc/plans/`, the 7-section plan schema, folder-as-status workflow, amendments, evidence notes, and run-packet records.
-- Verification floor: `verify.sh` plus package tests/builds for this repository.
-
-Experimental:
-
-- Runtime profiles and runtime-selection helpers beyond no-spawn run-packet metadata.
-- MCP, glass cockpit webhooks, local task database helpers, TUI/web dashboards, runtime packages, and Python parser packaging.
-
-Future / not included:
-
-- Native autonomous spawning in core.
-- Compliance certification.
-- Provider/model benchmarking or ranking.
-
-Use cases the stable contract supports today:
-
-- solo developers who need multi-session AI work to be resumable;
-- teams that want PRs to carry intent, evidence, and approval state;
-- consulting or audit-sensitive delivery where later readers need to reconstruct what happened.
-
-The live public release is true only after the owner approves merge, npm publication, and GitHub Release latest movement. See [`docs/STABILITY.md`](docs/STABILITY.md), [`docs/CHANGELOG.md`](docs/CHANGELOG.md), and the landing page [`docs/index.html`](docs/index.html).
 
 ### 2. Define the mission
 
@@ -253,6 +226,37 @@ That creates a `run.json` work package. The outside tool executes. Evidence come
 
 ---
 
+## v1.0.0 stable release candidate
+
+Open Scaffold v1.0.0 means the repo protocol and day-two CLI are stable enough to adopt with semver expectations. It does **not** mean every experimental integration is frozen.
+
+Stable:
+
+- CLI: `osc init`, `osc status`, `osc plan new`, `osc plan validate`, `osc plan move`, `osc amend`, `osc close`, `osc evidence new`, `osc evidence collect`, and `osc verify`.
+- Protocol: `MISSION.md`, `ROADMAP.md`, `.osc/plans/`, the 7-section plan schema, folder-as-status workflow, amendments, evidence notes, and run-packet records.
+- Verification floor: `verify.sh` plus package tests/builds for this repository.
+
+Experimental:
+
+- Runtime profiles and runtime-selection helpers beyond no-spawn run-packet metadata.
+- MCP, glass cockpit webhooks, local task database helpers, TUI/web dashboards, runtime packages, and Python parser packaging.
+
+Future / not included:
+
+- Native autonomous spawning in core.
+- Compliance certification.
+- Provider/model benchmarking or ranking.
+
+Use cases the stable contract supports today:
+
+- solo developers who need multi-session AI work to be resumable;
+- teams that want PRs to carry intent, evidence, and approval state;
+- consulting or audit-sensitive delivery where later readers need to reconstruct what happened.
+
+Publication truth lives outside git, and the two public surfaces move separately. Check `npm view open-scaffold version dist-tags --json` to see which package `npx open-scaffold@latest` installs. Check the GitHub Release marked **Latest** to see which release note GitHub highlights. Until npm shows `1.0.0`, the install path is still the previous package; until GitHub Releases shows `v1.0.0` as **Latest**, the release page is still on the previous release. See [`docs/STABILITY.md`](docs/STABILITY.md), [`docs/CHANGELOG.md`](docs/CHANGELOG.md), and the landing page [`docs/index.html`](docs/index.html).
+
+---
+
 ## Simple mental model
 
 - **You** decide the goal, taste, risk, merge, and publish gates.
@@ -307,6 +311,7 @@ Skip it for:
 
 - [`docs/WHY_OPEN_SCAFFOLD.md`](docs/WHY_OPEN_SCAFFOLD.md) — visual story and fit.
 - [`docs/index.html`](docs/index.html) — one-page landing page for the 30-second explanation.
+- [`docs/MINIMUM_VIABLE_SCAFFOLD.md`](docs/MINIMUM_VIABLE_SCAFFOLD.md) — smallest practical day-one adoption path.
 - [`docs/STABILITY.md`](docs/STABILITY.md) — v1.0.0 stable, experimental, and future surfaces.
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — curated release history.
 - [`docs/DEV_CONTAINER.md`](docs/DEV_CONTAINER.md) — optional container setup for consistent team onboarding.
@@ -315,7 +320,7 @@ Skip it for:
 - [`docs/OPEN_SCAFFOLD_SYSTEM.md`](docs/OPEN_SCAFFOLD_SYSTEM.md) — full system map and boundaries.
 - [`docs/RUNTIME_SELECTION.md`](docs/RUNTIME_SELECTION.md) — choosing runtime lanes and profiles.
 - [`docs/RUNTIME_BINDING_CONTRACT.md`](docs/RUNTIME_BINDING_CONTRACT.md) — adapter responsibilities after `run.json` exists.
-- [`docs/FAQ.md`](docs/FAQ.md) — deeper docs.
+- [`docs/FAQ.md`](docs/FAQ.md) — deeper questions.
 
 Translations for agent entry files: Chinese, Japanese, Korean, Spanish, Portuguese. See [`docs/TRANSLATIONS.md`](docs/TRANSLATIONS.md).
 

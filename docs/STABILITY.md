@@ -6,11 +6,11 @@ The short version: the repo protocol, folder state machine, core plan schema, ev
 
 ## Release status
 
-- Repository release candidate: `1.0.0`.
+- Repository candidate on `main`: `1.0.0`.
 - Live npm package truth: check `npm view open-scaffold version dist-tags --json`.
 - Live GitHub release truth: check the GitHub Releases page and the release marked **Latest**.
 
-A branch or PR may set `package.json` to `1.0.0` before the owner completes the external publication gates. Do not treat repo version alone as proof that npm publication or GitHub Release latest movement has happened.
+The repository may carry `package.json` version `1.0.0` before the owner completes the external publication gates. Do not treat repo version alone as proof that npm publication or GitHub Release latest movement has happened.
 
 ## Stable in v1.0.0
 
@@ -134,7 +134,6 @@ Future breaking changes must provide:
 
 The owner must explicitly approve and perform or authorize these external side effects:
 
-- Merge of the v1.0.0 PR.
 - `npm publish` for `open-scaffold@1.0.0`.
 - GitHub Release creation or marking `v1.0.0` as **Latest**.
 - Any website deployment or public launch announcement.
