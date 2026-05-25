@@ -71,6 +71,18 @@ Use for:
 
 Default visibility: public-safe only. Never post secrets, private logs, customer data, or unreviewed sensitive transcripts.
 
+### Web dashboard
+
+A static browser cockpit generated from repository state.
+
+Use for:
+
+- local visual review without a terminal dashboard;
+- stakeholder-friendly snapshots of mission, plans, tasks, evidence, and verification status;
+- public-safe build-in-public snapshots that still point back to repository truth.
+
+Default visibility: same as the repository. The generated page is read-only and self-contained: no backend, no network dependency, no external scripts, no analytics, and no chat transcript storage. `osc dashboard --web` writes a static `.osc/dashboard.html` file. `osc dashboard --serve` serves the same view on localhost for local review only; `--open` prints the browser URL without spawning an OS command from core.
+
 ### Stakeholder room
 
 A curated room for clients, sponsors, or non-technical stakeholders.
@@ -83,6 +95,19 @@ Use for:
 - decision points and risks.
 
 Default visibility: curated.
+
+### Terminal dashboard
+
+`osc dashboard` is the simplest local glass cockpit: a read-only terminal view over the repo-owned state. It shows mission status, plan counts, active-plan freshness, recent evidence notes, verification health, and optional task summary data without becoming a second source of truth.
+
+Use for:
+
+- quick local orientation before starting or resuming a slice;
+- checking active-plan staleness and evidence recency;
+- watching repo state with `osc dashboard --watch` during manual work;
+- sharing a human-readable state view without opening a browser or running a daemon.
+
+The dashboard must point back to durable paths such as `.osc/plans/*` and `.osc/releases/*`. It must remain read-only in v1: plan edits, approvals, publication, and task transitions still happen through the existing CLI, GitHub, or task bridge surfaces.
 
 ## Event envelope
 
