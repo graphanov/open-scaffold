@@ -9,7 +9,7 @@ Polished launch-facing documentation for the v1.0.0 release candidate. The READM
 - Roadmap / issue / task: Milestone 18 v1.0.0 stability launch docs polish.
 - Plan: `.osc/plans/done/074-v1-launch-docs-polish.md`
 - Run ID / run packet: N/A — docs-only branch, no runtime handoff package.
-- Branch / PR: `docs/v1-launch-polish`; PR URL is recorded in GitHub once the branch is pushed.
+- Branch / PR: `docs/v1-launch-polish`; https://github.com/graphanov/open-scaffold/pull/115.
 
 ## Verification
 
