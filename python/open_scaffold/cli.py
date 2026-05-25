@@ -48,7 +48,7 @@ def _verify() -> int:
         print(f"FAIL {failure['code']}: {failure['message']}{suffix}", file=sys.stderr)
     if not result["ok"]:
         return 1
-    print(f"PASS mission defined and {result['plan_count']} plan file(s) found; {len(result['warnings'])} warning(s)")
+    print(f"PASS mission defined and {result['stage_plan_count']} plan file(s) found; {len(result['warnings'])} warning(s)")
     return 0
 
 

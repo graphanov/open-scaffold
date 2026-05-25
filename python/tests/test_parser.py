@@ -132,6 +132,22 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(parsed["acceptance_criteria"], [])
 
+    def test_verify_requires_stage_folder_plans_not_only_root_plans(self):
+        root = make_repo()
+        (root / ".osc" / "plans" / "005-root-only.md").write_text(
+            SAMPLE_PLAN.replace("# Plan: sample", "# Plan: 005-root-only").replace("active", "root", 1),
+            encoding="utf-8",
+        )
+
+        from open_scaffold.parser import verify_scaffold
+
+        result = verify_scaffold(str(root))
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["stage_plan_count"], 0)
+        self.assertEqual(result["plan_count"], 1)
+        self.assertEqual(result["failures"][0]["code"], "plans.missing")
+
     def test_python_cli_status_plan_and_verify(self):
         root = make_repo()
         plan_path = root / ".osc" / "plans" / "active" / "001-sample.md"

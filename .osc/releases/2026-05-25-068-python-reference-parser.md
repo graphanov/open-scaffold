@@ -13,7 +13,7 @@ Added a zero-dependency Python 3.10+ reference parser for Open Scaffold plan fil
 
 ## Verification
 
-- `python3 -m unittest discover -s python/tests` — pass, 4 parser/CLI tests.
+- `python3 -m unittest discover -s python/tests` — pass, 5 parser/CLI tests.
 - Python/TypeScript parity checks — `parse_plan()` matched `osc plan` for `.osc/plans/done/050-npm-publish-and-npx-init.md`; Python and TypeScript status counts matched after amendment files were excluded from plan listings.
 - Acceptance smokes — `PYTHONPATH=python python3 -m open_scaffold verify`, stage-plan parse loop, vendored `parser.py` smoke, `npm test`, `npm run build`, `./verify.sh --standard`, `npm pack --dry-run --json`, and `git diff --check` passed.
 

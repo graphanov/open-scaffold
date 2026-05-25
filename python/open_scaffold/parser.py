@@ -255,12 +255,20 @@ def verify_scaffold(root: str = ".") -> dict[str, Any]:
             }
         )
     plan_count = sum(len(items) for items in state["plans"].values())
-    if plan_count == 0:
+    stage_plan_count = sum(len(state["plans"][stage]) for stage in PLAN_STAGES)
+    if stage_plan_count == 0:
         failures.append(
             {
                 "level": "fail",
                 "code": "plans.missing",
-                "message": "No plan files found under .osc/plans/",
+                "message": "No plan files found under .osc/plans/{active,backlog,blocked,done}/",
             }
         )
-    return {"ok": not failures, "failures": failures, "warnings": [], "plan_count": plan_count, "state": state}
+    return {
+        "ok": not failures,
+        "failures": failures,
+        "warnings": [],
+        "plan_count": plan_count,
+        "stage_plan_count": stage_plan_count,
+        "state": state,
+    }
