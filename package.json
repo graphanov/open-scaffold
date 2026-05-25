@@ -50,6 +50,7 @@
     ".osc/releases/README.md",
     ".osc/specs/.gitkeep",
     "docs",
+    "python",
     "README.md",
     "SECURITY.md",
     "LICENSE",
