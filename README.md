@@ -253,7 +253,7 @@ Use cases the stable contract supports today:
 - teams that want PRs to carry intent, evidence, and approval state;
 - consulting or audit-sensitive delivery where later readers need to reconstruct what happened.
 
-Publication truth lives outside git. This repository can carry the `1.0.0` candidate before npm and GitHub Releases do. Check `npm view open-scaffold version dist-tags --json` and the GitHub Release marked **Latest**; until those show v1.0.0, the live public package is still the previous release. See [`docs/STABILITY.md`](docs/STABILITY.md), [`docs/CHANGELOG.md`](docs/CHANGELOG.md), and the landing page [`docs/index.html`](docs/index.html).
+Publication truth lives outside git, and the two public surfaces move separately. Check `npm view open-scaffold version dist-tags --json` to see which package `npx open-scaffold@latest` installs. Check the GitHub Release marked **Latest** to see which release note GitHub highlights. Until npm shows `1.0.0`, the install path is still the previous package; until GitHub Releases shows `v1.0.0` as **Latest**, the release page is still on the previous release. See [`docs/STABILITY.md`](docs/STABILITY.md), [`docs/CHANGELOG.md`](docs/CHANGELOG.md), and the landing page [`docs/index.html`](docs/index.html).
 
 ---
 

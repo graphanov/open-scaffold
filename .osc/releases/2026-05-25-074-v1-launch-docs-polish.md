@@ -24,7 +24,7 @@ Polished launch-facing documentation for the v1.0.0 release candidate. The READM
 
 ## Outcome
 
-The docs now present Open Scaffold as a clear repo-native work record for AI-assisted software while keeping advanced runtime/native-spawn material outside the v1 stable promise. No product behavior, package code, workflow behavior, npm publication, GitHub Release mutation, deployment, or launch announcement happened in this slice.
+The docs now present Open Scaffold as a clear repo-native work record for AI-assisted software while keeping advanced runtime/native-spawn material outside the v1 stable promise. Codex's first review pass found one valid README wording issue where npm package truth and GitHub Release truth were coupled; the follow-up patch separates those public surfaces. No product behavior, package code, workflow behavior, npm publication, GitHub Release mutation, deployment, or launch announcement happened in this slice.
 
 ## Follow-up
 
