@@ -18,6 +18,7 @@ import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanS
 import { addTaskComment, createTask, formatTaskDetails, formatTaskSummary, formatTaskTable, getTaskDetails, getTaskSummary, linkTaskPlan, listTasks, taskToJson, transitionTask, TASK_PRIORITIES, TASK_STATUSES, TaskUsageError, type TaskStatus } from './tasks.js';
 import { validateScaffold } from './validation.js';
 import { formatPlanValidationIssues, hasBlockingIssues, resolvePlanValidationPath, validatePlanFile } from './plan-validate.js';
+import { buildPlanGraph, normalizePlanReference, renderPlanGraphAscii, renderPlanGraphMermaid, type PlanGraphDirection, type PlanGraphFormat, type PlanGraphStageFilter } from './plan-graph.js';
 import { askInteractiveAnswers, assertWizardReady, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
 
 function printHelp(): void {
@@ -42,6 +43,7 @@ Usage:
   osc plan validate <slug-or-path> [--json] [--strict]
   osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
   osc plan move <slug> --to <active|backlog|blocked>
+  osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]
   osc amend <plan-slug> [--message <text>]
   osc evidence new <slug>
   osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
@@ -483,7 +485,8 @@ function printPlanUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   osc plan new --from-template list
   osc plan validate <slug-or-path> [--json] [--strict]
   osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
-  osc plan move <slug> --to <active|backlog|blocked>`, stream);
+  osc plan move <slug> --to <active|backlog|blocked>
+  osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]`, stream);
 }
 
 function printPlanNewUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
@@ -496,6 +499,82 @@ function printPlanValidateUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
 
 function printPlanMoveUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage('Usage: osc plan move <slug> --to <active|backlog|blocked>', stream);
+}
+
+function printPlanGraphUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]', stream);
+}
+
+function parsePlanGraphOptions(args: string[]): { format: PlanGraphFormat; stage?: PlanGraphStageFilter; direction: PlanGraphDirection; plan?: string } {
+  let format: PlanGraphFormat = 'ascii';
+  let stage: PlanGraphStageFilter | undefined;
+  let direction: PlanGraphDirection = 'both';
+  let plan: string | undefined;
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--format': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--') || !['ascii', 'mermaid', 'json'].includes(value)) {
+          console.error('Missing or invalid value for --format. Expected ascii, mermaid, or json.');
+          printPlanGraphUsage();
+          process.exit(2);
+        }
+        format = value as PlanGraphFormat;
+        i += 1;
+        break;
+      }
+      case '--stage': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--') || !['active', 'backlog', 'all'].includes(value)) {
+          console.error('Missing or invalid value for --stage. Expected active, backlog, or all.');
+          printPlanGraphUsage();
+          process.exit(2);
+        }
+        stage = value as PlanGraphStageFilter;
+        i += 1;
+        break;
+      }
+      case '--direction': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--') || !['downstream', 'upstream', 'both'].includes(value)) {
+          console.error('Missing or invalid value for --direction. Expected downstream, upstream, or both.');
+          printPlanGraphUsage();
+          process.exit(2);
+        }
+        direction = value as PlanGraphDirection;
+        i += 1;
+        break;
+      }
+      case '--plan': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--')) {
+          console.error('Missing value for --plan');
+          printPlanGraphUsage();
+          process.exit(2);
+        }
+        const normalized = normalizePlanReference(value);
+        if (!normalized) {
+          console.error(`Invalid value for --plan: ${value}`);
+          printPlanGraphUsage();
+          process.exit(2);
+        }
+        plan = normalized;
+        i += 1;
+        break;
+      }
+      default:
+        console.error(`Unknown option for plan graph: ${flag}`);
+        printPlanGraphUsage();
+        process.exit(2);
+    }
+  }
+  if (stage === 'all' && direction !== 'both' && !plan) {
+    console.error('Invalid option combination: --stage all only supports --direction both unless --plan is provided. Use --plan for focused upstream/downstream views.');
+    printPlanGraphUsage();
+    process.exit(2);
+  }
+  return { format, stage, direction, plan };
 }
 
 function parsePlanNewOptions(args: string[]): PlanNewOptions {
@@ -665,6 +744,28 @@ async function planCommand(args: string[]): Promise<void> {
         console.log('Next: review the template placeholders and replace angle-bracket prompts before implementation.');
       } else {
         console.log('Next: fill the TODO prompts before implementation; do not treat the skeleton as acceptance criteria.');
+      }
+      return;
+    } catch (error) {
+      exitForScaffoldHelperError(error);
+    }
+  }
+
+  if (subcommand === 'graph') {
+    if (isHelpArg(rest[0])) {
+      printPlanGraphUsage('stdout');
+      return;
+    }
+    const options = parsePlanGraphOptions(rest);
+    try {
+      const graph = buildPlanGraph({ root: process.cwd(), stage: options.stage, direction: options.direction, plan: options.plan });
+      for (const warning of graph.warnings) console.error(`WARN ${warning}`);
+      if (options.format === 'json') {
+        console.log(JSON.stringify(graph, null, 2));
+      } else if (options.format === 'mermaid') {
+        process.stdout.write(renderPlanGraphMermaid(graph));
+      } else {
+        process.stdout.write(renderPlanGraphAscii(graph));
       }
       return;
     } catch (error) {

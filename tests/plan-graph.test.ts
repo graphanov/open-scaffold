@@ -1,0 +1,262 @@
+import { describe, expect, it } from 'vitest';
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import {
+  buildPlanGraph,
+  extractDependencyReferences,
+  normalizePlanReference,
+  renderPlanGraphAscii,
+  renderPlanGraphMermaid,
+  type PlanGraphEdge,
+} from '../src/plan-graph.js';
+
+const repoRoot = resolve(import.meta.dirname, '..');
+const tsx = join(repoRoot, 'node_modules/.bin/tsx');
+const cli = join(repoRoot, 'src/cli.ts');
+
+type Stage = 'active' | 'backlog' | 'blocked' | 'done';
+
+function tempScaffold(prefix = 'osc-plan-graph-') {
+  const root = mkdtempSync(join(tmpdir(), prefix));
+  for (const stage of ['active', 'backlog', 'blocked', 'done']) mkdirSync(join(root, `.osc/plans/${stage}`), { recursive: true });
+  mkdirSync(join(root, '.osc/releases'), { recursive: true });
+  writeFileSync(join(root, 'MISSION.md'), '# Mission\n\nTest graph.\n');
+  return root;
+}
+
+function planText(slug: string, stage: Stage, context = '', openQuestions = '- None.') {
+  return `# Plan: ${slug}\n\n## Status\n\n${stage}\n\n## Context\n\n${context || `Context for ${slug}.`}\n\n## Goal\n\nShip ${slug}.\n\n## Constraints / Out of scope\n\n- Read-only.\n\n## Files to touch\n\n- \`src/example.ts\` — example.\n\n## Acceptance criteria\n\n- [ ] It works.\n\n## Verification steps\n\n1. Run tests.\n\n## Open questions\n\n${openQuestions}\n`;
+}
+
+function writePlan(root: string, stage: Stage, slug: string, context = '', openQuestions = '- None.') {
+  writeFileSync(join(root, `.osc/plans/${stage}/${slug}.md`), planText(slug, stage, context, openQuestions));
+}
+
+function edgeKey(edge: PlanGraphEdge) {
+  return `${edge.from}->${edge.to}:${edge.relationship}`;
+}
+
+describe('plan dependency graph', () => {
+  it('extracts explicit dependency references from supported plan text patterns', () => {
+    const text = [
+      'depends on: 002-refactor, 003-package-sync',
+      'blocks: 004-web-dashboard',
+      'follows: 005-base-architecture',
+      'blocked by: 006-owner-gate',
+      'Use `osc task link T-001 --plan 007-task-bridge` after implementation.',
+      'See plan 008-public-docs before updating README.',
+      'inherits from: .osc/plans/done/009-parent-plan.md',
+      'depends on: [decision](https://example.com/decision), 010-real-plan',
+      'depends on: 011-auth-and-billing',
+      'depends on: owner approval',
+    ].join('\n');
+
+    expect(extractDependencyReferences(text).map((edge) => edgeKey(edge))).toEqual([
+      'source->002-refactor:depends_on',
+      'source->003-package-sync:depends_on',
+      'source->004-web-dashboard:blocks',
+      'source->005-base-architecture:follows',
+      'source->006-owner-gate:depends_on',
+      'source->007-task-bridge:follows',
+      'source->008-public-docs:follows',
+      'source->009-parent-plan:follows',
+      'source->010-real-plan:depends_on',
+      'source->011-auth-and-billing:depends_on',
+    ]);
+  });
+
+  it('builds a stage-filtered DAG with found dependency nodes, standalone nodes, unresolved warnings, and cycle warnings', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '001-feature', 'depends on: 002-refactor\nblocks: 003-docs\ndepends on: missing-plan');
+    writePlan(root, 'backlog', '002-refactor', 'follows: 004-foundation');
+    writePlan(root, 'backlog', '003-docs');
+    writePlan(root, 'done', '004-foundation', 'follows: 002-refactor');
+    writePlan(root, 'active', '005-standalone');
+
+    const graph = buildPlanGraph({ root, stage: 'active' });
+
+    expect(graph.nodes.map((node) => `${node.slug}:${node.stage}`)).toEqual([
+      '001-feature:active',
+      '002-refactor:backlog',
+      '003-docs:backlog',
+      '004-foundation:done',
+      '005-standalone:active',
+      'missing-plan:unresolved',
+    ]);
+    expect(graph.edges.map(edgeKey)).toEqual([
+      '001-feature->002-refactor:depends_on',
+      '001-feature->003-docs:blocks',
+      '001-feature->missing-plan:depends_on',
+      '002-refactor->004-foundation:follows',
+      '004-foundation->002-refactor:follows',
+    ]);
+    expect(graph.warnings).toContain('Unresolved dependency: 001-feature references missing-plan');
+    expect(graph.warnings.some((warning) => warning.includes('Circular dependency detected'))).toBe(true);
+  });
+
+  it('warns when blocks references a missing plan', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '020-blocker', 'blocks: missing-dependent');
+
+    const graph = buildPlanGraph({ root, plan: '020-blocker' });
+
+    expect(graph.edges.map(edgeKey)).toEqual(['020-blocker->missing-dependent:blocks']);
+    expect(graph.nodes.map((node) => `${node.slug}:${node.stage}`)).toEqual([
+      '020-blocker:active',
+      'missing-dependent:unresolved',
+    ]);
+    expect(graph.warnings).toContain('Unresolved dependency: 020-blocker references missing-dependent');
+  });
+
+  it('scans explicit dependency markers outside context and open questions', () => {
+    const root = tempScaffold();
+    writeFileSync(
+      join(root, '.osc/plans/active/012-release.md'),
+      planText('012-release', 'active').replace(
+        '## Verification steps\n\n1. Run tests.',
+        '## Verification steps\n\ndepends on: 013-verification-blocker\n\n1. Run tests.',
+      ),
+    );
+    writePlan(root, 'backlog', '013-verification-blocker');
+
+    const graph = buildPlanGraph({ root, plan: '012-release' });
+
+    expect(graph.edges.map(edgeKey)).toEqual(['012-release->013-verification-blocker:depends_on']);
+    expect(graph.nodes.map((node) => `${node.slug}:${node.stage}`)).toEqual([
+      '012-release:active',
+      '013-verification-blocker:backlog',
+    ]);
+  });
+
+  it('includes non-root blockers when active-stage plans depend on them', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '010-active-work');
+    writePlan(root, 'backlog', '011-blocking-foundation', 'blocks: 010-active-work');
+
+    const graph = buildPlanGraph({ root, stage: 'active' });
+
+    expect(graph.nodes.map((node) => `${node.slug}:${node.stage}`)).toEqual([
+      '010-active-work:active',
+      '011-blocking-foundation:backlog',
+    ]);
+    expect(graph.edges.map(edgeKey)).toEqual(['011-blocking-foundation->010-active-work:blocks']);
+  });
+
+  it('renders ASCII and Mermaid graphs without external dependencies', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '001-feature', 'depends on: 002-refactor');
+    writePlan(root, 'backlog', '002-refactor');
+
+    const graph = buildPlanGraph({ root });
+    const ascii = renderPlanGraphAscii(graph);
+    const mermaid = renderPlanGraphMermaid(graph);
+
+    expect(ascii).toContain('Plan dependency graph');
+    expect(ascii).toContain('- 001-feature [active] Ship 001-feature.');
+    expect(ascii).toContain('depends_on -> 002-refactor [backlog]');
+    expect(mermaid).toContain('flowchart TD');
+    expect(mermaid).toContain('-->|depends_on|');
+    expect(mermaid).not.toContain('<script');
+    expect(mermaid).not.toContain('http://');
+    expect(mermaid).not.toContain('https://');
+  });
+
+  it('normalizes only safe plan references', () => {
+    expect(normalizePlanReference('001-feature.md')).toBe('001-feature');
+    expect(normalizePlanReference('.osc/plans/done/009-parent-plan.md')).toBe('009-parent-plan');
+    expect(normalizePlanReference('../foo')).toBeNull();
+    expect(normalizePlanReference('bad*slug')).toBeNull();
+  });
+
+  it('keeps Mermaid node IDs collision-free for similar slugs', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', 'a-b', 'depends on: a_b');
+    writePlan(root, 'backlog', 'a_b');
+
+    const mermaid = renderPlanGraphMermaid(buildPlanGraph({ root, stage: 'active' }));
+
+    expect(mermaid).toContain('p_61_2d_62["a-b (active)"]');
+    expect(mermaid).toContain('p_61_5f_62["a_b (backlog)"]');
+    expect(mermaid).toContain('p_61_2d_62 -->|depends_on| p_61_5f_62');
+  });
+
+  it('honors direction filters for non-focused stage graphs', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '001-feature', 'depends on: 002-refactor');
+    writePlan(root, 'backlog', '002-refactor');
+
+    const upstreamOnly = buildPlanGraph({ root, stage: 'active', direction: 'upstream' });
+    const downstreamOnly = buildPlanGraph({ root, stage: 'active', direction: 'downstream' });
+
+    expect(upstreamOnly.edges.map(edgeKey)).toEqual([]);
+    expect(upstreamOnly.nodes.map((node) => node.slug)).toEqual(['001-feature']);
+    expect(downstreamOnly.edges.map(edgeKey)).toEqual(['001-feature->002-refactor:depends_on']);
+  });
+
+  it('rejects invalid CLI --plan values instead of returning an unfocused graph', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '001-feature');
+
+    const result = spawnSync(tsx, [cli, 'plan', 'graph', '--format', 'json', '--plan', '../foo'], { cwd: root, encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Invalid value for --plan: ../foo');
+  });
+
+  it('rejects direction-scoped all-stage graphs because there is no focus root', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '001-feature', 'depends on: 002-refactor');
+    writePlan(root, 'backlog', '002-refactor');
+
+    expect(() => buildPlanGraph({ root, stage: 'all', direction: 'upstream' })).toThrow(/--stage all only supports --direction both/);
+
+    const focused = buildPlanGraph({ root, stage: 'all', direction: 'downstream', plan: '001-feature' });
+    expect(focused.edges.map(edgeKey)).toEqual(['001-feature->002-refactor:depends_on']);
+
+    const result = spawnSync(tsx, [cli, 'plan', 'graph', '--stage', 'all', '--direction', 'upstream'], { cwd: root, encoding: 'utf8' });
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('--stage all only supports --direction both');
+  });
+
+  it('prints machine-readable JSON from the CLI and filters focused upstream/downstream neighborhoods', () => {
+    const root = tempScaffold();
+    writePlan(root, 'active', '001-feature', 'depends on: 002-refactor');
+    writePlan(root, 'backlog', '002-refactor', 'blocks: 003-docs');
+    writePlan(root, 'backlog', '003-docs');
+
+    const json = spawnSync(tsx, [cli, 'plan', 'graph', '--format', 'json', '--stage', 'all'], { cwd: root, encoding: 'utf8' });
+    expect(json.status).toBe(0);
+    expect(json.stderr).toBe('');
+    const parsed = JSON.parse(json.stdout);
+    expect(parsed.schema).toBe('open-scaffold.plan-graph.v1');
+    expect(parsed.edges.map(edgeKey)).toEqual([
+      '001-feature->002-refactor:depends_on',
+      '002-refactor->003-docs:blocks',
+    ]);
+
+    const downstream = spawnSync(tsx, [cli, 'plan', 'graph', '--format', 'json', '--plan', '001-feature', '--direction', 'downstream'], { cwd: root, encoding: 'utf8' });
+    expect(JSON.parse(downstream.stdout).edges.map(edgeKey)).toEqual(['001-feature->002-refactor:depends_on']);
+
+    const blockedDownstream = spawnSync(tsx, [cli, 'plan', 'graph', '--format', 'json', '--plan', '003-docs', '--direction', 'downstream'], { cwd: root, encoding: 'utf8' });
+    expect(JSON.parse(blockedDownstream.stdout).edges.map(edgeKey)).toEqual(['002-refactor->003-docs:blocks']);
+
+    const upstream = spawnSync(tsx, [cli, 'plan', 'graph', '--format', 'json', '--plan', '002-refactor', '--direction', 'upstream'], { cwd: root, encoding: 'utf8' });
+    expect(JSON.parse(upstream.stdout).edges.map(edgeKey)).toEqual([
+      '001-feature->002-refactor:depends_on',
+      '002-refactor->003-docs:blocks',
+    ]);
+  });
+
+  it('prints an empty-state message when no plans exist', () => {
+    const root = tempScaffold();
+
+    const result = spawnSync(tsx, [cli, 'plan', 'graph'], { cwd: root, encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('No plans found');
+    expect(result.stderr).toBe('');
+  });
+});
