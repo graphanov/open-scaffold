@@ -71,6 +71,18 @@ Use for:
 
 Default visibility: public-safe only. Never post secrets, private logs, customer data, or unreviewed sensitive transcripts.
 
+### Web dashboard
+
+A static browser cockpit generated from repository state.
+
+Use for:
+
+- local visual review without a terminal dashboard;
+- stakeholder-friendly snapshots of mission, plans, tasks, evidence, and verification status;
+- public-safe build-in-public snapshots that still point back to repository truth.
+
+Default visibility: same as the repository. The generated page is read-only and self-contained: no backend, no network dependency, no external scripts, no analytics, and no chat transcript storage. `osc dashboard --web` writes a static `.osc/dashboard.html` file. `osc dashboard --serve` serves the same view on localhost for local review only; `--open` prints the browser URL without spawning an OS command from core.
+
 ### Stakeholder room
 
 A curated room for clients, sponsors, or non-technical stakeholders.

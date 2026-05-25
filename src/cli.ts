@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
 import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
 import { runDashboard, type DashboardRunOptions } from './dashboard.js';
 import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
+import { openDashboardUrl, serveDashboard, writeWebDashboard } from './dashboard-web.js';
 import { collectEvidence } from './evidence.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
@@ -60,6 +61,8 @@ Usage:
   osc cockpit config
   osc cockpit test [--dry-run]
   osc cockpit post --event <event> [--message <text>] [--run-id <id>] [--plan <slug>] [--task-id <id>] [--pr <url>] [--evidence-path <path>] [--dry-run]
+  osc dashboard --web [--out <path>]
+  osc dashboard --serve [--port <port>] [--open]
   osc mcp serve [--repo <path>] [--allow-write] [--validate]
   osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
   osc verify
@@ -1865,6 +1868,131 @@ function runtimes(args: string[]): void {
   process.exit(2);
 }
 
+interface WebDashboardOptions {
+  mode: 'web' | 'serve';
+  out?: string;
+  port?: number;
+  open: boolean;
+}
+
+function printWebDashboardUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc dashboard --web [--out <path>] | osc dashboard --serve [--port <port>] [--open]', stream);
+}
+
+function takeWebDashboardValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${flag}`);
+    printWebDashboardUsage();
+    process.exit(2);
+  }
+  return value;
+}
+
+function parseWebDashboardOptions(args: string[]): WebDashboardOptions {
+  let mode: 'web' | 'serve' | undefined;
+  let out: string | undefined;
+  let port: number | undefined;
+  let open = false;
+
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--web':
+        if (mode && mode !== 'web') {
+          console.error('Choose either --web or --serve, not both.');
+          printWebDashboardUsage();
+          process.exit(2);
+        }
+        mode = 'web';
+        break;
+      case '--serve':
+        if (mode && mode !== 'serve') {
+          console.error('Choose either --web or --serve, not both.');
+          printWebDashboardUsage();
+          process.exit(2);
+        }
+        mode = 'serve';
+        break;
+      case '--out':
+        out = takeWebDashboardValue(args, i, flag);
+        i += 1;
+        break;
+      case '--port': {
+        const raw = takeWebDashboardValue(args, i, flag);
+        const parsed = Number.parseInt(raw, 10);
+        if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
+          console.error(`Invalid value for --port: ${raw}. Expected a port between 0 and 65535.`);
+          process.exit(2);
+        }
+        port = parsed;
+        i += 1;
+        break;
+      }
+      case '--open':
+        open = true;
+        break;
+      default:
+        console.error(`Unknown option for dashboard: ${flag}`);
+        printWebDashboardUsage();
+        process.exit(2);
+    }
+  }
+
+  if (!mode) {
+    console.error('Missing required option: --web or --serve');
+    printWebDashboardUsage();
+    process.exit(2);
+  }
+  if (mode === 'web' && port !== undefined) {
+    console.error('--port is only supported with --serve');
+    process.exit(2);
+  }
+  if (mode === 'web' && open) {
+    console.error('--open is only supported with --serve');
+    process.exit(2);
+  }
+  if (mode === 'serve' && out) {
+    console.error('--out is only supported with --web');
+    process.exit(2);
+  }
+
+  return { mode, out, port, open };
+}
+
+function isWebDashboardInvocation(args: string[]): boolean {
+  return args.some((arg) => ['--web', '--serve', '--out', '--port', '--open'].includes(arg));
+}
+
+async function webDashboardCommand(args: string[]): Promise<void> {
+  if (args.length === 0 || isHelpArg(args[0])) {
+    printWebDashboardUsage('stdout');
+    return;
+  }
+  const options = parseWebDashboardOptions(args);
+  try {
+    if (options.mode === 'web') {
+      const result = writeWebDashboard({ root: process.cwd(), out: options.out });
+      const relativePath = relative(process.cwd(), result.path);
+      console.log(`Generated web dashboard: ${relativePath.startsWith('..') ? result.path : relativePath}`);
+      console.log(`Bytes: ${result.bytes}`);
+      return;
+    }
+
+    const handle = await serveDashboard({ root: process.cwd(), port: options.port });
+    console.log(`Serving Open Scaffold dashboard at ${handle.url}`);
+    if (options.open) openDashboardUrl(handle.url);
+    process.once('SIGINT', () => {
+      handle.close()
+        .then(() => process.exit(0))
+        .catch(() => process.exit(1));
+    });
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
 function printCockpitUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage(`Usage: osc cockpit config
   osc cockpit test [--dry-run]
@@ -2009,7 +2137,11 @@ async function main(): Promise<void> {
       await status(args);
       return;
     case 'dashboard':
-      await dashboardCommand(args);
+      if (isWebDashboardInvocation(args)) {
+        await webDashboardCommand(args);
+      } else {
+        await dashboardCommand(args);
+      }
       return;
     case 'task':
       taskCommand(args);
