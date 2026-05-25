@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-24: align devcontainer image with published package and workspace post-create install — see .osc/plans/active/064-devcontainer-profile-amendment-1.md
 - 2026-05-24: closed 063-github-actions-ci-templates — added GitHub Actions CI templates
 - 2026-05-24: closed 098-omo-security-hardening-package-sync — published open-scaffold@0.4.18 and aligned GitHub Latest Release
 - 2026-05-23: closed 097-omo-security-hardening — hardened release-path and dependency security posture

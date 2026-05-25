@@ -32,6 +32,9 @@ describe('npm package payload', () => {
     expect(paths).toContain('.osc/plans/README.md');
     expect(paths).toContain('.osc/plans/handoff-template.md');
     expect(paths).toContain('.osc/releases/README.md');
+    expect(paths).toContain('.devcontainer/devcontainer.json');
+    expect(paths).toContain('.devcontainer/Dockerfile');
+    expect(paths).toContain('.devcontainer/README.md');
     expect(paths).toContain('dist/cli.js');
     expect(paths).toContain('dist/mcp-cli.js');
     expect(paths).toContain('README.md');

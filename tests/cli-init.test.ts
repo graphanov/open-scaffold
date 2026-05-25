@@ -120,9 +120,13 @@ describe('osc init CLI', () => {
     expect(readme).toContain('npx open-scaffold plan new');
     expect(readme).toContain('npx open-scaffold evidence new');
     expect(readme).toContain('cp .osc/plans/handoff-template.md');
+    expect(readme).toContain('Optional Dev Container');
     expect(minimum).toContain('npx open-scaffold plan new');
     expect(minimum).toContain('npx open-scaffold evidence new');
     expect(minimum).toContain('copy `.osc/plans/handoff-template.md`');
+    expect(existsSync(join(target, '.devcontainer/devcontainer.json'))).toBe(true);
+    expect(existsSync(join(target, '.devcontainer/Dockerfile'))).toBe(true);
+    expect(existsSync(join(target, 'docs/DEV_CONTAINER.md'))).toBe(true);
   });
 
   it('exits non-zero rather than overwriting an existing file', () => {
@@ -173,6 +177,15 @@ describe('osc init CLI', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('osc init --from-existing --tier min --target <dir> [--force]');
+  });
+
+  it('prints the package version for container smoke checks', () => {
+    const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')) as { version: string };
+    const result = spawnSync(tsx, [cli, '--version'], { encoding: 'utf8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe(packageJson.version);
+    expect(result.stderr).toBe('');
   });
 
   it('prints init-specific help without treating --help as an unknown option', () => {

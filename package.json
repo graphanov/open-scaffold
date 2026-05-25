@@ -39,6 +39,7 @@
   },
   "files": [
     "dist",
+    ".devcontainer",
     ".osc/.gitignore",
     ".osc/cockpit.example.json",
     ".osc/RULES.md",

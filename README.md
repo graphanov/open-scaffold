@@ -7,6 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Template](https://img.shields.io/badge/GitHub-Template-blue.svg)](https://github.com/graphanov/open-scaffold/generate)
 [![Works with](https://img.shields.io/badge/Works%20with-Any%20agent-green.svg)](#runtime-neutral-by-design)
+[![Dev Container](https://img.shields.io/badge/Dev%20Container-Ready-0A7EBE.svg)](docs/DEV_CONTAINER.md)
 
 </div>
 
@@ -144,6 +145,8 @@ npm run build
 node dist/cli.js init --tier standard --target <your-project>
 ```
 
+Optional container path: clone the repo, open it with VS Code Dev Containers or GitHub Codespaces, and the bundled `.devcontainer/` provides Node.js 22, npm, git, and `osc`. See [`docs/DEV_CONTAINER.md`](docs/DEV_CONTAINER.md) for Docker-only use and customization.
+
 ### 2. Define the mission
 
 ```bash
@@ -274,6 +277,7 @@ Skip it for:
 ## Key docs
 
 - [`docs/WHY_OPEN_SCAFFOLD.md`](docs/WHY_OPEN_SCAFFOLD.md) — visual story and fit.
+- [`docs/DEV_CONTAINER.md`](docs/DEV_CONTAINER.md) — optional container setup for consistent team onboarding.
 - [`docs/EVOLUTION_LOOP.md`](docs/EVOLUTION_LOOP.md) — attempts, frontier promotion, and `osc evolve`.
 - [`docs/EXAMPLES.md`](docs/EXAMPLES.md) — examples and viewer demos.
 - [`docs/OPEN_SCAFFOLD_SYSTEM.md`](docs/OPEN_SCAFFOLD_SYSTEM.md) — full system map and boundaries.

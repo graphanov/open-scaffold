@@ -1,0 +1,3 @@
+# Dev Container
+
+Open this repository with [VS Code Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers) or [GitHub Codespaces](https://docs.github.com/codespaces) and the container will provide Node.js, npm, git, and `osc` without extra host setup. The container builds from `.devcontainer/Dockerfile`, then `postCreateCommand` refreshes the workspace version of `osc` only when the mounted package is Open Scaffold itself and otherwise leaves the preinstalled CLI ready for downstream scaffolds. To use it without VS Code, build the image with `docker build -t osc-devcontainer -f .devcontainer/Dockerfile .devcontainer/` and run commands with `docker run --rm osc-devcontainer osc --version`.

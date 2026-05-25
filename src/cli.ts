@@ -84,6 +84,15 @@ Run binding options:
 Generic open-scaffold generates prompts/artifacts only. External coordinators/agents and runtime harnesses perform autonomous spawning.`);
 }
 
+function packageVersion(): string {
+  try {
+    const parsed = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version?: unknown };
+    return typeof parsed.version === 'string' && parsed.version.trim() ? parsed.version : '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
 function requireArg(args: string[], name: string): string {
   const value = args[0];
   if (!value) {
@@ -1930,6 +1939,11 @@ async function main(): Promise<void> {
     case '--help':
     case 'help':
       printHelp();
+      return;
+    case '-v':
+    case '--version':
+    case 'version':
+      console.log(packageVersion());
       return;
     case 'init':
       init(args);

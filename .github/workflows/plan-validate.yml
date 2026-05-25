@@ -53,7 +53,12 @@ jobs:
             '.osc/plans/blocked/*.md' \
             '.osc/plans/blocked/**/*.md' \
             '.osc/plans/done/*.md' \
-            '.osc/plans/done/**/*.md' | sort > changed-plans.txt
+            '.osc/plans/done/**/*.md' | sort | while IFS= read -r plan; do
+              case "$plan" in
+                *-amendment-[0-9]*.md) continue ;;
+                *) printf '%s\n' "$plan" ;;
+              esac
+            done > changed-plans.txt
           count="$(wc -l < changed-plans.txt | tr -d ' ')"
           echo "count=$count" >> "$GITHUB_OUTPUT"
           if [[ "$count" == "0" ]]; then

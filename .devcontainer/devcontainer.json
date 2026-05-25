@@ -1,0 +1,17 @@
+{
+  "name": "Open Scaffold",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "remoteUser": "node",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "postCreateCommand": "if node -e \"const p=require('./package.json'); process.exit(p.name === 'open-scaffold' && p.bin && p.bin.osc ? 0 : 1)\" 2>/dev/null; then npm install && npm run build && npm install -g .; else osc --version; fi",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  }
+}
