@@ -20,7 +20,7 @@ Evidence:
 
 - Plan: `.osc/plans/done/069-v1-launch.md`
 - Evidence note: `.osc/releases/2026-05-25-v1-launch.md`
-- PR: pending until opened
+- PR: https://github.com/graphanov/open-scaffold/pull/113
 
 ## v0.4.x — Adoption, package, and operating-surface hardening
 
