@@ -53,6 +53,17 @@ osc plan validate <slug-or-path> --strict --json
 
 Plan validation is mechanical: it catches missing sections, TODO markers, empty acceptance criteria, status/folder drift, vague goals, untagged blocking questions, and heading-order issues. It is not a semantic product review.
 
+When several plans reference each other, render a read-only dependency map before picking the next slice:
+
+```bash
+osc plan graph
+osc plan graph --format mermaid
+osc plan graph --format json --stage all
+osc plan graph --plan <slug> --direction upstream
+```
+
+The graph parser reads explicit plan references such as `depends on: <slug>`, `blocks: <slug>`, `blocked by: <slug>`, `follows: <slug>`, `inherits from: <slug>`, `see plan <slug>`, and `--plan <slug>`. It warns about unresolved or circular dependencies without mutating plans.
+
 Use `active` directly when execution is immediate. Use `blocked` or `backlog` when you need to park work without deleting the plan:
 
 ```bash

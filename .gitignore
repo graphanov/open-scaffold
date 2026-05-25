@@ -25,5 +25,10 @@ node_modules/
 dist/
 coverage/
 
+# Python reference parser artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
 # Owner development artifacts (not shipped with template)
 .osc-dev/

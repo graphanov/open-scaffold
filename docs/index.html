@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Open Scaffold — repo-native AI work records</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #111111;
+        --muted: #5f646d;
+        --line: #d9dce2;
+        --paper: #f6f5f1;
+        --panel: #ffffff;
+        --accent: #b42318;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+        line-height: 1.55;
+      }
+      main {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 48px 24px 72px;
+      }
+      nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 18px;
+        margin-bottom: 54px;
+      }
+      nav a, .links a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--ink); }
+      .brand { font-weight: 750; letter-spacing: -0.03em; }
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+        gap: 40px;
+        align-items: start;
+      }
+      h1 {
+        margin: 0 0 20px;
+        font-size: clamp(42px, 7vw, 88px);
+        line-height: 0.94;
+        letter-spacing: -0.07em;
+      }
+      h2 { margin: 0 0 14px; font-size: 28px; letter-spacing: -0.04em; }
+      h3 { margin: 0 0 10px; font-size: 18px; }
+      p { margin: 0 0 16px; }
+      .lead { font-size: clamp(20px, 2.5vw, 30px); color: #24272d; max-width: 760px; }
+      .muted { color: var(--muted); }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--ink);
+        padding: 22px;
+        box-shadow: 10px 10px 0 #d9d5ca;
+      }
+      code, pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      }
+      pre {
+        overflow: auto;
+        background: #111111;
+        color: #f7f4ea;
+        padding: 18px;
+        margin: 18px 0 0;
+        border: 1px solid #111111;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin: 42px 0;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 20px;
+        min-height: 180px;
+      }
+      .strip {
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        padding: 26px 0;
+        margin: 46px 0;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .strip strong { display: block; font-size: 22px; }
+      .accent { color: var(--accent); }
+      ul { padding-left: 20px; margin-top: 0; }
+      footer { border-top: 1px solid var(--line); padding-top: 22px; margin-top: 52px; }
+      @media (max-width: 820px) {
+        .hero, .grid, .strip { grid-template-columns: 1fr; }
+        nav { align-items: flex-start; flex-direction: column; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav>
+        <div class="brand">open-scaffold</div>
+        <div class="links">
+          <a href="../README.md">README</a>
+          <span aria-hidden="true"> · </span>
+          <a href="STABILITY.md">Stability</a>
+          <span aria-hidden="true"> · </span>
+          <a href="CHANGELOG.md">Changelog</a>
+          <span aria-hidden="true"> · </span>
+          <a href="https://github.com/graphanov/open-scaffold">GitHub</a>
+        </div>
+      </nav>
+
+      <section class="hero">
+        <div>
+          <h1>AI work needs a repo record.</h1>
+          <p class="lead">Open Scaffold keeps the goal, plan, handoff package, evidence, approval trail, and lessons from repeated AI-assisted attempts in files your team can review.</p>
+        </div>
+        <aside class="panel">
+          <h2>First command</h2>
+          <p>Start small in a new or existing repository.</p>
+          <pre><code>npx open-scaffold init --tier min --target .</code></pre>
+          <p class="muted" style="margin-top: 16px;">Use <code>--tier standard</code> for README, roadmap, docs, and agent instructions.</p>
+        </aside>
+      </section>
+
+      <div class="strip" aria-label="30 second summary">
+        <div><strong>Problem</strong><span class="muted">AI work disappears into chat, terminals, and memory.</span></div>
+        <div><strong>Audience</strong><span class="muted">Developers and teams using agents for work that must be reviewed later.</span></div>
+        <div><strong>Method</strong><span class="muted">Mission, plans, run packets, evidence, and close records live in the repo.</span></div>
+        <div><strong>Boundary</strong><span class="muted">Agents do the work. Open Scaffold records and verifies the work.</span></div>
+      </div>
+
+      <section class="grid">
+        <article class="card">
+          <h3>Solo developer</h3>
+          <p>Resume work after a week away. The mission, active plan, verification commands, and latest evidence are in the repository instead of an old chat.</p>
+        </article>
+        <article class="card">
+          <h3>Team PR review</h3>
+          <p>Attach intent, constraints, acceptance criteria, tests, and review state to the branch so reviewers see why the change exists.</p>
+        </article>
+        <article class="card">
+          <h3>Client or audit-sensitive delivery</h3>
+          <p>Keep a lightweight trail of what was requested, what was produced, what passed, and what humans approved.</p>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>Stable in v1.0.0</h2>
+        <p>The stable contract is the repo protocol: <code>MISSION.md</code>, <code>ROADMAP.md</code>, plan folders, the 7-section plan schema, amendments, evidence notes, <code>verify.sh</code>, and day-two CLI helpers such as <code>osc plan</code>, <code>osc amend</code>, <code>osc close</code>, <code>osc evidence</code>, <code>osc verify</code>, and <code>osc status</code>.</p>
+        <p>Experimental surfaces include runtime profiles, MCP, cockpit webhooks, local task database helpers, dashboards, runtime packages, and native spawning research.</p>
+        <p><a href="STABILITY.md">Read the full stability contract.</a></p>
+      </section>
+
+      <section style="margin-top: 44px;">
+        <h2>What it creates</h2>
+        <pre><code>MISSION.md                         why this repo exists
+.osc/plans/                        scoped work with acceptance criteria
+.osc/runs/&lt;run_id&gt;/run.json         handoff package for a worker or reviewer
+.osc/releases/                     evidence notes and release records
+.osc/evolution/&lt;loop_id&gt;/           repeated attempts and frontier history</code></pre>
+      </section>
+
+      <footer class="muted">
+        <p><strong class="accent">Owner gates stay human.</strong> Merge, npm publication, GitHub Release latest movement, deployment, and launch announcements require explicit approval.</p>
+      </footer>
+    </main>
+  </body>
+</html>
