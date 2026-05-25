@@ -48,6 +48,7 @@ describe('plan dependency graph', () => {
       'Use `osc task link T-001 --plan 007-task-bridge` after implementation.',
       'See plan 008-public-docs before updating README.',
       'inherits from: .osc/plans/done/009-parent-plan.md',
+      'depends on: [decision](https://example.com/decision), 010-real-plan',
     ].join('\n');
 
     expect(extractDependencyReferences(text).map((edge) => edgeKey(edge))).toEqual([
@@ -59,6 +60,7 @@ describe('plan dependency graph', () => {
       'source->007-task-bridge:follows',
       'source->008-public-docs:follows',
       'source->009-parent-plan:follows',
+      'source->010-real-plan:depends_on',
     ]);
   });
 
