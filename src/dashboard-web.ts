@@ -30,6 +30,7 @@ export interface DashboardPlanCard {
 export interface DashboardEvidenceNote {
   file: string;
   path: string;
+  dashboardHref: string;
   title: string;
   summary: string;
 }
@@ -194,6 +195,7 @@ function collectEvidence(root: string, limit = 8): DashboardEvidenceNote[] {
       return {
         file,
         path: relative(root, path),
+        dashboardHref: `releases/${file}`,
         title: noteTitle(markdown, file),
         summary: firstParagraph(sections.get('Summary') ?? '') || 'Evidence note recorded.',
       };
@@ -268,7 +270,7 @@ function safeDashboardJson(data: WebDashboardData): string {
     .replace(/>/g, '\\u003e')
     .replace(/&/g, '\\u0026')
     .replace(/=/g, '\\u003d')
-    .replace(/\//g, '\\/')
+    .replace(/(https?:)\/\//g, '$1\\/\\/')
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
 }
@@ -384,7 +386,7 @@ function renderFlow() {
   return '<section class="card span-6"><h2>Identity chain</h2><div class="flow">' + steps + '</div></section>';
 }
 function renderEvidence() {
-  const notes = data.evidence.length ? data.evidence.map((note) => '<article class="evidence"><strong>' + esc(note.title) + '</strong><p>' + esc(note.summary) + '</p><small class="muted">' + esc(note.path) + '</small></article>').join('') : '<div class="empty">No evidence notes yet.</div>';
+  const notes = data.evidence.length ? data.evidence.map((note) => '<article class="evidence"><strong>' + esc(note.title) + '</strong><p>' + esc(note.summary) + '</p><a class="muted" href="' + esc(note.dashboardHref) + '">' + esc(note.path) + '</a></article>').join('') : '<div class="empty">No evidence notes yet.</div>';
   return '<section class="card span-6"><h2>Recent evidence</h2><div class="evidence-list">' + notes + '</div></section>';
 }
 document.getElementById('dashboard').innerHTML = '<div class="grid">' + renderMission() + renderValidation() + renderKpis() + renderColumns() + renderFlow() + renderEvidence() + '</div>';

@@ -82,9 +82,11 @@ Dashboard evidence exists.
     expect(html).toContain('Open Scaffold Dashboard');
     expect(html).toContain('001-dashboard');
     expect(html).toContain('Dashboard evidence exists.');
+    expect(html).toContain('href="');
+    expect(html).toContain('releases/2026-05-25-001-dashboard.md');
     expect(html).not.toMatch(/<link\b/i);
     expect(html).not.toMatch(/<script\s+[^>]*\bsrc=/i);
-    expect(html).not.toContain('src=');
+    expect(html).not.toMatch(/(?:href|src)=["']https?:\/\//i);
     expect(html).not.toContain('https://cdn.example');
   });
 
