@@ -9,7 +9,7 @@ Added a read-only browser dashboard for Open Scaffold state. The new `osc dashbo
 - Roadmap / issue / task: selected backlog plan `066-web-dashboard`.
 - Plan: `.osc/plans/done/066-web-dashboard.md`.
 - Run ID / run packet: N/A — direct repository automation slice, no external runtime packet.
-- Branch / PR: `feat/066-web-dashboard`; pending owner review PR.
+- Branch / PR: `feat/066-web-dashboard`; https://github.com/graphanov/open-scaffold/pull/110.
 
 ## Verification
 
