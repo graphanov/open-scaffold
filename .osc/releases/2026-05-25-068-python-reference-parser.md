@@ -9,7 +9,7 @@ Added a zero-dependency Python 3.10+ reference parser for Open Scaffold plan fil
 - Roadmap / issue / task: backlog plan 068, selected source `backlog_plan`.
 - Plan: `.osc/plans/done/068-python-reference-parser.md`
 - Run ID / run packet: N/A — runner automation prepared the branch directly from the selected plan.
-- Branch / PR: `feat/068-python-reference-parser`; Pull Request pending owner review.
+- Branch / PR: `feat/068-python-reference-parser`; Pull Request: https://github.com/graphanov/open-scaffold/pull/112
 
 ## Verification
 
