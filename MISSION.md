@@ -29,6 +29,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-26: closed 106-dispatch-adapter-glue-package-sync — Closed 106 dispatch adapter glue package sync after v1.0.3 npm and GitHub Release verification.
 - 2026-05-26: closed 103-osc-dispatch-adapter-glue — added explicit dispatch adapter glue
 - 2026-05-26: closed 105-codex-runtime-adapter-package-release-sync — published 1.0.2 Codex runtime preset package sync
 - 2026-05-26: closed 102-codex-runtime-adapter-package-hardening — hardened Codex runtime adapter path
