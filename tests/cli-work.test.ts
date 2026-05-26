@@ -123,6 +123,36 @@ describe('osc work --dry-run', () => {
     }
   });
 
+  it('prints follow-up commands relative to the invocation directory', () => {
+    const root = tempRepo();
+    try {
+      const nested = join(root, 'docs', 'notes');
+      mkdirSync(nested, { recursive: true });
+      const result = spawnSync(tsx, [cli, 'work', 'Add admin search', '--runtime', 'codex', '--workflow', 'execute', '--dry-run', '--json'], {
+        cwd: nested,
+        encoding: 'utf8',
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      const payload = JSON.parse(result.stdout);
+      expect(payload.candidatePlan.path).toBe('../../.osc/plans/active/draft-add-admin-search.md');
+      expect(payload.run.manifestPath).toMatch(/^\.osc\/runs\/.+\/run\.json$/);
+      expect(payload.run.manifest.artifacts.manifest).toBe(payload.run.manifestPath);
+      expect(payload.run.manifest.plan.path).toBe('../../.osc/plans/active/draft-add-admin-search.md');
+      expect(payload.dispatch.command).toMatch(/^osc dispatch \.osc\/runs\/.+\/run\.json --adapter runtime-omx$/);
+      expect(payload.dispatch.note).toContain('manifest path printed by a real osc run command');
+      expect(payload.nextCommands).toContain('osc run ../../.osc/plans/active/draft-add-admin-search.md --runtime codex --workflow execute --dry-run');
+      expect(payload.nextCommands).toContain('osc run ../../.osc/plans/active/draft-add-admin-search.md --runtime codex --workflow execute');
+      expect(payload.nextCommands).toContain('osc dispatch <manifest-path-from-osc-run-output> --adapter runtime-omx');
+      expect(payload.nextCommands.some((command: string) => command.includes('osc run .osc/plans/active/'))).toBe(false);
+      expect(existsSync(join(root, '.osc/runs'))).toBe(false);
+      expect(existsSync(join(root, '.osc/plans/active/draft-add-admin-search.md'))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('refuses unsafe adapter ids before printing copyable commands', () => {
     const root = tempRepo();
     try {

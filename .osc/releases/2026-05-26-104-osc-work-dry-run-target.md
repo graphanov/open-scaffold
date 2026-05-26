@@ -8,18 +8,19 @@ Added `osc work <task-description> --runtime <preset> --dry-run` as the first na
 
 - Roadmap / issue / task: Milestone 19 — Post-v1 adoption workflow target.
 - Plan: `.osc/plans/done/104-osc-work-dry-run-target.md`.
-- Pull Request: implementation PR assigned after branch push.
+- Pull Request: `graphanov/open-scaffold#129`.
 - Public package sync: pending follow-up because this adds package-visible CLI behavior.
 
 ## Verification
 
-- `npm test -- tests/cli-work.test.ts tests/artifacts.test.ts` — PASS, 13 tests.
-- `npm test` — PASS, 43 files / 378 tests.
+- `npm test -- tests/cli-work.test.ts tests/artifacts.test.ts` — PASS, 14 tests.
+- `npm test` — PASS, 43 files / 379 tests.
 - `npm run build` — PASS.
 - `./verify.sh --strict` — PASS, 10 pass / 0 fail / 0 warn.
 - `git diff --check` — PASS.
 - Scratch smoke `npm run osc -- work "Add a /health endpoint with tests" --runtime codex --dry-run` — PASS; output includes candidate plan preview, run packet preview, dispatch preview, scope confirmation, and no-spawn/no-write boundary text.
 - Scratch JSON smoke `node_modules/.bin/tsx src/cli.ts work "Add a /health endpoint with tests" --runtime codex --dry-run --json` — PASS; JSON has schema `open-scaffold.work-dry-run.v1`, no-write/no-spawn booleans, executor spawning = `false`, and dispatch preview command.
+- Subdirectory JSON smoke using direct `tsx src/cli.ts work ... --runtime codex --workflow execute --dry-run --json` from `docs/notes/` — PASS; candidate plan, run manifest, dispatch preview, and suggested `osc run` commands render paths relative to invocation cwd, while the staged dispatch command uses the manifest path printed by the real `osc run`.
 - Private-marker scan over smoke outputs — PASS.
 
 ## Outcome

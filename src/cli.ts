@@ -1293,7 +1293,7 @@ function workCommand(args: string[]): void {
 
   const root = findScaffoldRoot(process.cwd()) ?? process.cwd();
   applyRuntimeSelection(options, root);
-  const preview = buildWorkDryRunPreview(root, intent, options, adapterId);
+  const preview = buildWorkDryRunPreview(root, intent, options, adapterId, process.cwd());
   if (json) {
     console.log(JSON.stringify(preview, null, 2));
   } else {

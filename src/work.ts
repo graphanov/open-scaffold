@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { isAbsolute, join, relative } from 'node:path';
 import { previewRunArtifacts, type RunArtifactOptions, type RunManifest } from './artifacts.js';
 import type { ParsedPlan } from './scaffold.js';
 
@@ -47,6 +47,12 @@ function cleanSentence(value: string): string {
   const trimmed = value.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().replace(/\s+/g, ' ');
   if (!trimmed) return 'Complete the requested work.';
   return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+function toDisplayPath(root: string, cwd: string, path: string): string {
+  const absolute = isAbsolute(path) ? path : join(root, path);
+  const display = relative(cwd, absolute).split('\\').join('/');
+  return display || '.';
 }
 
 function defaultAdapterId(runtime: string): string | null {
@@ -151,16 +157,21 @@ function buildCandidatePlan(root: string, intent: string): ParsedPlan {
   };
 }
 
-export function buildWorkDryRunPreview(root: string, intent: string, options: RunArtifactOptions, adapterId?: string): WorkDryRunPreview {
+export function buildWorkDryRunPreview(root: string, intent: string, options: RunArtifactOptions, adapterId?: string, cwd = root): WorkDryRunPreview {
   const runtime = options.runtime ?? 'plain';
   const plan = buildCandidatePlan(root, intent);
-  const runPreview = previewRunArtifacts(root, plan, 'run', options);
+  const artifactRoot = cwd;
+  const runPreview = previewRunArtifacts(artifactRoot, plan, 'run', { ...options, scaffoldRoot: root });
   const selectedAdapter = adapterId ?? defaultAdapterId(runtime);
   const workflowFlag = options.workflow ? ` --workflow ${options.workflow}` : '';
+  const manifestPath = toDisplayPath(root, cwd, runPreview.manifestPath);
   const dispatchCommand = selectedAdapter
-    ? `osc dispatch ${runPreview.manifest.artifacts.manifest} --adapter ${selectedAdapter}`
-    : `osc dispatch ${runPreview.manifest.artifacts.manifest} --adapter <adapter-id>`;
-  const planPath = `.osc/plans/active/${plan.slug}.md`;
+    ? `osc dispatch ${manifestPath} --adapter ${selectedAdapter}`
+    : `osc dispatch ${manifestPath} --adapter <adapter-id>`;
+  const dispatchNextCommand = selectedAdapter
+    ? `osc dispatch <manifest-path-from-osc-run-output> --adapter ${selectedAdapter}`
+    : 'osc dispatch <manifest-path-from-osc-run-output> --adapter <adapter-id>';
+  const planPath = toDisplayPath(root, cwd, plan.path);
   return {
     schemaVersion: 'open-scaffold.work-dry-run.v1',
     intent: intent.trim(),
@@ -177,7 +188,7 @@ export function buildWorkDryRunPreview(root: string, intent: string, options: Ru
     },
     run: {
       runId: runPreview.runId,
-      manifestPath: runPreview.manifest.artifacts.manifest,
+      manifestPath,
       manifest: runPreview.manifest,
       packageMarkdown: runPreview.packageMarkdown,
     },
@@ -185,15 +196,15 @@ export function buildWorkDryRunPreview(root: string, intent: string, options: Ru
       adapterId: selectedAdapter,
       command: dispatchCommand,
       note: selectedAdapter
-        ? 'Dispatch is a preview only. It requires a reviewed project-local adapter config before execution.'
-        : 'Choose a reviewed project-local adapter config before dispatching this run packet.',
+        ? 'Dispatch is a preview only. Use the manifest path printed by a real osc run command and a reviewed project-local adapter config before execution.'
+        : 'Choose a reviewed project-local adapter config and the manifest path printed by a real osc run command before dispatching this run packet.',
     },
     scopeConfirmationRequired: true,
     nextCommands: [
       `Review and materialize the candidate plan at ${planPath} only after confirming scope.`,
       `osc run ${planPath} --runtime ${runtime}${workflowFlag} --dry-run`,
       `osc run ${planPath} --runtime ${runtime}${workflowFlag}`,
-      dispatchCommand,
+      dispatchNextCommand,
     ],
     noFilesWritten: true,
     noRuntimeSpawned: true,
