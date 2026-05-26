@@ -6,7 +6,7 @@ For live package truth, check npm. For live release truth, check GitHub Releases
 
 ## v1.0.2 — Codex runtime preset package sync
 
-Status: release-sync candidate for npm `open-scaffold@1.0.2`; publication proof belongs in `.osc/releases/2026-05-26-105-codex-runtime-adapter-package-release-sync.md` after trusted publishing and GitHub Release follow-through.
+Status: published to npm as `open-scaffold@1.0.2`; GitHub Release `v1.0.2` is Latest.
 
 Highlights:
 
@@ -16,9 +16,12 @@ Highlights:
 
 Evidence:
 
-- Plan: `.osc/plans/active/105-codex-runtime-adapter-package-release-sync.md`
+- Plan: `.osc/plans/done/105-codex-runtime-adapter-package-release-sync.md`
 - Source PR: https://github.com/graphanov/open-scaffold/pull/121
+- Release-sync PR: https://github.com/graphanov/open-scaffold/pull/122
 - Evidence note: `.osc/releases/2026-05-26-105-codex-runtime-adapter-package-release-sync.md`
+- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v1.0.2
+- npm: `open-scaffold@1.0.2` / `latest`
 
 ## v1.0.1 — No-spawn Codex handoff entry
 
