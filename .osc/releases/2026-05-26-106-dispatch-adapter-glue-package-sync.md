@@ -10,7 +10,7 @@ Prepared `open-scaffold@1.0.3` as the package/public-surface sync candidate for 
 - Plan: `.osc/plans/active/106-dispatch-adapter-glue-package-sync.md`.
 - Run ID / run packet: N/A for release-sync.
 - Source Pull Request: https://github.com/graphanov/open-scaffold/pull/125.
-- Release-sync Pull Request: pending.
+- Release-sync Pull Request: https://github.com/graphanov/open-scaffold/pull/126.
 - Trusted publishing run: pending.
 - GitHub Release: pending.
 
