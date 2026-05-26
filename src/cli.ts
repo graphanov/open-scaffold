@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+import { renderStartPrompt, parseStartRuntime, START_RUNTIMES } from './start.js';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
 import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
@@ -48,6 +49,7 @@ Usage:
   osc evidence new <slug>
   osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
   osc close <plan-slug> [--message <text>]
+  osc start <plan-slug-or-path> --runtime <codex|omx|plain|human|custom>
   osc delegate <plan-path> [run binding options]
   osc run <plan-path> [--dry-run] [--json] [run binding options]
   osc review <plan-path> [run binding options]
@@ -1080,6 +1082,60 @@ function closeCommand(args: string[]): void {
     if (result.changelogStamped) console.log('Stamped: MISSION.md changelog');
   } catch (error) {
     exitForScaffoldHelperError(error);
+  }
+}
+
+function printStartUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc start <plan-slug-or-path> --runtime <${START_RUNTIMES.join('|')}>
+
+Prints a paste-ready agent handoff prompt. It does not spawn a runtime, create .osc/runs artifacts, commit, push, or open a PR.`, stream);
+}
+
+function takeStartValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${flag}`);
+    printStartUsage();
+    process.exit(2);
+  }
+  return value;
+}
+
+function startCommand(args: string[]): void {
+  if (isHelpArg(args[0])) {
+    printStartUsage('stdout');
+    return;
+  }
+  const planReference = requireArg(args, 'plan-slug-or-path');
+  let runtime: ReturnType<typeof parseStartRuntime> = null;
+  const rest = args.slice(1);
+  for (let i = 0; i < rest.length; i += 1) {
+    const flag = rest[i];
+    switch (flag) {
+      case '--runtime':
+        runtime = parseStartRuntime(takeStartValue(rest, i, flag));
+        if (!runtime) {
+          console.error(`Invalid value for --runtime. Expected one of: ${START_RUNTIMES.join(', ')}`);
+          process.exit(2);
+        }
+        i += 1;
+        break;
+      default:
+        console.error(`Unknown option for start: ${flag}`);
+        printStartUsage();
+        process.exit(2);
+    }
+  }
+  if (!runtime) {
+    console.error(`Missing required option: --runtime <${START_RUNTIMES.join('|')}>`);
+    printStartUsage();
+    process.exit(2);
+  }
+  try {
+    process.stdout.write(renderStartPrompt(planReference, { runtime, cwd: process.cwd() }).prompt);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
   }
 }
 
@@ -2284,6 +2340,9 @@ async function main(): Promise<void> {
       return;
     case 'close':
       closeCommand(args);
+      return;
+    case 'start':
+      startCommand(args);
       return;
     case 'verify': {
       if (isHelpArg(args[0])) {

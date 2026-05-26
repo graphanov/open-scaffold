@@ -4,6 +4,22 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared; publication still depends on owner-gated npm and GitHub Release actions.
 
+## v1.0.1 — No-spawn Codex handoff entry
+
+Status: repository candidate prepared; npm publication and GitHub Release latest movement are owner-gated external actions.
+
+Highlights:
+
+- Adds `osc start <plan> --runtime codex` as a no-spawn prompt renderer for Codex/OMX workers.
+- Keeps runtime execution outside Open Scaffold core: no process spawn, no `.osc/runs` write, no commit/push/PR/publish side effects.
+- Documents the first shipped step in the post-v1 Codex-first runtime adoption chain.
+
+Evidence:
+
+- Plan: `.osc/plans/done/101-osc-start-codex-agent-entry.md`
+- Evidence note: `.osc/releases/2026-05-26-101-osc-start-codex-agent-entry.md`
+- PR: https://github.com/graphanov/open-scaffold/pull/119
+
 ## v1.0.0 — Stable protocol release candidate
 
 Status: repository candidate merged; npm publication and GitHub Release latest movement are owner-gated external actions.
