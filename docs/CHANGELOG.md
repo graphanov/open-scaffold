@@ -4,6 +4,22 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v1.0.2 — Codex runtime preset package sync
+
+Status: release-sync candidate for npm `open-scaffold@1.0.2`; publication proof belongs in `.osc/releases/2026-05-26-105-codex-runtime-adapter-package-release-sync.md` after trusted publishing and GitHub Release follow-through.
+
+Highlights:
+
+- Publishes the PR #121 package-visible runtime surface: built-in `codex` runtime preset, mapped to `omx-codex` and the current `runtime-omx` adapter path.
+- Keeps `--runtime omx` as the explicit harness-name preset while docs/examples prefer `--runtime codex` for broad users.
+- Preserves the no-spawn boundary: core records run packets, while runtime launch remains adapter-owned and explicitly gated.
+
+Evidence:
+
+- Plan: `.osc/plans/active/105-codex-runtime-adapter-package-release-sync.md`
+- Source PR: https://github.com/graphanov/open-scaffold/pull/121
+- Evidence note: `.osc/releases/2026-05-26-105-codex-runtime-adapter-package-release-sync.md`
+
 ## v1.0.1 — No-spawn Codex handoff entry
 
 Status: published to npm as `open-scaffold@1.0.1`; GitHub Release `v1.0.1` is Latest.
