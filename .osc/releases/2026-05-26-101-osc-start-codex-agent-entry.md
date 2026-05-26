@@ -9,7 +9,7 @@ This slice adds `osc start <plan> --runtime codex` as a no-spawn agent-entry com
 - Roadmap / issue / task: Open Scaffold backlog plan 101 from the post-v1 Codex-first runtime adoption chain.
 - Plan: `.osc/plans/done/101-osc-start-codex-agent-entry.md`
 - Run ID / run packet: N/A — `osc start` explicitly renders text and does not create run packets.
-- Branch / PR: branch `cli/osc-start-codex-entry`; PR pending owner review.
+- Branch / PR: branch `cli/osc-start-codex-entry`; PR https://github.com/graphanov/open-scaffold/pull/119.
 
 ## Verification
 

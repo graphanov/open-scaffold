@@ -18,7 +18,7 @@ Evidence:
 
 - Plan: `.osc/plans/done/101-osc-start-codex-agent-entry.md`
 - Evidence note: `.osc/releases/2026-05-26-101-osc-start-codex-agent-entry.md`
-- PR: pending owner review
+- PR: https://github.com/graphanov/open-scaffold/pull/119
 
 ## v1.0.0 — Stable protocol release candidate
 
