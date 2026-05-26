@@ -79,7 +79,7 @@ The post-v1 target is a smoother Codex-first path that starts from plain intent 
 osc work "Add a /health endpoint with tests" --runtime codex
 ```
 
-That command is future direction, not a current v1 promise. The first no-spawn step is `osc start`, which prints a paste-ready Codex/OMX handoff prompt from an existing plan without launching a runtime. The remaining staged path is: Codex/OMX adapter package hardening → `osc dispatch` adapter glue → `osc work --dry-run` → optional gated execution after a separate safety decision. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md).
+That command is future direction, not a current v1 promise. The first no-spawn step is `osc start`, which prints a paste-ready Codex/OMX handoff prompt from an existing plan without launching a runtime. The next explicit bridge is `osc dispatch .osc/runs/RUN_ID/run.json --adapter <id>`, which invokes a reviewed local adapter config and captures receipt/evidence/log paths without auto-installing providers or granting commit/push/PR/merge/publish authority. The remaining staged path is: `osc work --dry-run` → optional gated execution after a separate safety decision. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md).
 
 ---
 
