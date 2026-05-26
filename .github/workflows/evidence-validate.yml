@@ -23,14 +23,16 @@ jobs:
         run: |
           set -euo pipefail
           git init .
-          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          server_url="${GITHUB_SERVER_URL:-https://github.com}"
+          server_url="${server_url%/}"
+          git remote add origin "${server_url}/${GITHUB_REPOSITORY}.git"
           fetch_refs() {
             local mode="$1"
             shift
             if [[ "$mode" == "auth" && -n "${GITHUB_TOKEN:-}" ]]; then
               local auth_header
               auth_header="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\n')"
-              GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_header}" fetch "$@"
+              GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c "http.${server_url}/.extraheader=AUTHORIZATION: basic ${auth_header}" fetch "$@"
             else
               GIT_TERMINAL_PROMPT=0 git -c credential.helper= fetch "$@"
             fi

@@ -25,8 +25,10 @@ describe('GitHub Actions workflow templates', () => {
       const workflow = read(workflowPath);
 
       expect(workflow).not.toContain('actions/checkout');
+      expect(workflow).toContain('server_url="${GITHUB_SERVER_URL:-https://github.com}"');
+      expect(workflow).toContain('git remote add origin "${server_url}/${GITHUB_REPOSITORY}.git"');
       expect(workflow).toContain('GITHUB_TOKEN: ${{ github.token }}');
-      expect(workflow).toContain('http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_header}');
+      expect(workflow).toContain('http.${server_url}/.extraheader=AUTHORIZATION: basic ${auth_header}');
       expect(workflow).toContain('falling back to public unauthenticated fetch');
       expect(workflow).toContain("fetch_with_fallback repository --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'");
       expect(workflow).toContain('refs/pull/${{ github.event.pull_request.number }}/merge:refs/remotes/pull/${{ github.event.pull_request.number }}/merge');
