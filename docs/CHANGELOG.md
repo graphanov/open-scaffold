@@ -13,7 +13,7 @@ Highlights:
 - Publishes the PR #125 package-visible runtime surface: `osc dispatch <run-json> --adapter <adapter-id>` for explicit local adapter invocation from existing run packets.
 - Keeps dispatch constrained to reviewed project-local adapter configs; core refuses unsafe adapters, auto-install/network/shell/platform-shim executables, symlinked outputs, stale inferred outputs, and out-of-run-directory receipt/evidence paths.
 - Keeps Open Scaffold core non-spawning: dispatch invokes a selected adapter command, captures reported outputs, and does not grant commit/push/PR/merge/publish/credential/provider-runtime authority.
-- Hardens PR validation workflows to checkout public merge refs without repository-token Git credentials when required checks need to run before repo code executes.
+- Hardens GitHub Actions workflows to try authenticated fetches for private-repo compatibility while falling back to public unauthenticated refs when repository-token Git fetches are unavailable.
 
 Evidence:
 

@@ -16,15 +16,38 @@ jobs:
     name: Validate evidence notes
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository without workflow token
+      - name: Check out repository with public fallback
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git init .
-          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
-          GIT_TERMINAL_PROMPT=0 git -c credential.helper= fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          server_url="${GITHUB_SERVER_URL:-https://github.com}"
+          server_url="${server_url%/}"
+          git remote add origin "${server_url}/${GITHUB_REPOSITORY}.git"
+          fetch_refs() {
+            local mode="$1"
+            shift
+            if [[ "$mode" == "auth" && -n "${GITHUB_TOKEN:-}" ]]; then
+              local auth_header
+              auth_header="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\n')"
+              GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c "http.${server_url}/.extraheader=AUTHORIZATION: basic ${auth_header}" fetch "$@"
+            else
+              GIT_TERMINAL_PROMPT=0 git -c credential.helper= fetch "$@"
+            fi
+          }
+          fetch_with_fallback() {
+            local description="$1"
+            shift
+            if ! fetch_refs auth "$@"; then
+              echo "Authenticated ${description} fetch failed; falling back to public unauthenticated fetch."
+              fetch_refs public "$@"
+            fi
+          }
+          fetch_with_fallback repository --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            GIT_TERMINAL_PROMPT=0 git -c credential.helper= fetch --no-tags origin "refs/pull/${{ github.event.pull_request.number }}/merge:refs/remotes/pull/${{ github.event.pull_request.number }}/merge"
+            fetch_with_fallback pull-request-merge --no-tags origin "refs/pull/${{ github.event.pull_request.number }}/merge:refs/remotes/pull/${{ github.event.pull_request.number }}/merge"
             git checkout --force "refs/remotes/pull/${{ github.event.pull_request.number }}/merge"
           else
             git checkout --force "$GITHUB_SHA"
