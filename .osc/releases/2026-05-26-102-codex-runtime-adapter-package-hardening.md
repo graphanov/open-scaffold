@@ -9,7 +9,7 @@ Hardened the Codex-first runtime adapter path by adding `codex` as the broad use
 - Roadmap / issue / task: Milestone 16 / post-v1 runtime adoption chain; no separate GitHub issue assigned for this local slice.
 - Plan: `.osc/plans/done/102-codex-runtime-adapter-package-hardening.md`.
 - Run ID / run packet: `.osc/runs/20260526T100150Z-102-codex-runtime-adapter-package-hardening-run/run.json` (ignored local smoke evidence).
-- Branch / Pull Request: `runtime/codex-adapter-hardening`; PR pending.
+- Branch / Pull Request: `runtime/codex-adapter-hardening`; https://github.com/graphanov/open-scaffold/pull/121.
 
 ## Verification
 
