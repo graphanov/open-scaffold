@@ -9,7 +9,7 @@ Hardened `verify.sh --strict` so plan filenames are passed to Python as argument
 - Roadmap / issue / task: Milestone 19 trust/security hotfix before runtime-adoption UX work.
 - Plan: `.osc/plans/done/100-verify-strict-filename-quoting.md`
 - Branch: `fix/verify-strict-filename-quoting`
-- Pull Request: to be created for owner review.
+- Pull Request: https://github.com/graphanov/open-scaffold/pull/118.
 
 ## Verification
 
