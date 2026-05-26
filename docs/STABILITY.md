@@ -62,6 +62,7 @@ These surfaces are usable but not promised as final API shape. They may change i
 - Runtime profiles and runtime selection beyond run-packet metadata.
 - `osc run`, `osc delegate`, `osc review`, and `osc ultrareview` beyond their current no-spawn artifact-generation role.
 - `osc dispatch` as explicit local-adapter invocation glue; adapter commands, receipts, and launch policy remain experimental and adapter-owned.
+- `osc work --dry-run` as a no-spawn natural-language composition preview; non-dry-run work execution remains future-gated.
 - Evaluation and audit envelope helpers.
 - Optional MCP server interface.
 - Glass cockpit webhook examples for Discord and Slack.

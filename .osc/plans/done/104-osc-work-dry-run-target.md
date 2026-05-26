@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog
+done
+
 
 ## Context
 
@@ -37,12 +38,12 @@ Add the first `osc work` composition as a dry-run intake command that drafts the
 
 ## Acceptance criteria
 
-- [ ] `osc work "TASK DESCRIPTION" --runtime codex --dry-run` produces a readable plan/run/dispatch preview.
-- [ ] The command clearly asks for scope confirmation before any execution path.
-- [ ] The command does not spawn runtime processes, call provider APIs, mutate source files, commit, push, or create PRs.
-- [ ] Output points to the next staged command (`osc start`, `osc run`, or `osc dispatch`) rather than hiding execution.
-- [ ] Tests cover no-spawn/no-source-mutation behavior.
-- [ ] `./verify.sh --strict`, `npm test`, `npm run build`, and `git diff --check` pass.
+- [x] `osc work "TASK DESCRIPTION" --runtime codex --dry-run` produces a readable plan/run/dispatch preview.
+- [x] The command clearly asks for scope confirmation before any execution path.
+- [x] The command does not spawn runtime processes, call provider APIs, mutate source files, commit, push, or create PRs.
+- [x] Output points to the next staged command (`osc start`, `osc run`, or `osc dispatch`) rather than hiding execution.
+- [x] Tests cover no-spawn/no-source-mutation behavior.
+- [x] `./verify.sh --strict`, `npm test`, `npm run build`, and `git diff --check` pass.
 
 ## Verification steps
 

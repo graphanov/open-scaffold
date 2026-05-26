@@ -22,6 +22,7 @@ import { validateScaffold } from './validation.js';
 import { formatPlanValidationIssues, hasBlockingIssues, resolvePlanValidationPath, validatePlanFile } from './plan-validate.js';
 import { buildPlanGraph, normalizePlanReference, renderPlanGraphAscii, renderPlanGraphMermaid, type PlanGraphDirection, type PlanGraphFormat, type PlanGraphStageFilter } from './plan-graph.js';
 import { askInteractiveAnswers, assertWizardReady, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
+import { buildWorkDryRunPreview, formatWorkDryRunPreview } from './work.js';
 
 function printHelp(): void {
   console.log(`osc — Open Scaffold CLI
@@ -54,6 +55,7 @@ Usage:
   osc delegate <plan-path> [run binding options]
   osc run <plan-path> [--dry-run] [--json] [run binding options]
   osc dispatch <run-json> --adapter <adapter-id>
+  osc work <task-description> --runtime <preset> --dry-run [--json] [--adapter <adapter-id>]
   osc review <plan-path> [run binding options]
   osc ultrareview <plan-path> [run binding options]
   osc eval init <run-or-plan> [--out <path>]
@@ -1192,6 +1194,110 @@ function dispatchCommand(args: string[]): void {
     console.error(error instanceof Error ? error.message : String(error));
     if (error instanceof DispatchUsageError) process.exit(2);
     process.exit(1);
+  }
+}
+
+function printWorkUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc work <task-description> --runtime <preset> --dry-run [--json] [--adapter <adapter-id>]
+
+Options:
+  --runtime <preset>          Runtime preset to preview: codex | omx | omc | plain | human | custom | project profile
+  --workflow <workflow>       Optional workflow override: interview | plan | team | loop | execute | goal | custom
+  --adapter <adapter-id>      Optional dispatch adapter id for the preview command
+  --dry-run                   Required: print plan/run/dispatch preview without writing files or launching runtimes
+  --json                      Print machine-readable dry-run JSON`, stream);
+}
+
+function takeWorkValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${flag}`);
+    printWorkUsage();
+    process.exit(2);
+  }
+  return value;
+}
+
+function isSafeWorkAdapterId(value: string): boolean {
+  return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value) && !value.includes('..');
+}
+
+function formatUnsafeWorkValue(value: string): string {
+  return JSON.stringify(value.trim());
+}
+
+function workCommand(args: string[]): void {
+  if (isHelpArg(args[0])) {
+    printWorkUsage('stdout');
+    return;
+  }
+  const intentParts: string[] = [];
+  const options: RunArtifactOptions = { commitPolicy: 'no commit/push/PR/merge/publish/deploy unless explicitly approved by the operator' };
+  let adapterId: string | undefined;
+  let dryRun = false;
+  let json = false;
+
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg.startsWith('--')) {
+      switch (arg) {
+        case '--runtime':
+          options.runtime = takeWorkValue(args, i, arg) as RuntimePreset;
+          i += 1;
+          break;
+        case '--workflow':
+          options.workflow = parseChoice(takeWorkValue(args, i, arg), RUNTIME_WORKFLOWS, arg) as RuntimeWorkflow;
+          i += 1;
+          break;
+        case '--adapter': {
+          const value = takeWorkValue(args, i, arg);
+          if (!isSafeWorkAdapterId(value)) {
+            console.error(`Unsafe adapter id: ${formatUnsafeWorkValue(value)}`);
+            process.exit(2);
+          }
+          adapterId = value;
+          i += 1;
+          break;
+        }
+        case '--dry-run':
+          dryRun = true;
+          break;
+        case '--json':
+          json = true;
+          break;
+        default:
+          console.error(`Unknown option for work: ${arg}`);
+          printWorkUsage();
+          process.exit(2);
+      }
+    } else {
+      intentParts.push(arg);
+    }
+  }
+
+  const intent = intentParts.join(' ').trim();
+  if (!intent) {
+    console.error('Missing required argument: task-description');
+    printWorkUsage();
+    process.exit(2);
+  }
+  if (!options.runtime) {
+    console.error('Missing required option: --runtime <preset>');
+    printWorkUsage();
+    process.exit(2);
+  }
+  if (!dryRun) {
+    console.error('osc work is preview-only in this release; pass --dry-run to print the plan/run/dispatch preview.');
+    process.exit(2);
+  }
+
+  const root = findScaffoldRoot(process.cwd()) ?? process.cwd();
+  applyRuntimeSelection(options, root);
+  const preview = buildWorkDryRunPreview(root, intent, options, adapterId);
+  if (json) {
+    console.log(JSON.stringify(preview, null, 2));
+  } else {
+    process.stdout.write(formatWorkDryRunPreview(preview));
   }
 }
 
@@ -2371,6 +2477,9 @@ async function main(): Promise<void> {
       return;
     case 'dispatch':
       dispatchCommand(args);
+      return;
+    case 'work':
+      workCommand(args);
       return;
     case 'review':
     case 'ultrareview':

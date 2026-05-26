@@ -8,7 +8,13 @@ The north-star command is intentionally simple:
 osc work "Add a /health endpoint with tests" --runtime codex
 ```
 
-That command does **not** mean Open Scaffold core becomes Codex, Claude Code, OpenHands, a daemon, or a hosted agent. It means Open Scaffold should own the durable control loop around work: plan, package, dispatch, evidence, verification, and approval gates.
+The current implemented composition layer is explicitly dry-run only:
+
+```bash
+osc work "Add a /health endpoint with tests" --runtime codex --dry-run
+```
+
+The north-star command does **not** mean Open Scaffold core becomes Codex, Claude Code, OpenHands, a daemon, or a hosted agent. It means Open Scaffold should own the durable control loop around work: plan, package, dispatch, evidence, verification, and approval gates.
 
 ## Target flow
 
@@ -156,20 +162,20 @@ The command:
 
 ### Stage 4 — `osc work --dry-run`
 
-Add the first version of `osc work` as a no-spawn composition:
+Current repo support adds the first no-spawn composition:
 
 ```bash
 osc work "Add a /health endpoint with tests" --runtime codex --dry-run
 ```
 
-It should draft or scaffold:
+It previews:
 
-- a candidate plan;
-- acceptance criteria;
-- a run packet preview;
-- the `osc start` / `osc dispatch` command the operator can approve.
+- a candidate plan path and draft scope;
+- draft acceptance criteria and verification checks;
+- an `open-scaffold.run.v1` run packet preview;
+- the next `osc start`, `osc run`, and `osc dispatch` commands the operator can approve.
 
-It should stop before runtime execution.
+It stops before writing `.osc/plans` or `.osc/runs` artifacts, before runtime execution, before provider API calls, and before any commit/push/PR/merge/publish/deploy side effect. Non-dry-run `osc work` remains intentionally refused until a separate safety design exists.
 
 ### Stage 5 — Optional gated execution
 

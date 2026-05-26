@@ -413,7 +413,7 @@ Owner gates:
 
 ### Milestone 19 — Post-v1 adoption workflow target
 
-Status: staged implementation through `.osc/plans/done/099-runtime-adoption-ux-reset.md`, `docs/RUNTIME_ADOPTION_WORKFLOW.md`, and follow-up Codex-first adoption slices through `103-osc-dispatch-adapter-glue`. The next planned composition layer is `osc work --dry-run`.
+Status: staged implementation through `.osc/plans/done/099-runtime-adoption-ux-reset.md`, `docs/RUNTIME_ADOPTION_WORKFLOW.md`, and follow-up Codex-first adoption slices through `104-osc-work-dry-run-target`. `osc work --dry-run` is now the first natural-language composition layer; full execution remains future gated work.
 
 Goal: turn the credible v1 work-record protocol into a smoother adoption path without collapsing Open Scaffold core into a provider-specific runtime.
 
@@ -440,8 +440,8 @@ Implementation sequence:
 1. Done — verification trust issue: unsafe strict-mode filename quoting fixed.
 2. Done — `osc start` added as a no-spawn, paste-ready Codex/OMX agent-entry command.
 3. Done — Codex-first adapter package path hardened around `runtime-omx` and the broad `codex` preset.
-4. Done in repo — `osc dispatch <run.json> --adapter <id>` added as explicit local-adapter invocation glue.
-5. Next — add `osc work --dry-run` as the first natural-language composition layer.
+4. Done — `osc dispatch <run.json> --adapter <id>` added as explicit local-adapter invocation glue.
+5. Done in repo — `osc work --dry-run` previews a natural-language task as candidate plan/run/dispatch steps without writing artifacts or launching runtimes.
 6. Later — reconsider optional gated execution only after receipt/evidence, conformance, worktree isolation, authority budgets, approval queues, and user evidence exist.
 
 Acceptance direction:
