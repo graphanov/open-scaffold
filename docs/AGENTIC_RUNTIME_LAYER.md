@@ -22,7 +22,7 @@ packages/runtime-omx/
 
 Package distribution note: `packages/runtime-omx/` is a GitHub source path in this repository, not part of the root `open-scaffold` npm payload. The root package ships core CLI/scaffold/docs only; publishing an installable runtime package remains a separate owner-approved release decision.
 
-The first runtime target is OMX / oh-my-codex.
+The first runtime target is Codex through OMX / oh-my-codex. In user-facing commands, prefer `--runtime codex`; use `--runtime omx` only when the operator intentionally wants the harness name.
 
 The first workflow to prove is:
 
@@ -47,7 +47,7 @@ The safe first shape is package-first and dry-run-first:
 
 ```bash
 npm run osc -- run .osc/plans/active/001-demo.md \
-  --runtime omx \
+  --runtime codex \
   --workflow plan
 ```
 
@@ -75,7 +75,7 @@ An agentic runtime package can translate these policies to a specific runtime, b
 Plan 046 sets the next execution order:
 
 1. `042-reference-adapter-package-no-spawn` added the in-repo `packages/runtime-omx/` no-spawn package scaffold.
-2. `043-one-real-runtime-adapter-spike` adds the OMX-first, `$ralplan`-first explicit launch path behind `--allow-spawn`, keeping core non-spawning.
+2. `043-one-real-runtime-adapter-spike` added the first OMX `$ralplan` explicit launch path behind `--allow-spawn`, keeping core non-spawning. The current user-facing preset for that Codex lane is `--runtime codex`; `--runtime omx` remains the explicit harness-name form.
 3. `044-cli-friction-reduction` remains later unless ceremony blocks the execution proof.
 4. `030-agent-runtime-selection-vision` and `031-agentic-orchestration-model-lab-vision` stay as broader hypotheses until adapter/runtime evidence justifies promotion.
 

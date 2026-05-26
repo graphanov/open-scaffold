@@ -95,7 +95,7 @@ Tasks live in local `.osc/tasks.db` and can link to plans, but they do not repla
 Before creating a durable run packet, preview what Open Scaffold would package:
 
 ```bash
-osc run .osc/plans/active/<plan>.md --dry-run --runtime omx --workflow plan
+osc run .osc/plans/active/<plan>.md --dry-run --runtime codex --workflow plan
 osc run .osc/plans/active/<plan>.md --dry-run --json
 ```
 

@@ -31,8 +31,9 @@ Keep the roles separate:
 ```bash
 osc runtimes list
 osc runtimes list --json
+osc runtimes show codex
 osc runtimes show omx
-osc run .osc/plans/active/001-demo.md --runtime omx --workflow plan
+osc run .osc/plans/active/001-demo.md --runtime codex --workflow plan
 ```
 
 `osc runtimes list` prints the visible profile id, source, executor lane, status, and display name as TSV for quick terminal scans. `osc runtimes list --json` prints the same summary as parseable JSON for coordinators and automation.
@@ -45,15 +46,16 @@ Runtime profiles currently resolve from two scopes:
 
 1. **Built-in profiles** shipped with Open Scaffold:
    - `omc` — OMC / oh-my-claudecode lane for Claude Code-oriented workflows.
-   - `omx` — OMX / oh-my-codex lane for Codex-oriented workflows.
+   - `codex` — broad user-facing Codex preset; currently backed by the OMX / oh-my-codex adapter path.
+   - `omx` — explicit OMX / oh-my-codex harness-name lane for Codex-oriented workflows.
    - `plain` — runtime-neutral prompt package for any capable agent.
    - `human` — manual execution with evidence gates.
-   - `custom` — placeholder lane for adapter-defined execution.
-2. **Project-local profiles** in `.osc/runtimes/*.json`.
+   - `custom` — placeholder for adapter-defined execution.
+2. **Project-local profiles** under `.osc/runtimes/*.json`.
 
 Project-local profiles are checked into the repo and should be reviewed like other project configuration. They are useful for company agents, private wrappers, or experimental runtimes that are not built into Open Scaffold.
 
-Built-in profile ids are reserved. A project-local profile cannot silently override `omc`, `omx`, `plain`, `human`, or `custom`.
+Built-in profile ids are reserved. A project-local profile cannot silently override `omc`, `codex`, `omx`, `plain`, `human`, or `custom`.
 
 ## Runtime profile schema
 
@@ -124,7 +126,7 @@ Supported workflow keys are:
 - `goal`
 - `custom`
 
-For example, the built-in `omx` profile maps `plan` to `$ralplan`; the built-in `omc` profile maps `plan` to `/ralplan`.
+For example, the built-in `codex` and `omx` profiles map `plan` to `$ralplan`; the built-in `omc` profile maps `plan` to `/ralplan`.
 
 If a profile has `defaults.workflow`, then `osc run --runtime <id>` can infer the workflow when the user does not provide `--workflow`.
 
@@ -144,11 +146,15 @@ In v0:
 
 This is deliberate. Open Scaffold's job is to preserve the source-of-truth chain and package dispatchable intent. Runtime-specific adapters own installation, authentication, session lifecycle, tmux/process management, and provider-specific launch details.
 
-## OMC, OMX, GSD, and custom runtimes
+## OMC, Codex, OMX, GSD, and custom runtimes
 
-OMC and OMX are built-in adapter-candidate profiles — selectable lane metadata with fake/local fixture coverage for their lane tokens, not certified launch integrations and not evidence that OMC/OMX processes were run.
+OMC, Codex, and OMX are built-in adapter-candidate profiles — selectable lane metadata with fake/local fixture coverage for their lane tokens, not certified launch integrations and not evidence that OMC/OMX/Codex processes were run.
 
-The accepted first executable package track is [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx): an in-repo GitHub source package that consumes the `omx` profile data, validates `$ralplan` as the first workflow, writes receipt/evidence without spawning by default, and launches only through an explicit `--allow-spawn` package gate. It is not included in the root `open-scaffold` npm payload today; separate runtime-package publication remains owner-gated. It keeps `install.auto=false` and core `launch.spawning=false`; it is not a registry, installer, credential bridge, or certified production OMX integration.
+The current Codex-first naming decision is: `codex` is the broad user-facing preset; `omx` is the explicit harness-name preset; both map to `omx-codex` and the same `$ralplan` workflow token today.
+
+The accepted first executable package track is [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx): an in-repo GitHub source package that consumes the `codex` or `omx` profile data, validates `$ralplan` as the first workflow, writes receipt/evidence without spawning by default, and launches only through an explicit `--allow-spawn` package gate. It is not included in the root `open-scaffold` npm payload today; separate runtime-package publication remains owner-gated.
+
+A separate direct `runtime-codex` package is deferred until source-grounded evidence shows a cleaner direct Codex adapter that preserves the same no-spawn and dispatch-receipt boundaries.
 
 GSD and other frameworks can be represented as project-local `user-defined` profiles today. They should not be described as certified or built-in integrations until an adapter has passed the conformance expectations and produced public evidence.
 

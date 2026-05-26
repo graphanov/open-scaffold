@@ -171,7 +171,7 @@ A no-spawn conformance adapter must refuse packets when required fields are miss
 
 For the fake/local conformance fixture specifically, success means: packet consumed, `spawning: false` enforced, dispatch receipt written, evidence written, and no runtime, network, credentials, commit, push, merge, or publish authority used.
 
-For the OMX track, [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx) is the first explicit agentic runtime package in the GitHub source tree. It consumes a run packet, validates the OMX `$ralplan` lane/workflow (`runtimeSelection.runtime=omx`, `runtimeSelection.workflow=plan`, `executor.lane=omx-codex`, `executor.harnessSkill=$ralplan`, `executor.spawning=false`), writes deterministic receipt/evidence artifacts by default without spawning, and can launch only behind its package-level `--allow-spawn` gate after branch/worktree/version checks. It is not shipped in the root npm tarball today; package publication for runtime packages remains a separate gate.
+For the OMX/Codex track, [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx) is the first explicit agentic runtime package in the GitHub source tree. It consumes a run packet, validates the `$ralplan` lane/workflow (`runtimeSelection.runtime=codex` for the broad user-facing preset or `omx` for the explicit harness-name preset, `runtimeSelection.workflow=plan`, `executor.lane=omx-codex`, `executor.harnessSkill=$ralplan`, `executor.spawning=false`), writes deterministic receipt/evidence artifacts by default without spawning, and can launch only behind its package-level `--allow-spawn` gate after branch/worktree/version checks. It is not shipped in the root npm tarball today; package publication for runtime packages remains a separate gate.
 
 ## Binding responsibilities
 
@@ -438,7 +438,7 @@ Evidence stays durable.
 Operators stay in control.
 ```
 
-The first concrete executable track is OMX-first rather than runtime-generic: prove the GitHub source package path `packages/runtime-omx/` and `$ralplan`, then expand to other OMX workflows or other `packages/runtime-*` packages only with evidence.
+The first concrete executable track is Codex-through-OMX rather than runtime-generic: expose `--runtime codex` for broad users, prove the GitHub source package path `packages/runtime-omx/` and `$ralplan`, keep `--runtime omx` for explicit harness-name operators, and expand to other OMX workflows or other `packages/runtime-*` packages only with evidence.
 
 ## Dry-run and conformance examples
 

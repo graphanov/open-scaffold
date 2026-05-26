@@ -142,9 +142,29 @@ describe('runtime-omx validation and default no-spawn receipt', () => {
     expect(() => runNoSpawnOmx(path)).not.toThrow();
   });
 
-  it('rejects non-OMX runtime selection', () => {
+  it('accepts the user-facing Codex runtime alias while retaining the runtime-omx adapter boundary', () => {
+    const { path } = tempRunPacket({ runtimeSelection: { runtime: 'codex', workflow: 'plan', profileId: 'codex', profileSource: 'builtin' } });
+
+    const result = runNoSpawnOmx(path);
+    const receipt = readJson(result.receiptPath);
+    const evidence = readFileSync(result.evidencePath, 'utf8');
+
+    expect(receipt).toMatchObject({
+      adapter_id: 'runtime-omx',
+      runtime_backend: 'omx',
+      invoked_by: '@open-scaffold/runtime-omx',
+      runtime_selection: { runtime: 'codex', workflow: 'plan', profile_id: 'codex', profile_source: 'builtin' },
+      spawned: false,
+      status: 'dry_run',
+    });
+    expect(evidence).toContain('Adapter ID: runtime-omx');
+    expect(evidence).toContain('Selected runtime: codex');
+    expect(evidence).toContain('Runtime backend: omx');
+  });
+
+  it('rejects unsupported runtime selections', () => {
     const { path } = tempRunPacket({ runtimeSelection: { runtime: 'omc', workflow: 'plan', profileId: 'omc', profileSource: 'builtin' } });
-    expectValidationError(() => runNoSpawnOmx(path), 'runtimeSelection.runtime must be omx');
+    expectValidationError(() => runNoSpawnOmx(path), 'runtimeSelection.runtime must be omx or codex');
   });
 
   it('rejects unsupported OMX workflows before later slices', () => {

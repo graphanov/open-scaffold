@@ -90,7 +90,7 @@ export function createReceipt(packet: ValidatedRunPacket, paths: SafeOutputPaths
     run_packet_path: paths.relativeRunPacketPath,
     prompt_or_package_path: null,
     runtime_selection: {
-      runtime: 'omx',
+      runtime: packet.runtimeSelection.runtime,
       workflow: 'plan',
       profile_id: packet.runtimeSelection.profileId,
       profile_source: packet.runtimeSelection.profileSource,
@@ -149,6 +149,7 @@ export function evidenceMarkdown(packet: ValidatedRunPacket, paths: SafeOutputPa
     '',
     'Schema: open-scaffold.adapter-evidence.v1',
     'Adapter ID: runtime-omx',
+    `Selected runtime: ${packet.runtimeSelection.runtime}`,
     'Runtime backend: omx',
     `Mode: ${outcome.status === 'dry_run' ? 'no-spawn preview' : 'explicit opt-in launch'}`,
     `Status: ${outcome.status}`,

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, readdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -40,6 +40,10 @@ const ambiguousPlan = {
 };
 
 describe('run artifact generation', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('creates a run directory with manifest and prompt files without spawning agents', () => {
     const root = tempRepo();
 
@@ -49,6 +53,21 @@ describe('run artifact generation', () => {
     expect(existsSync(join(run.runDir, 'run.json'))).toBe(true);
     expect(existsSync(join(run.runDir, 'prompts/group-a.md'))).toBe(true);
     expect(readdirSync(join(run.runDir, 'prompts'))).toEqual(['group-a.md']);
+  });
+
+  it('suffixes same-timestamp run ids instead of overwriting existing run artifacts', () => {
+    const root = tempRepo();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-26T10:00:00.000Z'));
+
+    const first = createRunArtifacts(root, plan as any, 'run');
+    const second = createRunArtifacts(root, plan as any, 'run');
+
+    expect(first.runId).toBe('20260526T100000Z-001-demo-run');
+    expect(second.runId).toBe('20260526T100000Z-001-demo-run-2');
+    expect(first.runDir).not.toBe(second.runDir);
+    expect(existsSync(join(first.runDir, 'run.json'))).toBe(true);
+    expect(existsSync(join(second.runDir, 'run.json'))).toBe(true);
   });
 
   it('records canonical task/run bindings for a harness dispatch package', () => {

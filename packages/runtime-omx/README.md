@@ -2,7 +2,7 @@
 
 `@open-scaffold/runtime-omx` is the first optional in-repo **agentic runtime package** for OMX / oh-my-codex.
 
-It consumes Open Scaffold `open-scaffold.run.v1` packets created for the OMX `$ralplan` lane, validates the handoff shape, writes deterministic dispatch receipt/evidence artifacts, and can launch OMX only when explicitly allowed.
+It consumes Open Scaffold `open-scaffold.run.v1` packets created for the Codex/OMX `$ralplan` lane, validates the handoff shape, writes deterministic dispatch receipt/evidence artifacts, and can launch OMX only when explicitly allowed.
 
 Default behavior does **not** install, authenticate, launch, spawn, supervise, or certify OMX, Codex, tmux, or any provider runtime.
 
@@ -18,15 +18,21 @@ runtime-omx may launch OMX only with --allow-spawn after safety checks.
 Receipts/evidence return to the repo-local run directory.
 ```
 
-The package currently accepts only the first OMX proof lane:
+The package currently accepts only the first Codex/OMX proof lane:
 
-- `runtimeSelection.runtime = "omx"`
+- `runtimeSelection.runtime = "codex"` for the broad user-facing Codex preset, or `"omx"` for users who want the harness name;
 - `runtimeSelection.workflow = "plan"`
 - `executor.lane = "omx-codex"`
 - `executor.harnessSkill = "$ralplan"`
 - `executor.spawning = false`
 
 Official OMX continuity note: upstream `oh-my-codex` exposes `$ralplan` as an in-Codex skill / `$plan --consensus` planning surface. This package targets `oh-my-codex >= 0.17.3`.
+
+## Naming decision
+
+For broad Open Scaffold users, the CLI-facing preset is `--runtime codex`. It maps to the same `omx-codex` lane and currently expects this `runtime-omx` adapter package, because OMX / oh-my-codex is the tested Codex harness path. The explicit `--runtime omx` preset remains available for operators who are intentionally targeting the OMX harness by name.
+
+A direct `runtime-codex` package is deferred until source-grounded evidence shows a cleaner direct Codex adapter that can share the same `open-scaffold.dispatch-receipt.v1` contract without weakening the no-spawn/core-boundary rules.
 
 ## Usage
 

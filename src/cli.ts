@@ -77,7 +77,7 @@ Usage:
 Run binding options:
   --task-id <id>              Canonical task/card/issue id for this work item
   --source-ref <ref>          Additional source ref; repeatable
-  --runtime <preset>          omc | omx | plain | human | custom
+  --runtime <preset>          omc | codex | omx | plain | human | custom
   --workflow <workflow>       interview | plan | team | loop | execute | goal | custom
   --executor <lane>           omc-claude | omx-codex | plain-agent | human | custom
   --harness-skill <skill>     e.g. /ralplan, $ralplan, /ralph, $ultrawork
@@ -278,7 +278,7 @@ function printRunArtifactsUsage(mode: ArtifactMode): void {
 Run binding options:
   --task-id <id>              Canonical task/card/issue id for this work item
   --source-ref <ref>          Additional source ref; repeatable
-  --runtime <preset>          omc | omx | plain | human | custom
+  --runtime <preset>          omc | codex | omx | plain | human | custom
   --workflow <workflow>       interview | plan | team | loop | execute | goal | custom
   --executor <lane>           omc-claude | omx-codex | plain-agent | human | custom
   --harness-skill <skill>     e.g. /ralplan, $ralplan, /ralph, $ultrawork

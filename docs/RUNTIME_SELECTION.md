@@ -19,7 +19,7 @@ A user should be able to say, in Open Scaffold terms:
 
 ```bash
 npm run osc -- run .osc/plans/active/001-demo.md \
-  --runtime omx \
+  --runtime codex \
   --workflow plan \
   --repo /path/to/repo \
   --branch feat/demo
@@ -38,19 +38,20 @@ and get a concrete `.osc/runs/<run_id>/run.json` package that records:
 
 The selected runtime is dispatchable by an adapter, but Open Scaffold core still does not launch Claude Code, Codex, OMC, OMX, tmux, or any provider process by itself. Dispatchable means the `run.json` contains enough structured lane/workflow/profile data for an external adapter or an explicit agentic runtime package to consume if such a package exists; it does not mean the adapter is installed or certified.
 
-The first executable package track is OMX-first: `--runtime omx --workflow plan` produces the `$ralplan`-targeted packet that [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx) can validate and preview from the GitHub source tree before any real launch behavior is added. That runtime package path is not shipped inside the root `open-scaffold` npm payload today.
+The first executable package track is Codex-first through OMX: `--runtime codex --workflow plan` produces the `$ralplan`-targeted packet that [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx) can validate and preview from the GitHub source tree before broader real launch behavior is added. `--runtime omx` remains as the explicit harness-name preset for operators who want to target OMX directly. That runtime package path is not shipped inside the root `open-scaffold` npm payload today.
 
 ## Runtime presets
 
 | Runtime preset | Executor lane | Default backend | Purpose |
 |---|---|---|---|
 | `omc` | `omc-claude` | Claude Code + OMC / oh-my-claudecode | Claude Code-oriented planning/execution workflows. |
-| `omx` | `omx-codex` | Codex + OMX / oh-my-codex | Codex-oriented planning/execution workflows. |
+| `codex` | `omx-codex` | Codex via OMX / oh-my-codex | Broad user-facing Codex preset; currently backed by the `runtime-omx` adapter path. |
+| `omx` | `omx-codex` | Codex + OMX / oh-my-codex | Explicit harness-name preset for users targeting OMX directly. |
 | `plain` | `plain-agent` | Any capable agent or human-operated CLI | Runtime-neutral prompt package. |
 | `human` | `human` | Human/manual | Manual execution while preserving evidence gates. |
 | `custom` | `custom` | Adapter-defined | Future/private runtime adapter. |
 
-Built-in presets are profile IDs and lane targets, not installed adapters. `--runtime omx` records the OMX/Codex lane in `run.json`; it does not run OMX, Codex, or any provider process from core.
+Built-in presets are profile IDs and lane targets, not installed adapters. `--runtime codex` and `--runtime omx` both record the OMX/Codex lane in `run.json`; neither runs OMX, Codex, or any provider process from core. The current naming decision is: `codex` is the broad user-facing preset, `omx` is the explicit harness-name preset, and both expect the `runtime-omx` adapter until a separate direct `runtime-codex` package is justified.
 
 ## Workflow presets
 
@@ -63,7 +64,7 @@ Built-in presets are profile IDs and lane targets, not installed adapters. `--ru
 | `execute` | `/ultrawork` | `$ultrawork` | Larger bounded implementation pass. |
 | `goal` | `/ultrawork` | `$ultragoal` | Goal-maintenance / next-slice inheritance. |
 
-For `omc` and `omx`, `--workflow` defaults to `plan` so `--runtime omx` and `--runtime omc` produce dispatchable run packets without requiring the user to remember the matching `$ralplan` or `/ralplan` spelling. For `plain`, `human`, or `custom`, workflow is recorded but no harness skill is inferred unless the user provides `--harness-skill` explicitly.
+For `omc`, `codex`, and `omx`, `--workflow` defaults to `plan` so `--runtime codex`, `--runtime omx`, and `--runtime omc` produce dispatchable run packets without requiring the user to remember the matching `$ralplan` or `/ralplan` spelling. For `plain`, `human`, or `custom`, workflow is recorded but no harness skill is inferred unless the user provides `--harness-skill` explicitly.
 
 ## Boundary
 
@@ -103,6 +104,6 @@ This slice does not:
 - grant commit/push/merge/publish authority by default;
 - make model/orchestration-lab claims.
 
-The practical next step after this core selection surface is a runtime adapter package or coordinator integration that reads the package and performs any launch outside core. The accepted first package boundary is [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx), starting with `$ralplan`; it writes receipts/evidence by default without spawning and can launch OMX only through its explicit `--allow-spawn` package gate. It is a repository/GitHub package path for now, not an installable subpackage shipped by the root npm tarball.
+The practical next step after this core selection surface is a runtime adapter package or coordinator integration that reads the package and performs any launch outside core. The accepted first package boundary is [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx), starting with `$ralplan`; it writes receipts/evidence by default without spawning and can launch OMX only through its explicit `--allow-spawn` package gate. `--runtime codex` and `--runtime omx` both target that adapter path today; a separate `runtime-codex` package is deferred until there is direct Codex-adapter evidence. The adapter package is a repository/GitHub package path for now, not an installable subpackage shipped by the root npm tarball.
 
 For schema-backed runtime profiles, built-in profile ids, and project-local custom profiles, see [`RUNTIME_PROFILES.md`](RUNTIME_PROFILES.md). Runtime profiles are data-only in v0: they let users select and document an adapter lane, but they do not install or spawn the runtime from core.

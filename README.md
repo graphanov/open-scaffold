@@ -234,7 +234,7 @@ Open Scaffold can also write a durable handoff file for an agent, runtime, teamm
 ```bash
 npx open-scaffold run .osc/plans/active/my-first-task.md \
   --task-id TASK-001 \
-  --runtime omx \
+  --runtime codex \
   --workflow plan \
   --operator-surface github \
   --repo "$PWD"

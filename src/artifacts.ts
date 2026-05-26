@@ -218,8 +218,13 @@ function packageMarkdownFor(promptFiles: PromptPreview[]): string {
 }
 
 function buildRunArtifacts(root: string, plan: ParsedPlan, mode: ArtifactMode, options: RunArtifactOptions): RunArtifactsPreview {
-  const runId = `${timestamp()}-${slugify(plan.slug)}-${mode}`;
-  const runDir = join(root, '.osc', 'runs', runId);
+  const baseRunId = `${timestamp()}-${slugify(plan.slug)}-${mode}`;
+  let runId = baseRunId;
+  let runDir = join(root, '.osc', 'runs', runId);
+  for (let collision = 2; existsSync(runDir); collision += 1) {
+    runId = `${baseRunId}-${collision}`;
+    runDir = join(root, '.osc', 'runs', runId);
+  }
   const promptDir = join(runDir, 'prompts');
 
   const groups = plan.executionStrategy?.groups?.length
