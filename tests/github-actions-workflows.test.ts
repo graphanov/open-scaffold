@@ -14,8 +14,14 @@ describe('GitHub Actions workflow templates', () => {
     expect(workflow).toContain('node dist/cli.js plan validate "$plan"');
   });
 
-  it('checks out pull request validation workflows without repository token credentials', () => {
-    for (const workflowPath of ['.github/workflows/ci.yml', '.github/workflows/plan-validate.yml', '.github/workflows/evidence-validate.yml']) {
+  it('checks out workflows without repository token credentials', () => {
+    for (const workflowPath of [
+      '.github/workflows/ci.yml',
+      '.github/workflows/plan-validate.yml',
+      '.github/workflows/evidence-validate.yml',
+      '.github/workflows/publish-npm.yml',
+      '.github/workflows/stale-plans.yml',
+    ]) {
       const workflow = read(workflowPath);
 
       expect(workflow).not.toContain('actions/checkout');
