@@ -62,7 +62,7 @@ describe('osc work --dry-run', () => {
       expect(result.stdout).toContain('Dispatch preview (not executed):');
       expect(result.stdout).toContain('--adapter runtime-omx');
       expect(result.stdout).toContain('Scope confirmation required before execution');
-      expect(result.stdout).toContain('osc start .osc/plans/active/draft-add-a-health-endpoint-with-tests.md --runtime codex');
+      expect(result.stdout).toContain('osc run .osc/plans/active/draft-add-a-health-endpoint-with-tests.md --runtime codex --workflow plan --dry-run');
       expect(result.stdout).toContain('No files were written. No runtime was spawned. No provider API was called.');
       expect(existsSync(join(root, 'SPAWNED'))).toBe(false);
       expect(existsSync(join(root, '.osc/runs'))).toBe(false);
@@ -96,6 +96,28 @@ describe('osc work --dry-run', () => {
       expect(payload.noRuntimeSpawned).toBe(true);
       expect(existsSync(join(root, '.osc/runs'))).toBe(false);
       expect(existsSync(join(root, '.osc/plans/active/draft-add-login-audit-events.md'))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves workflow overrides in suggested run commands', () => {
+    const root = tempRepo();
+    try {
+      const result = spawnSync(tsx, [cli, 'work', 'Implement the approved plan', '--runtime', 'codex', '--workflow', 'execute', '--dry-run', '--json'], {
+        cwd: root,
+        encoding: 'utf8',
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      const payload = JSON.parse(result.stdout);
+      expect(payload.run.manifest.runtimeSelection.workflow).toBe('execute');
+      expect(payload.run.manifest.executor.harnessSkill).toBe('$ultrawork');
+      expect(payload.nextCommands).toContain('osc run .osc/plans/active/draft-implement-the-approved-plan.md --runtime codex --workflow execute --dry-run');
+      expect(payload.nextCommands).toContain('osc run .osc/plans/active/draft-implement-the-approved-plan.md --runtime codex --workflow execute');
+      expect(payload.nextCommands).not.toContain('osc run .osc/plans/active/draft-implement-the-approved-plan.md --runtime codex --dry-run');
+      expect(existsSync(join(root, '.osc/runs'))).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -13,8 +13,8 @@ Added `osc work <task-description> --runtime <preset> --dry-run` as the first na
 
 ## Verification
 
-- `npm test -- tests/cli-work.test.ts tests/artifacts.test.ts` — PASS, 12 tests.
-- `npm test` — PASS, 43 files / 377 tests.
+- `npm test -- tests/cli-work.test.ts tests/artifacts.test.ts` — PASS, 13 tests.
+- `npm test` — PASS, 43 files / 378 tests.
 - `npm run build` — PASS.
 - `./verify.sh --strict` — PASS, 10 pass / 0 fail / 0 warn.
 - `git diff --check` — PASS.

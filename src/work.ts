@@ -156,6 +156,7 @@ export function buildWorkDryRunPreview(root: string, intent: string, options: Ru
   const plan = buildCandidatePlan(root, intent);
   const runPreview = previewRunArtifacts(root, plan, 'run', options);
   const selectedAdapter = adapterId ?? defaultAdapterId(runtime);
+  const workflowFlag = options.workflow ? ` --workflow ${options.workflow}` : '';
   const dispatchCommand = selectedAdapter
     ? `osc dispatch ${runPreview.manifest.artifacts.manifest} --adapter ${selectedAdapter}`
     : `osc dispatch ${runPreview.manifest.artifacts.manifest} --adapter <adapter-id>`;
@@ -190,9 +191,8 @@ export function buildWorkDryRunPreview(root: string, intent: string, options: Ru
     scopeConfirmationRequired: true,
     nextCommands: [
       `Review and materialize the candidate plan at ${planPath} only after confirming scope.`,
-      `osc start ${planPath} --runtime ${runtime}`,
-      `osc run ${planPath} --runtime ${runtime} --dry-run`,
-      `osc run ${planPath} --runtime ${runtime}`,
+      `osc run ${planPath} --runtime ${runtime}${workflowFlag} --dry-run`,
+      `osc run ${planPath} --runtime ${runtime}${workflowFlag}`,
       dispatchCommand,
     ],
     noFilesWritten: true,
