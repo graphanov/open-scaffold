@@ -71,6 +71,16 @@ MISSION.md                         why this repo exists
 
 Chat, Discord, terminals, GitHub comments, and agent transcripts can help operate the work. They are not the source of truth. The repo record is.
 
+### Target workflow
+
+The post-v1 target is a smoother Codex-first path that starts from plain intent while preserving the same record:
+
+```bash
+osc work "Add a /health endpoint with tests" --runtime codex
+```
+
+That command is future direction, not a current v1 promise. The staged path is: `osc start` no-spawn prompt → Codex/OMX adapter package hardening → `osc dispatch` adapter glue → `osc work --dry-run` → optional gated execution after a separate safety decision. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md).
+
 ---
 
 ## When one attempt is not enough
@@ -311,6 +321,7 @@ Skip it for:
 
 - [`docs/WHY_OPEN_SCAFFOLD.md`](docs/WHY_OPEN_SCAFFOLD.md) — visual story and fit.
 - [`docs/index.html`](docs/index.html) — one-page landing page for the 30-second explanation.
+- [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md) — post-v1 Codex-first `osc work` target and staged adapter path.
 - [`docs/MINIMUM_VIABLE_SCAFFOLD.md`](docs/MINIMUM_VIABLE_SCAFFOLD.md) — smallest practical day-one adoption path.
 - [`docs/STABILITY.md`](docs/STABILITY.md) — v1.0.0 stable, experimental, and future surfaces.
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — curated release history.

@@ -9,7 +9,8 @@ Open Scaffold is a runtime-neutral, repo-native operating system for agent-orche
 - Define clear integration boundaries between orchestrators, runtime harnesses, operator surfaces, repository truth, and GitHub issue/PR workflows.
 - Productize the closed evolutionary loop: slice work, capture feedback, amend plans, verify against acceptance criteria, and feed learnings into the next slice.
 - Ship a Discord glass-cockpit pattern for private control rooms, team control rooms, and build-in-public workflows while keeping durable truth in the repo/GitHub/task system.
-- Investigate whether Open Scaffold should remain a runtime-neutral launch checklist/dispatch contract/black-box recorder, add a thin opt-in spawner, or eventually grow a native runtime as a separate explicitly-governed product layer.
+- Make the post-v1 adoption target explicit: `osc work "TASK DESCRIPTION" --runtime codex` should draft/confirm a plan, create a run packet, dispatch through an explicit adapter, capture receipt/evidence, run verification, and stop at human approval gates.
+- Keep Open Scaffold core as the runtime-neutral work record; runtime execution belongs in paste-ready handoffs, optional adapter packages, or future explicitly approved runtime layers — not hidden core spawning by drift.
 - Dogfood Open Scaffold on Open Scaffold itself: use the framework to grow the framework.
 
 ## Non-Goals
@@ -28,6 +29,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-26: closed 099-runtime-adoption-ux-reset — captured post-v1 Codex-first runtime adoption workflow target
 - 2026-05-26: closed 074-v1-launch-docs-polish — polished v1 launch docs and release truth
 - 2026-05-25: closed 064-devcontainer-profile — devcontainer profile shipped in PR #108
 - 2026-05-25: closed 069-v1-launch — prepared v1.0.0 release candidate with stability docs and owner publication gates

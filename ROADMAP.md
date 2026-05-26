@@ -411,6 +411,47 @@ Owner gates:
 - Create or mark the `v1.0.0` GitHub Release as **Latest**.
 - Decide whether to launch publicly through a blog, social channel, GitHub Pages, or another site.
 
+### Milestone 19 — Post-v1 adoption workflow target
+
+Status: planned through `.osc/plans/done/099-runtime-adoption-ux-reset.md` and `docs/RUNTIME_ADOPTION_WORKFLOW.md`.
+
+Goal: turn the credible v1 work-record protocol into a smoother adoption path without collapsing Open Scaffold core into a provider-specific runtime.
+
+Target workflow:
+
+```bash
+osc work "Add a /health endpoint with tests" --runtime codex
+```
+
+The target control loop is:
+
+```text
+intent
+  -> plan draft / scope confirmation
+  -> run packet
+  -> explicit Codex/OMX adapter dispatch
+  -> dispatch receipt + evidence
+  -> verification
+  -> human gate before commit/push/PR/merge/publish
+```
+
+Implementation sequence:
+
+1. Fix immediate verification trust issues such as unsafe strict-mode filename quoting.
+2. Add `osc start` as a no-spawn, paste-ready Codex/OMX agent-entry command.
+3. Harden the Codex-first adapter package path: graduate `runtime-omx`, add direct `runtime-codex`, or support both after source-grounded UX review.
+4. Add `osc dispatch <run.json> --adapter <id>` as explicit adapter invocation glue.
+5. Add `osc work --dry-run` as the first natural-language composition layer.
+6. Reconsider optional gated execution only after receipt/evidence, conformance, worktree isolation, authority budgets, approval queues, and user evidence exist.
+
+Acceptance direction:
+
+- Core stays the work record, policy, verification, and evidence layer.
+- Runtime execution stays adapter-owned and explicit.
+- The next adapter path is Codex-first; Claude Code-specific runtime work is not the default follow-up from this milestone.
+- Current `packages/runtime-omx/` is treated as an experimental Codex/OMX proof, not as a broad finished runtime platform.
+- Adapter registry work follows at least two credible adapter entries or a clear Codex/OMX package graduation; a registry with only one experimental adapter is not the adoption bottleneck.
+
 ## Parking lot
 
 - Deferred compliance-grade agentic OS / hashgraph-style regulated-SDLC exploration; reopen only through an explicit ADR/plan.
