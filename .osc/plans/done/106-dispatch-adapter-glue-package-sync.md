@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -29,14 +29,14 @@ Prepare and verify `open-scaffold@1.0.3` as the package/public-surface sync for 
 
 ## Acceptance criteria
 
-- [ ] Root package version is bumped to `1.0.3` and lockfile metadata matches.
-- [ ] Changelog documents v1.0.3 as the package-surface sync for `osc dispatch` adapter glue and PR validation checkout resilience.
-- [ ] Local gates pass before PR: `./verify.sh --strict`, `npm test`, `npm run build`, `npm pack --dry-run --json`, `git diff --check`.
-- [ ] PR CI and latest-head Codex review are clean before PR integration.
-- [ ] Trusted publishing succeeds for `open-scaffold@1.0.3` after PR integration.
-- [ ] `npm view open-scaffold version dist-tags --json` shows `1.0.3` / `latest: 1.0.3`.
-- [ ] Fresh isolated-cache `npx --yes open-scaffold@latest --help` includes `osc dispatch <run-json> --adapter <adapter-id>`.
-- [ ] GitHub Release `v1.0.3` exists, targets the integrated main commit, and is marked Latest.
+- [x] Root package version is bumped to `1.0.3` and lockfile metadata matches.
+- [x] Changelog documents v1.0.3 as the package-surface sync for `osc dispatch` adapter glue and PR validation checkout resilience.
+- [x] Local gates pass before PR: `./verify.sh --strict`, `npm test`, `npm run build`, `npm pack --dry-run --json`, `git diff --check`.
+- [x] PR CI and latest-head Codex review are clean before PR integration.
+- [x] Trusted publishing succeeds for `open-scaffold@1.0.3` after PR integration.
+- [x] `npm view open-scaffold version dist-tags --json` shows `1.0.3` / `latest: 1.0.3`.
+- [x] Fresh isolated-cache `npx --yes open-scaffold@latest --help` includes `osc dispatch <run-json> --adapter <adapter-id>`.
+- [x] GitHub Release `v1.0.3` exists, targets the integrated main commit, and is marked Latest.
 
 ## Verification steps
 
