@@ -135,4 +135,23 @@ describe('osc start', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('rejects direct markdown paths outside .osc/plans', () => {
+    const root = tempRepo();
+    try {
+      const outsidePath = join(root, 'outside-plan.md');
+      writeFileSync(outsidePath, '# Outside\n\n## Goal\n\nLeak me.\n');
+
+      const result = spawnSync(tsx, [cli, 'start', outsidePath, '--runtime', 'plain'], {
+        cwd: root,
+        encoding: 'utf8',
+      });
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain('Plan path must be under .osc/plans/{active,backlog,blocked,done}');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

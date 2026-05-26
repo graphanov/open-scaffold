@@ -1,5 +1,6 @@
+import { realpathSync } from 'node:fs';
 import { relative } from 'node:path';
-import { findScaffoldRoot, parsePlanFile, type ParsedPlan } from './scaffold.js';
+import { findScaffoldRoot, parsePlanFile, PLAN_STAGES, type ParsedPlan } from './scaffold.js';
 import { resolvePlanValidationPath } from './plan-validate.js';
 
 export const START_RUNTIMES = ['codex', 'omx', 'plain', 'human', 'custom'] as const;
@@ -60,11 +61,15 @@ function workerInstruction(runtime: StartRuntime): string {
 
 export function renderStartPrompt(planReference: string, options: { runtime: StartRuntime; cwd?: string }): StartPromptResult {
   const cwd = options.cwd ?? process.cwd();
-  const planPath = resolvePlanValidationPath(planReference, cwd);
+  const planPath = realpathSync(resolvePlanValidationPath(planReference, cwd));
   const root = findScaffoldRoot(planPath) ?? findScaffoldRoot(cwd);
   if (!root) throw new Error(`No Open Scaffold root found from ${cwd}. Run this inside a repo with .osc/plans and .osc/releases.`);
-  const plan = parsePlanFile(planPath);
   const relativePlanPath = relative(root, planPath).replace(/\\/g, '/');
+  const allowedPlanPath = PLAN_STAGES.some((stage) => relativePlanPath.startsWith(`.osc/plans/${stage}/`));
+  if (!allowedPlanPath) {
+    throw new Error(`Plan path must be under .osc/plans/{active,backlog,blocked,done}: ${relativePlanPath}`);
+  }
+  const plan = parsePlanFile(planPath);
   const context = firstSectionParagraph(plan, 'Context', 'Use the plan context as the source of truth.');
   const constraints = plan.sections.get('Constraints / Out of scope')?.trim() || 'Respect all plan constraints and stop before out-of-scope work.';
 
