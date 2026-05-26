@@ -4,6 +4,24 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v1.0.3 — Dispatch adapter glue package sync
+
+Status: release-sync candidate; package version prepared locally, npm/GitHub Release publication pending trusted-publishing follow-through.
+
+Highlights:
+
+- Publishes the PR #125 package-visible runtime surface: `osc dispatch <run-json> --adapter <adapter-id>` for explicit local adapter invocation from existing run packets.
+- Keeps dispatch constrained to reviewed project-local adapter configs; core refuses unsafe adapters, auto-install/network/shell/platform-shim executables, symlinked outputs, stale inferred outputs, and out-of-run-directory receipt/evidence paths.
+- Keeps Open Scaffold core non-spawning: dispatch invokes a selected adapter command, captures reported outputs, and does not grant commit/push/PR/merge/publish/credential/provider-runtime authority.
+- Hardens PR validation workflows to checkout public merge refs without repository-token Git credentials when required checks need to run before repo code executes.
+
+Evidence:
+
+- Plan: `.osc/plans/active/106-dispatch-adapter-glue-package-sync.md`
+- Source PR: https://github.com/graphanov/open-scaffold/pull/125
+- Evidence note: `.osc/releases/2026-05-26-106-dispatch-adapter-glue-package-sync.md`
+- npm/GitHub Release: pending trusted-publishing follow-through
+
 ## v1.0.2 — Codex runtime preset package sync
 
 Status: published to npm as `open-scaffold@1.0.2`; GitHub Release `v1.0.2` is Latest.
