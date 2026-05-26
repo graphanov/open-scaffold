@@ -2,11 +2,11 @@
 
 This is a curated human-readable changelog. It compresses the detailed `MISSION.md` changelog, `.osc/releases/` evidence notes, GitHub PR history, and GitHub Releases into adoption-facing release groups.
 
-For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared; publication still depends on owner-gated npm and GitHub Release actions.
+For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
 ## v1.0.1 — No-spawn Codex handoff entry
 
-Status: repository candidate prepared; npm publication and GitHub Release latest movement are owner-gated external actions.
+Status: published to npm as `open-scaffold@1.0.1`; GitHub Release `v1.0.1` is Latest.
 
 Highlights:
 
@@ -19,10 +19,12 @@ Evidence:
 - Plan: `.osc/plans/done/101-osc-start-codex-agent-entry.md`
 - Evidence note: `.osc/releases/2026-05-26-101-osc-start-codex-agent-entry.md`
 - PR: https://github.com/graphanov/open-scaffold/pull/119
+- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v1.0.1
+- npm: `open-scaffold@1.0.1` / `latest`
 
 ## v1.0.0 — Stable protocol release candidate
 
-Status: repository candidate merged; npm publication and GitHub Release latest movement are owner-gated external actions.
+Status: published to npm as `open-scaffold@1.0.0`; GitHub Release `v1.0.0` was the initial stable Latest release before `v1.0.1`.
 
 Highlights:
 

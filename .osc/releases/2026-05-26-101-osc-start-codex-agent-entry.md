@@ -22,15 +22,17 @@ This slice adds `osc start <plan> --runtime codex` as a no-spawn agent-entry com
 - `git diff --check` — pass.
 - `npm pack --dry-run --json` — pass; produced package candidate `open-scaffold-1.0.1.tgz`, 148 files, unpacked size 1.0 MB.
 - `npm publish --dry-run` — pass; dry-run only, reported `+ open-scaffold@1.0.1`.
+- Trusted publishing run https://github.com/graphanov/open-scaffold/actions/runs/26444343837 — success; published from `main` commit `60d6c19de6ab352b6c284a0f88573a5032dd9b0d`.
+- `npm view open-scaffold version dist-tags --json --prefer-online` — `1.0.1` with `latest` -> `1.0.1`.
+- Registry tarball smoke from `open-scaffold@latest` — package version `1.0.1`; packaged CLI help contains `osc start <plan-slug-or-path>`; packaged `start` command is recognized.
+- GitHub Release https://github.com/graphanov/open-scaffold/releases/tag/v1.0.1 — created and marked Latest.
 
 ## Outcome
 
 `osc start` now accepts a plan slug or direct plan path plus an explicit runtime (`codex`, `omx`, `plain`, `human`, or `custom`). The Codex path is intentionally framed as a Codex/OMX handoff while the direct adapter naming decision remains a follow-up. The command reads plan content, prints a prompt, and stops; it does not spawn agents, install runtimes, create `.osc/runs`, commit, push, open PRs, merge, publish, release, or deploy.
 
-The public CLI surface changed, so this branch prepares package candidate version `1.0.1`. A Codex P2 review finding on PR #119 tightened direct-path handling so `osc start` rejects markdown files outside the scaffold plan directories before parsing them. Merge, npm publish, and GitHub Release creation remain owner-gated.
+The public CLI surface changed, so version `1.0.1` was published through GitHub Actions trusted publishing and GitHub Release `v1.0.1` is the current Latest release. A Codex P2 review finding on PR #119 tightened direct-path handling so `osc start` rejects markdown files outside the scaffold plan directories before parsing them.
 
 ## Follow-up
 
-- Owner review/merge gate for the PR.
-- If merged, verify npm/latest drift and publish `open-scaffold@1.0.1` only with explicit owner approval.
 - Continue the staged runtime-adoption chain with plan 102: Codex/OMX adapter package hardening.
