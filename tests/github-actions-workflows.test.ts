@@ -13,4 +13,15 @@ describe('GitHub Actions workflow templates', () => {
     expect(workflow).toContain('*-amendment-[0-9]*.md) continue ;;');
     expect(workflow).toContain('node dist/cli.js plan validate "$plan"');
   });
+
+  it('checks out pull request validation workflows without repository token credentials', () => {
+    for (const workflowPath of ['.github/workflows/ci.yml', '.github/workflows/plan-validate.yml', '.github/workflows/evidence-validate.yml']) {
+      const workflow = read(workflowPath);
+
+      expect(workflow).not.toContain('actions/checkout');
+      expect(workflow).toContain('GIT_TERMINAL_PROMPT=0 git -c credential.helper= fetch --no-tags --prune origin');
+      expect(workflow).toContain('refs/pull/${{ github.event.pull_request.number }}/merge:refs/remotes/pull/${{ github.event.pull_request.number }}/merge');
+      expect(workflow).toContain('git checkout --force "$GITHUB_SHA"');
+    }
+  });
 });

@@ -17,6 +17,8 @@ const coreProcessAllowedFiles = new Set([
   join(coreSrcRoot, 'evidence.ts'),
   // Metrics may shell out to local `git log` for commit-date timestamps; it must not spawn runtimes or use network commands.
   join(coreSrcRoot, 'metrics.ts'),
+  // Dispatch may invoke an explicitly reviewed local adapter command for an existing run packet; adapter launch policy remains outside core.
+  join(coreSrcRoot, 'dispatch.ts'),
 ]);
 
 const runtimeForbiddenPatterns = [
@@ -45,11 +47,13 @@ function isCoreProcessAllowedFile(file: string): boolean {
 }
 
 describe('runtime-omx source boundary', () => {
-  it('only allowlists the intended core evidence and local metrics collector files', () => {
+  it('only allowlists the intended core evidence, dispatch, and local metrics collector files', () => {
     expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'evidence.ts'))).toBe(true);
     expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'metrics.ts'))).toBe(true);
+    expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'dispatch.ts'))).toBe(true);
     expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'nested', 'evidence.ts'))).toBe(false);
     expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'nested', 'metrics.ts'))).toBe(false);
+    expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'nested', 'dispatch.ts'))).toBe(false);
   });
 
   it('Open Scaffold core source remains free of runtime process launching code', () => {

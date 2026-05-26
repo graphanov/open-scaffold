@@ -127,21 +127,32 @@ Make the Codex adapter path credible:
 
 ### Stage 3 — `osc dispatch` adapter glue
 
-Add a command such as:
+Current repo support adds:
 
 ```bash
 osc dispatch .osc/runs/RUN_ID/run.json --adapter omx
 ```
 
-It should:
+`--adapter` resolves a reviewed project-local adapter config at `.osc/adapters/<adapter-id>.json`, for example:
 
-- locate or validate the adapter;
-- call the selected adapter with the run packet;
-- capture receipt/evidence/log paths;
-- print the next verification and approval step;
-- refuse unknown, unsafe, or auto-installing adapters by default.
+```json
+{
+  "schemaVersion": "open-scaffold.adapter.v1",
+  "id": "omx",
+  "command": ["open-scaffold-runtime-omx"]
+}
+```
 
-`osc dispatch` is adapter invocation glue, not a hidden provider runtime.
+The command:
+
+- requires an existing `open-scaffold.run.v1` packet under `.osc/runs/`;
+- invokes only the explicitly selected local adapter command;
+- refuses missing, unknown, unsafe, URL-based, shell-wrapper, platform-shim, network-fetching, or auto-installing adapter commands by default;
+- captures adapter stdout/stderr logs under `.osc/runs/RUN_ID/dispatch/`;
+- reads adapter-reported receipt/evidence paths only when they remain under the run directory;
+- prints the next verification and human-approval step.
+
+`osc dispatch` is adapter invocation glue, not a hidden provider runtime. Core does not import provider SDKs, auto-install adapters, own credentials, supervise tmux/processes, or grant commit/push/PR/merge/publish authority. Adapter packages own their launch policy and must return receipts/evidence that the operator can inspect.
 
 ### Stage 4 — `osc work --dry-run`
 

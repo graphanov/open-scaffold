@@ -6,6 +6,7 @@ import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, typ
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
 import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
 import { runDashboard, type DashboardRunOptions } from './dashboard.js';
+import { DispatchUsageError, formatDispatchSummary, runDispatch } from './dispatch.js';
 import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
 import { openDashboardUrl, serveDashboard, writeWebDashboard } from './dashboard-web.js';
 import { collectEvidence } from './evidence.js';
@@ -52,6 +53,7 @@ Usage:
   osc start <plan-slug-or-path> --runtime <codex|omx|plain|human|custom>
   osc delegate <plan-path> [run binding options]
   osc run <plan-path> [--dry-run] [--json] [run binding options]
+  osc dispatch <run-json> --adapter <adapter-id>
   osc review <plan-path> [run binding options]
   osc ultrareview <plan-path> [run binding options]
   osc eval init <run-or-plan> [--out <path>]
@@ -1135,6 +1137,60 @@ function startCommand(args: string[]): void {
     process.stdout.write(renderStartPrompt(planReference, { runtime, cwd: process.cwd() }).prompt);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
+function printDispatchUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc dispatch <run-json> --adapter <adapter-id>
+
+Invokes an explicit trusted adapter for an existing run packet, captures adapter stdout/stderr logs, and prints receipt/evidence paths. Open Scaffold core does not auto-install adapters or grant commit/push/merge/publish authority.`, stream);
+}
+
+function takeDispatchValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${flag}`);
+    printDispatchUsage();
+    process.exit(2);
+  }
+  return value;
+}
+
+function dispatchCommand(args: string[]): void {
+  if (isHelpArg(args[0])) {
+    printDispatchUsage('stdout');
+    return;
+  }
+  const runJson = requireArg(args, 'run-json');
+  let adapterId: string | undefined;
+  const rest = args.slice(1);
+  for (let i = 0; i < rest.length; i += 1) {
+    const flag = rest[i];
+    switch (flag) {
+      case '--adapter':
+        adapterId = takeDispatchValue(rest, i, flag);
+        i += 1;
+        break;
+      default:
+        console.error(`Unknown option for dispatch: ${flag}`);
+        printDispatchUsage();
+        process.exit(2);
+    }
+  }
+  if (!adapterId) {
+    console.error('Missing required option: --adapter <adapter-id>');
+    printDispatchUsage();
+    process.exit(2);
+  }
+  try {
+    const result = runDispatch(runJson, { adapterId }, process.cwd());
+    const root = findScaffoldRoot(dirname(result.runPacketPath)) ?? process.cwd();
+    process.stdout.write(formatDispatchSummary(result, root));
+    if (result.exitStatus !== 0) process.exit(1);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    if (error instanceof DispatchUsageError) process.exit(2);
     process.exit(1);
   }
 }
@@ -2311,6 +2367,11 @@ async function main(): Promise<void> {
       return;
     case 'delegate':
     case 'run':
+      createArtifacts(args, command);
+      return;
+    case 'dispatch':
+      dispatchCommand(args);
+      return;
     case 'review':
     case 'ultrareview':
       createArtifacts(args, command);
