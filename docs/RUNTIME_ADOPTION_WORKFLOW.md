@@ -86,7 +86,7 @@ Fix immediate trust issues and make the target workflow public:
 
 ### Stage 1 — `osc start` no-spawn agent entry
 
-Add a command such as:
+Current repo support begins with:
 
 ```bash
 osc start .osc/plans/active/my-task.md --runtime codex
@@ -108,7 +108,7 @@ It prints a paste-ready agent prompt with:
 - authority boundaries;
 - post-work instructions.
 
-It does not create a process, mutate source files, commit, push, or create a PR.
+It does not create a process, mutate source files, commit, push, or create a PR. It also does not require Codex, OMX, network access, or runtime credentials to be installed because it only renders text.
 
 ### Stage 2 — Codex adapter package hardening
 

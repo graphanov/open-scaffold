@@ -79,7 +79,7 @@ The post-v1 target is a smoother Codex-first path that starts from plain intent 
 osc work "Add a /health endpoint with tests" --runtime codex
 ```
 
-That command is future direction, not a current v1 promise. The staged path is: `osc start` no-spawn prompt → Codex/OMX adapter package hardening → `osc dispatch` adapter glue → `osc work --dry-run` → optional gated execution after a separate safety decision. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md).
+That command is future direction, not a current v1 promise. The first no-spawn step is `osc start`, which prints a paste-ready Codex/OMX handoff prompt from an existing plan without launching a runtime. The remaining staged path is: Codex/OMX adapter package hardening → `osc dispatch` adapter glue → `osc work --dry-run` → optional gated execution after a separate safety decision. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md).
 
 ---
 
@@ -219,9 +219,17 @@ Shell fallbacks remain available:
 ./close.sh my-first-task --message "verified first task"
 ```
 
-### 5. Optional: package work for another tool
+### 5. Optional: hand off to another tool
 
-Open Scaffold can write a handoff file for an agent, runtime, teammate, or future session:
+To print a paste-ready prompt for a Codex/OMX worker without writing run artifacts or launching anything:
+
+```bash
+osc start .osc/plans/active/my-first-task.md --runtime codex
+# or without local install:
+npx open-scaffold start .osc/plans/active/my-first-task.md --runtime codex
+```
+
+Open Scaffold can also write a durable handoff file for an agent, runtime, teammate, or future session:
 
 ```bash
 npx open-scaffold run .osc/plans/active/my-first-task.md \
@@ -236,9 +244,9 @@ That creates a `run.json` work package. The outside tool executes. Evidence come
 
 ---
 
-## v1.0.0 stable release candidate
+## v1.0.x stable release line
 
-Open Scaffold v1.0.0 means the repo protocol and day-two CLI are stable enough to adopt with semver expectations. It does **not** mean every experimental integration is frozen.
+Open Scaffold v1.0.x means the repo protocol and day-two CLI are stable enough to adopt with semver expectations. It does **not** mean every experimental integration is frozen.
 
 Stable:
 
