@@ -2,7 +2,7 @@
 
 ## Summary
 
-Prepared `open-scaffold@1.0.3` as the package/public-surface sync candidate for PR #125's `osc dispatch` adapter glue and GitHub Actions checkout resilience. npm/latest and GitHub Latest Release publication are pending trusted-publishing follow-through after this candidate is integrated.
+Prepared `open-scaffold@1.0.3` as the package/public-surface sync candidate for PR #125's `osc dispatch` adapter glue and GitHub Actions checkout resilience. The Actions checkout pattern now keeps private-repo compatibility through authenticated fetches while falling back to public unauthenticated refs when repository-token Git fetches are unavailable. npm/latest and GitHub Latest Release publication are pending trusted-publishing follow-through after this candidate is integrated.
 
 ## Traceability
 

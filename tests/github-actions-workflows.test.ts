@@ -14,7 +14,7 @@ describe('GitHub Actions workflow templates', () => {
     expect(workflow).toContain('node dist/cli.js plan validate "$plan"');
   });
 
-  it('checks out workflows without repository token credentials', () => {
+  it('checks out workflows with authenticated fetch and public fallback', () => {
     for (const workflowPath of [
       '.github/workflows/ci.yml',
       '.github/workflows/plan-validate.yml',
@@ -25,7 +25,10 @@ describe('GitHub Actions workflow templates', () => {
       const workflow = read(workflowPath);
 
       expect(workflow).not.toContain('actions/checkout');
-      expect(workflow).toContain("GIT_TERMINAL_PROMPT=0 git -c credential.helper= fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'");
+      expect(workflow).toContain('GITHUB_TOKEN: ${{ github.token }}');
+      expect(workflow).toContain('http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_header}');
+      expect(workflow).toContain('falling back to public unauthenticated fetch');
+      expect(workflow).toContain("fetch_with_fallback repository --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'");
       expect(workflow).toContain('refs/pull/${{ github.event.pull_request.number }}/merge:refs/remotes/pull/${{ github.event.pull_request.number }}/merge');
       expect(workflow).toContain('git checkout --force "$GITHUB_SHA"');
     }
