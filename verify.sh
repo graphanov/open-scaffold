@@ -217,7 +217,7 @@ if [ "$TIER" = "--strict" ]; then
         case "$basename" in
           *-amendment-*) continue ;;
         esac
-        relpath=$(python3 -c "import os; print(os.path.relpath('$f', '$ROOT'))" 2>/dev/null || printf '%s' "$f" | sed "s|$ROOT/||")
+        relpath=$(python3 -c 'import os, sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$f" "$ROOT" 2>/dev/null || printf '%s' "${f#"$ROOT"/}")
         # Count commits that modified this file's content (renames/moves during close are allowed)
         commit_count=$(git -C "$ROOT" log --oneline --diff-filter=M --follow -- "$relpath" 2>/dev/null | wc -l | tr -d ' ')
         if [ "$commit_count" -gt 0 ]; then

@@ -29,6 +29,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-26: closed 100-verify-strict-filename-quoting — hardened strict verifier filename handling
 - 2026-05-26: closed 099-runtime-adoption-ux-reset — captured post-v1 Codex-first runtime adoption workflow target
 - 2026-05-26: closed 074-v1-launch-docs-polish — polished v1 launch docs and release truth
 - 2026-05-25: closed 064-devcontainer-profile — devcontainer profile shipped in PR #108
