@@ -10,7 +10,7 @@ Captured the post-v1 adoption workflow target as a Codex-first, adapter/dispatch
 - Plan: `.osc/plans/done/099-runtime-adoption-ux-reset.md`
 - Source audit: post-v1 architecture/product/runtime/security audit synthesis; public-safe conclusions are promoted into this plan, roadmap milestone, and target workflow doc.
 - Run packet: N/A — strategy/docs/backlog slice, no runtime handoff package.
-- Branch / PR: `strategy/runtime-adoption-ux-reset`; PR pending at evidence-note creation time.
+- Branch / PR: `strategy/runtime-adoption-ux-reset`; https://github.com/graphanov/open-scaffold/pull/117.
 
 ## Verification
 
