@@ -9,7 +9,8 @@ Published `open-scaffold@1.0.2` so npm/latest, fresh `npx`, and GitHub Latest Re
 - Roadmap / issue / task: Milestone 16 / post-v1 Codex-first runtime adoption chain; release-sync follow-through after PR #121.
 - Plan: `.osc/plans/done/105-codex-runtime-adapter-package-release-sync.md`.
 - Run ID / run packet: N/A for release-sync.
-- Branch / Pull Request: https://github.com/graphanov/open-scaffold/pull/122.
+- Release-sync Pull Request: https://github.com/graphanov/open-scaffold/pull/122.
+- Evidence closeout Pull Request: https://github.com/graphanov/open-scaffold/pull/124.
 - Trusted publishing run: https://github.com/graphanov/open-scaffold/actions/runs/26447284708.
 - GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v1.0.2.
 
