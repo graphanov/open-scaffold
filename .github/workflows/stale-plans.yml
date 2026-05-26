@@ -26,7 +26,7 @@ jobs:
           set -euo pipefail
           git init .
           git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
-          GIT_TERMINAL_PROMPT=0 git -c credential.helper= fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          GIT_TERMINAL_PROMPT=0 git -c credential.helper= fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             GIT_TERMINAL_PROMPT=0 git -c credential.helper= fetch --no-tags origin "refs/pull/${{ github.event.pull_request.number }}/merge:refs/remotes/pull/${{ github.event.pull_request.number }}/merge"
             git checkout --force "refs/remotes/pull/${{ github.event.pull_request.number }}/merge"
