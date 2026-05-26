@@ -59,17 +59,21 @@ That means the next runtime-adoption work should prioritize Codex and OMX / oh-m
 
 Current truth:
 
-- `osc run` can create `run.json` packets with `--runtime omx`, `--workflow plan`, `--executor omx-codex`, and `--harness-skill '$ralplan'`.
+- `osc run` can create `run.json` packets with `--runtime codex` or `--runtime omx`, `--workflow plan`, `--executor omx-codex`, and `--harness-skill '$ralplan'`.
+- `--runtime codex` is the broad user-facing Codex preset; `--runtime omx` remains the explicit harness-name preset. Both currently target the same `runtime-omx` adapter path.
 - `packages/runtime-omx/` exists as the first optional runtime package proof.
-- `@open-scaffold/runtime-omx` validates OMX `$ralplan` run packets and writes dispatch receipts/evidence by default without spawning.
+- `@open-scaffold/runtime-omx` validates Codex/OMX `$ralplan` run packets and writes dispatch receipts/evidence by default without spawning.
 - `@open-scaffold/runtime-omx --allow-spawn` has an explicit opt-in launch path guarded by branch, worktree, version, path, and read-only Codex sandbox checks.
 - The package is still experimental/private and does not make Open Scaffold core a runtime.
 
-The next adapter work should therefore harden the Codex path rather than starting a Claude Code adapter by default. The naming can be resolved by evidence:
+The next adapter work should therefore harden the Codex path rather than starting a Claude Code adapter by default. The naming decision for the current package-hardening slice is:
 
-- If OMX remains the intended Codex harness, graduate `@open-scaffold/runtime-omx` as the Codex-first adapter.
-- If direct Codex CLI support is cleaner for broad users, add `@open-scaffold/runtime-codex` as a sibling that shares the same dispatch receipt contract.
-- In either case, core stays runtime-neutral and adapter-owned launch stays explicit.
+- Use `--runtime codex` for broad-user docs and future `osc work ... --runtime codex` examples.
+- Keep `--runtime omx` for operators who intentionally target the OMX harness by name.
+- Keep `@open-scaffold/runtime-omx` as the current adapter package because OMX / oh-my-codex is the tested Codex harness path.
+- Defer a separate `@open-scaffold/runtime-codex` package until direct Codex adapter evidence shows a cleaner path that can share the same dispatch receipt contract.
+
+In either case, core stays runtime-neutral and adapter-owned launch stays explicit.
 
 ## Staged implementation chain
 
@@ -115,7 +119,8 @@ It does not create a process, mutate source files, commit, push, or create a PR.
 Make the Codex adapter path credible:
 
 - validate the existing `runtime-omx` launch and no-spawn behavior against fresh fixtures;
-- decide whether the public adapter should be `runtime-omx`, `runtime-codex`, or both;
+- keep `runtime-omx` as the current adapter package while adding `codex` as the broad user-facing preset;
+- defer a direct `runtime-codex` package until separate source-grounded evidence justifies it;
 - keep receipts/evidence compatible with `open-scaffold.dispatch-receipt.v1`;
 - document safety boundaries;
 - publish only after safety review and owner approval.

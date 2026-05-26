@@ -245,19 +245,23 @@ describe('osc init CLI', () => {
   }, 15_000);
 
 
-  it('defaults OMC/OMX runtime presets to plan workflow so packets are dispatchable', () => {
+  it('defaults Codex/OMX runtime presets to plan workflow so packets are dispatchable', () => {
     const target = tempTarget();
     execFileSync(tsx, [cli, 'init', '--standard', '--target', target], { encoding: 'utf8' });
     const planPath = writeRuntimeSelectionPlan(target, 'Demo runtime default workflow.');
 
+    execFileSync(tsx, [cli, 'run', planPath, '--runtime', 'codex', '--repo', target], { cwd: target, encoding: 'utf8' });
     execFileSync(tsx, [cli, 'run', planPath, '--runtime', 'omx', '--repo', target], { cwd: target, encoding: 'utf8' });
     const runsDir = join(target, '.osc/runs');
-    const runId = readdirSync(runsDir).sort().at(-1);
-    expect(runId).toBeTruthy();
-    const manifest = JSON.parse(readFileSync(join(runsDir, runId!, 'run.json'), 'utf8'));
+    const runIds = readdirSync(runsDir).sort();
+    expect(runIds.length).toBeGreaterThanOrEqual(2);
+    const codexManifest = JSON.parse(readFileSync(join(runsDir, runIds.at(-2)!, 'run.json'), 'utf8'));
+    const omxManifest = JSON.parse(readFileSync(join(runsDir, runIds.at(-1)!, 'run.json'), 'utf8'));
 
-    expect(manifest.runtimeSelection).toMatchObject({ runtime: 'omx', workflow: 'plan', profileId: 'omx', profileSource: 'builtin' });
-    expect(manifest.executor).toMatchObject({ lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false });
+    expect(codexManifest.runtimeSelection).toMatchObject({ runtime: 'codex', workflow: 'plan', profileId: 'codex', profileSource: 'builtin' });
+    expect(codexManifest.executor).toMatchObject({ lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false });
+    expect(omxManifest.runtimeSelection).toMatchObject({ runtime: 'omx', workflow: 'plan', profileId: 'omx', profileSource: 'builtin' });
+    expect(omxManifest.executor).toMatchObject({ lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false });
   }, 15_000);
 
 
@@ -324,16 +328,22 @@ describe('osc init CLI', () => {
     execFileSync(tsx, [cli, 'init', '--standard', '--target', target], { encoding: 'utf8' });
 
     const list = execFileSync(tsx, [cli, 'runtimes', 'list'], { cwd: target, encoding: 'utf8' });
+    expect(list).toContain('codex\tbuiltin\tomx-codex\tadapter-candidate');
     expect(list).toContain('omx\tbuiltin\tomx-codex\tadapter-candidate');
 
     const listJson = JSON.parse(execFileSync(tsx, [cli, 'runtimes', 'list', '--json'], { cwd: target, encoding: 'utf8' }));
     expect(listJson).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'codex', source: 'builtin', lane: 'omx-codex', status: 'adapter-candidate' }),
       expect.objectContaining({ id: 'omx', source: 'builtin', lane: 'omx-codex', status: 'adapter-candidate' }),
     ]));
 
     const invalidList = spawnSync(tsx, [cli, 'runtimes', 'list', '--bogus'], { cwd: target, encoding: 'utf8' });
     expect(invalidList.status).toBe(2);
     expect(invalidList.stderr).toContain('Unknown option for runtimes list: --bogus');
+
+    const codexShown = JSON.parse(execFileSync(tsx, [cli, 'runtimes', 'show', 'codex'], { cwd: target, encoding: 'utf8' }));
+    expect(codexShown).toMatchObject({ id: 'codex', source: 'builtin', lane: 'omx-codex' });
+    expect(codexShown.launch).toMatchObject({ expectedAdapterId: 'runtime-omx', spawning: false });
 
     const shown = JSON.parse(execFileSync(tsx, [cli, 'runtimes', 'show', 'omx'], { cwd: target, encoding: 'utf8' }));
     expect(shown).toMatchObject({ id: 'omx', source: 'builtin', lane: 'omx-codex' });

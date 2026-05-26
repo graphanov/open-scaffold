@@ -179,8 +179,8 @@ That makes OMX the first serious runtime-engine direction without making the cor
 
 ```text
 1. `osc evolve init <plan-or-run> --out .osc/evolution/<loop_id>` creates the loop.
-2. `osc run <plan> --runtime omx --workflow plan` creates a run packet.
-3. `open-scaffold-runtime-omx .osc/runs/<run_id>/run.json` validates the OMX `$ralplan` handoff and writes receipt/evidence without spawning by default.
+2. `osc run <plan> --runtime codex --workflow plan` creates a run packet.
+3. `open-scaffold-runtime-omx .osc/runs/<run_id>/run.json` validates the Codex/OMX `$ralplan` handoff and writes receipt/evidence without spawning by default.
 4. `osc eval init/check` records acceptance-criteria evaluation when needed.
 5. `osc evolve record ... --receipt .osc/runs/<run_id>/dispatch-receipt.json --evidence .osc/runs/<run_id>/runtime-omx-evidence.md` appends the attempt.
 6. If the attempt is best so far, `--decision promote` updates `frontier.json`.

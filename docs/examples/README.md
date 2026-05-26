@@ -111,7 +111,7 @@ From a repository checkout with dependencies installed:
 ```bash
 npm run osc -- run .osc/plans/done/013-binding-example.md \
   --task-id plan:013-binding-example-verification \
-  --runtime omx \
+  --runtime codex \
   --workflow plan \
   --operator-surface cli \
   --repo "$PWD" \

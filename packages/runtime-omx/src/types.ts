@@ -1,3 +1,5 @@
+export type RuntimeOmxSelectionRuntime = 'omx' | 'codex';
+
 export interface RunPacket {
   schemaVersion?: unknown;
   runId?: unknown;
@@ -27,9 +29,9 @@ export interface ValidatedRunPacket {
     blockers: [];
   };
   runtimeSelection: {
-    runtime: 'omx';
+    runtime: RuntimeOmxSelectionRuntime;
     workflow: 'plan';
-    profileId: string | null;
+    profileId: RuntimeOmxSelectionRuntime | null;
     profileSource: string | null;
   };
   executor: {
@@ -102,9 +104,9 @@ export interface DispatchReceipt {
   run_packet_path: string;
   prompt_or_package_path: null;
   runtime_selection: {
-    runtime: 'omx';
+    runtime: RuntimeOmxSelectionRuntime;
     workflow: 'plan';
-    profile_id: string | null;
+    profile_id: RuntimeOmxSelectionRuntime | null;
     profile_source: string | null;
   };
   authority: {

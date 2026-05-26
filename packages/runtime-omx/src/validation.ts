@@ -1,3 +1,5 @@
+import type { RuntimeOmxSelectionRuntime } from './types.js';
+
 export class ValidationError extends Error {
   constructor(public readonly issues: string[]) {
     super(issues.join('; '));
@@ -38,6 +40,22 @@ function isBlockingQuestion(value: unknown): boolean {
   return /blocking/i.test(status) || /blocking/i.test(severity);
 }
 
+function selectedRuntime(value: unknown, issues: string[]): RuntimeOmxSelectionRuntime | undefined {
+  if (value === 'omx' || value === 'codex') return value;
+  issues.push('runtimeSelection.runtime must be omx or codex');
+  return undefined;
+}
+
+function matchingProfileId(value: unknown, runtime: RuntimeOmxSelectionRuntime | undefined, issues: string[]): RuntimeOmxSelectionRuntime | null | undefined {
+  if (value === undefined || value === null) return null;
+  if (value === 'omx' || value === 'codex') {
+    if (runtime && value !== runtime) issues.push(`runtimeSelection.profileId must match runtimeSelection.runtime (${runtime}) when present`);
+    return value;
+  }
+  issues.push('runtimeSelection.profileId must be omx or codex when present');
+  return undefined;
+}
+
 export function validateRunPacket(value: unknown): import('./types.js').ValidatedRunPacket {
   const issues: string[] = [];
   if (!isRecord(value)) throw new ValidationError(['run packet must be a JSON object']);
@@ -62,9 +80,9 @@ export function validateRunPacket(value: unknown): import('./types.js').Validate
 
   const runtimeSelection = isRecord(value.runtimeSelection) ? value.runtimeSelection : undefined;
   if (!runtimeSelection) issues.push('runtimeSelection must be an object');
-  if (runtimeSelection?.runtime !== 'omx') issues.push('runtimeSelection.runtime must be omx');
+  const runtimeSelectionRuntime = runtimeSelection ? selectedRuntime(runtimeSelection.runtime, issues) : undefined;
+  const runtimeSelectionProfileId = runtimeSelection ? matchingProfileId(runtimeSelection.profileId, runtimeSelectionRuntime, issues) : undefined;
   if (runtimeSelection?.workflow !== 'plan') issues.push('runtimeSelection.workflow must be plan for the OMX $ralplan preview');
-  if (runtimeSelection?.profileId !== undefined && runtimeSelection.profileId !== null && runtimeSelection.profileId !== 'omx') issues.push('runtimeSelection.profileId must be omx when present');
   if (runtimeSelection?.profileSource !== undefined && runtimeSelection.profileSource !== null && runtimeSelection.profileSource !== 'builtin') issues.push('runtimeSelection.profileSource must be builtin when present');
 
   const executor = isRecord(value.executor) ? value.executor : undefined;
@@ -98,9 +116,9 @@ export function validateRunPacket(value: unknown): import('./types.js').Validate
     },
     packageQuality: { executable: true, blockers: [] },
     runtimeSelection: {
-      runtime: 'omx',
+      runtime: runtimeSelectionRuntime!,
       workflow: 'plan',
-      profileId: runtimeSelection!.profileId === 'omx' ? 'omx' : null,
+      profileId: runtimeSelectionProfileId ?? null,
       profileSource: runtimeSelection!.profileSource === 'builtin' ? 'builtin' : null,
     },
     executor: { lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false },
