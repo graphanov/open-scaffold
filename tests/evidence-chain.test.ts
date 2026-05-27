@@ -262,7 +262,7 @@ Close decision: approved
     expect(evidenceChainExitCode(report, { strict: true })).toBe(1);
   });
 
-  it('requires evidence notes to cite the concrete plan path, not only the slug title', () => {
+  it('requires evidence notes to cite the concrete done plan path, not only the slug or pre-close path', () => {
     const root = tempRepo();
     writeFileSync(join(root, 'docs/evidence/proof.md'), '# Proof\n');
     writePlan(root, '009-title-only', '- [x] AC1 is backed. Evidence: docs/evidence/proof.md');
@@ -270,10 +270,11 @@ Close decision: approved
 
 ## Summary
 
-The title includes the slug but traceability does not cite the plan file.
+The title includes the slug and traceability cites a stale pre-close plan path.
 
 ## Traceability
 
+- Plan: .osc/plans/active/009-title-only.md
 - Branch: fixture
 
 ## Verification

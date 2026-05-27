@@ -309,7 +309,7 @@ function evidenceNoteLinks(root: string, slug: string, evidencePath: string | nu
   }
   const rel = relative(root, evidencePath);
   const text = read(evidencePath);
-  const citesPlan = text.includes(`.osc/plans/done/${slug}.md`) || text.includes(`.osc/plans/active/${slug}.md`) || text.includes(`.osc/plans/backlog/${slug}.md`) || text.includes(`.osc/plans/blocked/${slug}.md`);
+  const citesPlan = text.includes(`.osc/plans/done/${slug}.md`);
   return {
     text,
     links: [
