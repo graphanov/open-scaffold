@@ -2,11 +2,13 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
-The compare source feature from #134 is now present on `main` as a package-visible CLI surface: `osc compare <attempt-a-dir> <attempt-b-dir>`. Local `main` exposes the command, but npm `latest` remains `open-scaffold@1.0.4` and a fresh isolated-cache `npx open-scaffold@latest --help` does not show `osc compare`. GitHub Latest Release is also still `v1.0.4`, cut before the compare source feature.
+At plan start, the compare source feature from #134 was present on `main` as a package-visible CLI surface: `osc compare <attempt-a-dir> <attempt-b-dir>`, while npm `latest` and GitHub Latest Release still pointed to `open-scaffold@1.0.4`.
+
+After execution, `open-scaffold@1.0.5` is published as npm `latest`, fresh isolated-cache `npx open-scaffold@latest --help` shows `osc compare`, fresh `npx` compare/init smokes pass, and GitHub Release `v1.0.5` is marked Latest.
 
 Context Authority work is designed and ready, but package/public-surface truth must be reconciled first so new users can install the command that just landed.
 
@@ -27,7 +29,7 @@ Prepare and verify `open-scaffold@1.0.5` as the package/public-surface sync for 
 - `package.json` — bump root package version to `1.0.5`.
 - `package-lock.json` — keep root lockfile version metadata in sync.
 - `docs/CHANGELOG.md` — record the v1.0.5 package surface and keep previous release status truthful.
-- `.osc/plans/active/122-compare-package-release-sync.md` — this plan.
+- `.osc/plans/done/122-compare-package-release-sync.md` — this plan after closeout.
 - `.osc/releases/2026-05-27-122-compare-package-release-sync.md` — durable release-sync candidate evidence.
 - This plan file and `MISSION.md` — closeout only after package/release proof exists.
 
@@ -36,12 +38,12 @@ Prepare and verify `open-scaffold@1.0.5` as the package/public-surface sync for 
 - [x] Root package version is bumped to `1.0.5` and lockfile metadata matches.
 - [x] Changelog documents v1.0.5 as the package-surface sync for `osc compare`.
 - [x] Local gates pass before PR: `./verify.sh --strict`, focused compare tests, `npm test`, `npm run build`, `npm pack --dry-run --json`, `npm publish --dry-run`, `git diff --check`.
-- [ ] PR CI and latest-head Codex review are clean before PR integration.
-- [ ] Trusted publishing succeeds for `open-scaffold@1.0.5` after PR integration and owner publish approval.
-- [ ] `npm view open-scaffold version dist-tags --json` shows `1.0.5` / `latest: 1.0.5`.
-- [ ] Fresh isolated-cache `npx --yes open-scaffold@latest --help` includes `osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]`.
-- [ ] Fresh isolated-cache `npx --yes open-scaffold@latest compare <attempt-a-dir> <attempt-b-dir>` runs against a temporary copy of the example fixture.
-- [ ] GitHub Release `v1.0.5` exists, targets the integrated main commit, and is marked Latest if release publication is approved.
+- [x] PR CI and latest-head Codex review are clean before PR integration.
+- [x] Trusted publishing succeeds for `open-scaffold@1.0.5` after PR integration and owner publish approval.
+- [x] `npm view open-scaffold version dist-tags --json` shows `1.0.5` / `latest: 1.0.5`.
+- [x] Fresh isolated-cache `npx --yes open-scaffold@latest --help` includes `osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]`.
+- [x] Fresh isolated-cache `npx --yes open-scaffold@latest compare <attempt-a-dir> <attempt-b-dir>` runs against the example fixture.
+- [x] GitHub Release `v1.0.5` exists, targets the integrated main commit, and is marked Latest.
 
 ## Verification steps
 
@@ -61,4 +63,4 @@ Prepare and verify `open-scaffold@1.0.5` as the package/public-surface sync for 
 
 ## Open questions
 
-- None for the package-sync candidate. Actual npm publishing, GitHub Release creation, plan closeout, and Kanban completion remain owner-gated follow-through after this PR.
+- None. Package publication, GitHub Release, public-surface verification, and closeout are complete.
