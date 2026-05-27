@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog
+done
+
 
 ## Context
 
@@ -37,12 +38,12 @@ Reframe the first public surfaces around Open Scaffold as the repo-native work r
 
 ## Acceptance criteria
 
-- [ ] README first screen uses a plain headline equivalent to: "Your AI agent's work belongs in your repo, not its chat history."
-- [ ] README explains the concrete record chain in one paragraph: goal, plan, handoff, evidence, approval, and lessons.
-- [ ] Public docs avoid leading with "agent OS," "control plane," "compliance-grade," and "operating system" as the category claim.
-- [ ] `docs/AUDITABILITY.md` explains what Open Scaffold can prove structurally and what remains a human/process/compliance responsibility.
-- [ ] `docs/COMPARISON.md` frames Spec Kit/BMAD/Agent OS/LangSmith as adjacent layers, not enemies Open Scaffold must beat head-on.
-- [ ] A grep audit records remaining occurrences of high-risk terms with either removal or explicit rationale.
+- [x] README first screen uses a plain headline equivalent to: "Your AI agent's work belongs in your repo, not its chat history."
+- [x] README explains the concrete record chain in one paragraph: goal, plan, handoff, evidence, approval, and lessons.
+- [x] Public docs avoid leading with "agent OS," "control plane," "compliance-grade," and "operating system" as the category claim.
+- [x] `docs/AUDITABILITY.md` explains what Open Scaffold can prove structurally and what remains a human/process/compliance responsibility.
+- [x] `docs/COMPARISON.md` frames Spec Kit/BMAD/Agent OS/LangSmith as adjacent layers, not enemies Open Scaffold must beat head-on.
+- [x] A grep audit records remaining occurrences of high-risk terms with either removal or explicit rationale.
 
 ## Verification steps
 

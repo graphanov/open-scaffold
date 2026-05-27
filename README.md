@@ -2,7 +2,9 @@
 
 # 🧱 open-scaffold
 
-**A work record and evolution ledger for AI-assisted software.**
+**Your AI agent's work belongs in your repo, not its chat history.**
+
+A repo-native work record for AI-assisted software.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Template](https://img.shields.io/badge/GitHub-Template-blue.svg)](https://github.com/graphanov/open-scaffold/generate)
@@ -11,13 +13,13 @@
 
 </div>
 
-AI work should not disappear into chat logs.
+Open Scaffold gives AI-assisted work a durable repo record.
 
-Open Scaffold keeps the important parts in your repo: the goal, the plan, the handoff package, the evidence, the approval trail, and the lessons from repeated attempts.
+It keeps the goal, plan, handoff, evidence, approval trail, and lessons from repeated attempts in git-tracked files that a human, agent, runtime, or future session can inspect cold.
 
 Use it when AI-assisted work needs **control**, **clarity**, **reviewability**, **handoff**, or **improvement over time**.
 
-It does not replace your agent, IDE, task tracker, or CI. Those tools do the work. Open Scaffold records what was asked, what was handed off, what came back, what was checked, and what humans approved.
+It does not replace your agent, IDE, task tracker, CI, or compliance process. Those tools do the work or run the program. Open Scaffold records what was asked, what was handed off, what came back, what was checked, and what humans approved. For the boundary between structural evidence and process assurance, see [`docs/AUDITABILITY.md`](docs/AUDITABILITY.md).
 
 ---
 

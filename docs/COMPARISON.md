@@ -1,8 +1,8 @@
-# Comparison: Open Scaffold vs spec-kit, BMAD, Agent OS
+# Comparison: Open Scaffold alongside spec-kit, BMAD, Agent OS, and LangSmith
 
 This page is an **orientation guide**, not an exhaustive competitive analysis. The other projects listed evolve quickly and their feature surfaces will change after this page is written. For up-to-date capabilities, read each project's own README and recent releases.
 
-The goal is to help you decide whether Open Scaffold or another approach fits the work in front of you. None of these projects are strictly mutually exclusive — most are layers you could combine.
+The goal is to help you decide where Open Scaffold fits next to other tools. These are adjacent layers, not enemies: Open Scaffold is the repo record layer that can sit beside a spec workflow, role methodology, agent-context system, or observability platform.
 
 > **Scope of this page.** Descriptions of external projects are deliberately high-level. If exact behavior matters, verify it on the project's own site. Claims that depend on a moving upstream feature surface are marked `[verify upstream]`.
 
@@ -10,20 +10,21 @@ The goal is to help you decide whether Open Scaffold or another approach fits th
 
 ## At a glance
 
-All four projects address some version of the same pain: AI-assisted coding sessions that lose context, drift from intent, and produce unverifiable work. They take different shapes.
+All five address some version of the same pain: AI-assisted coding sessions that lose context, drift from intent, and produce work that is hard to reconstruct. They take different shapes.
 
 | Project | Shape | Primary lock-in | Tends to fit |
 | --- | --- | --- | --- |
-| Open Scaffold | Repo protocol (files, folders, helper scripts, verification check) | None — runtime-neutral by design | Durable, traceable AI work across sessions, agents, and PRs |
+| Open Scaffold | Repo-native work record (files, folders, helper scripts, verification check) | None — runtime-neutral by design | Durable, traceable AI work across sessions, agents, and PRs |
 | spec-kit `[verify upstream]` | Spec-first CLI + commands for AI-assisted development | Toolchain conventions | Greenfield features where a spec → plan → implement loop is wanted |
 | BMAD `[verify upstream]` | Role-based AI agent methodology with planning + execution phases | Methodology + persona ecosystem | Teams that want explicit AI roles (analyst, PM, architect, dev, QA) |
 | Agent OS `[verify upstream]` | Standards / specs / missions context layer for AI coding agents | Methodology adoption | Solo developers and small teams wanting AI context as a system |
+| LangSmith `[verify upstream]` | Runtime tracing / evaluation / observability platform | Hosted platform and instrumentation choices | Teams operating LLM apps that need span traces, datasets, evaluations, or production observability |
 
 ---
 
 ## Open Scaffold
 
-**What it is.** A runtime-neutral, repo-native protocol: mission, roadmap, immutable plans, amendments, run packets, decisions, evidence, and a mechanical verification check (`./verify.sh`) — all as git-tracked files. Any agent or orchestrator can read and write it. See [`MISSION.md`](../MISSION.md), [`docs/OPEN_SCAFFOLD_SYSTEM.md`](OPEN_SCAFFOLD_SYSTEM.md), and [`docs/decisions/README.md`](decisions/README.md).
+**What it is.** A runtime-neutral, repo-native work record: mission, roadmap, immutable plans, amendments, run packets, decisions, evidence, and a mechanical verification check (`./verify.sh`) — all as git-tracked files. Any agent or orchestrator can read and write it. See [`MISSION.md`](../MISSION.md), [`docs/OPEN_SCAFFOLD_SYSTEM.md`](OPEN_SCAFFOLD_SYSTEM.md), and [`docs/AUDITABILITY.md`](AUDITABILITY.md).
 
 **Differentiator.** Open Scaffold is a source-of-truth-first protocol layer for human-in-the-loop AI work: plans are immutable once committed, scope evolution happens through a numbered amendment protocol, verification is mechanical rather than conversational, and no runtime is canonical.
 
@@ -37,7 +38,23 @@ All four projects address some version of the same pain: AI-assisted coding sess
 
 - The work is a one-off script, disposable prototype, or single-session task — the overhead is not earned.
 - You want an opinionated end-to-end runtime that spawns agents, manages tasks, and ships PRs for you. Open Scaffold core deliberately does not do that; see [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md).
-- You need an enterprise compliance program (SOC 2, ISO 27001, HIPAA, GDPR) out of the box — Open Scaffold is evidence substrate, not a controls framework.
+- You need an enterprise compliance program (SOC 2, ISO 27001, HIPAA, GDPR) out of the box — Open Scaffold is evidence substrate, not a controls framework. See [`docs/AUDITABILITY.md`](AUDITABILITY.md).
+
+---
+
+## LangSmith `[verify upstream]`
+
+**What it is (orientation).** An observability and evaluation platform for LLM applications, commonly used to trace runs, inspect spans, manage datasets, and evaluate runtime behavior. Verify current capabilities and hosting assumptions upstream before adoption.
+
+**Use this when:**
+
+- You are operating an LLM app and need runtime traces, datasets, evaluation runs, or production observability.
+- You want hosted inspection of model calls, chains, tools, and application behavior.
+
+**Do not use this when:**
+
+- Your immediate problem is preserving repo-native plans, evidence, approvals, and handoffs for software work.
+- You need a runtime-neutral record that stays useful even when the agent, IDE, or hosted observability platform changes.
 
 ---
 
@@ -93,10 +110,13 @@ All four projects address some version of the same pain: AI-assisted coding sess
 
 The honest framing:
 
-- **Open Scaffold** is a substrate other tools can sit on top of. Its candidate differentiator is structural discipline (immutable plans, mechanical verification, runtime neutrality), not feature breadth.
+- **Open Scaffold** is the repo record layer other tools can sit on top of. Its candidate differentiator is structural discipline (immutable plans, mechanical verification, runtime neutrality), not feature breadth.
 - **spec-kit, BMAD, Agent OS** are methodology-plus-tooling stacks. They tend to be more prescriptive about *how* the AI works.
+- **LangSmith** is closer to runtime observability: useful when the system is running and instrumented, but not a replacement for committed plans, approvals, and release evidence.
 
-You can combine them. Nothing about Open Scaffold prevents you from using spec-kit, BMAD-style roles, or Agent OS conventions inside your repo — the scaffold just records what was decided and verified. Where the projects compete is in opinionation: Open Scaffold is intentionally less opinionated about runtime; the others ship more opinions you adopt.
+You can combine them. BMAD gives you an AI team. Agent OS gives your agent a system. Spec Kit gives you executable specs. LangSmith shows spans. Open Scaffold gives all of them a durable notebook next to the code.
+
+Where the projects compete is in opinionation: Open Scaffold is intentionally less opinionated about runtime; the others ship more opinions you adopt.
 
 ---
 
