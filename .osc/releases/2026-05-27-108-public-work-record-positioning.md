@@ -15,14 +15,15 @@ Aligned the first public surfaces around Open Scaffold as a repo-native work rec
 
 - RED check: `npm test -- tests/public-positioning.test.ts --run` — failed as expected before docs changes: missing README promise, missing docs/AUDITABILITY.md, missing comparison-adjacent-layer wording.
 - RED follow-up check: `npm test -- tests/public-positioning.test.ts --run` — failed after adding the tracked dashboard mission-excerpt regression because `.osc/dashboard.html` still embedded the old `repo-native operating system` mission text.
+- RED follow-up check: `npm test -- tests/public-positioning.test.ts --run` — failed after adding the wiki-log append-only regression because the original 2026-05-15 seed log entry had been rewritten instead of preserved.
 - Dashboard refresh: `npm run osc -- dashboard --web` — regenerated `.osc/dashboard.html` from current `MISSION.md`; output 227275 bytes.
-- GREEN focused check: `npm test -- tests/public-positioning.test.ts --run` — 1 file passed, 6 tests passed.
-- Full test suite: `npm test -- --run` — 44 files passed, 385 tests passed.
+- GREEN focused check: `npm test -- tests/public-positioning.test.ts --run` — 1 file passed, 7 tests passed.
+- Full test suite: `npm test -- --run` — 44 files passed, 386 tests passed.
 - Build: `npm run build` — PASS.
 - Scaffold verifier: `./verify.sh --strict` — 10 pass, 0 fail, 0 warn.
 - Whitespace: `git diff --check` — PASS.
 - README first-screen manual review: first 80 lines state the repo-native work-record promise, concrete goal/plan/handoff/evidence/approval/lessons chain, and no leading agent-OS/control-plane/compliance category claim.
-- Current public-surface high-risk term audit: `grep -RInE 'operating system|control plane|compliance-grade|agentic OS|tamper-proof' MISSION.md ROADMAP.md docs` — two remaining hits, both historical changelog records (`MISSION.md` and `docs/CHANGELOG.md`) from the original 2026-05-11 positioning; retained because they are history, not current category language. The tracked dashboard mission excerpt is covered by the focused regression test.
+- Current public-surface high-risk term audit: `grep -RInE 'operating system|control plane|compliance-grade|agentic OS|tamper-proof' MISSION.md ROADMAP.md docs` — three remaining hits, all historical records (`MISSION.md`, `docs/CHANGELOG.md`, and the preserved 2026-05-15 wiki log seed entry) from the original positioning; retained because they are history, not current category language. The tracked dashboard mission excerpt is covered by the focused regression test.
 
 ## Outcome
 

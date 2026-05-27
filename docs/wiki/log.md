@@ -2,6 +2,10 @@
 > Chronological record of project wiki actions. Append-only.
 > Format: `## [YYYY-MM-DD] action | subject`
 
+## [2026-05-27] rename | Repo-native work record concept
+- Renamed the public concept page from `docs/wiki/concepts/repo-native-agent-operating-system.md` to `docs/wiki/concepts/repo-native-work-record.md` as part of the public work-record positioning pass.
+- Updated current wiki backlinks to the new slug while preserving the original 2026-05-15 seed log wording below as historical record.
+
 ## [2026-05-21] decide | Agentic orchestration model-lab hypothesis
 - Closed `031-agentic-orchestration-model-lab-vision` against the existing three-lane orchestration sparring evidence and runtime-selection comparison corpus.
 - Added `docs/wiki/concepts/model-task-fit.md` to preserve the model/task-fit idea as a contested lab-layer hypothesis, not an Open Scaffold core routing promise.
@@ -61,7 +65,7 @@
 
 ## [2026-05-15] create | Project wiki knowledge seed
 - Added a curated seed pack of 12 public-safe pages across concepts, comparisons, and reusable query answers.
-- Added durable concepts for source-of-truth-first development, repo-native work records, agent resumability, evidence-first development, human-in-the-loop governance, glass cockpit, run packets, and scaffold tiers.
+- Added durable concepts for source-of-truth-first development, repo-native agent operating system, agent resumability, evidence-first development, human-in-the-loop governance, glass cockpit, run packets, and scaffold tiers.
 - Added comparison pages for Open Scaffold versus agent memory and README-driven development.
 - Added query pages for what Open Scaffold is for and what agents should read first.
 - Updated `docs/wiki/index.md` to list all seed pages.

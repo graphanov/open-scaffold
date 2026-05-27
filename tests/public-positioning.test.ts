@@ -70,6 +70,14 @@ describe('public work-record positioning', () => {
     expect(data.mission.excerpt).not.toMatch(/repo-native operating system|agent OS|control plane|compliance-grade/i);
   });
 
+  it('keeps the wiki log append-only while recording the work-record rename', () => {
+    const log = read('docs/wiki/log.md');
+
+    expect(log).toContain('repo-native agent operating system');
+    expect(log).toContain('## [2026-05-27] rename | Repo-native work record concept');
+    expect(log).toContain('`docs/wiki/concepts/repo-native-work-record.md`');
+  });
+
   it('positions comparison tools as adjacent layers rather than enemies', () => {
     const comparison = read('docs/COMPARISON.md');
 
