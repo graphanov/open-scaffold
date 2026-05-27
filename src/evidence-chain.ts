@@ -197,7 +197,7 @@ function extractBarePathRefs(text: string): string[] {
 }
 
 function extractUrls(text: string): string[] {
-  return Array.from(text.matchAll(GITHUB_PR_URL_PATTERN), (match) => match[0]);
+  return Array.from(text.matchAll(/https?:\/\/[^\s`)>,;]+/g), (match) => match[0]);
 }
 
 function unique(values: string[]): string[] {
@@ -303,12 +303,12 @@ function evidenceNoteLinks(root: string, slug: string, evidencePath: string | nu
   }
   const rel = relative(root, evidencePath);
   const text = read(evidencePath);
-  const citesPlan = text.includes(`.osc/plans/done/${slug}.md`) || text.includes(`.osc/plans/active/${slug}.md`) || text.includes(`.osc/plans/backlog/${slug}.md`) || new RegExp(`\\b${escapeRegex(slug)}\\b`).test(text);
+  const citesPlan = text.includes(`.osc/plans/done/${slug}.md`) || text.includes(`.osc/plans/active/${slug}.md`) || text.includes(`.osc/plans/backlog/${slug}.md`) || text.includes(`.osc/plans/blocked/${slug}.md`);
   return {
     text,
     links: [
       { type: 'evidence_note', reference: rel, status: 'intact', detail: 'matching evidence/release note found' },
-      { type: 'evidence_reference', reference: rel, status: citesPlan ? 'intact' : 'broken', detail: citesPlan ? 'evidence note cites the plan slug or path' : 'evidence note does not cite the plan slug or path' },
+      { type: 'evidence_reference', reference: rel, status: citesPlan ? 'intact' : 'broken', detail: citesPlan ? 'evidence note cites the concrete plan path' : 'evidence note does not cite the concrete plan path' },
     ],
   };
 }

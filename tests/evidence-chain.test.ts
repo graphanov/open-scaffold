@@ -262,6 +262,52 @@ Close decision: approved
     expect(evidenceChainExitCode(report, { strict: true })).toBe(1);
   });
 
+  it('requires evidence notes to cite the concrete plan path, not only the slug title', () => {
+    const root = tempRepo();
+    writeFileSync(join(root, 'docs/evidence/proof.md'), '# Proof\n');
+    writePlan(root, '009-title-only', '- [x] AC1 is backed. Evidence: docs/evidence/proof.md');
+    writeFileSync(join(root, '.osc/releases/2026-05-27-009-title-only.md'), `# Release / Evidence Note: 009-title-only
+
+## Summary
+
+The title includes the slug but traceability does not cite the plan file.
+
+## Traceability
+
+- Branch: fixture
+
+## Verification
+
+- Evidence: docs/evidence/proof.md
+
+## Outcome
+
+approval:
+  status: approved
+  rationale: fixture approval.
+`);
+
+    const report = verifyEvidenceChain(root, { plan: '009-title-only' });
+    const citation = report.plans[0].links.find((link) => link.type === 'evidence_reference' && link.reference.endsWith('009-title-only.md'));
+
+    expect(citation?.status).toBe('broken');
+    expect(evidenceChainExitCode(report, { strict: false })).toBe(1);
+  });
+
+  it('reports bare non-PR external evidence URLs as unverifiable instead of missing', () => {
+    const root = tempRepo();
+    writePlan(root, '010-url-proof', '- [x] AC1 is backed externally. Evidence: https://example.com/proof/artifact.txt');
+    writeEvidence(root, '010-url-proof');
+    writeRun(root, '010-url-proof');
+
+    const report = verifyEvidenceChain(root, { plan: '010-url-proof' });
+    const external = report.plans[0].links.find((link) => link.reference === 'https://example.com/proof/artifact.txt');
+
+    expect(external?.status).toBe('unverifiable');
+    expect(report.summary.missing).toBe(0);
+    expect(evidenceChainExitCode(report, { strict: true })).toBe(0);
+  });
+
   it('prints JSON findings and honors strict CLI exit behavior', () => {
     const root = tempRepo();
     writePlan(root, '005-cli', '- [ ] AC1 still needs evidence.');

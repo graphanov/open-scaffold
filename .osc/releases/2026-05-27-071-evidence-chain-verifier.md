@@ -10,20 +10,21 @@ Added `osc verify --evidence-chain`, a local structural verifier for Open Scaffo
 - Plan: `.osc/plans/done/071-evidence-chain-verifier.md`
 - Amendment: `.osc/plans/done/071-evidence-chain-verifier-amendment-1.md`
 - Run ID / run packet: N/A — local Hermes implementation slice; no `osc run` packet was generated.
-- Branch / PR: Branch `cli/evidence-chain-verifier`; PR pending owner review / not generated at evidence-note creation time.
+- Branch / PR: Branch `cli/evidence-chain-verifier`; https://github.com/graphanov/open-scaffold/pull/137
 
 ## Verification
 
 - RED focused check: `npm test -- --run tests/evidence-chain.test.ts tests/verify-help.test.ts` — failed before implementation because `src/evidence-chain.ts` did not exist and `osc verify --help` had no evidence-chain flags.
-- GREEN focused check: `npm test -- --run tests/evidence-chain.test.ts tests/verify-help.test.ts` — 2 files passed, 13 tests passed.
-- Public-boundary regression check: `npm test -- --run tests/evidence-chain.test.ts tests/verify-help.test.ts tests/public-positioning.test.ts` — 3 files passed, 23 tests passed.
-- Full test suite: `npm test -- --run` — 46 files passed, 406 tests passed.
+- GREEN focused check: `npm test -- --run tests/evidence-chain.test.ts tests/verify-help.test.ts` — PASS for the focused evidence-chain and verify-help suites.
+- Public-boundary regression check: `npm test -- --run tests/evidence-chain.test.ts tests/verify-help.test.ts tests/public-positioning.test.ts` — PASS.
+- Full test suite: `npm test -- --run` — PASS locally; GitHub PR `ci` also passed.
 - Build: `npm run build` — PASS.
 - Whitespace: `git diff --check` — PASS.
 - Scaffold verifier: `./verify.sh --strict` — 10 pass, 0 fail, 0 warn.
-- Local full-project evidence-chain smoke: `node dist/cli.js verify --evidence-chain` — intentionally exits 1 on historical broken links and missing legacy evidence; latest summary observed `plans checked=108`, `links found=1423`, `broken=7`, `missing=899`, `unverifiable=139`. This validates reporting behavior and exposes historical chain debt without blocking this slice's local structural implementation.
-- Plan-scoped evidence-chain smoke: `node dist/cli.js verify --evidence-chain --plan 071-evidence-chain-verifier --strict` — PASS with `links found=27`, `intact=25`, `broken=0`, `missing=0`, `unverifiable=2`.
+- Local full-project evidence-chain smoke: `node dist/cli.js verify --evidence-chain` — intentionally exits 1 on historical broken links and missing legacy evidence; latest summary observed `plans checked=108`, `links found=1425`, `broken=7`, `missing=899`, `unverifiable=141`. This validates reporting behavior and exposes historical chain debt without blocking this slice's local structural implementation.
+- Plan-scoped evidence-chain smoke: `node dist/cli.js verify --evidence-chain --plan 071-evidence-chain-verifier --strict` — PASS with `links found=29`, `intact=25`, `broken=0`, `missing=0`, `unverifiable=4`.
 - Independent pre-commit review: Hermes subagent re-reviewed the local diff after fixes for non-done `--plan`, close-decision rationale, and `links found=` reporting — PASS; no blocking issues remaining.
+- Codex review follow-up: PR #137 review found two valid P2 issues; follow-up tests/fixes require concrete plan-path citations in evidence notes and classify bare non-PR external evidence URLs as `unverifiable` instead of `missing`.
 
 ## Outcome
 
