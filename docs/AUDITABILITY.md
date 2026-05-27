@@ -15,7 +15,7 @@ Open Scaffold can help a reviewer answer these questions from the repository:
 - Which amendments explain scope changes after the plan was committed?
 - Which comparison or frontier rationale explains why one attempt was kept over another?
 
-That record is useful because it is version-controlled, reviewable, and close to the code it describes.
+That record is useful because it is version-controlled, reviewable, and close to the project materials, outputs, and decisions it describes.
 
 ## What Open Scaffold does not prove by itself
 

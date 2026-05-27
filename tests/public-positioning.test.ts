@@ -35,7 +35,9 @@ describe('public work-record positioning', () => {
     expect(auditability).toContain('does not prove the work is correct');
     expect(auditability).toContain('human approval');
     expect(auditability).toContain('compliance program');
+    expect(auditability).toContain('project materials');
     expect(auditability).not.toMatch(/compliance-grade|tamper-proof|certif(y|ies|ied)/i);
+    expect(auditability).not.toMatch(/close to the code|beside the code it describes/i);
   });
 
   it('keeps roadmap and system ontology entrypoints off operating-system framing', () => {

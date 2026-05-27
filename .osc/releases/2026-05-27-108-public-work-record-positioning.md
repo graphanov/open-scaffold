@@ -19,6 +19,7 @@ Aligned the first public surfaces around Open Scaffold as a repo-native work rec
 - RED follow-up check: `npm test -- tests/public-positioning.test.ts --run` — failed after adding the wiki-log append-only regression because the original 2026-05-15 seed log entry had been rewritten instead of preserved.
 - RED follow-up check: `npm test -- tests/public-positioning.test.ts --run` — failed after adding the software-only positioning regression because first-touch docs still used narrow AI/software category wording.
 - RED follow-up check: `npm test -- tests/public-positioning.test.ts --run` — failed after adding the release-evidence summary regression because the evidence note still used narrow AI/software category wording in its summary.
+- RED follow-up check: `npm test -- tests/public-positioning.test.ts --run` — failed after adding the auditability regression because `docs/AUDITABILITY.md` still made usefulness depend on being close to code.
 - Dashboard refresh: `npm run osc -- dashboard --web` — regenerated `.osc/dashboard.html` from current `MISSION.md` and evidence summary; latest output 227266 bytes.
 - GREEN focused check: `npm test -- tests/public-positioning.test.ts --run` — 1 file passed, 9 tests passed.
 - Full test suite: `npm test -- --run` — 44 files passed, 388 tests passed.
