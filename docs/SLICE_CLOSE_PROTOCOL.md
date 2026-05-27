@@ -44,6 +44,28 @@ roadmap_item
 
 Not every tiny task needs every link. But if a slice changes product direction, public docs, code, release notes, or a multi-agent workflow, it should have enough of this chain for the next human or agent to resume without chat memory.
 
+## Evidence chain verification
+
+`osc verify --evidence-chain` checks whether the repo work record links together structurally: done plan, acceptance criteria, run packet, evidence note, close decision, and release or PR references.
+
+The command reports local links as:
+
+```text
+intact | broken | missing | unverifiable
+```
+
+Use it when closing or reviewing meaningful slices:
+
+```bash
+osc verify --evidence-chain --plan <plan-slug>
+osc verify --evidence-chain --strict
+osc verify --evidence-chain --json
+```
+
+The check is deliberately narrow. It verifies only that local artifact references exist, required closeout links are present, and external references are recognized as outside local verification. It does not judge evidence quality, decide correctness, certify compliance, approve merge/release decisions, run CI, call GitHub, spawn runtimes, rank models, retrieve context, or anchor evidence externally.
+
+Incremental evidence-chain mode such as `--since <ref-or-date>` is intentionally deferred. The current verifier is local filesystem only and should be treated as a structural work-record check, not a correctness or certification layer.
+
 ## Slice states
 
 Recommended slice states:
