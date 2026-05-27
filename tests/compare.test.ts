@@ -49,6 +49,14 @@ const diffB = `diff --git a/src/widget.ts b/src/widget.ts
  }
 `;
 
+const timestampedPlainDiff = `--- src/widget.ts	2026-05-27 14:30:00
++++ src/widget.ts	2026-05-27 14:31:00
+@@ -1,2 +1,3 @@
+ export function widget(input: string) {
++  if (!input) return 'empty';
+ }
+`;
+
 describe('osc compare', () => {
   it('keeps the checked-in attempt-compare fixture reproducible', () => {
     const output = execFileSync(tsx, [cli, 'compare', 'examples/attempt-compare/attempt-a', 'examples/attempt-compare/attempt-b'], { cwd: repoRoot, encoding: 'utf8' });
@@ -125,6 +133,25 @@ describe('osc compare', () => {
     expect(parsed.diff.changedFiles).toContain('src/widget.ts');
     expect(parsed.acceptanceCriteria.rows[0]).toMatchObject({ id: 'AC1', aStatus: 'partial', bStatus: 'pass' });
     expect(JSON.stringify(parsed)).not.toContain('PRIVATE FULL TRANSCRIPT');
+  });
+
+  it('strips timestamps from plain unified diff headers before comparing file names', () => {
+    const root = tempDir();
+    const attemptA = writeAttempt(root, 'attempt-a', {
+      diff: timestampedPlainDiff,
+      rationale: 'Plain diff generated with timestamped headers.',
+    });
+    const attemptB = writeAttempt(root, 'attempt-b', {
+      diff: timestampedPlainDiff.replace('14:31:00', '14:45:00'),
+      rationale: 'Same file changed later should not look like a different path.',
+    });
+
+    const output = execFileSync(tsx, [cli, 'compare', attemptA, attemptB, '--json'], { cwd: repoRoot, encoding: 'utf8' });
+    const parsed = JSON.parse(output) as Record<string, any>;
+
+    expect(parsed.diff.changedFiles).toEqual(['src/widget.ts']);
+    expect(parsed.diff.onlyInA).toEqual([]);
+    expect(parsed.diff.onlyInB).toEqual([]);
   });
 
   it('writes markdown to --output and reports missing optional files as warnings', () => {

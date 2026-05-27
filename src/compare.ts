@@ -103,7 +103,8 @@ function readOptionalFile(dir: string, name: AttemptFileName, readContent = true
 }
 
 function normalizeChangedFile(value: string): string | null {
-  const trimmed = value.trim();
+  const withoutTimestamp = value.split('\t', 1)[0];
+  const trimmed = withoutTimestamp.trim();
   if (!trimmed || trimmed === '/dev/null') return null;
   return trimmed.replace(/^[ab]\//, '');
 }
