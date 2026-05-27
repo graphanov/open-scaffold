@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -34,11 +34,11 @@ Prepare and verify `open-scaffold@1.0.4` as the package/public-surface sync for 
 - [x] Root package version is bumped to `1.0.4` and lockfile metadata matches.
 - [x] Changelog documents v1.0.4 as the package-surface sync for `osc work --dry-run`.
 - [x] Local gates pass before PR: `./verify.sh --strict`, focused package/CLI tests, `npm test`, `npm run build`, `npm pack --dry-run --json`, `npm publish --dry-run`, `git diff --check`.
-- [ ] PR CI and latest-head Codex review are clean before PR integration.
-- [ ] Trusted publishing succeeds for `open-scaffold@1.0.4` after PR integration and owner publish approval.
-- [ ] `npm view open-scaffold version dist-tags --json` shows `1.0.4` / `latest: 1.0.4`.
-- [ ] Fresh isolated-cache `npx --yes open-scaffold@latest --help` includes `osc work <task-description> --runtime <preset> --dry-run [--json] [--adapter <adapter-id>]`.
-- [ ] GitHub Release `v1.0.4` exists, targets the integrated main commit, and is marked Latest if release publication is approved.
+- [x] PR CI and latest-head Codex review are clean before PR integration.
+- [x] Trusted publishing succeeds for `open-scaffold@1.0.4` after PR integration and owner publish approval.
+- [x] `npm view open-scaffold version dist-tags --json` shows `1.0.4` / `latest: 1.0.4`.
+- [x] Fresh isolated-cache `npx --yes open-scaffold@latest --help` includes `osc work <task-description> --runtime <preset> --dry-run [--json] [--adapter <adapter-id>]`.
+- [x] GitHub Release `v1.0.4` exists, targets the integrated main commit, and is marked Latest if release publication is approved.
 
 ## Verification steps
 
