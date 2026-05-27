@@ -135,8 +135,8 @@ function diffSummary(diffText: string): { changedFiles: string[]; additions: num
       pendingMinusFile = null;
       continue;
     }
-    if (line.startsWith('+') && !line.startsWith('+++')) additions += 1;
-    if (line.startsWith('-') && !line.startsWith('---')) deletions += 1;
+    if (line.startsWith('+') && !/^\+\+\+\s+/.test(line)) additions += 1;
+    if (line.startsWith('-') && !/^---\s+/.test(line)) deletions += 1;
   }
   return { changedFiles: [...files].sort(), additions, deletions };
 }

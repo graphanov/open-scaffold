@@ -28,6 +28,7 @@ Added a prerequisite-free `osc compare <attempt-a-dir> <attempt-b-dir>` command 
 - Codex latest-head review: first pass flagged transcript-body loading for metadata-only output; fixed by stat-only handling for `transcript.md`.
 - Codex latest-head review: second pass flagged timestamped plain `diff -u` headers leaking timestamps into changed-file names; fixed by stripping tab-delimited header metadata and adding a regression test.
 - Codex latest-head review: third pass flagged plain unified deletion diffs losing the deleted path when `+++ /dev/null`; fixed by retaining the previous `---` path and adding a deletion regression test.
+- Codex latest-head review: fourth pass flagged body lines beginning with `++` or `--` being mistaken for file headers; fixed by only skipping real header lines with whitespace after `+++`/`---` and adding a regression test.
 
 ## Outcome
 

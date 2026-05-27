@@ -64,6 +64,15 @@ const plainDeletionDiff = `--- src/old-widget.ts	2026-05-27 14:30:00
 -}
 `;
 
+const operatorPrefixDiff = `--- src/counter.ts	2026-05-27 14:30:00
++++ src/counter.ts	2026-05-27 14:31:00
+@@ -1,4 +1,4 @@
+ export function bump(i: number) {
+---i;
++++i;
+ }
+`;
+
 describe('osc compare', () => {
   it('keeps the checked-in attempt-compare fixture reproducible', () => {
     const output = execFileSync(tsx, [cli, 'compare', 'examples/attempt-compare/attempt-a', 'examples/attempt-compare/attempt-b'], { cwd: repoRoot, encoding: 'utf8' });
@@ -178,6 +187,25 @@ describe('osc compare', () => {
     expect(parsed.diff.changedFiles).toEqual(['src/old-widget.ts']);
     expect(parsed.attempts.a.diff.deletions).toBe(2);
     expect(parsed.attempts.a.diff.additions).toBe(0);
+  });
+
+  it('counts changed body lines whose content starts with plus or minus operators', () => {
+    const root = tempDir();
+    const attemptA = writeAttempt(root, 'attempt-a', {
+      diff: operatorPrefixDiff,
+      rationale: 'Diff body contains increment/decrement-style prefixes.',
+    });
+    const attemptB = writeAttempt(root, 'attempt-b', {
+      diff: operatorPrefixDiff,
+      rationale: 'Same operator-prefixed body lines.',
+    });
+
+    const output = execFileSync(tsx, [cli, 'compare', attemptA, attemptB, '--json'], { cwd: repoRoot, encoding: 'utf8' });
+    const parsed = JSON.parse(output) as Record<string, any>;
+
+    expect(parsed.diff.changedFiles).toEqual(['src/counter.ts']);
+    expect(parsed.attempts.a.diff.additions).toBe(1);
+    expect(parsed.attempts.a.diff.deletions).toBe(1);
   });
 
   it('writes markdown to --output and reports missing optional files as warnings', () => {
