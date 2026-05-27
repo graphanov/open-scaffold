@@ -25,6 +25,7 @@ Added a prerequisite-free `osc compare <attempt-a-dir> <attempt-b-dir>` command 
 - Whitespace: `git diff --check` — PASS.
 - Static scan: added-line scan found 0 hardcoded secrets, 0 shell injection, 0 dangerous eval/exec, and 0 private key/token markers.
 - Independent review: pre-commit reviewer passed the diff with no security concerns and no logic errors; one markdown-escaping suggestion was applied before final verification.
+- Codex latest-head review: initial PR review flagged transcript-body loading for metadata-only output; fixed by stat-only handling for `transcript.md` before re-triggering review.
 
 ## Outcome
 

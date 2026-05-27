@@ -93,13 +93,13 @@ function meaningfulString(value: string): boolean {
   return value.trim().length > 0 && !/^(todo|tbd|n\/a|none)$/i.test(value.trim());
 }
 
-function readOptionalFile(dir: string, name: AttemptFileName): { present: boolean; bytes: number; content: string } {
+function readOptionalFile(dir: string, name: AttemptFileName, readContent = true): { present: boolean; bytes: number; content: string } {
   const path = resolve(dir, name);
   if (!existsSync(path)) return { present: false, bytes: 0, content: '' };
   const stat = statSync(path);
   if (!stat.isFile()) return { present: false, bytes: 0, content: '' };
-  const content = readFileSync(path, 'utf8');
-  return { present: true, bytes: Buffer.byteLength(content, 'utf8'), content };
+  const content = readContent ? readFileSync(path, 'utf8') : '';
+  return { present: true, bytes: stat.size, content };
 }
 
 function normalizeChangedFile(value: string): string | null {
@@ -163,7 +163,7 @@ function loadBareAttempt(pathArg: string, label: 'attempt-a' | 'attempt-b'): Bar
 
   const diffFile = readOptionalFile(absolute, 'diff.patch');
   const rationaleFile = readOptionalFile(absolute, 'rationale.txt');
-  const transcriptFile = readOptionalFile(absolute, 'transcript.md');
+  const transcriptFile = readOptionalFile(absolute, 'transcript.md', false);
   const acStatusFile = readOptionalFile(absolute, 'ac-status.json');
   const warnings: string[] = [];
 
