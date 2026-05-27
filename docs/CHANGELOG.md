@@ -4,9 +4,24 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## Unreleased — `osc work --dry-run`
+
+Status: repo candidate; npm/GitHub Release publication pending after PR integration and package-sync follow-through.
+
+Highlights:
+
+- Adds `osc work "TASK" --runtime codex --dry-run` as the first natural-language composition layer.
+- Previews a candidate plan, run packet, and dispatch command without writing `.osc/plans` or `.osc/runs` artifacts.
+- Keeps non-dry-run `osc work` refused until a separate safety design exists.
+
+Evidence:
+
+- Plan: `.osc/plans/done/104-osc-work-dry-run-target.md`
+- Evidence note: `.osc/releases/2026-05-26-104-osc-work-dry-run-target.md`
+
 ## v1.0.3 — Dispatch adapter glue package sync
 
-Status: release-sync candidate; package version prepared locally, npm/GitHub Release publication pending trusted-publishing follow-through.
+Status: published to npm as `open-scaffold@1.0.3`; GitHub Release `v1.0.3` is Latest.
 
 Highlights:
 
@@ -17,10 +32,13 @@ Highlights:
 
 Evidence:
 
-- Plan: `.osc/plans/active/106-dispatch-adapter-glue-package-sync.md`
+- Plan: `.osc/plans/done/106-dispatch-adapter-glue-package-sync.md`
 - Source PR: https://github.com/graphanov/open-scaffold/pull/125
+- Release-sync PR: https://github.com/graphanov/open-scaffold/pull/126
+- Workflow checkout hardening PR: https://github.com/graphanov/open-scaffold/pull/127
 - Evidence note: `.osc/releases/2026-05-26-106-dispatch-adapter-glue-package-sync.md`
-- npm/GitHub Release: pending trusted-publishing follow-through
+- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v1.0.3
+- npm: `open-scaffold@1.0.3` / `latest`
 
 ## v1.0.2 — Codex runtime preset package sync
 

@@ -73,13 +73,13 @@ Chat, Discord, terminals, GitHub comments, and agent transcripts can help operat
 
 ### Target workflow
 
-The post-v1 target is a smoother Codex-first path that starts from plain intent while preserving the same record:
+The post-v1 target is a smoother Codex-first path that starts from plain intent while preserving the same record. The first natural-language composition is dry-run only:
 
 ```bash
-osc work "Add a /health endpoint with tests" --runtime codex
+osc work "Add a /health endpoint with tests" --runtime codex --dry-run
 ```
 
-That command is future direction, not a current v1 promise. The first no-spawn step is `osc start`, which prints a paste-ready Codex/OMX handoff prompt from an existing plan without launching a runtime. The next explicit bridge is `osc dispatch .osc/runs/RUN_ID/run.json --adapter <id>`, which invokes a reviewed local adapter config and captures receipt/evidence/log paths without auto-installing providers or granting commit/push/PR/merge/publish authority. The remaining staged path is: `osc work --dry-run` → optional gated execution after a separate safety decision. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md).
+`osc work --dry-run` previews a candidate plan, run packet, and dispatch command without writing files, launching a runtime, calling provider APIs, or granting commit/push/PR/merge/publish authority. The supporting no-spawn pieces remain explicit: `osc start` prints a paste-ready Codex/OMX handoff from an existing plan, and `osc dispatch .osc/runs/RUN_ID/run.json --adapter <id>` invokes a reviewed local adapter config and captures receipt/evidence/log paths. Full execution remains future work behind a separate safety decision. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md).
 
 ---
 
