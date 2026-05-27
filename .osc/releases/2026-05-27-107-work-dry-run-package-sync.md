@@ -11,7 +11,7 @@ Prepare `open-scaffold@1.0.4` as the package/public-surface sync for PR #129's `
 - Release-sync plan: `.osc/plans/active/107-work-dry-run-package-sync.md`.
 - Run ID / run packet: N/A for release-sync.
 - Source Pull Request: https://github.com/graphanov/open-scaffold/pull/129.
-- Release-sync Pull Request: pending.
+- Release-sync Pull Request: https://github.com/graphanov/open-scaffold/pull/130.
 - Trusted publishing run: pending owner-approved publish follow-through.
 - GitHub Release: pending owner-approved release follow-through.
 
