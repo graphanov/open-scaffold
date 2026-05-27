@@ -1,0 +1,1 @@
+Attempt A improved the onboarding note, but it still reads like a checklist and does not explain what evidence a reviewer should inspect.

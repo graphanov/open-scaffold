@@ -74,7 +74,27 @@ osc evolve check .osc/evolution/demo-loop
 
 ## See it in one screen
 
-The quickest way to understand the value is the compare walkthrough:
+The quickest low-friction payoff is the bare attempt comparison command. Use it when you have two local attempt folders and want a PR-pasteable work-record artifact without first creating a full evolution loop:
+
+```bash
+osc compare examples/attempt-compare/attempt-a examples/attempt-compare/attempt-b
+osc compare examples/attempt-compare/attempt-a examples/attempt-compare/attempt-b --json
+osc compare examples/attempt-compare/attempt-a examples/attempt-compare/attempt-b --output comparison.md
+```
+
+A bare attempt folder may contain:
+
+```text
+attempt-a/
+  diff.patch       # optional, but at least diff.patch or rationale.txt must be meaningful
+  rationale.txt    # optional, but at least diff.patch or rationale.txt must be meaningful
+  transcript.md    # optional; JSON output records metadata only, not full transcript content
+  ac-status.json   # optional criteria/score metadata supplied by the user/reviewer
+```
+
+`osc compare` reads local files only. It does not spawn a runtime, score attempts automatically, promote a frontier, or approve work. Scores in `ac-status.json` are displayed as user-provided judgment metadata, not benchmark results.
+
+Use the full evolution loop when the project needs durable loop state, append-only attempt history, frontier rationale, run/evaluation binding, or adapter receipts:
 
 ```text
 one task -> attempt A -> attempt B -> osc evolve compare -> frontier rationale
@@ -82,7 +102,9 @@ one task -> attempt A -> attempt B -> osc evolve compare -> frontier rationale
 
 Read [`docs/examples/evolution-loop-compare.md`](examples/evolution-loop-compare.md) for a small public-safe example that shows two attempts, linked evaluation envelopes, a PR-ready markdown comparison, and an acceptance-criteria delta table.
 
-To run the same shape against checked-in files, see [`examples/evolution-ledger-demo/`](../examples/evolution-ledger-demo/). It ships recorded attempts, evaluation envelopes, a promoted frontier, and committed expected `osc evolve compare` output so the proof can be checked mechanically.
+To run the same full-loop shape against checked-in files, see [`examples/evolution-ledger-demo/`](../examples/evolution-ledger-demo/). It ships recorded attempts, evaluation envelopes, a promoted frontier, and committed expected `osc evolve compare` output so the proof can be checked mechanically.
+
+For the prerequisite-free comparison fixture, see [`examples/attempt-compare/`](../examples/attempt-compare/).
 
 ## Concepts
 

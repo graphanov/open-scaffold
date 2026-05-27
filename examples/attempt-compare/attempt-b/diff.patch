@@ -1,0 +1,10 @@
+diff --git a/docs/onboarding.md b/docs/onboarding.md
+--- a/docs/onboarding.md
++++ b/docs/onboarding.md
+@@ -1,3 +1,5 @@
+ # Onboarding
+-Read the README first.
++Read the README first, then inspect the active plan.
++If no active plan exists, check the backlog.
++Before reviewing the PR, open the evidence note and match it to the plan acceptance criteria.
+ Run the tests before opening a PR.

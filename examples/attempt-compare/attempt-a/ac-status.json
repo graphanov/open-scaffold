@@ -1,0 +1,16 @@
+{
+  "score": 0.62,
+  "score_label": "human reviewer score",
+  "criteria": [
+    {
+      "id": "AC1",
+      "text": "Names the first file a cold agent should inspect.",
+      "status": "pass"
+    },
+    {
+      "id": "AC2",
+      "text": "Explains which evidence a reviewer should inspect.",
+      "status": "fail"
+    }
+  ]
+}
