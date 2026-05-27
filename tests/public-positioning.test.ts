@@ -60,6 +60,16 @@ describe('public work-record positioning', () => {
     expect(firstLines(workRecord, 20)).not.toMatch(/Agent Operating System|operating system/i);
   });
 
+  it('keeps the tracked dashboard snapshot mission excerpt aligned with work-record framing', () => {
+    const dashboard = read('.osc/dashboard.html');
+    const [, rawData] = dashboard.match(/<script id="osc-dashboard-data" type="application\/json">([^<]+)<\/script>/) ?? [];
+    expect(rawData).toBeTruthy();
+
+    const data = JSON.parse(rawData) as { mission: { excerpt: string } };
+    expect(data.mission.excerpt).toContain('repo-native work record');
+    expect(data.mission.excerpt).not.toMatch(/repo-native operating system|agent OS|control plane|compliance-grade/i);
+  });
+
   it('positions comparison tools as adjacent layers rather than enemies', () => {
     const comparison = read('docs/COMPARISON.md');
 
