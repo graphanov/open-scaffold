@@ -11,7 +11,7 @@ contested: false
 
 # Open Scaffold vs README-Driven Development
 
-README-driven development uses the README as the primary product promise and adoption surface. Open Scaffold uses the whole repository as a work operating system.
+README-driven development uses the README as the primary product promise and adoption surface. Open Scaffold uses the whole repository as a work record.
 
 The README still matters. It is the first-touch explanation. But it should not carry every plan, run, decision, evidence receipt, and reusable concept.
 

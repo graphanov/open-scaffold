@@ -14,13 +14,13 @@ Aligned the first public surfaces around Open Scaffold as a repo-native work rec
 ## Verification
 
 - RED check: `npm test -- tests/public-positioning.test.ts --run` — failed as expected before docs changes: missing README promise, missing docs/AUDITABILITY.md, missing comparison-adjacent-layer wording.
-- GREEN focused check: `npm test -- tests/public-positioning.test.ts --run` — 1 file passed, 3 tests passed.
-- Full test suite: `npm test -- --run` — 44 files passed, 382 tests passed.
+- GREEN focused check: `npm test -- tests/public-positioning.test.ts --run` — 1 file passed, 4 tests passed.
+- Full test suite: `npm test -- --run` — 44 files passed, 383 tests passed.
 - Build: `npm run build` — PASS.
 - Scaffold verifier: `./verify.sh --strict` — 10 pass, 0 fail, 0 warn.
 - Whitespace: `git diff --check` — PASS.
 - README first-screen manual review: first 80 lines state the repo-native work-record promise, concrete goal/plan/handoff/evidence/approval/lessons chain, and no leading agent-OS/control-plane/compliance category claim.
-- High-risk term audit on changed public docs: `grep -RInE 'operating system|control plane|compliance-grade|agentic OS|tamper-proof' README.md MISSION.md docs/FAQ.md docs/COMPARISON.md docs/AUDITABILITY.md` — one remaining hit in a historical MISSION changelog entry from 2026-05-11; retained because the changelog says not to rewrite history and it is not current category language.
+- Repo-wide high-risk term audit: `grep -RInE 'operating system|control plane|compliance-grade|agentic OS|tamper-proof' MISSION.md ROADMAP.md docs` — two remaining hits, both historical changelog records (`MISSION.md` and `docs/CHANGELOG.md`) from the original 2026-05-11 positioning; retained because they are history, not current category language.
 
 ## Outcome
 

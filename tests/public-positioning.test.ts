@@ -38,6 +38,18 @@ describe('public work-record positioning', () => {
     expect(auditability).not.toMatch(/compliance-grade|tamper-proof|certif(y|ies|ied)/i);
   });
 
+  it('keeps roadmap and system ontology entrypoints off operating-system framing', () => {
+    const entrypoints = [
+      ['ROADMAP.md', firstLines(read('ROADMAP.md'), 20)],
+      ['docs/OPEN_SCAFFOLD_SYSTEM.md', firstLines(read('docs/OPEN_SCAFFOLD_SYSTEM.md'), 20)],
+    ] as const;
+
+    for (const [path, text] of entrypoints) {
+      expect(text, path).not.toMatch(/repo-native operating system|agent OS|control plane|compliance-grade/i);
+      expect(text, path).toMatch(/repo-native work record|repository protocol|repo protocol/i);
+    }
+  });
+
   it('positions comparison tools as adjacent layers rather than enemies', () => {
     const comparison = read('docs/COMPARISON.md');
 

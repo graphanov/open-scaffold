@@ -225,7 +225,7 @@ Near-term:
 
 Longer-term:
 
-- Revisit native runtime ownership only if Open Scaffold's compliance-grade agentic OS vision requires stronger proofability, tamper-evident event capture, governed evolution, or approval enforcement than external runtime bridges can provide.
+- Revisit native runtime ownership only if Open Scaffold's regulated-assurance vision requires stronger proofability, tamper-evident event capture, governed evolution, or approval enforcement than external runtime bridges can provide.
 
 ## Non-goals for the next implementation slice
 

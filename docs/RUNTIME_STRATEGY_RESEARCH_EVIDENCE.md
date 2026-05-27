@@ -52,9 +52,9 @@ protocol/evidence substrate first
 adapter/runtime contract second
 fake/local dispatch receipt third
 real adapter packages later
-native runtime only if compliance-grade proofability and governed evolution require owning execution
+native runtime only if regulated proofability and governed evolution require owning execution
 ```
 
-They also support a stronger long-term product hypothesis: Open Scaffold could eventually justify native runtime ownership if the runtime is differentiated by compliance-grade evidence, traceability, auditability, proofability, human authority, and governed evolution of skills/protocols — not by convenience spawning alone.
+They also support a stronger long-term product hypothesis: Open Scaffold could eventually justify native runtime ownership if the runtime is differentiated by regulated evidence, traceability, auditability, proofability, human authority, and governed evolution of skills/protocols — not by convenience spawning alone.
 
 REPORT_COMPLETE
