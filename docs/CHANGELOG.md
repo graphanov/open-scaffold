@@ -4,20 +4,24 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
-## Unreleased — `osc work --dry-run`
+## v1.0.4 — Work dry-run preview package sync
 
-Status: repo candidate; npm/GitHub Release publication pending after PR integration and package-sync follow-through.
+Status: release-sync candidate; npm/GitHub Release publication pending after PR integration and owner-approved package follow-through.
 
 Highlights:
 
-- Adds `osc work "TASK" --runtime codex --dry-run` as the first natural-language composition layer.
-- Previews a candidate plan, run packet, and dispatch command without writing `.osc/plans` or `.osc/runs` artifacts.
+- Prepares the PR #129 package-visible runtime surface: `osc work "TASK" --runtime codex --dry-run` as the first natural-language composition layer.
+- Previews a candidate plan, run packet, and dispatch command without writing `.osc/plans` or `.osc/runs` artifacts, spawning runtimes, or calling provider APIs.
 - Keeps non-dry-run `osc work` refused until a separate safety design exists.
+- Preserves workflow overrides in suggested `osc run` commands and renders subdirectory-invocation paths relative to the caller cwd.
 
 Evidence:
 
-- Plan: `.osc/plans/done/104-osc-work-dry-run-target.md`
-- Evidence note: `.osc/releases/2026-05-26-104-osc-work-dry-run-target.md`
+- Source plan: `.osc/plans/done/104-osc-work-dry-run-target.md`
+- Release-sync plan: `.osc/plans/active/107-work-dry-run-package-sync.md`
+- Source PR: https://github.com/graphanov/open-scaffold/pull/129
+- Source evidence note: `.osc/releases/2026-05-26-104-osc-work-dry-run-target.md`
+- Release-sync evidence note: `.osc/releases/2026-05-27-107-work-dry-run-package-sync.md`
 
 ## v1.0.3 — Dispatch adapter glue package sync
 

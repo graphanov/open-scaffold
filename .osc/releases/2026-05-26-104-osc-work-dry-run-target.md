@@ -25,9 +25,9 @@ Added `osc work <task-description> --runtime <preset> --dry-run` as the first na
 
 ## Outcome
 
-Repo implementation candidate is ready for PR review. `osc work --dry-run` is preview-only: it does not write `.osc/plans`, does not write `.osc/runs`, does not spawn runtimes, does not call provider APIs, and does not perform GitHub/npm/release side effects. Non-dry-run `osc work` exits with usage error until a separate safety design exists.
+Integrated on `main` via PR #129. `osc work --dry-run` is preview-only: it does not write `.osc/plans`, does not write `.osc/runs`, does not spawn runtimes, does not call provider APIs, and does not perform GitHub/npm/release side effects. Non-dry-run `osc work` exits with usage error until a separate safety design exists.
 
 ## Follow-up
 
-- After PR integration, prepare a package/public-surface sync so npm `latest`, fresh `npx`, and GitHub Latest Release expose `osc work --dry-run`.
+- Package/public-surface sync is tracked by `.osc/plans/active/107-work-dry-run-package-sync.md` so npm `latest`, fresh `npx`, and GitHub Latest Release can expose `osc work --dry-run` after owner-approved release follow-through.
 - Optional gated execution remains future work and requires a separate architecture/security decision.
