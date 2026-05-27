@@ -98,6 +98,14 @@ describe('public work-record positioning', () => {
     }
   });
 
+  it('keeps the release evidence summary off software-only framing', () => {
+    const evidence = read('.osc/releases/2026-05-27-108-public-work-record-positioning.md');
+    const summary = evidence.split('## Traceability')[0];
+
+    expect(summary).toContain('AI-assisted work');
+    expect(summary).not.toMatch(/AI-assisted software|software work|software project|software projects|software development|build software|building software/i);
+  });
+
   it('positions comparison tools as adjacent layers rather than enemies', () => {
     const comparison = read('docs/COMPARISON.md');
 
