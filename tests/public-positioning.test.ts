@@ -108,6 +108,19 @@ describe('public work-record positioning', () => {
     expect(summary).not.toMatch(/AI-assisted software|software work|software project|software projects|software development|build software|building software/i);
   });
 
+  it('documents evidence-chain verification as structural, not certification', () => {
+    const closeProtocol = read('docs/SLICE_CLOSE_PROTOCOL.md');
+    const section = closeProtocol.split('## Evidence chain verification')[1]?.split('## Slice states')[0] ?? '';
+
+    expect(section).toContain('osc verify --evidence-chain');
+    expect(section).toContain('links together structurally');
+    expect(section).toContain('does not judge evidence quality');
+    expect(section).toContain('retrieve context');
+    expect(section).toContain('anchor evidence externally');
+    expect(section).toContain('Incremental evidence-chain mode');
+    expect(section).not.toMatch(/trusted|compliance-grade|tamper-proof|trust score/i);
+  });
+
   it('positions comparison tools as adjacent layers rather than enemies', () => {
     const comparison = read('docs/COMPARISON.md');
 

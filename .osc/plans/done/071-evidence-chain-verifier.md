@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog
+done
+
 
 ## Context
 
@@ -30,15 +31,15 @@ Ship `osc verify --evidence-chain` that walks the full identity chain for a plan
 
 ## Acceptance criteria
 
-- [ ] `osc verify --evidence-chain` walks all done plans in the project and reports: total plans checked, total evidence links found, intact/broken/missing/unverifiable counts, and a per-plan breakdown
-- [ ] `osc verify --evidence-chain --plan 050-npm-publish` verifies the chain for a single plan: plan exists → acceptance criteria have evidence references → evidence note exists → evidence note links back to plan → close decision has rationale
-- [ ] For each done plan, the verifier checks: (1) plan file exists in `done/`, (2) plan has acceptance criteria, (3) each AC checkbox is marked `[x]` with an evidence reference (or explicitly marked `N/A`), (4) if plan references a run ID, `.osc/runs/<run_id>/` exists, (5) if plan references a PR, the PR reference is syntactically valid (URL or `#NN`), (6) if an evidence note exists for the plan, it cites the plan slug, (7) the close decision in the evidence note or plan is one of: approved, weak_approved, rejected, blocked
-- [ ] `--json` outputs a JSON array of findings with: plan_slug, links (array of {type, reference, status, detail})
-- [ ] `--strict` mode: exit code 1 if any link is `broken` or `missing` (not just `unverifiable`)
-- [ ] Default mode: exit code 1 only for `broken` links; `missing` and `unverifiable` produce warnings but exit 0
-- [ ] Verifier handles plans with no evidence (reports "no evidence links found" for that plan, not an error)
-- [ ] Verifier handles plans with no run ID (skips run packet check, reports "no run reference" as informational)
-- [ ] All existing tests pass; new chain verifier tests cover all link statuses
+- [x] `osc verify --evidence-chain` walks all done plans in the project and reports: total plans checked, total evidence links found, intact/broken/missing/unverifiable counts, and a per-plan breakdown. Evidence: `.osc/releases/2026-05-27-071-evidence-chain-verifier.md`.
+- [x] `osc verify --evidence-chain --plan 050-npm-publish` verifies the chain for a single plan: plan exists → acceptance criteria have evidence references → evidence note exists → evidence note links back to plan → close decision has rationale. Evidence: `tests/evidence-chain.test.ts`, `.osc/releases/2026-05-27-071-evidence-chain-verifier.md`.
+- [x] For each done plan, the verifier checks: (1) plan file exists in `done/`, (2) plan has acceptance criteria, (3) each AC checkbox is marked `[x]` with an evidence reference (or explicitly marked `N/A`), (4) if plan references a run ID, `.osc/runs/<run_id>/` exists, (5) if plan references a PR, the PR reference is syntactically valid (URL or `#NN`), (6) if an evidence note exists for the plan, it cites the plan slug, (7) the close decision in the evidence note or plan is one of: approved, weak_approved, rejected, blocked. Evidence: `src/evidence-chain.ts`, `tests/evidence-chain.test.ts`.
+- [x] `--json` outputs a JSON array of findings with: plan_slug, links (array of {type, reference, status, detail}). Evidence: `tests/evidence-chain.test.ts`.
+- [x] `--strict` mode: exit code 1 if any link is `broken` or `missing` (not just `unverifiable`). Evidence: `tests/evidence-chain.test.ts`.
+- [x] Default mode: exit code 1 only for `broken` links; `missing` and `unverifiable` produce warnings but exit 0. Evidence: `tests/evidence-chain.test.ts`.
+- [x] Verifier handles plans with no evidence (reports "no evidence links found" for that plan, not an error). Evidence: `tests/evidence-chain.test.ts`.
+- [x] Verifier handles plans with no run ID (skips run packet check, reports "no run reference" as informational). Evidence: `tests/evidence-chain.test.ts`.
+- [x] All existing tests pass; new chain verifier tests cover all link statuses. Evidence: `.osc/releases/2026-05-27-071-evidence-chain-verifier.md`.
 
 ## Verification steps
 

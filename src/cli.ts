@@ -11,6 +11,7 @@ import { DispatchUsageError, formatDispatchSummary, runDispatch } from './dispat
 import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
 import { openDashboardUrl, serveDashboard, writeWebDashboard } from './dashboard-web.js';
 import { collectEvidence } from './evidence.js';
+import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
@@ -75,7 +76,7 @@ Usage:
   osc dashboard --serve [--port <port>] [--open]
   osc mcp serve [--repo <path>] [--allow-write] [--validate]
   osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
-  osc verify
+  osc verify [--evidence-chain [--plan <slug>] [--json] [--strict]]
   osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]
   osc runtimes list [--json]
   osc runtimes show <id>
@@ -945,7 +946,94 @@ function printEvidenceCollectUsage(stream: 'stdout' | 'stderr' = 'stderr'): void
 }
 
 function printVerifyUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc verify', stream);
+  printUsage('Usage: osc verify [--evidence-chain [--plan <slug>] [--json] [--strict]]', stream);
+}
+
+interface VerifyCommandOptions {
+  evidenceChain: boolean;
+  plan?: string;
+  json: boolean;
+  strict: boolean;
+}
+
+function parseVerifyOptions(args: string[]): VerifyCommandOptions {
+  const options: VerifyCommandOptions = { evidenceChain: false, json: false, strict: false };
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--evidence-chain':
+        options.evidenceChain = true;
+        break;
+      case '--plan': {
+        const value = args[i + 1];
+        if (!value || value.startsWith('--')) {
+          console.error('Missing value for --plan');
+          printVerifyUsage();
+          process.exit(2);
+        }
+        options.plan = value;
+        i += 1;
+        break;
+      }
+      case '--json':
+        options.json = true;
+        break;
+      case '--strict':
+        options.strict = true;
+        break;
+      default:
+        console.error(`Unknown option for verify: ${flag}`);
+        printVerifyUsage();
+        process.exit(2);
+    }
+  }
+  if (!options.evidenceChain && options.json) {
+    console.error('--json is only supported with --evidence-chain');
+    printVerifyUsage();
+    process.exit(2);
+  }
+  if (!options.evidenceChain && (options.plan || options.strict)) {
+    console.error('--plan and --strict are only supported with --evidence-chain');
+    printVerifyUsage();
+    process.exit(2);
+  }
+  return options;
+}
+
+function verifyCommand(args: string[]): void {
+  if (isHelpArg(args[0])) {
+    printVerifyUsage('stdout');
+    return;
+  }
+  const options = parseVerifyOptions(args);
+  if (options.evidenceChain) {
+    try {
+      const report = verifyEvidenceChain(process.cwd(), { plan: options.plan });
+      if (options.json) {
+        console.log(JSON.stringify(report.plans, null, 2));
+      } else {
+        process.stdout.write(formatEvidenceChainReport(report, { strict: options.strict }));
+      }
+      const exitCode = evidenceChainExitCode(report, { strict: options.strict });
+      if (exitCode !== 0) process.exit(exitCode);
+      return;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  }
+
+  const result = validateScaffold(process.cwd());
+  for (const failure of result.failures) {
+    console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
+  }
+  for (const warning of result.warnings) {
+    console.warn(`WARN ${warning.code}: ${warning.message}${warning.path ? ` (${warning.path})` : ''}`);
+  }
+  if (!result.ok) process.exit(1);
+  const state = inspectScaffold(process.cwd());
+  const count = Object.values(state.plans).flat().length;
+  console.log(`PASS mission defined and ${count} plan file(s) found; ${result.warnings.length} warning(s)`);
 }
 
 function printDoctorUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
@@ -2578,29 +2666,9 @@ async function main(): Promise<void> {
     case 'start':
       startCommand(args);
       return;
-    case 'verify': {
-      if (isHelpArg(args[0])) {
-        printVerifyUsage('stdout');
-        return;
-      }
-      if (args.length > 0) {
-        console.error(`Unknown option for verify: ${args[0]}`);
-        printVerifyUsage();
-        process.exit(2);
-      }
-      const result = validateScaffold(process.cwd());
-      for (const failure of result.failures) {
-        console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
-      }
-      for (const warning of result.warnings) {
-        console.warn(`WARN ${warning.code}: ${warning.message}${warning.path ? ` (${warning.path})` : ''}`);
-      }
-      if (!result.ok) process.exit(1);
-      const state = inspectScaffold(process.cwd());
-      const count = Object.values(state.plans).flat().length;
-      console.log(`PASS mission defined and ${count} plan file(s) found; ${result.warnings.length} warning(s)`);
+    case 'verify':
+      verifyCommand(args);
       return;
-    }
     case 'doctor':
       doctorCommand(args);
       return;

@@ -72,7 +72,11 @@ describe('verification help flags', () => {
 
     expect(result.status).toBe(0);
     expect(result.stderr).toBe('');
-    expect(result.stdout).toBe('Usage: osc verify\n');
+    expect(result.stdout).toContain('Usage: osc verify');
+    expect(result.stdout).toContain('--evidence-chain');
+    expect(result.stdout).toContain('--plan <slug>');
+    expect(result.stdout).toContain('--json');
+    expect(result.stdout).toContain('--strict');
     expect(result.stdout).not.toContain('PASS mission defined');
     expect(result.stdout).not.toContain('WARN ');
   });
@@ -82,7 +86,7 @@ describe('verification help flags', () => {
 
     expect(result.status).toBe(2);
     expect(result.stdout).toBe('');
-    expect(result.stderr).toContain('Unknown option for verify: --json');
+    expect(result.stderr).toContain('--json is only supported with --evidence-chain');
     expect(result.stderr).toContain('Usage: osc verify');
     expect(result.stderr).not.toContain('PASS mission defined');
   });
