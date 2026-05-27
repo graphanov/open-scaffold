@@ -187,7 +187,7 @@ Owner approval is required before changing public roadmap/mission/docs for these
 2. Promoting Open Scaffold from evidence/control substrate to orchestration runtime.
 3. Claiming model-task recommendations or model-lab capability.
 4. Claiming certified runtime support beyond current evidence.
-5. Advertising compliance-grade or tamper-evident ledger capability beyond structure-only audit/eval envelope mechanics.
+5. Advertising regulated-assurance or tamper-evident ledger capability beyond structure-only audit/eval envelope mechanics.
 6. Making open-question reconciliation a public product convention rather than a steward operating rule.
 
 No roadmap or mission change is made in this PR.

@@ -31,11 +31,11 @@ In one sentence:
 
 > Open Scaffold should be the repo-native contract and black-box recorder that any runtime can consume, not the runtime itself — at least until a separate, explicitly governed runtime product has a stronger reason to exist than the current adapter ecosystem already provides.
 
-## Emerging product hypothesis: compliance-grade agentic OS
+## Emerging product hypothesis: regulated agentic SDLC
 
 A stronger runtime vision may exist, but it is **not** simply "Open Scaffold should spawn agents." The differentiated product vector is closer to:
 
-> Open Scaffold as a compliance-grade agentic operating system/protocol for regulated enterprise SDLC: every agent action is traceable, evidence-backed, auditable, replayable, approval-aware, and able to evolve the governing skills/protocols under explicit control.
+> Open Scaffold as a regulated evidence protocol for enterprise SDLC: every agent action is traceable, evidence-backed, auditable, replayable, approval-aware, and able to evolve the governing skills/protocols under explicit control.
 
 This hypothesis changes the runtime question. If Open Scaffold eventually owns a runtime, the reason should be **proofability and governed evolution**, not convenience.
 
@@ -52,7 +52,7 @@ Hashgraph or hashgraph-inspired technology may be relevant here, but should be t
 
 > Does Open Scaffold need a tamper-evident event graph for task/run/evidence/protocol evolution, and if yes, should that graph be a lightweight repo-native hash chain, a DAG/hashgraph-style structure, signed receipts, or integration with an external ledger?
 
-This is the clearest strategic reason to keep the native runtime option alive: a compliance-grade runtime may need to own enough execution and event capture to make proof, replay, and governed evolution trustworthy. That is a different product from a thin `osc spawn` wrapper.
+This is the clearest strategic reason to keep the native runtime option alive: a regulated runtime may need to own enough execution and event capture to make proof, replay, and governed evolution trustworthy. That is a different product from a thin `osc spawn` wrapper.
 
 ## Comparative matrix
 

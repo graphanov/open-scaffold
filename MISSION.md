@@ -1,6 +1,6 @@
 # Mission
 
-Open Scaffold is a runtime-neutral, repo-native operating system for agent-orchestrated development: a portable methodology and repository protocol that lets humans, AI agents, and orchestrators plan, execute, verify, publish, and evolve software work without losing context or ownership.
+Open Scaffold is a runtime-neutral, repo-native work record for AI-assisted work: a portable methodology and repository protocol that lets humans, AI agents, and orchestrators plan, execute, verify, publish, and evolve project work without losing context or ownership.
 
 ## Goals
 
@@ -29,6 +29,9 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-27: broaden positioning beyond software-only work — see .osc/plans/done/108-public-work-record-positioning-amendment-1.md
+- 2026-05-27: closed 108-public-work-record-positioning — aligned public work-record positioning
+- 2026-05-27: align public category language around repo-native work records — see .osc/plans/done/108-public-work-record-positioning.md
 - 2026-05-27: prioritize evidence-chain verifier as the trust-story command from adoption strategy audit — see .osc/plans/backlog/071-evidence-chain-verifier-amendment-1.md
 - 2026-05-27: defer runtime adapter registry until second adapter and conformance proof exist — see .osc/plans/backlog/070-runtime-adapter-registry-amendment-1.md
 - 2026-05-27: closed 107-work-dry-run-package-sync — published 1.0.4 and aligned work dry-run public surfaces

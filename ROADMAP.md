@@ -4,7 +4,7 @@ Open Scaffold is developed with Open Scaffold. This roadmap is both a product pl
 
 ## Product thesis
 
-Open Scaffold is a runtime-neutral, repo-native operating system for agent-orchestrated development. It gives humans and agents a durable shared substrate for mission, roadmap, plans, amendments, evidence, handoffs, verification, GitHub traceability, and operator-room reporting.
+Open Scaffold is a runtime-neutral, repo-native work record and repository protocol for AI-assisted work. It gives humans and agents a durable shared record for mission, roadmap, plans, amendments, evidence, handoffs, verification, GitHub traceability, and operator-room reporting.
 
 The core promise:
 
@@ -246,7 +246,7 @@ Deliverables:
 Runtime status after PR #36/#37:
 
 - Runtime selection and runtime profiles are shipped as a run-packet/profile layer, not as core spawning.
-- Backlog hypotheses `030-agent-runtime-selection-vision` and `031-agentic-orchestration-model-lab-vision` are not the next implementation queue. Their useful near-term conclusion has been narrowed to: keep Open Scaffold as the source-of-truth/control plane, let adapters/coordinators launch real runtimes, and require evidence before promoting model-lab or native-runtime claims.
+- Backlog hypotheses `030-agent-runtime-selection-vision` and `031-agentic-orchestration-model-lab-vision` are not the next implementation queue. Their useful near-term conclusion has been narrowed to: keep Open Scaffold as the source-of-truth work-record layer, let adapters/coordinators launch real runtimes, and require evidence before promoting model-lab or native-runtime claims.
 - Future runtime work should start from a specific adapter/evidence slice such as `osc runtimes check <id>` or a fake/local conformance proof, not from broad orchestration promises.
 
 ### Milestone 10 — Product packaging and releases
@@ -332,7 +332,7 @@ Deliverables:
 
 ### Milestone 16 — Runtime strategy and native-runtime exploration
 
-Status: complete / deferred via `.osc/plans/done/017-runtime-strategy-native-runtime-exploration.md`, PR #17 research synthesis, PR #18 spawning boundary, `.osc/releases/2026-05-14-runtime-strategy-boundary.md`, and the 2026-05-14 external review ingest. Compliance-grade agentic OS and hashgraph-style regulated-SDLC expansion are deferred from the public near-term roadmap.
+Status: complete / deferred via `.osc/plans/done/017-runtime-strategy-native-runtime-exploration.md`, PR #17 research synthesis, PR #18 spawning boundary, `.osc/releases/2026-05-14-runtime-strategy-boundary.md`, and the 2026-05-14 external review ingest. Regulated-SDLC and hashgraph-style expansion are deferred from the public near-term roadmap.
 
 Goal: preserve the current runtime boundary decision without advertising speculative enterprise/compliance expansion as a near-term product commitment.
 
@@ -357,7 +357,7 @@ Deferred research hypotheses:
 - Thin `osc spawn --adapter <name>` invocation.
 - Official runtime adapter packages, if created later, that consume Open Scaffold run packets without becoming core dependencies.
 - Separate Open Scaffold Runtime product.
-- Compliance-grade agentic OS / regulated-SDLC positioning.
+- Regulated-SDLC / enterprise assurance positioning.
 - Hashgraph-style or tamper-evident event graph for task/run/evidence/protocol evolution.
 
 These remain research hypotheses, not planned product scope. Rationale: scope discipline from the 2026-05-14 external review ingest; public v0.3/v0.4 roadmap should make adoption and evidence mechanics undeniable before advertising speculative enterprise expansion.
@@ -367,7 +367,7 @@ Acceptance direction:
 - No implementation before a written decision.
 - No hidden runtime/provider coupling in core.
 - Any prototype starts with a fake/local adapter and dispatch receipt, not real autonomous mutation.
-- Any compliance-grade OS/hashgraph exploration must be reopened through an explicit ADR/plan before returning to the public near-term roadmap.
+- Any regulated-SDLC/hashgraph exploration must be reopened through an explicit ADR/plan before returning to the public near-term roadmap.
 
 ### Milestone 17 — Project wiki knowledge seed
 
@@ -378,7 +378,7 @@ Goal: turn the `docs/wiki/` skeleton into a small, public-safe Open Scaffold bod
 Deliverables:
 
 - Seed 8-12 curated wiki pages across concepts, comparisons, and reusable query answers.
-- Prioritize durable project concepts: source-of-truth-first development, repo-native agent operating system, agent resumability, evidence-first development, human-in-the-loop governance, glass cockpit, run packets, and scaffold tiers.
+- Prioritize durable project concepts: source-of-truth-first development, repo-native work records, agent resumability, evidence-first development, human-in-the-loop governance, glass cockpit, run packets, and scaffold tiers.
 - Clarify boundaries through comparison pages such as Open Scaffold versus agent memory, README-driven development, and traditional SDLC.
 - Add query pages that help humans and agents answer what Open Scaffold is for, what to read first, and why the project matters.
 - Update `docs/wiki/index.md` and `docs/wiki/log.md` so the wiki remains navigable and traceable.
@@ -454,7 +454,7 @@ Acceptance direction:
 
 ## Parking lot
 
-- Deferred compliance-grade agentic OS / hashgraph-style regulated-SDLC exploration; reopen only through an explicit ADR/plan.
+- Deferred regulated-SDLC / hashgraph-style exploration; reopen only through an explicit ADR/plan.
 - Runtime/model-lab hypotheses from `030` and `031`: future work only after adapter evidence, explicit safety design, and clear separation between Open Scaffold core, runtime adapters, and model evaluation.
 - MCP bridge for structured harness dispatch/status/artifact retrieval.
 - Repository-local task database option for users without Hermes Kanban/GitHub Issues.

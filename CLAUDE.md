@@ -2,7 +2,7 @@
 
 # Project Context
 
-This project is [open-scaffold](https://github.com/graphanov/open-scaffold), a repo-native work record for AI-assisted software. It keeps mission, roadmap, plans, amendments, evidence, run packets, and session handover practices in git-tracked files so any capable agent or orchestrator can enter this repository without relying on vanished chat context. Read this file first, then consult `MISSION.md` for what the project actually is.
+This project is [open-scaffold](https://github.com/graphanov/open-scaffold), a repo-native work record for AI-assisted work. It keeps mission, roadmap, plans, amendments, evidence, run packets, and session handover practices in git-tracked files so any capable agent or orchestrator can enter this repository without relying on vanished chat context. Read this file first, then consult `MISSION.md` for what the project actually is.
 
 ## Layered architecture
 

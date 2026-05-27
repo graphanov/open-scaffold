@@ -97,4 +97,4 @@ The strongest version of the idea is not "Open Scaffold runs every agent." It is
 
 > Open Scaffold gives every agent runtime the same source-of-truth-first contract for planning, execution, evidence, and handback.
 
-Related: [[run-packets]], [[repo-native-agent-operating-system]], [[source-of-truth-first-development]], [[human-in-the-loop-governance]], [[scaffold-tiers]].
+Related: [[run-packets]], [[repo-native-work-record]], [[source-of-truth-first-development]], [[human-in-the-loop-governance]], [[scaffold-tiers]].

@@ -1,6 +1,6 @@
 # Open Scaffold System Ontology
 
-Open Scaffold is not an agent runtime. It is the repo-native operating system that lets different humans, agents, orchestrators, runtime harnesses, task systems, and operator surfaces — the places people watch, steer, and approve work — cooperate without losing the thread.
+Open Scaffold is not an agent runtime. It is a repo-native work record and repository protocol that lets different humans, agents, orchestrators, runtime harnesses, task systems, and operator surfaces — the places people watch, steer, and approve work — cooperate without losing the thread.
 
 ## One-sentence definition
 

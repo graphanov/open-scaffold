@@ -25,4 +25,4 @@ The exact tier should match project risk and coordination cost. A tiny experimen
 
 Tiers are adoption paths, not quality labels. The right tier is the smallest structure that keeps the work recoverable.
 
-Related: [[repo-native-agent-operating-system]], [[what-is-open-scaffold-for]], [[source-of-truth-first-development]].
+Related: [[repo-native-work-record]], [[what-is-open-scaffold-for]], [[source-of-truth-first-development]].

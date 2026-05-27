@@ -140,7 +140,7 @@ This lens does not claim that Open Scaffold:
 - launches or supervises live agents in core;
 - certifies regulated compliance;
 - provides legal audit sufficiency;
-- is a tamper-proof ledger;
+- is a trustless ledger;
 - anchors raw private/runtime logs, customer data, or secrets;
 - requires Hedera/hashgraph, Sigstore, or any external ledger/notary provider in core;
 - reverses production business actions;

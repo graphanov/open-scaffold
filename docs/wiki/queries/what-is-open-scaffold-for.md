@@ -26,6 +26,6 @@ It is not automatically the right tool for every script or throwaway experiment.
 
 ## One-sentence answer
 
-Open Scaffold turns a repository into a durable operating substrate for human-led, agent-assisted software work.
+Open Scaffold turns a repository into a durable work record for human-led, agent-assisted work.
 
-Related: [[scaffold-tiers]], [[repo-native-agent-operating-system]], [[source-of-truth-first-development]].
+Related: [[scaffold-tiers]], [[repo-native-work-record]], [[source-of-truth-first-development]].
