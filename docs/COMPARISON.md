@@ -53,7 +53,7 @@ All five address some version of the same pain: AI-assisted coding sessions that
 
 **Do not use this when:**
 
-- Your immediate problem is preserving repo-native plans, evidence, approvals, and handoffs for software work.
+- Your immediate problem is preserving repo-native plans, evidence, approvals, and handoffs for AI-assisted work.
 - You need a runtime-neutral record that stays useful even when the agent, IDE, or hosted observability platform changes.
 
 ---

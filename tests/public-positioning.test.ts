@@ -78,6 +78,26 @@ describe('public work-record positioning', () => {
     expect(log).toContain('`docs/wiki/concepts/repo-native-work-record.md`');
   });
 
+  it('does not define Open Scaffold as software-only in first-touch public docs', () => {
+    const firstTouchDocs = [
+      'README.md',
+      'MISSION.md',
+      'AGENTS.md',
+      'CLAUDE.md',
+      'ROADMAP.md',
+      'SECURITY.md',
+      'docs/AUDITABILITY.md',
+      'docs/COMPARISON.md',
+      'docs/wiki/concepts/repo-native-work-record.md',
+      'docs/wiki/queries/what-is-open-scaffold-for.md',
+    ];
+
+    for (const path of firstTouchDocs) {
+      const text = read(path);
+      expect(text, path).not.toMatch(/AI-assisted software|software work|software project|software projects|software development|build software|building software/i);
+    }
+  });
+
   it('positions comparison tools as adjacent layers rather than enemies', () => {
     const comparison = read('docs/COMPARISON.md');
 

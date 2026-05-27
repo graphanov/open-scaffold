@@ -4,7 +4,7 @@ Open Scaffold is developed with Open Scaffold. This roadmap is both a product pl
 
 ## Product thesis
 
-Open Scaffold is a runtime-neutral, repo-native work record and repository protocol for AI-assisted software. It gives humans and agents a durable shared substrate for mission, roadmap, plans, amendments, evidence, handoffs, verification, GitHub traceability, and operator-room reporting.
+Open Scaffold is a runtime-neutral, repo-native work record and repository protocol for AI-assisted work. It gives humans and agents a durable shared record for mission, roadmap, plans, amendments, evidence, handoffs, verification, GitHub traceability, and operator-room reporting.
 
 The core promise:
 

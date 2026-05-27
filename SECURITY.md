@@ -1,6 +1,6 @@
 # Security Policy
 
-Open Scaffold is a repo-native workflow substrate. It helps humans and agents plan, execute, verify, and hand off software work, but it is not a security scanner, sandbox, or runtime supervisor by itself.
+Open Scaffold is a repo-native workflow record. It helps humans and agents plan, execute, verify, and hand off AI-assisted work, but it is not a security scanner, sandbox, or runtime supervisor by itself.
 
 ## Reporting a vulnerability
 

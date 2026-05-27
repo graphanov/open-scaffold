@@ -4,7 +4,7 @@
 
 **Your AI agent's work belongs in your repo, not its chat history.**
 
-A repo-native work record for AI-assisted software.
+A repo-native work record for AI-assisted work.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Template](https://img.shields.io/badge/GitHub-Template-blue.svg)](https://github.com/graphanov/open-scaffold/generate)
@@ -269,7 +269,7 @@ Future / not included:
 
 Use cases the stable contract supports today:
 
-- solo developers who need multi-session AI work to be resumable;
+- people and teams who need multi-session AI work to be resumable;
 - teams that want PRs to carry intent, evidence, and approval state;
 - consulting or audit-sensitive delivery where later readers need to reconstruct what happened.
 
@@ -311,7 +311,7 @@ Supported tools can include Claude Code, Codex, Cursor, Gemini, OMC, OMX, Aider,
 
 Use Open Scaffold for:
 
-- multi-session AI-assisted development;
+- multi-session AI-assisted work;
 - PRs where reviewers need intent, checks, and evidence;
 - consulting or client delivery where the work must be explainable later;
 - audit-sensitive or regulated-adjacent work that needs lightweight file-level evidence;

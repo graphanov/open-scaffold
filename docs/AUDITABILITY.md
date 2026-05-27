@@ -1,6 +1,6 @@
 # Auditability boundary
 
-Open Scaffold makes AI-assisted software work easier to inspect because the work record lives beside the code.
+Open Scaffold makes AI-assisted work easier to inspect because the work record lives with the project files. For code, that can mean beside the implementation; for other AI-developed work, it means beside the source materials, outputs, decisions, and evidence.
 
 It is an **evidence substrate**: a structured place for goals, plans, handoffs, receipts, verification notes, amendments, approvals, and lessons. It is not a compliance program, a legal assurance product, or a replacement for review by qualified humans.
 
