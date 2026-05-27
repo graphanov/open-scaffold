@@ -110,6 +110,21 @@ describe('evidence chain verifier', () => {
     expect(formatEvidenceChainReport(report, { strict: false })).toContain('Evidence chain: plans checked=1');
   });
 
+  it('requires run packet references to include run.json', () => {
+    const root = tempRepo();
+    writeFileSync(join(root, 'docs/evidence/proof.md'), '# Proof\n');
+    writePlan(root, '001-run-json', '- [x] AC1 is backed. Evidence: docs/evidence/proof.md');
+    writeEvidence(root, '001-run-json');
+    mkdirSync(join(root, '.osc/runs/20260527T120000Z-001-run-json'), { recursive: true });
+
+    const report = verifyEvidenceChain(root, { plan: '001-run-json' });
+    const runLink = report.plans[0].links.find((link) => link.type === 'run_packet');
+
+    expect(runLink?.status).toBe('broken');
+    expect(runLink?.detail).toContain('run.json');
+    expect(evidenceChainExitCode(report, { strict: false })).toBe(1);
+  });
+
   it('treats missing acceptance-criterion evidence as strict-only failure', () => {
     const root = tempRepo();
     writePlan(root, '002-missing', '- [ ] AC1 still needs evidence.');

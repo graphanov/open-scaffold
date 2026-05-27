@@ -263,12 +263,12 @@ function runPacketLinks(root: string, text: string): EvidenceChainLink[] {
   return runIds.map((runId) => {
     const runDir = join(root, '.osc', 'runs', runId);
     const runJson = join(runDir, 'run.json');
-    const exists = existsSync(runDir) || existsSync(runJson);
+    const exists = existsSync(runJson);
     return {
       type: 'run_packet',
       reference: `.osc/runs/${runId}`,
       status: exists ? 'intact' : 'broken',
-      detail: exists ? 'run packet reference exists locally' : 'run packet reference is missing locally',
+      detail: exists ? 'run.json exists locally' : 'run.json is missing locally',
     } satisfies EvidenceChainLink;
   });
 }
