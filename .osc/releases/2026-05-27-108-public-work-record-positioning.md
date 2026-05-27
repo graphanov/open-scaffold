@@ -14,8 +14,8 @@ Aligned the first public surfaces around Open Scaffold as a repo-native work rec
 ## Verification
 
 - RED check: `npm test -- tests/public-positioning.test.ts --run` — failed as expected before docs changes: missing README promise, missing docs/AUDITABILITY.md, missing comparison-adjacent-layer wording.
-- GREEN focused check: `npm test -- tests/public-positioning.test.ts --run` — 1 file passed, 4 tests passed.
-- Full test suite: `npm test -- --run` — 44 files passed, 383 tests passed.
+- GREEN focused check: `npm test -- tests/public-positioning.test.ts --run` — 1 file passed, 5 tests passed.
+- Full test suite: `npm test -- --run` — 44 files passed, 384 tests passed.
 - Build: `npm run build` — PASS.
 - Scaffold verifier: `./verify.sh --strict` — 10 pass, 0 fail, 0 warn.
 - Whitespace: `git diff --check` — PASS.

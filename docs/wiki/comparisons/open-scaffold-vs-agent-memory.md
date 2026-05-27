@@ -30,4 +30,4 @@ Open Scaffold makes project truth explicit in the repository. It is useful becau
 
 Agent memory can point to the repo. It should not replace the repo.
 
-Related: [[source-of-truth-first-development]], [[repo-native-agent-operating-system]], [[body-of-work-wiki]].
+Related: [[source-of-truth-first-development]], [[repo-native-work-record]], [[body-of-work-wiki]].

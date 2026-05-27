@@ -29,4 +29,4 @@ Open Scaffold treats chat surfaces, dashboards, and status streams as visibility
 
 The cockpit points back to durable IDs: issue, task, plan, run, evidence, PR, release note. If a status post cannot be traced back to repo or GitHub truth, it is only a notification.
 
-Related: [[human-in-the-loop-governance]], [[run-packets]], [[repo-native-agent-operating-system]].
+Related: [[human-in-the-loop-governance]], [[run-packets]], [[repo-native-work-record]].

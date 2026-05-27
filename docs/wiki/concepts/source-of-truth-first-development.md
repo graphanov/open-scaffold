@@ -29,4 +29,4 @@ Agent-assisted development often loses context because important decisions are b
 
 This does not mean every thought needs a file. It means meaningful claims should become inspectable artifacts before they shape future work.
 
-Related: [[repo-native-agent-operating-system]], [[evidence-first-development]], [[agent-resumability]].
+Related: [[repo-native-work-record]], [[evidence-first-development]], [[agent-resumability]].

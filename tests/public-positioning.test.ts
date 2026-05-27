@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const repoRoot = resolve(process.cwd());
@@ -48,6 +48,16 @@ describe('public work-record positioning', () => {
       expect(text, path).not.toMatch(/repo-native operating system|agent OS|control plane|compliance-grade/i);
       expect(text, path).toMatch(/repo-native work record|repository protocol|repo protocol/i);
     }
+  });
+
+  it('keeps public wiki concept pages off legacy OS titles and filenames', () => {
+    const conceptFiles = readdirSync(join(repoRoot, 'docs/wiki/concepts'));
+    expect(conceptFiles.join('\n')).not.toMatch(/operating-system/i);
+
+    const workRecord = read('docs/wiki/concepts/repo-native-work-record.md');
+    expect(workRecord).toContain('title: Repo-Native Work Record');
+    expect(workRecord).toContain('# Repo-Native Work Record');
+    expect(firstLines(workRecord, 20)).not.toMatch(/Agent Operating System|operating system/i);
   });
 
   it('positions comparison tools as adjacent layers rather than enemies', () => {

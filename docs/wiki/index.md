@@ -18,7 +18,7 @@
 - [[human-in-the-loop-governance]] — Human gates for taste, risk, publication, and scope.
 - [[implementation-architecture-lens]] — How Open Scaffold maps workflow design, audit envelopes, evaluation envelopes, feedback routing, and runtime/system boundaries.
 - [[model-task-fit]] — Contested lab-layer idea for evidence-backed model/task observations, not core model routing.
-- [[repo-native-agent-operating-system]] — The repository as the durable operating substrate.
+- [[repo-native-work-record]] — The repository as the durable operating substrate.
 - [[run-packets]] — Bounded execution contracts for runtime attempts.
 - [[scaffold-tiers]] — Matching scaffold structure to project risk and coordination cost.
 - [[source-of-truth-first-development]] — Durable project truth before trusted continuation.
