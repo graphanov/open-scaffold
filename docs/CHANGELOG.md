@@ -4,9 +4,27 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
-## v1.0.4 — Work dry-run preview package sync
+## v1.0.5 — Compare command package sync
 
 Status: release-sync candidate; npm/GitHub Release publication pending after PR integration and owner-approved package follow-through.
+
+Highlights:
+
+- Prepares the PR #134 package-visible attempt-diff surface: `osc compare <attempt-a-dir> <attempt-b-dir>` for comparing two local attempt folders without a full evolution-loop ledger.
+- Keeps comparison local and deterministic: no model scoring, no frontier promotion, no runtime spawning, no network requirement, and no provider calls.
+- Supports both human-readable Markdown output and JSON output for downstream automation.
+
+Evidence:
+
+- Source plan: `.osc/plans/done/109-bare-attempt-compare.md`
+- Release-sync plan: `.osc/plans/active/122-compare-package-release-sync.md`
+- Source PR: https://github.com/graphanov/open-scaffold/pull/134
+- Source evidence note: `.osc/releases/2026-05-27-109-bare-attempt-compare.md`
+- Release-sync evidence note: `.osc/releases/2026-05-27-122-compare-package-release-sync.md`
+
+## v1.0.4 — Work dry-run preview package sync
+
+Status: published to npm as `open-scaffold@1.0.4`; GitHub Release `v1.0.4` is Latest until the compare command package sync is published.
 
 Highlights:
 
