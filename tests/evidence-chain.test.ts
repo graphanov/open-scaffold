@@ -308,6 +308,21 @@ approval:
     expect(evidenceChainExitCode(report, { strict: true })).toBe(0);
   });
 
+  it('recognizes PR references as acceptance-criterion evidence', () => {
+    const root = tempRepo();
+    writePlan(root, '011-pr-proof', `- [x] AC1 is backed by a PR reference. Evidence: PR #137
+- [x] AC2 is backed by a bare issue-style reference. Evidence: #138`);
+    writeEvidence(root, '011-pr-proof');
+    writeRun(root, '011-pr-proof');
+
+    const report = verifyEvidenceChain(root, { plan: '011-pr-proof' });
+    const refs = report.plans[0].links.filter((link) => link.type === 'evidence_reference' && (link.reference === 'PR #137' || link.reference === '#138'));
+
+    expect(refs.map((link) => link.status)).toEqual(['unverifiable', 'unverifiable']);
+    expect(report.summary.missing).toBe(0);
+    expect(evidenceChainExitCode(report, { strict: true })).toBe(0);
+  });
+
   it('prints JSON findings and honors strict CLI exit behavior', () => {
     const root = tempRepo();
     writePlan(root, '005-cli', '- [ ] AC1 still needs evidence.');

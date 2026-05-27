@@ -122,15 +122,16 @@ function evidenceNotePath(root: string, slug: string): string | null {
 }
 
 function stripRef(value: string): string {
-  return value
+  const cleaned = value
     .trim()
     .replace(/^<|>$/g, '')
-    .replace(/^['"`(]+|['"`),.;:]+$/g, '')
-    .replace(/#.*$/, '');
+    .replace(/^['"`(]+|['"`),.;:]+$/g, '');
+  if (/^(?:#\d+|(?:PR|Pull Request)\s*:?\s*#\d+)$/i.test(cleaned)) return cleaned;
+  return cleaned.replace(/#.*$/, '');
 }
 
 function isExternalReference(ref: string): boolean {
-  return /^https?:\/\//.test(ref) || /^#\d+$/.test(ref) || /^(?:PR|Pull Request)\s*#\d+$/i.test(ref);
+  return /^https?:\/\//.test(ref) || /^#\d+$/.test(ref) || /^(?:PR|Pull Request)\s*:?\s*#\d+$/i.test(ref);
 }
 
 function isPrivateReference(ref: string): boolean {
@@ -200,6 +201,10 @@ function extractUrls(text: string): string[] {
   return Array.from(text.matchAll(/https?:\/\/[^\s`)>,;]+/g), (match) => match[0]);
 }
 
+function extractPrRefs(text: string): string[] {
+  return Array.from(text.matchAll(PR_REF_PATTERN), (match) => match[0]);
+}
+
 function unique(values: string[]): string[] {
   return Array.from(new Set(values.map(stripRef).filter(Boolean))).sort();
 }
@@ -210,6 +215,7 @@ function evidenceReferencesFromCriterion(text: string): string[] {
     ...extractBacktickPaths(text),
     ...extractBarePathRefs(text),
     ...extractUrls(text),
+    ...extractPrRefs(text),
   ];
   return unique(refs);
 }
