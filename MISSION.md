@@ -29,6 +29,8 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-27: prioritize evidence-chain verifier as the trust-story command from adoption strategy audit — see .osc/plans/backlog/071-evidence-chain-verifier-amendment-1.md
+- 2026-05-27: defer runtime adapter registry until second adapter and conformance proof exist — see .osc/plans/backlog/070-runtime-adapter-registry-amendment-1.md
 - 2026-05-27: closed 107-work-dry-run-package-sync — published 1.0.4 and aligned work dry-run public surfaces
 - 2026-05-26: closed 104-osc-work-dry-run-target — Closed 104 osc work dry-run target.
 - 2026-05-26: closed 106-dispatch-adapter-glue-package-sync — Closed 106 dispatch adapter glue package sync after v1.0.3 npm and GitHub Release verification.
