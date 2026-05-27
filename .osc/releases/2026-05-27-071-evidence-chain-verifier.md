@@ -21,10 +21,10 @@ Added `osc verify --evidence-chain`, a local structural verifier for Open Scaffo
 - Build: `npm run build` — PASS.
 - Whitespace: `git diff --check` — PASS.
 - Scaffold verifier: `./verify.sh --strict` — 10 pass, 0 fail, 0 warn.
-- Local full-project evidence-chain smoke: `node dist/cli.js verify --evidence-chain` — intentionally exits 1 on historical broken links and missing legacy evidence; latest summary observed `plans checked=108`, `links found=1425`, `broken=7`, `missing=899`, `unverifiable=141`. This validates reporting behavior and exposes historical chain debt without blocking this slice's local structural implementation.
-- Plan-scoped evidence-chain smoke: `node dist/cli.js verify --evidence-chain --plan 071-evidence-chain-verifier --strict` — PASS with `links found=29`, `intact=25`, `broken=0`, `missing=0`, `unverifiable=4`.
+- Local full-project evidence-chain smoke: `node dist/cli.js verify --evidence-chain` — intentionally exits 1 on historical broken links and missing legacy evidence; latest summary observed `plans checked=108`, `links found=1407`, `broken=1`, `missing=911`, `unverifiable=139`. This validates reporting behavior and exposes historical chain debt without blocking this slice's local structural implementation.
+- Plan-scoped evidence-chain smoke: `node dist/cli.js verify --evidence-chain --plan 071-evidence-chain-verifier --strict` — PASS with `links found=28`, `intact=25`, `broken=0`, `missing=0`, `unverifiable=3`.
 - Independent pre-commit review: Hermes subagent re-reviewed the local diff after fixes for non-done `--plan`, close-decision rationale, and `links found=` reporting — PASS; no blocking issues remaining.
-- Codex review follow-up: PR #137 review found five valid P2 issues; follow-up tests/fixes require concrete `done/` plan-path citations in evidence notes, classify bare non-PR external evidence URLs as `unverifiable` instead of `missing`, recognize `PR #NN` / `#NN` references as acceptance-criterion evidence, reject stale pre-close plan paths as evidence-note backlinks, and require run-packet references to include `run.json`.
+- Codex review follow-up: PR #137 review found six valid P2 issues; follow-up tests/fixes require concrete `done/` plan-path citations in evidence notes, classify bare non-PR external evidence URLs as `unverifiable` instead of `missing`, recognize `PR #NN` / `#NN` references as acceptance-criterion evidence, reject stale pre-close plan paths as evidence-note backlinks, require run-packet references to include `run.json`, and restrict acceptance-criterion reference extraction to explicit `Evidence:` clauses.
 
 ## Outcome
 

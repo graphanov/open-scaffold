@@ -209,13 +209,18 @@ function unique(values: string[]): string[] {
   return Array.from(new Set(values.map(stripRef).filter(Boolean))).sort();
 }
 
+function evidenceClauseText(text: string): string {
+  return /\bEvidence\s*:\s*(.+)$/i.exec(text)?.[1] ?? '';
+}
+
 function evidenceReferencesFromCriterion(text: string): string[] {
+  const evidenceText = evidenceClauseText(text);
   const refs = [
-    ...extractMarkdownLinkTargets(text),
-    ...extractBacktickPaths(text),
-    ...extractBarePathRefs(text),
-    ...extractUrls(text),
-    ...extractPrRefs(text),
+    ...extractMarkdownLinkTargets(evidenceText),
+    ...extractBacktickPaths(evidenceText),
+    ...extractBarePathRefs(evidenceText),
+    ...extractUrls(evidenceText),
+    ...extractPrRefs(evidenceText),
   ];
   return unique(refs);
 }

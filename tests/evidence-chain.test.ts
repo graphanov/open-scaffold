@@ -339,6 +339,22 @@ approval:
     expect(evidenceChainExitCode(report, { strict: true })).toBe(0);
   });
 
+  it('does not treat descriptive requirement paths before Evidence as evidence links', () => {
+    const root = tempRepo();
+    writeFileSync(join(root, 'docs/evidence/proof.md'), '# Proof\n');
+    writePlan(root, '012-evidence-clause', '- [x] AC1 rejects `.osc/state/foo.md` references. Evidence: docs/evidence/proof.md');
+    writeEvidence(root, '012-evidence-clause');
+    writeRun(root, '012-evidence-clause');
+
+    const report = verifyEvidenceChain(root, { plan: '012-evidence-clause' });
+    const references = report.plans[0].links.map((link) => link.reference);
+
+    expect(references).not.toContain('.osc/state/foo.md');
+    expect(report.summary.broken).toBe(0);
+    expect(report.summary.missing).toBe(0);
+    expect(evidenceChainExitCode(report, { strict: true })).toBe(0);
+  });
+
   it('prints JSON findings and honors strict CLI exit behavior', () => {
     const root = tempRepo();
     writePlan(root, '005-cli', '- [ ] AC1 still needs evidence.');
