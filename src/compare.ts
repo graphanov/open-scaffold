@@ -113,17 +113,26 @@ function diffSummary(diffText: string): { changedFiles: string[]; additions: num
   const files = new Set<string>();
   let additions = 0;
   let deletions = 0;
+  let pendingMinusFile: string | null = null;
   for (const line of diffText.split('\n')) {
     const gitMatch = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
     if (gitMatch) {
       const normalized = normalizeChangedFile(gitMatch[2]);
       if (normalized) files.add(normalized);
+      pendingMinusFile = null;
+      continue;
+    }
+    const minusMatch = line.match(/^---\s+(.+)$/);
+    if (minusMatch) {
+      pendingMinusFile = normalizeChangedFile(minusMatch[1]);
       continue;
     }
     const plusMatch = line.match(/^\+\+\+\s+(.+)$/);
     if (plusMatch) {
       const normalized = normalizeChangedFile(plusMatch[1]);
       if (normalized) files.add(normalized);
+      else if (pendingMinusFile) files.add(pendingMinusFile);
+      pendingMinusFile = null;
       continue;
     }
     if (line.startsWith('+') && !line.startsWith('+++')) additions += 1;

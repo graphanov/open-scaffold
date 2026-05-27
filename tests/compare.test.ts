@@ -57,6 +57,13 @@ const timestampedPlainDiff = `--- src/widget.ts	2026-05-27 14:30:00
  }
 `;
 
+const plainDeletionDiff = `--- src/old-widget.ts	2026-05-27 14:30:00
++++ /dev/null	2026-05-27 14:31:00
+@@ -1,2 +0,0 @@
+-export function oldWidget() {
+-}
+`;
+
 describe('osc compare', () => {
   it('keeps the checked-in attempt-compare fixture reproducible', () => {
     const output = execFileSync(tsx, [cli, 'compare', 'examples/attempt-compare/attempt-a', 'examples/attempt-compare/attempt-b'], { cwd: repoRoot, encoding: 'utf8' });
@@ -152,6 +159,25 @@ describe('osc compare', () => {
     expect(parsed.diff.changedFiles).toEqual(['src/widget.ts']);
     expect(parsed.diff.onlyInA).toEqual([]);
     expect(parsed.diff.onlyInB).toEqual([]);
+  });
+
+  it('keeps deleted paths from plain unified diffs that use /dev/null as the new file', () => {
+    const root = tempDir();
+    const attemptA = writeAttempt(root, 'attempt-a', {
+      diff: plainDeletionDiff,
+      rationale: 'Plain deletion diff generated outside git.',
+    });
+    const attemptB = writeAttempt(root, 'attempt-b', {
+      diff: plainDeletionDiff.replace('14:31:00', '14:50:00'),
+      rationale: 'Same deleted path with a later timestamp.',
+    });
+
+    const output = execFileSync(tsx, [cli, 'compare', attemptA, attemptB, '--json'], { cwd: repoRoot, encoding: 'utf8' });
+    const parsed = JSON.parse(output) as Record<string, any>;
+
+    expect(parsed.diff.changedFiles).toEqual(['src/old-widget.ts']);
+    expect(parsed.attempts.a.diff.deletions).toBe(2);
+    expect(parsed.attempts.a.diff.additions).toBe(0);
   });
 
   it('writes markdown to --output and reports missing optional files as warnings', () => {
