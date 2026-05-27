@@ -5,6 +5,7 @@ import { renderStartPrompt, parseStartRuntime, START_RUNTIMES } from './start.js
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
 import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
+import { compareBareAttempts, renderAttemptComparisonJson, renderAttemptComparisonMarkdown } from './compare.js';
 import { runDashboard, type DashboardRunOptions } from './dashboard.js';
 import { DispatchUsageError, formatDispatchSummary, runDispatch } from './dispatch.js';
 import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
@@ -56,6 +57,7 @@ Usage:
   osc run <plan-path> [--dry-run] [--json] [run binding options]
   osc dispatch <run-json> --adapter <adapter-id>
   osc work <task-description> --runtime <preset> --dry-run [--json] [--adapter <adapter-id>]
+  osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]
   osc review <plan-path> [run binding options]
   osc ultrareview <plan-path> [run binding options]
   osc eval init <run-or-plan> [--out <path>]
@@ -869,6 +871,65 @@ function isHelpArg(arg: string | undefined): boolean {
 function printUsage(message: string, stream: 'stdout' | 'stderr' = 'stderr'): void {
   if (stream === 'stdout') console.log(message);
   else console.error(message);
+}
+
+function printCompareUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]', stream);
+}
+
+function compareCommand(args: string[]): void {
+  if (isHelpArg(args[0])) {
+    printCompareUsage('stdout');
+    return;
+  }
+  const attemptA = args[0];
+  const attemptB = args[1];
+  if (!attemptA || !attemptB) {
+    printCompareUsage();
+    process.exit(2);
+  }
+  let json = false;
+  let outPath: string | undefined;
+  const rest = args.slice(2);
+  for (let i = 0; i < rest.length; i += 1) {
+    const flag = rest[i];
+    switch (flag) {
+      case '--json':
+        json = true;
+        break;
+      case '--output':
+      case '--out': {
+        const value = rest[i + 1];
+        if (!value || value.startsWith('--')) {
+          console.error(`Missing value for ${flag}`);
+          printCompareUsage();
+          process.exit(2);
+        }
+        outPath = value;
+        i += 1;
+        break;
+      }
+      default:
+        console.error(`Unknown option for compare: ${flag}`);
+        printCompareUsage();
+        process.exit(2);
+    }
+  }
+
+  try {
+    const comparison = compareBareAttempts(attemptA, attemptB);
+    const rendered = json ? renderAttemptComparisonJson(comparison) : renderAttemptComparisonMarkdown(comparison);
+    if (outPath) {
+      const resolvedOut = resolve(outPath);
+      writeFileSync(resolvedOut, rendered, 'utf8');
+      console.log(`Wrote attempt comparison: ${resolvedOut}`);
+    } else {
+      process.stdout.write(rendered.endsWith('\n') ? rendered : `${rendered}\n`);
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
 }
 
 function printEvidenceUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
@@ -2480,6 +2541,9 @@ async function main(): Promise<void> {
       return;
     case 'work':
       workCommand(args);
+      return;
+    case 'compare':
+      compareCommand(args);
       return;
     case 'review':
     case 'ultrareview':

@@ -1,0 +1,1 @@
+Attempt B keeps the concrete onboarding path and adds the missing evidence-review step, so the reviewer can connect the PR to plan acceptance criteria.

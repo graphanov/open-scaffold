@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog
+done
+
 
 ## Context
 
@@ -38,12 +39,12 @@ Ship a prerequisite-free `osc compare ATTEMPT_A ATTEMPT_B` command that turns si
 
 ## Acceptance criteria
 
-- [ ] `osc compare attempt-a attempt-b` reads local attempt folders containing `diff.patch`, `transcript.md`, `rationale.txt`, and optional `ac-status.json`.
-- [ ] The markdown output includes a concise summary, input paths, rationale comparison, changed-file or diff summary, and acceptance-criteria deltas when `ac-status.json` is present.
-- [ ] `--json` emits machine-readable comparison data with stable keys and without embedding full transcripts by default.
-- [ ] Missing optional files produce warnings; missing both meaningful diff and rationale fails with a clear error.
-- [ ] Scores, if present, are labeled as user-provided judgment rather than automatic benchmark results.
-- [ ] Existing `osc evolve compare` tests still pass and use the shared renderer where practical.
+- [x] `osc compare attempt-a attempt-b` reads local attempt folders containing `diff.patch`, `transcript.md`, `rationale.txt`, and optional `ac-status.json`.
+- [x] The markdown output includes a concise summary, input paths, rationale comparison, changed-file or diff summary, and acceptance-criteria deltas when `ac-status.json` is present.
+- [x] `--json` emits machine-readable comparison data with stable keys and without embedding full transcripts by default.
+- [x] Missing optional files produce warnings; missing both meaningful diff and rationale fails with a clear error.
+- [x] Scores, if present, are labeled as user-provided judgment rather than automatic benchmark results.
+- [x] Existing `osc evolve compare` tests still pass and use the shared renderer where practical.
 
 ## Verification steps
 
