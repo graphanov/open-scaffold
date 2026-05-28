@@ -29,6 +29,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-28: closed 123-evidence-chain-package-release-sync — Close evidence-chain package release sync after 0.20.0 npm publish and GitHub Release
 - 2026-05-27: closed 071-evidence-chain-verifier — evidence-chain verifier implemented and verified
 - 2026-05-27: closed 122-compare-package-release-sync — published 1.0.5 and aligned compare package public surfaces
 - 2026-05-27: closed 109-bare-attempt-compare — added prerequisite-free bare attempt comparison
