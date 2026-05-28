@@ -28,7 +28,7 @@ Trace explains the known chain. Evidence-chain verification checks the chain str
 - `.osc/plans/{active,backlog,blocked,done}/<plan-slug>.md`
 - `.osc/runs/*/run.json`
 - `.osc/releases/*.md`
-- recognized GitHub PR and issue references already written in those local notes
+- recognized GitHub PR and issue references already written in those local notes, including full GitHub URLs and common local shorthand such as `PR #123`, `Pull Request: owner/repo#123`, and `Issue: #456`
 
 The command resolves the scaffold root from the current working directory, so it can be run from a subdirectory inside the repo.
 

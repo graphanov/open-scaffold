@@ -247,6 +247,30 @@ describe('trace work-record replay', () => {
     expect(report.links).toContainEqual(expect.objectContaining({ type: 'release_note', status: 'missing' }));
   });
 
+  it('recognizes local shorthand PR and issue references in release notes', () => {
+    const root = tempRepo();
+    writePlan(root, 'done', '008-shorthand');
+    writeFileSync(join(root, '.osc/releases/2026-05-27-008-shorthand.md'), `# Release / Evidence Note: 008-shorthand
+
+## Traceability
+
+- Plan: .osc/plans/done/008-shorthand.md
+- Pull Request: \`graphanov/open-scaffold#129\`
+- Follow-up Issue: #130
+
+## Outcome
+
+Integrated via PR #129 with follow-up issue #130.
+`);
+
+    const report = buildTrace(root, '008-shorthand');
+
+    expect(report.links).toContainEqual(expect.objectContaining({ type: 'pr_reference', status: 'external', reference: 'graphanov/open-scaffold#129' }));
+    expect(report.links).toContainEqual(expect.objectContaining({ type: 'pr_reference', status: 'external', reference: 'PR #129' }));
+    expect(report.links).toContainEqual(expect.objectContaining({ type: 'issue_reference', status: 'external', reference: '#130' }));
+    expect(report.summary.external_refs).toBeGreaterThanOrEqual(3);
+  });
+
   it('sanitizes control characters in human-readable output', () => {
     const root = tempRepo();
     const esc = '\u001b';

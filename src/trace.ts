@@ -246,15 +246,43 @@ function collectRunLinks(root: string, planSlug: string, options: Required<Trace
   return links;
 }
 
+function addExternalRef(links: TraceLink[], type: 'pr_reference' | 'issue_reference', reference: string, sourcePath: string, shorthand = false): void {
+  const label = type === 'pr_reference' ? 'PR' : 'issue';
+  links.push({
+    type,
+    status: 'external',
+    reference,
+    source_path: sourcePath,
+    detail: `Recognized ${shorthand ? 'shorthand ' : ''}${label} reference in local note; not verified over the network.`,
+  });
+}
+
+function shorthandTypeForLine(line: string): 'pr_reference' | 'issue_reference' {
+  const lower = line.toLowerCase();
+  const issueContext = /\bissues?\b/.test(lower);
+  const prContext = /\bpr\b|\bpull request\b/.test(lower);
+  if (issueContext && !prContext) return 'issue_reference';
+  return 'pr_reference';
+}
+
 function extractExternalRefs(text: string, sourcePath: string): TraceLink[] {
   const links: TraceLink[] = [];
   const prUrls = text.match(/https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/\d+/g) ?? [];
   const issueUrls = text.match(/https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/issues\/\d+/g) ?? [];
-  for (const reference of prUrls) {
-    links.push({ type: 'pr_reference', status: 'external', reference, source_path: sourcePath, detail: 'Recognized PR reference in local note; not verified over the network.' });
-  }
-  for (const reference of issueUrls) {
-    links.push({ type: 'issue_reference', status: 'external', reference, source_path: sourcePath, detail: 'Recognized issue reference in local note; not verified over the network.' });
+  for (const reference of prUrls) addExternalRef(links, 'pr_reference', reference, sourcePath);
+  for (const reference of issueUrls) addExternalRef(links, 'issue_reference', reference, sourcePath);
+
+  for (const line of text.split(/\r?\n/)) {
+    const lineType = shorthandTypeForLine(line);
+    for (const match of line.matchAll(/(^|[^A-Za-z0-9_.-])([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+#\d+)\b/g)) {
+      addExternalRef(links, lineType, match[2], sourcePath, true);
+    }
+    for (const match of line.matchAll(/\b(?:PR|Pull Request)\s*:?\s*#(\d+)\b/gi)) {
+      addExternalRef(links, 'pr_reference', `PR #${match[1]}`, sourcePath, true);
+    }
+    for (const match of line.matchAll(/\b(?:GitHub Issue|Follow-up Issue|Issue)\s*:?\s*#(\d+)\b/gi)) {
+      addExternalRef(links, 'issue_reference', `#${match[1]}`, sourcePath, true);
+    }
   }
   return links;
 }
