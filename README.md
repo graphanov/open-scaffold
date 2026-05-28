@@ -270,20 +270,20 @@ For the one-screen version, see [`docs/examples/evolution-loop-compare.md`](docs
 
 ---
 
-## v1.0.x stable release line
+## Current pre-1.0 hardening line
 
-Open Scaffold v1.0.x means the repo protocol and day-two CLI are stable enough to adopt with semver expectations. It does **not** mean every experimental integration is frozen.
+Open Scaffold is usable, but it is still in active credibility and adoption hardening. The forward-moving package line is `v0.20.x`: stable enough to try on real repos, honest enough not to pretend every workflow, runtime boundary, and public surface is final.
 
-Stable:
+Stable enough to rely on today:
 
-- CLI: `osc init`, `osc status`, `osc plan new`, `osc plan validate`, `osc plan move`, `osc amend`, `osc close`, `osc evidence new`, `osc evidence collect`, and `osc verify`.
+- CLI: `osc init`, `osc status`, `osc plan new`, `osc plan validate`, `osc plan move`, `osc amend`, `osc close`, `osc evidence new`, `osc evidence collect`, `osc verify`, and read-only `osc compare`.
 - Protocol: `MISSION.md`, `ROADMAP.md`, `.osc/plans/`, the 7-section plan schema, folder-as-status workflow, amendments, evidence notes, and run-packet records.
 - Verification floor: `verify.sh` plus package tests/builds for this repository.
 
-Experimental:
+Still experimental:
 
 - Runtime profiles and runtime-selection helpers beyond no-spawn run-packet metadata.
-- MCP, glass cockpit webhooks, local task database helpers, TUI/web dashboards, runtime packages, and Python parser packaging.
+- `osc work --dry-run`, `osc dispatch`, MCP, glass cockpit webhooks, local task database helpers, TUI/web dashboards, runtime packages, and Python parser packaging.
 
 Future / not included:
 
@@ -291,13 +291,13 @@ Future / not included:
 - Compliance certification.
 - Provider/model benchmarking.
 
-Use cases the stable contract supports today:
+Use cases the current contract supports today:
 
 - people and teams who need multi-session AI work to be resumable;
 - teams that want PRs to carry intent, evidence, and approval state;
 - consulting or audit-sensitive delivery where later readers need to reconstruct what happened.
 
-Publication truth lives outside git, and the two public surfaces move separately. Check `npm view open-scaffold version dist-tags --json` to see which package `npx open-scaffold@latest` installs. Check the GitHub Release marked **Latest** to see which release note GitHub highlights. Until npm shows `1.0.0`, the install path is still the previous package; until GitHub Releases shows `v1.0.0` as **Latest**, the release page is still on the previous release. See [`docs/STABILITY.md`](docs/STABILITY.md), [`docs/CHANGELOG.md`](docs/CHANGELOG.md), and the landing page [`docs/index.html`](docs/index.html).
+Publication truth lives outside git, and the two public surfaces move separately. Check `npm view open-scaffold version dist-tags --json` to see which package `npx open-scaffold@latest` installs. Check the GitHub Release marked **Latest** to see which release note GitHub highlights. The historical `v1.0.x` tags remain published history; the current forward-moving line is `v0.20.x` until the protocol and product surface earn a real 1.0 again. See [`docs/STABILITY.md`](docs/STABILITY.md), [`docs/CHANGELOG.md`](docs/CHANGELOG.md), and the landing page [`docs/index.html`](docs/index.html).
 
 ---
 
@@ -357,7 +357,7 @@ Skip it for:
 - [`docs/index.html`](docs/index.html) — one-page landing page for the 30-second explanation.
 - [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md) — post-v1 Codex-first `osc work` target and staged adapter path.
 - [`docs/MINIMUM_VIABLE_SCAFFOLD.md`](docs/MINIMUM_VIABLE_SCAFFOLD.md) — smallest practical day-one adoption path.
-- [`docs/STABILITY.md`](docs/STABILITY.md) — v1.0.0 stable, experimental, and future surfaces.
+- [`docs/STABILITY.md`](docs/STABILITY.md) — current package-contract, experimental, and future surfaces.
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — curated release history.
 - [`docs/DEV_CONTAINER.md`](docs/DEV_CONTAINER.md) — optional container setup for consistent team onboarding.
 - [`docs/EVOLUTION_LOOP.md`](docs/EVOLUTION_LOOP.md) — attempts, frontier records, and `osc evolve`.
