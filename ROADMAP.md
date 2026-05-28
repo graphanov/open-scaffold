@@ -413,7 +413,7 @@ Owner gates:
 
 ### Milestone 19 — Post-v1 adoption workflow target
 
-Status: staged implementation through `.osc/plans/done/099-runtime-adoption-ux-reset.md`, `docs/RUNTIME_ADOPTION_WORKFLOW.md`, and follow-up Codex-first adoption slices through `104-osc-work-dry-run-target`. `osc work --dry-run` is now the first natural-language composition layer; full execution remains future gated work.
+Status: staged implementation through `.osc/plans/done/099-runtime-adoption-ux-reset.md`, `docs/RUNTIME_ADOPTION_WORKFLOW.md`, and follow-up Codex-first adoption slices through `104-osc-work-dry-run-target`. `osc work --dry-run` is now the first natural-language composition layer; the 2026-05-28 control-loop decision promotes future execution to backlog plan `119-osc-work-execute-controller` while rejecting a native core runtime.
 
 Goal: turn the credible v1 work-record protocol into a smoother adoption path without collapsing Open Scaffold core into a provider-specific runtime.
 
@@ -442,12 +442,14 @@ Implementation sequence:
 3. Done — Codex-first adapter package path hardened around `runtime-omx` and the broad `codex` preset.
 4. Done — `osc dispatch <run.json> --adapter <id>` added as explicit local-adapter invocation glue.
 5. Done in repo — `osc work --dry-run` previews a natural-language task as candidate plan/run/dispatch steps without writing artifacts or launching runtimes.
-6. Later — reconsider optional gated execution only after receipt/evidence, conformance, worktree isolation, authority budgets, approval queues, and user evidence exist.
+6. Backlog — `119-osc-work-execute-controller`: design and implement a safe `osc work` run-lifecycle controller that owns plan/package/run/receipt/evidence/verification/human gates while explicit adapters own execution, auth, spawning, sandbox translation, and sessions.
+7. Later — reconsider native runtime ownership only after at least two credible adapter proofs or one production adapter, closed security P0s, real adoption evidence that adapters are insufficient, and a separate ADR accepting process lifecycle and credential burden.
 
 Acceptance direction:
 
 - Core stays the work record, policy, verification, and evidence layer.
 - Runtime execution stays adapter-owned and explicit.
+- Non-dry-run `osc work` must include adapter env allowlists, timeout/kill behavior, bounded logs, structured adapter output manifests, path containment, no secrets by default, isolated worktrees for write-capable runs, and human gates for commit/push/PR/merge/publish/release/deploy.
 - The next adapter path is Codex-first; Claude Code-specific runtime work is not the default follow-up from this milestone.
 - Current `packages/runtime-omx/` is treated as an experimental Codex/OMX proof, not as a broad finished runtime platform.
 - Adapter registry work follows at least two credible adapter entries or a clear Codex/OMX package graduation; a registry with only one experimental adapter is not the adoption bottleneck.

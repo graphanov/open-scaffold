@@ -4,6 +4,12 @@ Open Scaffold should become executable through explicit agentic runtime packages
 
 This page records the accepted architecture direction after plan `046-executable-open-scaffold-architecture`. Plan `042-reference-adapter-package-no-spawn` adds the first no-spawn package scaffold for that direction; it is not a claim that real runtime launching already exists.
 
+## 2026-05-28 refinement: control loop, not brain
+
+The agentic runtime layer is not a license to put a native autonomous runtime in Open Scaffold core. The accepted direction is narrower and more useful: core may grow a safe `osc work` run-lifecycle controller, while adapters own worker execution, provider authentication, process spawning, sandbox translation, and runtime sessions.
+
+That controller belongs above run packets and below human approval gates. It may validate packages, create run-bound state, call explicit adapters, capture receipts/evidence, run verification, and summarize postflight decisions. It must not become a daemon, hosted coordinator, provider SDK wrapper, credential broker, or automatic commit/push/PR/merge/publish authority.
+
 ## Decision
 
 ```text
@@ -36,7 +42,7 @@ Later OMX workflows such as `$deep-interview`, `$ralph`, `$ultrawork`, `$ultrago
 
 | Layer | Owns | Must not silently own |
 |---|---|---|
-| Open Scaffold core | mission, roadmap, plans, `run.json`, runtime profile data, package quality, evidence expectations, approval/commit policy | real runtime launch, provider auth, process lifecycle, credential handling, autonomous merge/publish authority |
+| Open Scaffold core | mission, roadmap, plans, `run.json`, runtime profile data, package quality, run-lifecycle controller records, evidence expectations, verification, approval/commit policy | real runtime launch, provider auth, process lifecycle, credential handling, autonomous merge/publish authority |
 | Agentic runtime package | runtime-specific validation, command preview, dry-run receipt/evidence, adapter-specific launch policy when explicitly allowed | canonical project truth, hidden default spawning, broad runtime certification, merge/publish decisions |
 | OMX / oh-my-codex runtime | selected Codex/OMX execution workflow while alive | Open Scaffold core identity, final approval gate, durable evidence by itself |
 | Operator / GitHub / evidence chain | review, CI, approval, PR, release, and durable proof | raw runtime transcript as unquestioned truth |
@@ -77,7 +83,8 @@ Plan 046 sets the next execution order:
 1. `042-reference-adapter-package-no-spawn` added the in-repo `packages/runtime-omx/` no-spawn package scaffold.
 2. `043-one-real-runtime-adapter-spike` added the first OMX `$ralplan` explicit launch path behind `--allow-spawn`, keeping core non-spawning. The current user-facing preset for that Codex lane is `--runtime codex`; `--runtime omx` remains the explicit harness-name form.
 3. `044-cli-friction-reduction` remains later unless ceremony blocks the execution proof.
-4. `030-agent-runtime-selection-vision` and `031-agentic-orchestration-model-lab-vision` stay as broader hypotheses until adapter/runtime evidence justifies promotion.
+4. `119-osc-work-execute-controller` is the next controller-shaped backlog slice: make `osc work` safer and smoother without moving runtime execution into core.
+5. `030-agent-runtime-selection-vision` and `031-agentic-orchestration-model-lab-vision` stay as broader hypotheses until adapter/runtime evidence justifies promotion.
 
 ## Non-goals
 

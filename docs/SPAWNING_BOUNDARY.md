@@ -6,6 +6,8 @@ Open Scaffold Milestone 16 asks whether core should remain non-spawning, add thi
 
 Open Scaffold core should **not** implement real autonomous runtime spawning yet.
 
+The 2026-05-28 control-loop decision sharpens the boundary: Open Scaffold should eventually own the `osc work` run-lifecycle controller, ledger, gates, receipts, evidence, verification wiring, and postflight record. It should not own provider authentication, process spawning, sandbox translation, worker execution, or runtime-local sessions.
+
 Open Scaffold should become executable through explicit agentic runtime packages that sit outside core behavior, starting in-repo with [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx). The first proof is `$ralplan`-first: validate the run packet, write receipt/evidence by default without spawning, and launch OMX only through an explicit package-level `--allow-spawn` gate after branch/worktree/version checks. This is a GitHub source path for now; it is not included in the root `open-scaffold` npm payload.
 
 Core should first define the adapter/runtime boundary, dispatch receipt (handoff proof), authority vocabulary (permission words), and evidence expectations. Real spawning belongs in runtime-specific packages/adapters or a future explicitly governed runtime product.
@@ -212,6 +214,27 @@ Safety boundaries:
 
 This confirms the adapter/binding thesis: coordinators and project protocols do not need to own the runtime. They need a bounded bridge that can dispatch, poll, read safe artifacts, report status, and preserve approval boundaries.
 
+## Future `osc work` controller boundary
+
+A future non-dry-run `osc work` controller may coordinate the lifecycle around an explicit adapter, but it must not become a hidden runtime supervisor. The controller can validate an executable package, create run-bound state, summarize authority, call a reviewed adapter, capture receipt/evidence, run verification, and stop at postflight gates.
+
+The adapter owns the live execution boundary: worker process, provider auth, runtime session, sandbox translation, cancellation mechanics, and provider-local logs. The controller may require adapter declarations and reject unsafe output; it must not import provider SDKs or silently broaden runtime authority.
+
+Minimum security gates before any stronger execution claim:
+
+- adapter environment allowlist, deny-by-default;
+- adapter timeout and kill behavior;
+- bounded/truncated logs under `.osc/runs/<run_id>/`;
+- structured `adapter-output-manifest.json` instead of stdout scraping;
+- path containment for receipts, logs, evidence, and artifacts;
+- symlink escape rejection;
+- no secrets by default;
+- isolated worktree/branch for write-capable runs;
+- explicit network and credential gates;
+- no commit, push, PR creation, merge, publish, release, deploy, or external-production side effect without human approval.
+
+A dispatch receipt is still handoff proof. It is not correctness proof, approval proof, or a merge gate.
+
 ## What Open Scaffold should do next
 
 Near-term:
@@ -221,7 +244,8 @@ Near-term:
 3. Prove `$ralplan` first with default receipt/evidence writing plus an explicit, branch/worktree/version-checked `--allow-spawn` launch gate.
 4. Keep `docs/RUNTIME_BINDING_CONTRACT.md` aligned with this adapter/receipt vocabulary.
 5. Treat OMX v0.17.0 Hermes MCP as a reference pattern for coordinator-to-runtime bridges, not as Open Scaffold adapter certification.
-6. Keep real Claude/Codex/OpenCode/OMX/Ouroboros spawning in runtime packages/adapters or external runtimes, never as hidden default core behavior.
+6. Execute backlog plan `119-osc-work-execute-controller` only as a gated controller/adapter slice, not as native runtime work.
+7. Keep real Claude/Codex/OpenCode/OMX/Ouroboros spawning in runtime packages/adapters or external runtimes, never as hidden default core behavior.
 
 Longer-term:
 
