@@ -14,7 +14,7 @@ The candidate keeps the forward-moving public package cadence in the `0.20.x` li
 - Source merge commit: `5bd33e96d7b34e24d74ecbb4a618060a9f009566`.
 - Release-sync plan: `.osc/plans/active/124-trace-package-release-sync.md`.
 - Release-sync branch: `release/trace-package-sync-0201`.
-- Release-sync Pull Request: pending.
+- Release-sync Pull Request: https://github.com/graphanov/open-scaffold/pull/143.
 - Run ID / run packet: N/A for release-sync.
 - npm precheck: before candidate publish, live `latest` is `open-scaffold@0.20.0`; `0.20.1` is not yet published.
 
