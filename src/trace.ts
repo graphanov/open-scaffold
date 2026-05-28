@@ -232,6 +232,7 @@ function collectRunLinks(root: string, planSlug: string, options: Required<Trace
       const match = planMatchesRun(planSlug, parsed);
       if (match.matches) {
         links.push({ type: 'run_packet', status: 'local', reference: rel, detail: 'Run packet references this plan.', run_id: match.runId ?? entry.name });
+        links.push(...extractExternalRefs(text, rel));
       } else if (options.includeUnverified && containsExactToken(text, planSlug)) {
         links.push({ type: 'run_packet', status: 'unverified', reference: rel, detail: 'Run packet mentions the plan slug but does not expose a canonical plan slug/path.', run_id: match.runId ?? entry.name });
       }

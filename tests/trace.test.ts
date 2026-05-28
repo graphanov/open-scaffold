@@ -224,6 +224,29 @@ describe('trace work-record replay', () => {
     expect(readdirSync(join(root, '.osc/releases')).join('\n')).toBe(before);
   });
 
+  it('extracts PR and issue references from matching run packets even without release notes', () => {
+    const root = tempRepo();
+    writePlan(root, 'done', '007-run-refs');
+    const runId = '20260527T120000Z-007-run-refs-run';
+    const runDir = join(root, '.osc/runs', runId);
+    mkdirSync(runDir, { recursive: true });
+    writeFileSync(join(runDir, 'run.json'), JSON.stringify({
+      schemaVersion: 'open-scaffold.run.v1',
+      runId,
+      plan: { slug: '007-run-refs', path: '.osc/plans/done/007-run-refs.md' },
+      bindings: {
+        githubPr: 'https://github.com/example/repo/pull/77',
+        githubIssue: 'https://github.com/example/repo/issues/88',
+      },
+    }, null, 2));
+
+    const report = buildTrace(root, '007-run-refs');
+
+    expect(report.links).toContainEqual(expect.objectContaining({ type: 'pr_reference', status: 'external', reference: 'https://github.com/example/repo/pull/77', source_path: `.osc/runs/${runId}/run.json` }));
+    expect(report.links).toContainEqual(expect.objectContaining({ type: 'issue_reference', status: 'external', reference: 'https://github.com/example/repo/issues/88', source_path: `.osc/runs/${runId}/run.json` }));
+    expect(report.links).toContainEqual(expect.objectContaining({ type: 'release_note', status: 'missing' }));
+  });
+
   it('sanitizes control characters in human-readable output', () => {
     const root = tempRepo();
     const esc = '\u001b';

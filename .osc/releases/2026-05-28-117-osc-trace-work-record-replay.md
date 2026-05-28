@@ -13,12 +13,12 @@ Adds `osc trace <plan-slug>` as a read-only work-record replay command. The comm
 
 ## Verification
 
-- `npm test -- --run tests/trace.test.ts` — PASS during RED/GREEN loop after implementation, and PASS after security regressions for terminal-control sanitization plus symlinked trace directories (`9 passed`).
-- `npm test -- --run tests/trace.test.ts tests/cli-lifecycle-help.test.ts tests/public-positioning.test.ts` — PASS after docs/boundary/security updates (`29 passed`).
+- `npm test -- --run tests/trace.test.ts` — PASS during RED/GREEN loop after implementation, and PASS after security regressions plus the Codex run-packet external-reference regression (`10 passed`).
+- `npm test -- --run tests/trace.test.ts tests/cli-lifecycle-help.test.ts tests/public-positioning.test.ts` — PASS after docs/boundary/security/Codex updates (`30 passed`).
 - `npm run build` — PASS for core and runtime-omx TypeScript builds.
 - `node dist/cli.js trace 107-work-dry-run-package-sync` — PASS; produced human trace output with plan, acceptance criteria, release notes, external PR refs, and missing run packet label.
 - `node dist/cli.js trace 107-work-dry-run-package-sync --json` plus Python `json.loads` schema/slug assertions — PASS.
-- `npm test -- --run` — PASS (`47` test files, `423` tests).
+- `npm test -- --run` — PASS (`47` test files, `424` tests).
 - `node dist/cli.js plan validate .osc/plans/done/117-osc-trace-work-record-replay.md` — PASS (`0 issues found`).
 - `node dist/cli.js trace 117-osc-trace-work-record-replay --json` plus Python `json.loads` schema/stage/release-note assertions — PASS.
 - `git diff --check` — PASS.
