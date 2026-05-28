@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -26,15 +26,15 @@ Prepare a package/public-surface release candidate that publishes the trace work
 - `package-lock.json` — keep the lockfile root version aligned with `package.json`.
 - `docs/CHANGELOG.md` — promote the trace package-sync candidate entry and link the source PR/evidence.
 - `.osc/releases/2026-05-28-124-trace-package-release-sync.md` — record candidate evidence and owner-gated publication proof slots.
-- `.osc/plans/active/124-trace-package-release-sync.md` — this active plan.
+- `.osc/plans/done/124-trace-package-release-sync.md` — this closed plan.
 
 ## Implementation Architecture Coverage
 
 - Strengthens: adoption trust, package/public-surface truth, trace/work-record visibility.
 - Audit envelope: source plan `117`, source PR #142, release-sync plan `124`, npm registry checks, fresh `npx` smoke after owner-approved publish.
-- Evaluation envelope: local gates prove the candidate builds/tests/packs/publish-dry-runs; owner-gated public checks must prove npm/latest and GitHub Latest before final plan proof.
-- Feedback routing: any publish, dist-tag, GitHub Release, or old-version deprecation decision remains an owner gate and should be recorded in the release evidence note or a follow-up plan.
-- Boundary: no npm publish, GitHub Release, deprecated-package write, runtime execution, or feature implementation happens in this PR.
+- Evaluation envelope: local gates proved the candidate builds/tests/packs/publish-dry-runs; owner-approved public checks proved npm/latest and GitHub Latest before final plan closeout.
+- Feedback routing: any future dist-tag correction, historical-version deprecation, or release-line decision remains an owner gate and should be recorded in a follow-up plan or evidence note.
+- Boundary: the release-sync PR did not change trace behavior or perform publish/release side effects; publish and GitHub Release follow-through were completed only after explicit owner approval.
 
 ## Acceptance criteria
 
@@ -43,7 +43,10 @@ Prepare a package/public-surface release candidate that publishes the trace work
 - [x] `docs/CHANGELOG.md` includes the `v0.20.1` package-sync candidate entry for `osc trace`.
 - [x] Candidate package gates pass: `./verify.sh --strict`, `npm test -- --run`, `npm run build`, `npm pack --dry-run --json`, `npm publish --dry-run --tag latest`, and `git diff --check`.
 - [x] Local built CLI help exposes `osc trace <plan-slug> [--json] [--include-unverified]` before PR publication.
-- [x] The PR stops before landing, npm publish, GitHub Release creation/update, and optional npm deprecation of historical `1.0.x` versions.
+- [x] The release-sync PR stopped before landing, npm publish, GitHub Release creation/update, and optional npm deprecation of historical `1.0.x` versions.
+- [x] After owner-approved merge, trusted publishing published `open-scaffold@0.20.1` with npm dist-tag `latest`.
+- [x] Fresh isolated-cache `npx open-scaffold@latest --help` exposes `osc trace <plan-slug> [--json] [--include-unverified]`.
+- [x] GitHub Release `v0.20.1` exists and is marked Latest.
 
 ## Verification steps
 
@@ -58,6 +61,9 @@ Prepare a package/public-surface release candidate that publishes the trace work
 
 ## Open questions
 
-- Owner gate after PR lands: publish `open-scaffold@0.20.1` via trusted publishing with npm dist-tag `latest`.
-- Owner gate after publish: create/mark GitHub Release `v0.20.1` as Latest after fresh isolated-cache `npx` proof.
+- PR #143 merged to `main` at `161c968a1d342be6b89c05c6da4a31bde8e8c395`.
+- Trusted publishing workflow `26603167168` published `open-scaffold@0.20.1` with npm dist-tag `latest`.
+- Fresh isolated-cache `npx open-scaffold@latest --help` exposes `osc trace <plan-slug> [--json] [--include-unverified]`.
+- Fresh isolated-cache `npm exec --package open-scaffold@latest -- open-scaffold trace 117-osc-trace-work-record-replay --json` works from the repository and reports plan `117` as `done`.
+- GitHub Release `v0.20.1` is created and marked Latest.
 - Optional deferred decision: whether to deprecate historical `1.0.x` npm versions with a gentle cadence-correction message, or leave them as published history.

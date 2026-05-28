@@ -49,12 +49,12 @@ Post-merge/publication gates, if the owner approves follow-through:
 - [x] Fresh isolated-cache `npx --yes open-scaffold@latest verify --help` exposes `--evidence-chain` — PASS.
 - [x] Fresh isolated-cache `npx --yes open-scaffold@latest --help` exposes the first-read `osc compare` grouping — PASS.
 - [x] Fresh isolated-cache `npx --yes open-scaffold@latest init --tier min --target <tmp>` creates the expected min-tier scaffold files — PASS.
-- [x] GitHub Release `v0.20.0` is created/marked Latest — PASS.
+- [x] GitHub Release `v0.20.0` was created/marked Latest at publication time — PASS; it was later superseded by `v0.20.1`.
 - [x] Release-sync plan can be closed to `done/` with final public proof — completed in closeout PR.
 
 ## Outcome
 
-Complete. PR #140 merged, trusted publishing moved npm `latest` to `0.20.0`, fresh isolated-cache `npx` verified the public command surface, and GitHub Release `v0.20.0` is marked Latest. Historical `1.0.x` releases remain published history; optional npm deprecation of those versions is deferred.
+Complete. PR #140 merged, trusted publishing moved npm `latest` to `0.20.0`, fresh isolated-cache `npx` verified the public command surface, and GitHub Release `v0.20.0` was marked Latest at publication time. It was later superseded by `v0.20.1`. Historical `1.0.x` releases remain published history; optional npm deprecation of those versions is deferred.
 
 ## Follow-up
 

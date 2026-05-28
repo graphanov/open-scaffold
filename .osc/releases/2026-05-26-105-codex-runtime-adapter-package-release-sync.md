@@ -30,7 +30,7 @@ Published `open-scaffold@1.0.2` so npm/latest, fresh `npx`, and GitHub Latest Re
 
 ## Outcome
 
-`open-scaffold@1.0.2` is published and GitHub Release `v1.0.2` is Latest. npm/latest now matches `main` for the Codex runtime preset surface. No runtime behavior beyond PR #121 was added; `@open-scaffold/runtime-omx` remains private/repo-source only.
+`open-scaffold@1.0.2` was published and GitHub Release `v1.0.2` was marked Latest at publication time. npm/latest matched `main` for the Codex runtime preset surface at that point, before later releases superseded it. No runtime behavior beyond PR #121 was added; `@open-scaffold/runtime-omx` remains private/repo-source only.
 
 ## Follow-up
 

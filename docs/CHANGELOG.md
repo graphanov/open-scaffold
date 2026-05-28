@@ -6,7 +6,7 @@ For live package truth, check npm. For live release truth, check GitHub Releases
 
 ## v0.20.1 — Trace work-record replay package sync
 
-Status: package/public-surface candidate prepared in repo; npm publication and GitHub Release follow-through remain separate owner-approved gates.
+Status: published to npm as `open-scaffold@0.20.1`; GitHub Release `v0.20.1` is Latest after owner-approved trusted publishing and release follow-through.
 
 Highlights:
 
@@ -21,12 +21,12 @@ Evidence:
 - Source plan: `.osc/plans/done/117-osc-trace-work-record-replay.md`
 - Source evidence note: `.osc/releases/2026-05-28-117-osc-trace-work-record-replay.md`
 - Source PR: https://github.com/graphanov/open-scaffold/pull/142
-- Release-sync plan: `.osc/plans/active/124-trace-package-release-sync.md`
+- Release-sync plan: `.osc/plans/done/124-trace-package-release-sync.md`
 - Release-sync evidence note: `.osc/releases/2026-05-28-124-trace-package-release-sync.md`
 
 ## v0.20.0 — Evidence-chain package sync and cadence correction
 
-Status: published to npm as `open-scaffold@0.20.0`; GitHub Release `v0.20.0` is Latest after owner-approved trusted publishing and release follow-through.
+Status: published to npm as `open-scaffold@0.20.0`; GitHub Release `v0.20.0` was marked Latest after owner-approved trusted publishing and release follow-through, then superseded by `v0.20.1`.
 
 Highlights:
 
@@ -47,7 +47,7 @@ Evidence:
 
 ## v1.0.5 — Compare command package sync
 
-Status: published to npm as `open-scaffold@1.0.5`; historical release line after `v0.20.0` became the GitHub Latest release.
+Status: published to npm as `open-scaffold@1.0.5`; historical release line before the cadence reset to `v0.20.x`.
 
 Highlights:
 
@@ -65,7 +65,7 @@ Evidence:
 
 ## v1.0.4 — Work dry-run preview package sync
 
-Status: published to npm as `open-scaffold@1.0.4`; GitHub Release `v1.0.4` is Latest until the compare command package sync is published.
+Status: published to npm as `open-scaffold@1.0.4`; GitHub Release `v1.0.4` was marked Latest at publication time and later superseded.
 
 Highlights:
 
@@ -84,7 +84,7 @@ Evidence:
 
 ## v1.0.3 — Dispatch adapter glue package sync
 
-Status: published to npm as `open-scaffold@1.0.3`; GitHub Release `v1.0.3` is Latest.
+Status: published to npm as `open-scaffold@1.0.3`; GitHub Release `v1.0.3` was marked Latest at publication time and later superseded.
 
 Highlights:
 
@@ -105,7 +105,7 @@ Evidence:
 
 ## v1.0.2 — Codex runtime preset package sync
 
-Status: published to npm as `open-scaffold@1.0.2`; GitHub Release `v1.0.2` is Latest.
+Status: published to npm as `open-scaffold@1.0.2`; GitHub Release `v1.0.2` was marked Latest at publication time and later superseded.
 
 Highlights:
 
@@ -124,7 +124,7 @@ Evidence:
 
 ## v1.0.1 — No-spawn Codex handoff entry
 
-Status: published to npm as `open-scaffold@1.0.1`; GitHub Release `v1.0.1` is Latest.
+Status: published to npm as `open-scaffold@1.0.1`; GitHub Release `v1.0.1` was marked Latest at publication time and later superseded.
 
 Highlights:
 
