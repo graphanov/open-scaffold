@@ -16,6 +16,63 @@ osc work "Add a /health endpoint with tests" --runtime codex --dry-run
 
 The north-star command does **not** mean Open Scaffold core becomes Codex, Claude Code, OpenHands, a daemon, or a hosted agent. It means Open Scaffold should own the durable control loop around work: plan, package, dispatch, evidence, verification, and approval gates.
 
+## 2026-05-28 controller verdict
+
+The strategic verdict is blunt: **yes to an automation layer, no to a native core runtime now**. Open Scaffold should eventually own a safe `osc work` run-lifecycle controller, not a provider-specific agent brain.
+
+The adoption problem is command choreography. Users should describe work once and see Open Scaffold drive the boring record-keeping loop: plan/package/run/receipt/evidence/verification/human gates. Adapters still own the risky parts: worker execution, provider authentication, process spawning, sandbox translation, runtime sessions, and provider-local logs.
+
+Future non-dry-run `osc work` therefore means:
+
+```text
+core controller: plan -> run packet -> adapter gate -> receipt/evidence -> verification -> postflight
+adapter:        translate authority -> execute worker -> return structured manifest
+human:          approve real spawn, secrets/network, retries, close, commit, push, PR, merge, publish, release, deploy
+```
+
+Do not describe this as Open Scaffold becoming Codex, Claude Code, OpenHands, OMX, a daemon, or a hosted coordinator. The durable product phrase is **Executable Work Record**: executable enough to reduce adoption friction, still repo-native enough that the run can be reconstructed without private chat or runtime memory.
+
+## Future MVP: `osc work` run-lifecycle controller
+
+The next execution step is backlog plan `119-osc-work-execute-controller`: a controller for an executable plan or confirmed work package. It should:
+
+1. Validate the plan/package and stop on unresolved scope or missing verification.
+2. Create `.osc/runs/<run_id>/run.json`.
+3. Record selected adapter, authority, and human-gate decisions.
+4. Invoke only a reviewed explicit adapter after security gates pass.
+5. Capture bounded logs, `dispatch-receipt.json`, `adapter-output-manifest.json`, and evidence under the run directory.
+6. Run declared verification commands.
+7. Write a postflight summary.
+8. Stop before commit, push, PR creation, merge, publish, release, deploy, or external-production action unless a human approves that separate gate.
+
+### Trigger model
+
+Allowed automatic triggers are local and run-bound: dry-run preview, explicit operator command, plan validation, run packet creation, receipt/evidence collection, and declared verification commands.
+
+Human approval remains required for vague-intent-to-plan conversion, real runtime spawn, write access beyond declared scope, network access, credential access, retries after failure, amendments, close decisions, commits, pushes, PRs, merges, publishes, releases, deployments, and any external-production action. GitHub comments, schedules, dashboards, or chat events may begin as read-only suggestion triggers, not write-capable execution triggers.
+
+### Run-bound state
+
+Future controller state belongs under `.osc/runs/<run_id>/`:
+
+```text
+run.json
+automation.json
+automation-events.jsonl
+dispatch-receipt.json
+adapter-output-manifest.json
+dispatch/*.log
+evidence/*
+```
+
+`automation.json` records lifecycle status, selected adapter, granted authority, gate decisions, receipt/log/evidence paths, verification result, blocker/failure code, and question/approval IDs. It must not store secrets, credentials, raw runtime transcripts, provider-local state, hidden session memory, or unbounded logs. Retries create new `run_id`s until a separate decision proves safer sub-attempt semantics.
+
+### Adapter security floor
+
+A future executable adapter path must document and test: deny-by-default environment allowlist, no secrets by default, adapter timeout/kill behavior, bounded log capture, structured adapter output manifest, path containment, no symlink escape, isolated worktree/branch for write-capable runs, explicit network/credential gates, portable failure codes, and human gates for commit/push/PR/merge/publish/release/deploy.
+
+Dispatch receipts remain handoff proof, not correctness proof. Verification and human approval decide whether work is acceptable.
+
 ## Target flow
 
 A good future `osc work` flow should:

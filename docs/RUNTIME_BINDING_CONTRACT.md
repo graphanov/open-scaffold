@@ -65,6 +65,37 @@ A binding is not the Open Scaffold core. It may be a separate repo, plugin, bot,
 12. Close, retry, amend, block, or create next slice
 ```
 
+## Future `osc work` controller contract
+
+A future `osc work --execute --allow-spawn` controller is allowed to orchestrate the lifecycle around a binding; it is not allowed to become the binding. Core may create and update run-bound controller state under `.osc/runs/<run_id>/`:
+
+```text
+run.json
+automation.json
+automation-events.jsonl
+dispatch-receipt.json
+adapter-output-manifest.json
+dispatch/*.log
+evidence/*
+```
+
+`automation.json` records lifecycle status, selected adapter, granted authority, human gates, approval/question IDs, receipt/log/evidence paths, verification results, and portable blocker/failure codes. It must not record secrets, credentials, raw runtime transcripts, provider-local state, hidden session memory, or unbounded logs.
+
+A binding used by that controller must provide a structured adapter output manifest in addition to any dispatch receipt. Minimum manifest facts: adapter ID/version, consumed run packet path, spawn declaration, authority used, environment keys actually passed, log paths, artifact/evidence paths, verification outputs if any, timeout/kill result, and portable failure code.
+
+Security floor for executable bindings:
+
+- deny-by-default environment allowlist;
+- no secrets by default;
+- explicit network and credential gates;
+- adapter timeout and kill behavior;
+- bounded/truncated logs;
+- path containment and symlink escape rejection for receipts/logs/evidence/artifacts;
+- isolated worktree/branch for write-capable runs;
+- no commit, push, PR creation, merge, publish, release, deploy, or external-production action without human approval.
+
+The controller may reject a binding that does not satisfy these fields. The controller still does not own provider auth, process supervision, runtime-local session state, or task correctness.
+
 ## Required input: `run.json` package (run packet)
 
 A binding should expect a `run.json` package (run packet) like:

@@ -6,11 +6,12 @@ The short version: the stable contract is the repo-native work-record loop — `
 
 ## Release status
 
-- Repository candidate on `main`: `1.0.0`.
+- Stability contract: this page describes the v1.0.0 baseline and the stable/lab/future split that later patch and minor releases build on.
+- Current repository package version: check `package.json`.
 - Live npm package truth: check `npm view open-scaffold version dist-tags --json`.
 - Live GitHub release truth: check the GitHub Releases page and the release marked **Latest**.
 
-The repository may carry `package.json` version `1.0.0` before the owner completes the external publication gates. Do not treat repo version alone as proof that npm publication or GitHub Release latest movement has happened.
+Do not treat repo version alone as proof that npm publication or GitHub Release latest movement has happened. Verify the registry and release surfaces separately.
 
 ## Stable core in v1.0.0
 
@@ -63,7 +64,7 @@ These surfaces are usable but not promised as final API shape. They may change i
 - Runtime profiles and runtime selection beyond run-packet metadata.
 - `osc run`, `osc delegate`, `osc review`, and `osc ultrareview` beyond their current no-spawn artifact-generation role.
 - `osc dispatch` as explicit local-adapter invocation glue; adapter commands, receipts, and launch policy remain experimental and adapter-owned.
-- `osc work --dry-run` as a no-spawn natural-language composition preview; non-dry-run work execution remains future-gated.
+- `osc work --dry-run` as a no-spawn natural-language composition preview; non-dry-run work execution remains future-gated behind the 2026-05-28 control-loop decision and backlog plan `119-osc-work-execute-controller`.
 - `osc evolve` ledger helpers for repeated attempts; they record attempt/frontier decisions but do not execute or approve work.
 - Evaluation and audit envelope helpers.
 - Optional MCP server interface.
@@ -79,10 +80,11 @@ Experimental does not mean unsupported; it means users should avoid building irr
 
 These are explicitly not v1.0.0 guarantees:
 
-- Native agent spawning in Open Scaffold core.
+- Native autonomous agent spawning in Open Scaffold core.
+- Non-dry-run `osc work` execution as a stable guarantee; a future controller may be added only as an explicit, gated, adapter-owned execution path with env allowlists, timeouts, bounded logs, manifests, path containment, isolated worktrees, and human gates.
 - Hosted orchestration services.
 - Compliance certification or legal audit certification.
-- Provider-specific model benchmarking claims.
+- Provider-specific model benchmarking or model-ranking claims.
 - Tamper-evident external ledger anchoring.
 - Marketplace, network registry, or installer behavior for runtimes.
 
@@ -138,8 +140,8 @@ Future breaking changes must provide:
 
 The owner must explicitly approve and perform or authorize these external side effects:
 
-- `npm publish` for `open-scaffold@1.0.0`.
-- GitHub Release creation or marking `v1.0.0` as **Latest**.
+- npm publication for any new package version.
+- GitHub Release creation or marking a release as **Latest**.
 - Any website deployment or public launch announcement.
 
-Until those gates happen, v1.0.0 is a repository release candidate, not a live public package release.
+A version is live only after the registry/package smoke checks and GitHub Release truth are verified.
