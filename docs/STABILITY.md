@@ -2,7 +2,7 @@
 
 This page defines what Open Scaffold v1.0.0 means for adopters.
 
-The short version: the repo protocol, folder state machine, core plan schema, evidence notes, and day-two CLI helpers are the stable contract. Runtime launch, provider-specific automation, and external cockpit transports remain opt-in or experimental unless a later release explicitly promotes them.
+The short version: the stable contract is the repo-native work-record loop — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus the read-only `osc compare` demo that shows why work records matter. Runtime launch, provider-specific automation, evaluation helpers, dashboards, and external cockpit transports remain opt-in lab/experimental surfaces unless a later release explicitly promotes them.
 
 ## Release status
 
@@ -12,7 +12,7 @@ The short version: the repo protocol, folder state machine, core plan schema, ev
 
 The repository may carry `package.json` version `1.0.0` before the owner completes the external publication gates. Do not treat repo version alone as proof that npm publication or GitHub Release latest movement has happened.
 
-## Stable in v1.0.0
+## Stable core in v1.0.0
 
 These surfaces are covered by semantic-versioning expectations.
 
@@ -24,7 +24,7 @@ These surfaces are covered by semantic-versioning expectations.
 - The 7-section plan schema in `.osc/plans/handoff-template.md`.
 - Mechanical amendments and closures through `osc amend`, `osc close`, `./amend.sh`, and `./close.sh`.
 - `.osc/releases/` as curated release/evidence notes.
-- `.osc/runs/<run_id>/run.json` as a handoff package format produced by core commands.
+- `.osc/runs/<run_id>/run.json` as a repo-native handoff package record. Core commands can create the package; external agents or adapters do the work and return receipts/evidence.
 
 ### CLI and shell floor
 
@@ -40,6 +40,7 @@ The stable day-two CLI surface is:
 - `osc evidence new`
 - `osc evidence collect`
 - `osc verify`
+- `osc compare` as a read-only first-read demo for comparing two recorded attempts
 
 The zero-dependency shell helpers remain a stable fallback floor:
 
@@ -55,7 +56,7 @@ The zero-dependency shell helpers remain a stable fallback floor:
 - `npm test` and `npm run build` remain the package-level local gates for this repository.
 - Public PRs should cite the plan, evidence note, verification commands, review state, and owner gates.
 
-## Experimental in v1.0.0
+## Lab / experimental in v1.0.0
 
 These surfaces are usable but not promised as final API shape. They may change in minor versions when the change is additive or in a future major version if the contract changes.
 
@@ -63,6 +64,7 @@ These surfaces are usable but not promised as final API shape. They may change i
 - `osc run`, `osc delegate`, `osc review`, and `osc ultrareview` beyond their current no-spawn artifact-generation role.
 - `osc dispatch` as explicit local-adapter invocation glue; adapter commands, receipts, and launch policy remain experimental and adapter-owned.
 - `osc work --dry-run` as a no-spawn natural-language composition preview; non-dry-run work execution remains future-gated.
+- `osc evolve` ledger helpers for repeated attempts; they record attempt/frontier decisions but do not execute or approve work.
 - Evaluation and audit envelope helpers.
 - Optional MCP server interface.
 - Glass cockpit webhook examples for Discord and Slack.
@@ -77,10 +79,10 @@ Experimental does not mean unsupported; it means users should avoid building irr
 
 These are explicitly not v1.0.0 guarantees:
 
-- Native autonomous agent spawning in Open Scaffold core.
+- Native agent spawning in Open Scaffold core.
 - Hosted orchestration services.
 - Compliance certification or legal audit certification.
-- Provider-specific model benchmarking or model-ranking claims.
+- Provider-specific model benchmarking claims.
 - Tamper-evident external ledger anchoring.
 - Marketplace, network registry, or installer behavior for runtimes.
 
