@@ -37,7 +37,8 @@ Open Scaffold core owns the portable project substrate:
 - `docs/EVOLUTION_LOOP.md` — multi-attempt loop state, attempt journals, frontier promotion, and improvement routing.
 - `osc mcp serve` / `osc-mcp` — optional stdio MCP server that exposes local mission, plan, evidence, status, rules, and roadmap state to MCP-capable tools without requiring each agent to parse markdown directly.
 - `osc task` — optional local SQLite task bridge for day-one repo-local task tracking in `.osc/tasks.db`; see [`docs/TASKS.md`](TASKS.md).
-- `verify.sh` / `osc verify` — methodology compliance checks.
+- `verify.sh` / `osc verify` — methodology compliance and evidence-chain structural checks.
+- `osc trace` — read-only local work-record replay for one plan.
 - `.github/` templates — issue and PR traceability for GitHub-centered workflows.
 
 Core does **not** spawn agents. It defines the contract that agents and tools can use. The MCP server is an interface over local repo truth, not a planner, task database, or runtime launcher.

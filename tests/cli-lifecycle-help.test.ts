@@ -38,6 +38,7 @@ const topLevelHelpCommands = [
   'osc evidence new <slug>',
   'osc evidence collect <slug> [--ci] [--dry-run] [--verbose]',
   'osc close <plan-slug> [--message <text>]',
+  'osc trace <plan-slug> [--json] [--include-unverified]',
   'osc verify [--evidence-chain [--plan <slug>] [--json] [--strict]]',
   'osc start <plan-slug-or-path> --runtime <codex|omx|plain|human|custom>',
   'osc delegate <plan-path> [run binding options]',
@@ -117,6 +118,12 @@ const cases: HelpCase[] = [
     args: ['close', '--help'],
     expected: 'Usage: osc close <plan-slug> [--message <text>]',
     forbidden: 'Unsafe slug',
+  },
+  {
+    name: 'trace',
+    args: ['trace', '--help'],
+    expected: 'Usage: osc trace <plan-slug> [--json] [--include-unverified]',
+    forbidden: 'Missing required argument',
   },
 ];
 

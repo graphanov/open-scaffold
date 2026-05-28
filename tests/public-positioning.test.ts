@@ -121,6 +121,18 @@ describe('public work-record positioning', () => {
     expect(section).not.toMatch(/trusted|compliance-grade|tamper-proof|trust score/i);
   });
 
+  it('documents trace as read-only replay, not verification or certification', () => {
+    const trace = read('docs/TRACE.md');
+
+    expect(trace).toContain('osc trace <plan-slug>');
+    expect(trace).toContain('read-only work-record replay');
+    expect(trace).toContain('osc verify --evidence-chain');
+    expect(trace).toContain('does not call GitHub');
+    expect(trace).toContain('does not spawn runtimes');
+    expect(trace).toContain('does not judge correctness, evidence quality, or readiness');
+    expect(trace).not.toMatch(/trust score|compliance-grade|tamper-proof|certif(y|ies|ied)/i);
+  });
+
   it('positions comparison tools as adjacent layers rather than enemies', () => {
     const comparison = read('docs/COMPARISON.md');
 

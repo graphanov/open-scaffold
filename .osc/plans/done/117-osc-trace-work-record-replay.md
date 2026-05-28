@@ -2,7 +2,7 @@
 
 ## Status
 
-backlog
+done
 
 ## Context
 
@@ -38,12 +38,12 @@ Ship `osc trace PLAN_SLUG` as a read-only chain replay command that prints the w
 
 ## Acceptance criteria
 
-- [ ] `osc trace PLAN_SLUG` finds a plan in active/backlog/blocked/done and prints its status, goal, acceptance criteria summary, and file path.
-- [ ] The command lists local run packets that reference the plan slug and local evidence notes that cite the plan.
-- [ ] The command lists release notes and PR/issue references when they can be found in local files.
-- [ ] Output clearly labels each link as local, external, missing, or unverified.
-- [ ] `--json` emits stable machine-readable chain data.
-- [ ] Docs explain how `osc trace` differs from `osc verify --evidence-chain`.
+- [x] `osc trace PLAN_SLUG` finds a plan in active/backlog/blocked/done and prints its status, goal, acceptance criteria summary, and file path.
+- [x] The command lists local run packets that reference the plan slug and local evidence notes that cite the plan.
+- [x] The command lists release notes and PR/issue references when they can be found in local files.
+- [x] Output clearly labels each link as local, external, missing, or unverified.
+- [x] `--json` emits stable machine-readable chain data.
+- [x] Docs explain how `osc trace` differs from `osc verify --evidence-chain`.
 
 ## Verification steps
 
@@ -55,5 +55,5 @@ Ship `osc trace PLAN_SLUG` as a read-only chain replay command that prints the w
 
 ## Open questions
 
-- Should `osc trace` be included inside `osc verify --evidence-chain` output as a detail mode, or remain a separate read-only discovery command?
-- Should external references be optionally verified via GitHub API in a later network-enabled mode?
+- Trace remains a separate read-only discovery command for this slice; an evidence-chain detail mode is deferred unless a future plan proves it useful.
+- Network-backed external reference verification is deferred to a future plan because this slice is local/read-only only.

@@ -123,13 +123,22 @@ The evolution ledger records attempts and frontier state only. External coordina
 
 Check the plan's acceptance criteria one by one. Run tests. Read the diff. Verification traces to criteria, not vibes.
 
+When you need to reconstruct the work record before or after verification, run:
+
+```bash
+osc trace <plan-slug>
+osc verify --evidence-chain --plan <plan-slug>
+```
+
+Trace shows the known local chain; evidence-chain verification checks that chain structurally.
+
 Run `./verify.sh` for a zero-dependency methodology compliance report (mission defined, plans exist, amendments sequential, changelog coverage). Use `./verify.sh --strict` for full checks including plan schema validation and paired-view drift detection. `osc verify` performs the generic CLI check; adapter repos keep their own namespace-specific verify behavior. Use `osc metrics` when you need numeric scaffold health: plan distribution, cycle time, stale active plans, close velocity, evidence completeness, and approval distribution. Use `osc metrics --json` for CI dashboards or status views that consume machine-readable output. When verification or manual review points at mechanical scaffold hygiene, run `osc doctor --fix --dry-run` first to preview safe repairs, then `osc doctor --fix` to apply fixable status alignment, amendment changelog backfills, narrow paired-view section drops, stale active-plan blocking, or missing release README repair. Use `osc evidence new <slug>` to scaffold a `.osc/releases/<date>-<slug>.md` evidence note after verification, then run `osc evidence collect <slug>` to append local verification output, git context, changed files, and explicit skipped-collector notes without overwriting your narrative. Add `--ci` only when you want `gh`-based PR/check collection. Replace any remaining TODOs with human-reviewed outcome text, then use `osc close <slug> --message "<what shipped>"` (or `npx open-scaffold close <slug> --message "<what shipped>"`) to move a verified plan to `done/`. Shell scripts remain the day-zero floor; `osc` is the canonical tested path for richer run/package behavior.
 
 > **With adapters:** OMC/OMX handoffs should still end by running the repo-local `./verify.sh` plus acceptance-criteria checks. Runtime-native verify commands are wrappers around this evidence, not replacements for it.
 
 ### 5. Publish/review (when code or public docs change)
 
-Open a traceable GitHub PR for meaningful changes. The PR should link issue/task, plan/spec, `run.json` work package when delegated, verification, evidence, and review gates. If the Codex connector is enabled, trigger review by opening the PR for review, marking a draft ready, or commenting `@codex review`. When a configured Discord or Slack cockpit should see the update, use `osc cockpit post --event pr_link --pr <url>` or `osc cockpit post --event completion_report --run-id <id> --plan <slug> --pr <url>` after redaction review. See `docs/GITHUB_WORKFLOW.md`.
+Open a traceable GitHub PR for meaningful changes. The PR should link issue/task, plan/spec, `run.json` work package when delegated, verification, evidence, and review gates. Before writing the PR body, `osc trace <plan-slug>` can help gather the plan, run, evidence, release-note, and recognized PR/issue references already present in local files; it does not query GitHub or prove PR/CI state. If the Codex connector is enabled, trigger review by opening the PR for review, marking a draft ready, or commenting `@codex review`. When a configured Discord or Slack cockpit should see the update, use `osc cockpit post --event pr_link --pr <url>` or `osc cockpit post --event completion_report --run-id <id> --plan <slug> --pr <url>` after redaction review. See `docs/GITHUB_WORKFLOW.md`.
 
 ### 6. Capture amendments (when you "get smarter")
 
@@ -205,7 +214,7 @@ Multi-agent development spans sessions. Without discipline, context is lost betw
 
 1. Before ending: review the latest plan + amendments. Is everything captured, or are decisions only in the conversation?
 2. Write down unfinished work as open questions in the plan file (Section 7).
-3. The next session starts by reading MISSION.md → latest plan → amendments in order. This is the full context handoff — no re-explanation needed.
+3. The next session starts by reading MISSION.md → latest plan → amendments in order. If the slice already has a plan slug, it can also start with `osc trace <plan-slug>` to see the durable local work record without relying on chat memory.
 
 For stage-folder movement rules and lifecycle conventions, see `.osc/plans/WORKFLOW.md`. For non-negotiable principles, see `.osc/RULES.md`.
 

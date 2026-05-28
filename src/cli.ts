@@ -25,6 +25,7 @@ import { formatPlanValidationIssues, hasBlockingIssues, resolvePlanValidationPat
 import { buildPlanGraph, normalizePlanReference, renderPlanGraphAscii, renderPlanGraphMermaid, type PlanGraphDirection, type PlanGraphFormat, type PlanGraphStageFilter } from './plan-graph.js';
 import { askInteractiveAnswers, assertWizardReady, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
 import { buildWorkDryRunPreview, formatWorkDryRunPreview } from './work.js';
+import { buildTrace, formatTraceReport, TraceUsageError } from './trace.js';
 
 function printHelp(): void {
   console.log(`osc — Open Scaffold CLI
@@ -51,6 +52,7 @@ Stable core protocol:
   osc evidence new <slug>
   osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
   osc close <plan-slug> [--message <text>]
+  osc trace <plan-slug> [--json] [--include-unverified]
   osc verify [--evidence-chain [--plan <slug>] [--json] [--strict]]
 
 Handoff and run packages:
@@ -954,6 +956,61 @@ function printEvidenceNewUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
 
 function printEvidenceCollectUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage('Usage: osc evidence collect <slug> [--ci] [--dry-run] [--verbose]', stream);
+}
+
+function printTraceUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc trace <plan-slug> [--json] [--include-unverified]', stream);
+}
+
+interface TraceCommandOptions {
+  slug: string;
+  json: boolean;
+  includeUnverified: boolean;
+}
+
+function parseTraceOptions(args: string[]): TraceCommandOptions {
+  const slug = args[0];
+  if (!slug || slug.startsWith('--')) {
+    console.error('Missing required argument: plan-slug');
+    printTraceUsage();
+    process.exit(2);
+  }
+  const options: TraceCommandOptions = { slug, json: false, includeUnverified: false };
+  for (let i = 1; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--json':
+        options.json = true;
+        break;
+      case '--include-unverified':
+        options.includeUnverified = true;
+        break;
+      default:
+        console.error(`Unknown option for trace: ${flag}`);
+        printTraceUsage();
+        process.exit(2);
+    }
+  }
+  return options;
+}
+
+function traceCommand(args: string[]): void {
+  if (isHelpArg(args[0])) {
+    printTraceUsage('stdout');
+    return;
+  }
+  const options = parseTraceOptions(args);
+  try {
+    const report = buildTrace(process.cwd(), options.slug, { includeUnverified: options.includeUnverified });
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    } else {
+      process.stdout.write(formatTraceReport(report));
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(error instanceof TraceUsageError ? 2 : 1);
+  }
 }
 
 function printVerifyUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
@@ -2643,6 +2700,9 @@ async function main(): Promise<void> {
       return;
     case 'compare':
       compareCommand(args);
+      return;
+    case 'trace':
+      traceCommand(args);
       return;
     case 'review':
     case 'ultrareview':

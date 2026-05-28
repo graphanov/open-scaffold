@@ -198,12 +198,15 @@ Shell fallbacks remain available:
 
 ```bash
 ./verify.sh --standard
+osc trace my-first-task
 osc evidence new my-first-task
 osc close my-first-task --message "verified first task"
-# or without local install:
+# or without local install for the evidence/close helpers:
 npx open-scaffold evidence new my-first-task
 npx open-scaffold close my-first-task --message "verified first task"
 ```
+
+`osc trace` replays the local work record for review; evidence-chain verification checks whether structural links are intact.
 
 Shell fallback:
 
@@ -276,7 +279,7 @@ Open Scaffold is usable, but it is still in active credibility and adoption hard
 
 Stable enough to rely on today:
 
-- CLI: `osc init`, `osc status`, `osc plan new`, `osc plan validate`, `osc plan move`, `osc amend`, `osc close`, `osc evidence new`, `osc evidence collect`, `osc verify`, and read-only `osc compare`.
+- CLI: `osc init`, `osc status`, `osc plan new`, `osc plan validate`, `osc plan move`, `osc amend`, `osc close`, `osc evidence new`, `osc evidence collect`, `osc verify`, `osc trace`, and read-only `osc compare`.
 - Protocol: `MISSION.md`, `ROADMAP.md`, `.osc/plans/`, the 7-section plan schema, folder-as-status workflow, amendments, evidence notes, and run-packet records.
 - Verification floor: `verify.sh` plus package tests/builds for this repository.
 
@@ -359,6 +362,7 @@ Skip it for:
 - [`docs/MINIMUM_VIABLE_SCAFFOLD.md`](docs/MINIMUM_VIABLE_SCAFFOLD.md) — smallest practical day-one adoption path.
 - [`docs/STABILITY.md`](docs/STABILITY.md) — current package-contract, experimental, and future surfaces.
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — curated release history.
+- [`docs/TRACE.md`](docs/TRACE.md) — replaying a plan's local work record with `osc trace`.
 - [`docs/DEV_CONTAINER.md`](docs/DEV_CONTAINER.md) — optional container setup for consistent team onboarding.
 - [`docs/EVOLUTION_LOOP.md`](docs/EVOLUTION_LOOP.md) — attempts, frontier records, and `osc evolve`.
 - [`docs/EXAMPLES.md`](docs/EXAMPLES.md) — examples and viewer demos.
