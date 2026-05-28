@@ -4,22 +4,25 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
-## v0.20.x — Trace work-record replay
+## v0.20.1 — Trace work-record replay package sync
 
-Status: prepared in repo; npm publication and GitHub Release follow-through remain separate owner-approved public-surface gates.
+Status: package/public-surface candidate prepared in repo; npm publication and GitHub Release follow-through remain separate owner-approved gates.
 
 Highlights:
 
-- Adds `osc trace <plan-slug>`, a read-only command for replaying one plan's local work-record chain.
+- Publishes the PR #142 package-visible trace command: `osc trace <plan-slug>`, a read-only command for replaying one plan's local work-record chain.
 - Complements `osc verify --evidence-chain`: trace explains the known chain, verify checks structural integrity.
 - Labels links as `local`, `external`, `missing`, or `unverified` without judging correctness, evidence quality, PR state, or compliance.
+- Recognizes full GitHub PR/issue URLs plus common local shorthand such as `PR #123`, `Pull Request: owner/repo#123`, and `Issue: #456` from local files only.
 - Requires no GitHub API, network access, runtime launch, hosted dashboard, or provider credentials.
 
 Evidence:
 
 - Source plan: `.osc/plans/done/117-osc-trace-work-record-replay.md`
 - Source evidence note: `.osc/releases/2026-05-28-117-osc-trace-work-record-replay.md`
-- Source PR: this feature PR
+- Source PR: https://github.com/graphanov/open-scaffold/pull/142
+- Release-sync plan: `.osc/plans/active/124-trace-package-release-sync.md`
+- Release-sync evidence note: `.osc/releases/2026-05-28-124-trace-package-release-sync.md`
 
 ## v0.20.0 — Evidence-chain package sync and cadence correction
 
