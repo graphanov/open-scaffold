@@ -64,12 +64,12 @@ Post-merge/publication gates:
 - Fresh isolated-cache `npx --yes open-scaffold@latest init --tier min --target <tmp>` — PASS: created `MISSION.md`, `.osc/RULES.md`, `.osc/plans/WORKFLOW.md`, and `verify.sh` in the target.
 - `gh release create v1.0.5 --target 3d5e6e22a6d0003eef3cae7b7fadbcb1a0a5eb35 --latest` — PASS.
 - `gh release view v1.0.5 --repo graphanov/open-scaffold --json tagName,name,publishedAt,targetCommitish,url,isDraft,isPrerelease` — PASS: tag `v1.0.5`, target `3d5e6e22a6d0003eef3cae7b7fadbcb1a0a5eb35`, not draft, not prerelease.
-- `gh release list --repo graphanov/open-scaffold --limit 5` — PASS: `v1.0.5 — Compare command package sync` is marked Latest.
+- `gh release list --repo graphanov/open-scaffold --limit 5` — PASS at publication time: `v1.0.5 — Compare command package sync` was marked Latest.
 - `gh workflow list --repo graphanov/open-scaffold --json id,name,path,state --jq '.[] | select(.path|contains("publish"))'` — PASS: only `.github/workflows/publish-npm.yml` is active for publish.
 
 ## Outcome
 
-Published and verified. `open-scaffold@latest` is now `1.0.5`; fresh `npx` exposes and runs `osc compare`; GitHub Release `v1.0.5` is Latest; release-sync plan `122-compare-package-release-sync` is closed to `done/`.
+Published and verified at the time of this release. `open-scaffold@latest` became `1.0.5`; fresh `npx` exposed and ran `osc compare`; GitHub Release `v1.0.5` was marked Latest until superseded by a later release; release-sync plan `122-compare-package-release-sync` is closed to `done/`.
 
 ## Follow-up
 

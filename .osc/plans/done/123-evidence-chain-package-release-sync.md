@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -29,7 +29,7 @@ Prepare a package/public-surface release candidate that publishes the evidence-c
 - `docs/CHANGELOG.md` — add the `v0.20.0` package-sync candidate entry and preserve `1.0.x` as historical.
 - `AGENTS.md` and `CLAUDE.md` — keep paired agent-entry descriptions aligned with the corrected stability/current-cadence wording.
 - `.osc/releases/2026-05-28-123-evidence-chain-package-release-sync.md` — record candidate evidence and post-merge/publication gates.
-- `.osc/plans/active/123-evidence-chain-package-release-sync.md` — this plan.
+- `.osc/plans/done/123-evidence-chain-package-release-sync.md` — this plan after closeout.
 
 ## Implementation Architecture Coverage
 
@@ -41,13 +41,13 @@ Prepare a package/public-surface release candidate that publishes the evidence-c
 
 ## Acceptance criteria
 
-- [ ] `package.json` and `package-lock.json` both declare `0.20.0`.
-- [ ] The candidate documents that `0.20.0` is an intentional pre-1.0 cadence correction, while historical `1.0.x` versions remain published history.
-- [ ] `docs/CHANGELOG.md` includes a `v0.20.0` candidate entry for `osc verify --evidence-chain`, first-read `osc compare` help grouping, and version-cadence correction.
-- [ ] `README.md`, `docs/STABILITY.md`, `AGENTS.md`, and `CLAUDE.md` no longer frame the current line as a pressure-heavy `v1.0.x` stable line.
-- [ ] Candidate package gates pass: `./verify.sh --strict`, `npm test`, `npm run build`, `npm pack --dry-run --json`, `npm publish --dry-run --tag latest`, and `git diff --check`.
-- [ ] Local built CLI help exposes `osc verify --evidence-chain` and the first-read `osc compare` help grouping before PR publication.
-- [ ] The PR stops before merge, npm publish, GitHub Release creation/update, and optional npm deprecation of historical `1.0.x` versions.
+- [x] `package.json` and `package-lock.json` both declare `0.20.0`.
+- [x] The candidate documents that `0.20.0` is an intentional pre-1.0 cadence correction, while historical `1.0.x` versions remain published history.
+- [x] `docs/CHANGELOG.md` includes a `v0.20.0` candidate entry for `osc verify --evidence-chain`, first-read `osc compare` help grouping, and version-cadence correction.
+- [x] `README.md`, `docs/STABILITY.md`, `AGENTS.md`, and `CLAUDE.md` no longer frame the current line as a pressure-heavy `v1.0.x` stable line.
+- [x] Candidate package gates pass: `./verify.sh --strict`, `npm test`, `npm run build`, `npm pack --dry-run --json`, `npm publish --dry-run --tag latest`, and `git diff --check`.
+- [x] Local built CLI help exposes `osc verify --evidence-chain` and the first-read `osc compare` help grouping before PR publication.
+- [x] The PR stops before merge, npm publish, GitHub Release creation/update, and optional npm deprecation of historical `1.0.x` versions.
 
 ## Verification steps
 
@@ -64,5 +64,5 @@ Prepare a package/public-surface release candidate that publishes the evidence-c
 
 ## Open questions
 
-- Owner gate after PR merge: publish `open-scaffold@0.20.0` via trusted publishing and mark GitHub Release `v0.20.0` as Latest?
-- Owner gate after public sync: optionally deprecate the historical `1.0.x` npm versions with a gentle cadence-correction message, or leave them alone as normal history?
+- Owner gate after PR merge: resolved — `open-scaffold@0.20.0` was published via trusted publishing and GitHub Release `v0.20.0` was marked Latest.
+- Owner gate after public sync: still deferred — optionally deprecate the historical `1.0.x` npm versions with a gentle cadence-correction message, or leave them alone as normal history.

@@ -393,7 +393,7 @@ Acceptance criteria:
 
 ### Milestone 18 — historical v1.0.0 stability launch
 
-Status: completed as a historical launch line through `.osc/plans/done/069-v1-launch.md`, `.osc/releases/2026-05-25-v1-launch.md`, PR #113, and later package/release follow-through. As of the `123-evidence-chain-package-release-sync` candidate, the forward-moving channel is intentionally corrected back to pre-1.0 hardening (`v0.20.x`) until the public product surface earns a mature 1.0 contract.
+Status: completed as a historical launch line through `.osc/plans/done/069-v1-launch.md`, `.osc/releases/2026-05-25-v1-launch.md`, PR #113, and later package/release follow-through. As of the `123-evidence-chain-package-release-sync` closeout, the forward-moving channel is intentionally corrected back to pre-1.0 hardening (`v0.20.x`) until the public product surface earns a mature 1.0 contract.
 
 Goal: make the adoption contract explicit before the first major-release experiment.
 
