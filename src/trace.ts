@@ -368,7 +368,7 @@ export function buildTrace(start: string, slug: string, options: TraceOptions = 
     plan: {
       slug: planSlug,
       stage: foundPlan.stage,
-      status: plan.status,
+      status: foundPlan.stage,
       path: repoRelative(root, foundPlan.path),
       goal: plan.goal,
       acceptance_criteria: acceptanceCriteria,

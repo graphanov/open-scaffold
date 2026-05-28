@@ -271,6 +271,50 @@ Integrated via PR #129 with follow-up issue #130.
     expect(report.summary.external_refs).toBeGreaterThanOrEqual(3);
   });
 
+  it('uses the authoritative folder stage as the public status when plan text is stale', () => {
+    const root = tempRepo();
+    writeFileSync(join(root, '.osc/plans/done/009-stale-status.md'), `# Plan: 009-stale-status
+
+## Status
+
+active
+
+## Context
+
+Fixture context.
+
+## Goal
+
+Replay stale lifecycle status.
+
+## Constraints / Out of scope
+
+- Local-only fixture.
+
+## Files to touch
+
+- Fixture files.
+
+## Acceptance criteria
+
+- [x] AC1 is backed.
+
+## Verification steps
+
+1. Run trace.
+
+## Open questions
+
+- None.
+`);
+
+    const report = buildTrace(root, '009-stale-status');
+
+    expect(report.plan.stage).toBe('done');
+    expect(report.plan.status).toBe('done');
+    expect(formatTraceReport(report)).toContain('Status: done');
+  });
+
   it('sanitizes control characters in human-readable output', () => {
     const root = tempRepo();
     const esc = '\u001b';
