@@ -44,7 +44,22 @@ roadmap_item
 
 Not every tiny task needs every link. But if a slice changes product direction, public docs, code, release notes, or a multi-agent workflow, it should have enough of this chain for the next human or agent to resume without chat memory.
 
+## Work-record replay
+
+`osc trace <plan-slug>` is the reconstruction path for one slice. It searches the plan stage folders, local run packets, evidence/release notes, and recognized references in local files, then prints a human-readable chain with each link labeled as `local`, `external`, `missing`, or `unverified`.
+
+Use trace when a reviewer, operator, or future agent needs to understand what is known before deciding what to check next:
+
+```bash
+osc trace <plan-slug>
+osc trace <plan-slug> --json
+```
+
+Trace is explanatory. It does not make a close decision, judge evidence quality, verify GitHub state, call external services, run tests, spawn runtimes, provide compliance guarantees, or approve the slice.
+
 ## Evidence chain verification
+
+Use `osc trace <plan-slug>` to replay the known local chain for a human. Use `osc verify --evidence-chain --plan <plan-slug>` to check whether the structural evidence links are intact.
 
 `osc verify --evidence-chain` checks whether the repo work record links together structurally: done plan, acceptance criteria, run packet, evidence note, close decision, and release or PR references.
 

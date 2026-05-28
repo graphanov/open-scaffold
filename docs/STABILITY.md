@@ -2,7 +2,7 @@
 
 This page defines Open Scaffold's current package contract and maturity boundary.
 
-The short version: Open Scaffold is back on a pre-1.0 hardening line (`v0.20.x`) because the protocol is useful but the public product surface, runtime boundary, and adoption story are still moving quickly. The stable-enough core is the repo-native work-record loop — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus the read-only `osc compare` demo that shows why work records matter. Runtime launch, provider-specific automation, evaluation helpers, dashboards, and external cockpit transports remain opt-in lab/experimental surfaces unless a later release explicitly promotes them.
+The short version: Open Scaffold is back on a pre-1.0 hardening line (`v0.20.x`) because the protocol is useful but the public product surface, runtime boundary, and adoption story are still moving quickly. The stable-enough core is the repo-native work-record loop — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus read-only work-record commands such as `osc compare` and `osc trace` that help humans inspect recorded work without launching runtimes. Runtime launch, provider-specific automation, evaluation helpers, dashboards, and external cockpit transports remain opt-in lab/experimental surfaces unless a later release explicitly promotes them.
 
 The historical `v1.0.x` packages and GitHub Releases remain available for provenance. They are not erased, but they should not set the current expectation that Open Scaffold has fully earned a mature 1.0 contract.
 
@@ -45,6 +45,7 @@ The stable day-two CLI surface is:
 - `osc evidence collect`
 - `osc verify`
 - `osc compare` as a read-only first-read demo for comparing two recorded attempts
+- `osc trace` as a read-only replay of one plan's local work-record chain
 
 The zero-dependency shell helpers remain a stable fallback floor:
 
@@ -59,6 +60,7 @@ The zero-dependency shell helpers remain a stable fallback floor:
 - `./verify.sh --quick`, `--standard`, and `--strict` remain the canonical repository compliance tiers.
 - `npm test` and `npm run build` remain the package-level local gates for this repository.
 - Public PRs should cite the plan, evidence note, verification commands, review state, and owner gates.
+- `osc trace <plan-slug>` is a reconstruction aid; `osc verify --evidence-chain` remains the structural integrity check.
 
 ## Lab / experimental in the current line
 
@@ -89,6 +91,7 @@ These are explicitly not current-package guarantees:
 - Compliance certification or legal audit certification.
 - Provider-specific model benchmarking or model-ranking claims.
 - Tamper-evident external ledger anchoring.
+- Network-backed GitHub/API verification for trace output.
 - Marketplace, network registry, or installer behavior for runtimes.
 
 Future work can explore those areas only through explicit plans, evidence, safety analysis, and owner approval.
