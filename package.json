@@ -1,6 +1,6 @@
 {
   "name": "open-scaffold",
-  "version": "1.0.5",
+  "version": "0.20.0",
   "description": "Runtime-neutral scaffold and prompt/artifact CLI for disciplined AI-agent development.",
   "license": "MIT",
   "repository": {

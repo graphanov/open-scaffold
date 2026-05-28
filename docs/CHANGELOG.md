@@ -4,9 +4,30 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
-## v1.0.5 — Compare command package sync
+## v0.20.0 — Evidence-chain package sync and cadence correction
 
 Status: release-sync candidate; npm/GitHub Release publication pending after PR integration and owner-approved package follow-through.
+
+Highlights:
+
+- Prepares the PR #137 package-visible evidence-chain verifier: `osc verify --evidence-chain` and scoped checks such as `osc verify --evidence-chain --plan <slug> --strict`.
+- Publishes the latest first-read help grouping so fresh installs see `osc compare` as the prerequisite-free work-record demo.
+- Corrects the forward-moving release cadence from the historical `v1.0.x` line back to pre-1.0 hardening as `v0.20.x`. The `1.0.x` packages remain published history; `0.20.x` is the honest current maturity signal.
+- Keeps the verifier structural only: it checks links among plans, evidence notes, run packets, PR references, and close-decision fields without judging evidence quality or calling external services.
+
+Evidence:
+
+- Source plan: `.osc/plans/done/071-evidence-chain-verifier.md`
+- Release-sync plan: `.osc/plans/active/123-evidence-chain-package-release-sync.md`
+- Source PR: https://github.com/graphanov/open-scaffold/pull/137
+- Related first-read help PR: https://github.com/graphanov/open-scaffold/pull/138
+- Runtime-control-loop ADR PR: https://github.com/graphanov/open-scaffold/pull/139
+- Source evidence note: `.osc/releases/2026-05-27-071-evidence-chain-verifier.md`
+- Release-sync evidence note: `.osc/releases/2026-05-28-123-evidence-chain-package-release-sync.md`
+
+## v1.0.5 — Compare command package sync
+
+Status: published to npm as `open-scaffold@1.0.5`; GitHub Release `v1.0.5` is Latest until the next owner-approved package/release follow-through.
 
 Highlights:
 

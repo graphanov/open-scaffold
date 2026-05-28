@@ -1,21 +1,24 @@
 # Open Scaffold stability
 
-This page defines what Open Scaffold v1.0.0 means for adopters.
+This page defines Open Scaffold's current package contract and maturity boundary.
 
-The short version: the stable contract is the repo-native work-record loop — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus the read-only `osc compare` demo that shows why work records matter. Runtime launch, provider-specific automation, evaluation helpers, dashboards, and external cockpit transports remain opt-in lab/experimental surfaces unless a later release explicitly promotes them.
+The short version: Open Scaffold is back on a pre-1.0 hardening line (`v0.20.x`) because the protocol is useful but the public product surface, runtime boundary, and adoption story are still moving quickly. The stable-enough core is the repo-native work-record loop — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus the read-only `osc compare` demo that shows why work records matter. Runtime launch, provider-specific automation, evaluation helpers, dashboards, and external cockpit transports remain opt-in lab/experimental surfaces unless a later release explicitly promotes them.
+
+The historical `v1.0.x` packages and GitHub Releases remain available for provenance. They are not erased, but they should not set the current expectation that Open Scaffold has fully earned a mature 1.0 contract.
 
 ## Release status
 
-- Stability contract: this page describes the v1.0.0 baseline and the stable/lab/future split that later patch and minor releases build on.
+- Current cadence: pre-1.0 hardening on the `v0.20.x` line.
+- Historical note: `v1.0.x` exists as a previously published launch line and remains immutable package/release history.
 - Current repository package version: check `package.json`.
 - Live npm package truth: check `npm view open-scaffold version dist-tags --json`.
 - Live GitHub release truth: check the GitHub Releases page and the release marked **Latest**.
 
 Do not treat repo version alone as proof that npm publication or GitHub Release latest movement has happened. Verify the registry and release surfaces separately.
 
-## Stable core in v1.0.0
+## Stable-enough core in the current line
 
-These surfaces are covered by semantic-versioning expectations.
+These surfaces are intended to remain usable across the current pre-1.0 hardening line, but the project is not yet making the broad promise implied by a mature 1.0 release.
 
 ### Repository protocol
 
@@ -57,9 +60,9 @@ The zero-dependency shell helpers remain a stable fallback floor:
 - `npm test` and `npm run build` remain the package-level local gates for this repository.
 - Public PRs should cite the plan, evidence note, verification commands, review state, and owner gates.
 
-## Lab / experimental in v1.0.0
+## Lab / experimental in the current line
 
-These surfaces are usable but not promised as final API shape. They may change in minor versions when the change is additive or in a future major version if the contract changes.
+These surfaces are usable but not promised as final API shape. They may change while the project is still below a mature 1.0 contract; pin exact package versions if you depend on their current output shape.
 
 - Runtime profiles and runtime selection beyond run-packet metadata.
 - `osc run`, `osc delegate`, `osc review`, and `osc ultrareview` beyond their current no-spawn artifact-generation role.
@@ -76,9 +79,9 @@ These surfaces are usable but not promised as final API shape. They may change i
 
 Experimental does not mean unsupported; it means users should avoid building irreversible external dependencies on exact output shapes without pinning the package version and reading the relevant docs.
 
-## Future / not included in v1.0.0
+## Future / not included in the current line
 
-These are explicitly not v1.0.0 guarantees:
+These are explicitly not current-package guarantees:
 
 - Native autonomous agent spawning in Open Scaffold core.
 - Non-dry-run `osc work` execution as a stable guarantee; a future controller may be added only as an explicit, gated, adapter-owned execution path with env allowlists, timeouts, bounded logs, manifests, path containment, isolated worktrees, and human gates.
@@ -90,9 +93,11 @@ These are explicitly not v1.0.0 guarantees:
 
 Future work can explore those areas only through explicit plans, evidence, safety analysis, and owner approval.
 
-## Semantic versioning policy
+## Versioning policy
 
-Open Scaffold uses semver for the public npm package and core repository protocol.
+Open Scaffold uses npm package versions as public distribution coordinates. The current `v0.20.x` line is intentionally pre-1.0: it communicates that the core work-record pattern is usable, but the product is still earning its long-term stable contract.
+
+The previously published `v1.0.x` packages remain immutable historical artifacts. They should be treated as an over-eager launch line, not as a reason to force every future change through mature-1.0 pressure. A future real 1.0 should be cut only after the adoption path, public package surfaces, runtime boundaries, and evidence/tracing primitives feel durable enough to sustain that promise.
 
 ### Patch releases
 
@@ -107,7 +112,7 @@ Examples:
 
 ### Minor releases
 
-Minor releases may add commands, flags, docs, templates, schemas, or optional integrations without breaking existing valid projects.
+While Open Scaffold remains below 1.0, minor releases may add commands, flags, docs, templates, schemas, or optional integrations. They may also tighten experimental surfaces when needed for product trust, with release notes calling out any migration risk.
 
 Examples:
 
@@ -116,9 +121,9 @@ Examples:
 - Adding new scaffold tiers or templates.
 - Adding optional cockpit transports.
 
-### Major releases
+### Future major releases
 
-Major releases are required for breaking changes to stable surfaces.
+A future real 1.0 or later major release should be reserved for a deliberate maturity claim or a breaking change to stable-enough surfaces.
 
 Examples:
 

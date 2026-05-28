@@ -391,11 +391,11 @@ Acceptance criteria:
 - The wiki explains compiled project knowledge; live task state, PR state, release evidence, and private context stay out of `docs/wiki/`.
 - `./verify.sh --strict`, `npm test`, `npm run build`, and `git diff --check` pass.
 
-### Milestone 18 — v1.0.0 stability launch
+### Milestone 18 — historical v1.0.0 stability launch
 
-Status: repository-side v1.0.0 release candidate prepared by `.osc/plans/done/069-v1-launch.md`, `.osc/releases/2026-05-25-v1-launch.md`, and merged PR #113. Owner-gated npm publication and GitHub Release latest movement remain required before v1.0.0 is live.
+Status: completed as a historical launch line through `.osc/plans/done/069-v1-launch.md`, `.osc/releases/2026-05-25-v1-launch.md`, PR #113, and later package/release follow-through. As of the `123-evidence-chain-package-release-sync` candidate, the forward-moving channel is intentionally corrected back to pre-1.0 hardening (`v0.20.x`) until the public product surface earns a mature 1.0 contract.
 
-Goal: make the stable adoption contract explicit before the first major release.
+Goal: make the adoption contract explicit before the first major-release experiment.
 
 Deliverables:
 
