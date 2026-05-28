@@ -1,6 +1,8 @@
 # Workflow
 
-A phase-to-tool reference for agent-orchestrated development. This file is the operational reference; `README.md` is the landing page. When in doubt about which tool to reach for, start here.
+A phase-to-tool reference for agent-orchestrated development. This file is the operational reference; `README.md` is the landing page. When in doubt about which tool to reach for, start with the stable repo record: `MISSION.md` → plan → run packet or amendment → evidence → verification → close.
+
+The stable core is the file protocol and lifecycle helpers. Lab surfaces such as natural-language work previews, evolution ledgers, dashboards, cockpit webhooks, and adapter dispatch glue are optional layers around that record; they do not replace the plan/evidence/verification/close chain.
 
 Named coordinators, harnesses, and status/approval channels (operator surfaces) in this guide are examples. Use [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) to distinguish public examples, private deployment examples, runtime lanes, adapter candidates, and operator surfaces.
 
@@ -8,7 +10,7 @@ Named coordinators, harnesses, and status/approval channels (operator surfaces) 
 
 Every task moves through a natural progression. You do not need to use every phase — small fixes skip straight to Execute. The phases exist so you know where you are and what to reach for.
 
-For first-use setup, start with the [Minimum Viable Scaffold](MINIMUM_VIABLE_SCAFFOLD.md): choose a scaffold tier with `osc init --tier min|standard|max --target <repo>` for greenfield setup or `osc init --from-existing --tier min --target .` for an existing repo, define the mission, add one active plan, verify, record evidence, and close.
+For a no-setup first read, run `osc compare` against two recorded attempts to see the work-record idea before adopting the whole scaffold. For first-use setup, start with the [Minimum Viable Scaffold](MINIMUM_VIABLE_SCAFFOLD.md): choose a scaffold tier with `osc init --tier min|standard|max --target <repo>` for greenfield setup or `osc init --from-existing --tier min --target .` for an existing repo, define the mission, add one active plan, optionally create a run packet or amendment, verify, record evidence, and close.
 
 ### 1. Clarify (when the goal is fuzzy)
 
@@ -81,7 +83,7 @@ Then fill every TODO before implementation. The helpers create and move structur
 
 Implement what the plan says. Independent tasks can run in parallel. Every change must trace back to a plan file or amendment.
 
-For day-one local task tracking without an external board, use `osc task` as a repo-local task bridge:
+For day-one local task tracking without an external board, `osc task` is a lab repo-local task bridge:
 
 ```bash
 osc task new "Fix login redirect bug" --priority high --plan <plan-slug>
@@ -101,7 +103,7 @@ osc run .osc/plans/active/<plan>.md --dry-run --json
 
 `--dry-run` validates the plan, renders the `run.json` and package markdown in memory, lists files from the plan, and exits without creating `.osc/runs/` artifacts. Re-run without `--dry-run` only when the preview is acceptable.
 
-For multi-attempt improvement loops, create a curated evolution ledger after the first plan/run exists:
+For multi-attempt improvement loops, create a lab evolution ledger after the first plan/run exists:
 
 ```bash
 osc evolve init .osc/plans/active/<plan>.md --out .osc/evolution/<loop-id> --strategy manual
@@ -109,9 +111,9 @@ osc evolve record .osc/evolution/<loop-id> --run .osc/runs/<run-id>/run.json --e
 osc evolve check .osc/evolution/<loop-id>
 ```
 
-The evolution ledger records attempts and frontier promotion only. External coordinators or OMX-based runtime packages execute attempts; Open Scaffold core does not spawn runtimes or rank models.
+The evolution ledger records attempts and frontier state only. External coordinators or OMX-based runtime packages execute attempts; Open Scaffold core does not spawn runtimes or choose a winner.
 
-> **With OMC harness:** `/ralph` for Claude Code autonomous completion loops; `/team` or `/ultrawork` for parallel fan-out across multiple Claude Code-oriented agents.
+> **With OMC harness:** `/ralph` for Claude Code completion loops; `/team` or `/ultrawork` for parallel fan-out across multiple Claude Code-oriented agents.
 >
 > **With OMX harness:** `$ralph` for Codex persistent completion loops; `$team` for tmux-backed Codex worker teams; `$ultrawork` for parallel execution; promote runtime evidence back into Open Scaffold.
 >

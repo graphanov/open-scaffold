@@ -29,7 +29,7 @@ It does not replace your agent, IDE, task tracker, CI, or compliance process. Th
 - **Clarity** — the mission, plan, and next action live in the repo.
 - **Reviewability** — evidence, checks, and decisions stay attached to the work.
 - **Handoff** — `run.json` packages work for an agent, runtime, teammate, or future session.
-- **Improvement loops** — `osc evolve` records repeated attempts, compares them, and explains which one became the frontier.
+- **Improvement loops** — repeated attempts can be recorded after the core work record is in place.
 
 Under the hood, this is just files:
 
@@ -38,101 +38,63 @@ MISSION.md                         why this repo exists
 .osc/plans/                        scoped work with acceptance criteria
 .osc/runs/<run_id>/run.json         handoff package for a worker or reviewer
 .osc/releases/                     evidence notes and release records
-.osc/evolution/<loop_id>/           attempts, comparison, and frontier history
 ```
+
+---
+
+## Try the core idea in 30 seconds
+
+From this repository checkout, you do not need a runtime, provider account, or full scaffold to see the point. Compare two included attempts and get a reviewable work-record artifact:
+
+```bash
+npx open-scaffold@latest compare \
+  examples/attempt-compare/attempt-a \
+  examples/attempt-compare/attempt-b
+```
+
+In a source checkout, after `npm install`:
+
+```bash
+npm run osc -- compare \
+  examples/attempt-compare/attempt-a \
+  examples/attempt-compare/attempt-b
+```
+
+This does not run an agent and does not choose an objective winner. It shows the core pattern: attempts become inspectable files, the differences become reviewable, and the decision can be recorded instead of disappearing into chat.
 
 ---
 
 ## The basic loop
 
 ```text
-        goal
-         │
-         ▼
-      plan.md
-         │
-         ▼
-  handoff package
-      run.json
-         │
-         ▼
- agent / runtime / human
-         │
-         ▼
-      output
-         │
-         ▼
- evidence + verification
-         │
-         ▼
- review / approve / amend
-         │
-         ▼
- durable repo record
+MISSION.md
+    │
+    ▼
+plan.md
+    │
+    ├─ optional amendment when scope changes
+    │
+    ▼
+run.json handoff package
+    │
+    ▼
+agent / runtime / human output
+    │
+    ▼
+evidence
+    │
+    ▼
+verification
+    │
+    ▼
+close the slice
 ```
 
 Chat, Discord, terminals, GitHub comments, and agent transcripts can help operate the work. They are not the source of truth. The repo record is.
 
-### Target workflow
-
-The post-v1 target is a smoother Codex-first path that starts from plain intent while preserving the same record. The first natural-language composition is dry-run only:
-
-```bash
-osc work "Add a /health endpoint with tests" --runtime codex --dry-run
-```
-
-`osc work --dry-run` previews a candidate plan, run packet, and dispatch command without writing files, launching a runtime, calling provider APIs, or granting commit/push/PR/merge/publish authority. The supporting no-spawn pieces remain explicit: `osc start` prints a paste-ready Codex/OMX handoff from an existing plan, and `osc dispatch .osc/runs/RUN_ID/run.json --adapter <id>` invokes a reviewed local adapter config and captures receipt/evidence/log paths. Full execution remains future work behind a separate safety decision. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md).
-
----
-
-## When one attempt is not enough
-
-Modern AI work often means trying the same task more than once: a better prompt, a different runtime, a stronger review pass, or a repaired implementation.
-
-Open Scaffold records that loop instead of burying the decision in chat.
-
-```text
-One task, several attempts
-
-                ┌─ attempt A ─ evidence ─ result
-                │
-goal + plan ────┼─ attempt B ─ evidence ─ result
-                │
-                └─ attempt C ─ evidence ─ result
-                                      │
-                                      ▼
-                                evolve compare
-                                      │
-                                      ▼
-                           frontier: "C won because..."
-```
-
-Example:
-
-```bash
-npx open-scaffold evolve init .osc/plans/active/my-task.md \
-  --out .osc/evolution/my-task \
-  --strategy manual
-
-npx open-scaffold evolve record .osc/evolution/my-task \
-  --run .osc/runs/<run_id>/run.json \
-  --decision promote \
-  --rationale "Best evidence so far."
-
-npx open-scaffold evolve compare .osc/evolution/my-task \
-  --format markdown \
-  --out .osc/releases/evolution-compare.md
-```
-
-`osc evolve` records attempt/frontier state only. It does not launch agents, rank models, certify compliance, or approve releases.
-
-For the one-screen version, see [`docs/examples/evolution-loop-compare.md`](docs/examples/evolution-loop-compare.md). For a small fixture you can run locally, see [`examples/evolution-ledger-demo/`](examples/evolution-ledger-demo/).
-
----
-
 ## Quickstart
 
-This is the smallest useful path: add the scaffold, define the mission, create one active plan, verify, record evidence, and close the slice.
+This is the smallest stable path: add the scaffold, define `MISSION.md`, create one active plan, optionally hand it off with a run packet or amendment, capture evidence, verify, and close the slice.
 
 ### 1. Add Open Scaffold to a repo
 
@@ -195,33 +157,7 @@ Shell fallback:
 cp .osc/plans/handoff-template.md .osc/plans/active/my-first-task.md
 ```
 
-### 4. Verify, record evidence, and close
-
-```bash
-./verify.sh --standard
-osc evidence new my-first-task
-osc close my-first-task --message "verified first task"
-# or without local install:
-npx open-scaffold evidence new my-first-task
-npx open-scaffold close my-first-task --message "verified first task"
-```
-
-If the scope changes, amend instead of rewriting history:
-
-```bash
-osc amend my-first-task --message "scope changed after review"
-# or without local install:
-npx open-scaffold amend my-first-task --message "scope changed after review"
-```
-
-Shell fallbacks remain available:
-
-```bash
-./amend.sh my-first-task --message "scope changed after review"
-./close.sh my-first-task --message "verified first task"
-```
-
-### 5. Optional: hand off to another tool
+### 4. Optional: create a run packet or amendment
 
 To print a paste-ready prompt for a Codex/OMX worker without writing run artifacts or launching anything:
 
@@ -244,6 +180,94 @@ npx open-scaffold run .osc/plans/active/my-first-task.md \
 
 That creates a `run.json` work package. The outside tool executes. Evidence comes back into the repo.
 
+If the scope changes, amend instead of rewriting history:
+
+```bash
+osc amend my-first-task --message "scope changed after review"
+# or without local install:
+npx open-scaffold amend my-first-task --message "scope changed after review"
+```
+
+Shell fallbacks remain available:
+
+```bash
+./amend.sh my-first-task --message "scope changed after review"
+```
+
+### 5. Verify, record evidence, and close
+
+```bash
+./verify.sh --standard
+osc evidence new my-first-task
+osc close my-first-task --message "verified first task"
+# or without local install:
+npx open-scaffold evidence new my-first-task
+npx open-scaffold close my-first-task --message "verified first task"
+```
+
+Shell fallback:
+
+```bash
+./close.sh my-first-task --message "verified first task"
+```
+
+---
+
+## Lab preview: plain-intent work
+
+The post-v1 target is a smoother Codex-first path that starts from plain intent while preserving the same record. The first natural-language composition is dry-run only:
+
+```bash
+osc work "Add a /health endpoint with tests" --runtime codex --dry-run
+```
+
+`osc work --dry-run` previews a candidate plan, run packet, and dispatch command without writing files, launching a runtime, calling provider APIs, or granting commit/push/PR/merge/publish authority. The supporting no-spawn pieces remain explicit: `osc start` prints a paste-ready Codex/OMX handoff from an existing plan, and `osc dispatch .osc/runs/RUN_ID/run.json --adapter <id>` invokes a reviewed local adapter config and captures receipt/evidence/log paths. Full execution remains future work behind a separate safety decision. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md).
+
+---
+
+## When one compare is not enough
+
+The 30-second `osc compare` demo is the simplest version: two attempts, one reviewable comparison. Real AI work often means trying the same task more than once: a better prompt, a different runtime, a stronger review pass, or a repaired implementation.
+
+Open Scaffold can record that larger loop too, without burying the decision in chat.
+
+```text
+One task, several attempts
+
+                ┌─ attempt A ─ evidence ─ result
+                │
+goal + plan ────┼─ attempt B ─ evidence ─ result
+                │
+                └─ attempt C ─ evidence ─ result
+                                      │
+                                      ▼
+                                evolve compare
+                                      │
+                                      ▼
+                           frontier: "C won because..."
+```
+
+Example:
+
+```bash
+npx open-scaffold evolve init .osc/plans/active/my-task.md \
+  --out .osc/evolution/my-task \
+  --strategy manual
+
+npx open-scaffold evolve record .osc/evolution/my-task \
+  --run .osc/runs/<run_id>/run.json \
+  --decision promote \
+  --rationale "Best evidence so far."
+
+npx open-scaffold evolve compare .osc/evolution/my-task \
+  --format markdown \
+  --out .osc/releases/evolution-compare.md
+```
+
+`osc evolve` records attempt/frontier state only. It is a record, not an execution, compliance, model-evaluation, or approval system.
+
+For the one-screen version, see [`docs/examples/evolution-loop-compare.md`](docs/examples/evolution-loop-compare.md). For a small fixture you can run locally, see [`examples/evolution-ledger-demo/`](examples/evolution-ledger-demo/).
+
 ---
 
 ## v1.0.x stable release line
@@ -263,9 +287,9 @@ Experimental:
 
 Future / not included:
 
-- Native autonomous spawning in core.
+- Native agent spawning in core.
 - Compliance certification.
-- Provider/model benchmarking or ranking.
+- Provider/model benchmarking.
 
 Use cases the stable contract supports today:
 
@@ -336,7 +360,7 @@ Skip it for:
 - [`docs/STABILITY.md`](docs/STABILITY.md) — v1.0.0 stable, experimental, and future surfaces.
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — curated release history.
 - [`docs/DEV_CONTAINER.md`](docs/DEV_CONTAINER.md) — optional container setup for consistent team onboarding.
-- [`docs/EVOLUTION_LOOP.md`](docs/EVOLUTION_LOOP.md) — attempts, frontier promotion, and `osc evolve`.
+- [`docs/EVOLUTION_LOOP.md`](docs/EVOLUTION_LOOP.md) — attempts, frontier records, and `osc evolve`.
 - [`docs/EXAMPLES.md`](docs/EXAMPLES.md) — examples and viewer demos.
 - [`docs/OPEN_SCAFFOLD_SYSTEM.md`](docs/OPEN_SCAFFOLD_SYSTEM.md) — full system map and boundaries.
 - [`docs/RUNTIME_SELECTION.md`](docs/RUNTIME_SELECTION.md) — choosing runtime lanes and profiles.

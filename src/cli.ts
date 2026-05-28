@@ -29,19 +29,17 @@ import { buildWorkDryRunPreview, formatWorkDryRunPreview } from './work.js';
 function printHelp(): void {
   console.log(`osc — Open Scaffold CLI
 
+Repo-native work record: MISSION.md → plan → run packet/amendment → evidence → verification → close.
+
 Usage:
+First-read demo:
+  osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]
+
+Stable core protocol:
   osc init --tier <min|standard|max> --target <dir> [--force]
   osc init --from-existing --tier min --target <dir> [--force]
   osc init --min|--standard|--max --target <dir> [--force]
   osc status [--json|--dashboard]
-  osc dashboard [--watch] [--interval <seconds>]
-  osc task new <title> [--priority <high|medium|low>] [--plan <slug>]
-  osc task list [--status <status>] [--priority <priority>] [--plan <slug>] [--json]
-  osc task show <task-id>
-  osc task claim|start|complete|cancel <task-id>
-  osc task block <task-id> --reason <text>
-  osc task comment <task-id> <comment>
-  osc task link <task-id> --plan <slug>
   osc plan <plan-path>
   osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]
   osc plan new --from-template list
@@ -53,14 +51,25 @@ Usage:
   osc evidence new <slug>
   osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
   osc close <plan-slug> [--message <text>]
+  osc verify [--evidence-chain [--plan <slug>] [--json] [--strict]]
+
+Handoff and run packages:
   osc start <plan-slug-or-path> --runtime <codex|omx|plain|human|custom>
   osc delegate <plan-path> [run binding options]
   osc run <plan-path> [--dry-run] [--json] [run binding options]
   osc dispatch <run-json> --adapter <adapter-id>
-  osc work <task-description> --runtime <preset> --dry-run [--json] [--adapter <adapter-id>]
-  osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]
   osc review <plan-path> [run binding options]
   osc ultrareview <plan-path> [run binding options]
+
+Lab and experimental:
+  osc work <task-description> --runtime <preset> --dry-run [--json] [--adapter <adapter-id>]
+  osc task new <title> [--priority <high|medium|low>] [--plan <slug>]
+  osc task list [--status <status>] [--priority <priority>] [--plan <slug>] [--json]
+  osc task show <task-id>
+  osc task claim|start|complete|cancel <task-id>
+  osc task block <task-id> --reason <text>
+  osc task comment <task-id> <comment>
+  osc task link <task-id> --plan <slug>
   osc eval init <run-or-plan> [--out <path>]
   osc eval check <evaluation-path>
   osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]
@@ -72,11 +81,13 @@ Usage:
   osc cockpit config
   osc cockpit test [--dry-run]
   osc cockpit post --event <event> [--message <text>] [--run-id <id>] [--plan <slug>] [--task-id <id>] [--pr <url>] [--evidence-path <path>] [--dry-run]
+  osc dashboard [--watch] [--interval <seconds>]
   osc dashboard --web [--out <path>]
   osc dashboard --serve [--port <port>] [--open]
+
+Diagnostics and advanced:
   osc mcp serve [--repo <path>] [--allow-write] [--validate]
   osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
-  osc verify [--evidence-chain [--plan <slug>] [--json] [--strict]]
   osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]
   osc runtimes list [--json]
   osc runtimes show <id>
@@ -97,7 +108,7 @@ Run binding options:
   --pr <id-or-url>            Optional PR binding
   --commit-policy <text>      Commit/push approval rule
 
-Generic open-scaffold generates prompts/artifacts only. External coordinators/agents and runtime harnesses perform autonomous spawning.`);
+Generic open-scaffold generates prompts/artifacts only. External coordinators, agents, and runtime harnesses perform any execution outside core.`);
 }
 
 function packageVersion(): string {
