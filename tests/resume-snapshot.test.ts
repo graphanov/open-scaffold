@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { buildResumeSummary } from '../src/resume.js';
 
@@ -46,5 +47,22 @@ describe('resume-snapshot', () => {
     const { work_done } = buildResumeSummary(fixtureRoot);
     expect(work_done.done_slices).toContain('scaffold-init');
     expect(work_done.evidence).toContain('.osc/releases/2026-05-10-scaffold-init.md');
+  });
+
+  it('fails loudly when an amendment changes acceptance criteria', () => {
+    const tempRoot = mkdtempSync(join(tmpdir(), 'osc-resume-amendment-'));
+    try {
+      cpSync(fixtureRoot, tempRoot, { recursive: true });
+      const amendmentPath = join(tempRoot, '.osc', 'plans', 'active', 'demo-add-greeting-amendment-1.md');
+      const amendment = readFileSync(amendmentPath, 'utf8').replace(
+        'None — all acceptance criteria remain unchanged. The observable behavior (greet function returns "Hello, <name>!", history written to releases, tests pass) is unaffected by the internal factory pattern change.',
+        'Criterion 1 is superseded: the greeting must return "Hi, <name>!" instead of the original text.'
+      );
+      writeFileSync(amendmentPath, amendment, 'utf8');
+
+      expect(() => buildResumeSummary(tempRoot)).toThrow(/amendments that change or supersede acceptance criteria/);
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 });

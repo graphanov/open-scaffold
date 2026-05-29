@@ -1,6 +1,6 @@
-import { readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { inspectScaffold, parsePlanFile, parseChecklist } from './scaffold.js';
+import { inspectScaffold, parsePlanFile, parseChecklist, splitSections } from './scaffold.js';
 import { buildTrace } from './trace.js';
 
 export interface ResumeSummary {
@@ -26,6 +26,29 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function amendmentKeepsAcceptanceCriteriaUnchanged(markdown: string): boolean {
+  const sections = splitSections(markdown);
+  const impact = (sections.get('Impact on acceptance criteria') ?? '').trim();
+  if (!impact) return false;
+  if (/\bnone\b/i.test(impact) && /\bunchanged\b|\bno\s+change\b|\bdoes\s+not\s+change\b/i.test(impact)) {
+    return true;
+  }
+  if (/acceptance criteria remain unchanged/i.test(impact)) return true;
+  return false;
+}
+
+function assertAmendmentsDoNotChangeAcceptanceCriteria(planDir: string, amendmentFiles: string[]): void {
+  for (const file of amendmentFiles) {
+    const text = readFileSync(join(planDir, file), 'utf8');
+    if (!amendmentKeepsAcceptanceCriteriaUnchanged(text)) {
+      throw new Error(
+        `Resume composer does not support amendments that change or supersede acceptance criteria: ${file}. ` +
+        'Fold amendment impacts into a future resume schema before deriving next_bounded_action.'
+      );
+    }
+  }
+}
+
 export function buildResumeSummary(root: string): ResumeSummary {
   const scaffold = inspectScaffold(root);
 
@@ -42,10 +65,11 @@ export function buildResumeSummary(root: string): ResumeSummary {
 
   const planDir = join(root, '.osc', 'plans', planSummary.stage);
   const amendmentRe = new RegExp(`^${escapeRegex(planSummary.slug)}-amendment-(\\d+)\\.md$`);
-  const amendmentIds = readdirSync(planDir)
+  const amendmentFiles = readdirSync(planDir)
     .filter((f) => amendmentRe.test(f))
-    .sort()
-    .map((f) => f.slice(0, -3));
+    .sort();
+  assertAmendmentsDoNotChangeAcceptanceCriteria(planDir, amendmentFiles);
+  const amendmentIds = amendmentFiles.map((f) => f.slice(0, -3));
 
   const doneSlices = scaffold.plans.done.map((p) => p.slug).sort();
   const evidenceSet = new Set<string>();
