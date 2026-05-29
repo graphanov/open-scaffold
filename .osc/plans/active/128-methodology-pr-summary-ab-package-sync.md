@@ -46,7 +46,7 @@ Prepare a package/public-surface release candidate that publishes the PR #145 an
 - [x] `docs/CHANGELOG.md` includes the `v0.20.2` package-sync candidate entry with an explicit not-yet-published status.
 - [x] Candidate package gates pass: `./verify.sh --strict`, `npm test -- --run`, `npm run build`, `npm pack --dry-run --json`, `npm publish --dry-run --tag latest`, and `git diff --check`.
 - [x] Local built CLI help exposes `osc study [--json] [--since <date>] [--out <path>]`, `osc pr-summary <plan-slug> [--format <markdown|json>]`, and `osc ab check <path>` before PR publication.
-- [ ] The release-sync PR stops before landing, npm publish, GitHub Release creation/update, and optional npm deprecation of historical `1.0.x` versions.
+- [x] The release-sync PR stops before landing, npm publish, GitHub Release creation/update, and optional npm deprecation of historical `1.0.x` versions.
 - [ ] After owner-approved merge, trusted publishing publishes `open-scaffold@0.20.2` with npm dist-tag `latest`.
 - [ ] Fresh isolated-cache `npx open-scaffold@latest --help` exposes `osc study`, `osc pr-summary`, and `osc ab check`.
 - [ ] GitHub Release `v0.20.2` exists and is marked Latest.

@@ -26,7 +26,7 @@ The A/B command remains an instrument validator only: it does not run an experim
 - Source merge commit: `d0895744d1010d7ce54ae1c8d8d0c38b73b40e48`.
 - Release-sync plan: `.osc/plans/active/128-methodology-pr-summary-ab-package-sync.md`.
 - Release-sync branch: `release/package-sync-0202`.
-- Release-sync Pull Request: pending.
+- Release-sync Pull Request: https://github.com/graphanov/open-scaffold/pull/147.
 - Release-sync merge commit: pending owner gate.
 - Trusted publishing workflow: pending owner gate.
 - npm package candidate: `open-scaffold@0.20.2` with intended dist-tag `latest`.
@@ -63,7 +63,7 @@ Post-merge/publication gates after owner approval:
 
 ## Outcome
 
-Candidate in progress. No npm publish, GitHub Release, merge, or final closeout has been performed.
+Candidate PR open at https://github.com/graphanov/open-scaffold/pull/147. No npm publish, GitHub Release, merge, or final closeout has been performed.
 
 ## Follow-up
 
