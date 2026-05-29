@@ -22,7 +22,7 @@ It adds no runtime dependency, no agent spawning, no MCP surface expansion, and 
 - Source Pull Request: https://github.com/graphanov/open-scaffold/pull/150.
 - Source merge commit: `d4866bba7e83ae8e9f4d710f4696fdf759a7cc2c`.
 - Package-sync branch: `release/section-parser-0203`.
-- Package-sync Pull Request: pending.
+- Package-sync Pull Request: https://github.com/graphanov/open-scaffold/pull/151.
 - Trusted publishing workflow: pending after merge.
 - npm package: pending `open-scaffold@0.20.3` with dist-tag `latest`.
 - GitHub Release: pending `v0.20.3`.
