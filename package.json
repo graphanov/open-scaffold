@@ -49,6 +49,8 @@
     ".osc/plans/templates",
     ".osc/releases/README.md",
     ".osc/specs/.gitkeep",
+    "examples/attempt-compare",
+    "examples/resume-demo",
     "docs",
     "python",
     "README.md",

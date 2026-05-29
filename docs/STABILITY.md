@@ -9,7 +9,7 @@ The historical `v1.0.x` packages and GitHub Releases remain available for proven
 ## Release status
 
 - Current cadence: pre-1.0 hardening on the `v0.20.x` line.
-- Historical note: `v1.0.x` exists as a previously published launch line and remains immutable package/release history.
+- Historical note: `v1.0.x` exists as a previously published launch line (most recent tag: `v1.0.5`) and remains immutable package/release history.
 - Current repository package version: check `package.json`.
 - Live npm package truth: check `npm view open-scaffold version dist-tags --json`.
 - Live GitHub release truth: check the GitHub Releases page and the release marked **Latest**.

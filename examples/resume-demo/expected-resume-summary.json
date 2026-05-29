@@ -1,0 +1,42 @@
+{
+  "schema": "open-scaffold.resume.v1",
+  "mission": {
+    "defined": true
+  },
+  "active_plan": {
+    "slug": "demo-add-greeting",
+    "stage": "active",
+    "status": "active",
+    "goal": "Implement a greeting module that returns \"Hello, <name>!\" and records each greeting to the releases folder.",
+    "acceptance_criteria": [
+      {
+        "text": "Greeting module exports a greet function that returns the string \"Hello, <name>!\".",
+        "checked": true
+      },
+      {
+        "text": "Greeting history is written to the releases folder as an evidence note on each run.",
+        "checked": false
+      },
+      {
+        "text": "All greeting tests pass (npm test exits 0).",
+        "checked": false
+      }
+    ]
+  },
+  "amendments": {
+    "count": 1,
+    "ids": [
+      "demo-add-greeting-amendment-1"
+    ]
+  },
+  "work_done": {
+    "done_slices": [
+      "scaffold-init"
+    ],
+    "evidence": [
+      ".osc/releases/2026-05-10-scaffold-init.md"
+    ]
+  },
+  "status": "active plan demo-add-greeting; 1/3 acceptance criteria complete",
+  "next_bounded_action": "Greeting history is written to the releases folder as an evidence note on each run."
+}

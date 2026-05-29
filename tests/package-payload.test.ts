@@ -50,6 +50,36 @@ describe('npm package payload', () => {
     expect(forbidden).toEqual([]);
   }, 20_000);
 
+  it('ships compare-demo and resume-demo example fixtures in the published package', () => {
+    const output = execFileSync('npm', ['pack', '--dry-run', '--json'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    const [pack] = JSON.parse(output) as PackResult[];
+    const paths = pack.files.map((file) => file.path).sort();
+
+    // compare-demo inputs must ship so `npx open-scaffold compare` works from a fresh install
+    expect(paths).toContain('examples/attempt-compare/attempt-a/ac-status.json');
+    expect(paths).toContain('examples/attempt-compare/attempt-a/diff.patch');
+    expect(paths).toContain('examples/attempt-compare/attempt-a/rationale.txt');
+    expect(paths).toContain('examples/attempt-compare/attempt-a/transcript.md');
+    expect(paths).toContain('examples/attempt-compare/attempt-b/ac-status.json');
+    expect(paths).toContain('examples/attempt-compare/attempt-b/diff.patch');
+    expect(paths).toContain('examples/attempt-compare/attempt-b/rationale.txt');
+    expect(paths).toContain('examples/attempt-compare/attempt-b/transcript.md');
+
+    // resume-demo fixture must ship so the zero-context-resume demo works from a fresh install
+    if (existsSync(join(repoRoot, 'examples', 'resume-demo'))) {
+      expect(paths).toContain('examples/resume-demo/MISSION.md');
+      expect(paths).toContain('examples/resume-demo/.osc/plans/active/demo-add-greeting.md');
+      expect(paths).toContain('examples/resume-demo/.osc/plans/active/demo-add-greeting-amendment-1.md');
+      expect(paths).toContain('examples/resume-demo/.osc/plans/done/scaffold-init.md');
+      expect(paths).toContain('examples/resume-demo/.osc/releases/2026-05-10-scaffold-init.md');
+      expect(paths).toContain('examples/resume-demo/expected-resume-summary.json');
+    }
+  }, 20_000);
+
   it('runs init successfully from an extracted npm tarball', () => {
     const packDir = mkdtempSync(join(tmpdir(), 'open-scaffold-pack-'));
     const extractDir = mkdtempSync(join(tmpdir(), 'open-scaffold-extract-'));
