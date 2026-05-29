@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative } from 'node:path';
-import { inspectScaffold, PLAN_STAGES, splitSections } from './scaffold.js';
+import { inspectScaffold, normalizeSectionHeading, parseMarkdownSections, PLAN_STAGES } from './scaffold.js';
 
 export type ValidationLevel = 'fail' | 'warn';
 
@@ -39,8 +39,16 @@ function read(path: string): string {
   return readFileSync(path, 'utf8');
 }
 
-function hasHeading(text: string, heading: string): boolean {
-  return new RegExp(`^##\\s+${heading}\\b`, 'im').test(text);
+function headingPrefixMatches(candidate: string, expected: string): boolean {
+  if (candidate === expected) return true;
+  if (!candidate.startsWith(expected)) return false;
+  const next = candidate[expected.length];
+  return next === undefined || /[\s:—–-]/.test(next);
+}
+
+function hasHeading(headings: readonly string[], heading: string): boolean {
+  const expected = normalizeSectionHeading(heading);
+  return expected.length > 0 && headings.some((candidate) => headingPrefixMatches(candidate, expected));
 }
 
 function releaseNotes(root: string): string[] {
@@ -124,13 +132,17 @@ export function validateScaffold(root = process.cwd(), options: ValidationOption
   for (const notePath of releaseNotes(root)) {
     const text = read(notePath);
     const rel = relative(root, notePath);
-    const sections = splitSections(text);
+    const parsedSections = parseMarkdownSections(text);
+    const sectionHeadings = parsedSections.map((section) => section.heading);
+    const sections = new Map(parsedSections.map((section) => [section.heading, section.body]));
     for (const heading of ['Summary', 'Traceability', 'Verification', 'Outcome']) {
-      if (!hasHeading(text, heading)) {
+      if (!hasHeading(sectionHeadings, heading)) {
         warnings.push({ level: 'warn', code: 'release_note.missing_section', message: `Release note is missing ## ${heading}`, path: rel });
       }
     }
 
+    // Compatibility shim: historical release notes used `## Traceability chain`.
+    // `hasHeading` remains a prefix presence-probe, while body reads keep this explicit fallback.
     const traceability = sections.get('Traceability') ?? sections.get('Traceability chain') ?? '';
     if (traceability && !/\.osc\/plans\//.test(traceability)) {
       warnings.push({ level: 'warn', code: 'release_note.traceability_missing_plan', message: 'Release note Traceability section does not cite a .osc/plans/ path', path: rel });
@@ -143,12 +155,12 @@ export function validateScaffold(root = process.cwd(), options: ValidationOption
     }
 
     const outcome = sections.get('Outcome') ?? '';
-    if (hasHeading(text, 'Outcome') && isEmptyOrPlaceholder(outcome)) {
+    if (hasHeading(sectionHeadings, 'Outcome') && isEmptyOrPlaceholder(outcome)) {
       warnings.push({ level: 'warn', code: 'release_note.empty_outcome', message: 'Release note Outcome section is empty or a placeholder', path: rel });
     }
 
     const verification = sections.get('Verification') ?? '';
-    if (hasHeading(text, 'Verification') && isEmptyOrPlaceholder(verification)) {
+    if (hasHeading(sectionHeadings, 'Verification') && isEmptyOrPlaceholder(verification)) {
       warnings.push({ level: 'warn', code: 'release_note.empty_verification', message: 'Release note Verification section is empty or a placeholder', path: rel });
     }
 

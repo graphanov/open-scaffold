@@ -60,6 +60,77 @@ warn() {
   fi
 }
 
+has_exact_markdown_heading() {
+  file="$1"
+  expected="$2"
+  awk -v expected="$expected" '
+    function trim(s) {
+      sub(/^[ \t]+/, "", s)
+      sub(/[ \t]+$/, "", s)
+      return s
+    }
+    function normalize(s) {
+      s = trim(s)
+      sub(/[ \t]+#+[ \t]*$/, "", s)
+      s = trim(s)
+      gsub(/[ \t]+/, " ", s)
+      return s
+    }
+    function marker_run(line, marker,    i, count) {
+      count = 0
+      for (i = 1; i <= length(line); i += 1) {
+        if (substr(line, i, 1) == marker) count += 1
+        else break
+      }
+      return count
+    }
+    function only_trailing_space(line, start,    i, ch) {
+      for (i = start; i <= length(line); i += 1) {
+        ch = substr(line, i, 1)
+        if (ch != " " && ch != "\t") return 0
+      }
+      return 1
+    }
+    function open_fence(line,    marker, count) {
+      marker = substr(line, 1, 1)
+      if (marker != "`" && marker != "~") return 0
+      count = marker_run(line, marker)
+      if (count < 3) return 0
+      fence_marker = marker
+      fence_count = count
+      return 1
+    }
+    function close_fence(line,    marker, count) {
+      marker = substr(line, 1, 1)
+      if (marker != fence_marker) return 0
+      count = marker_run(line, marker)
+      return count >= fence_count && only_trailing_space(line, count + 1)
+    }
+    function section_heading(line,    heading) {
+      if (line !~ /^##[ \t]+/) return ""
+      heading = line
+      sub(/^##[ \t]+/, "", heading)
+      heading = normalize(heading)
+      return heading
+    }
+    {
+      line = $0
+      sub(/\r$/, "", line)
+      if (in_fence) {
+        if (close_fence(line)) in_fence = 0
+        next
+      }
+      if (open_fence(line)) {
+        in_fence = 1
+        next
+      }
+      heading = section_heading(line)
+      if (heading == expected) found = 1
+    }
+    END { exit found ? 0 : 1 }
+  ' "$file"
+}
+
 # ──────────────────────────────────────────
 # QUICK tier: mission + plan (2 checks)
 # ──────────────────────────────────────────
@@ -159,7 +230,7 @@ fi
 
 if [ "$TIER" = "--strict" ]; then
 
-  # Check 5: Plan files contain all 7 sections from handoff template
+  # Check 5: Plan files contain all 8 required sections from handoff template
   SCHEMA_OK=true
   for dir in "$ROOT/.osc/plans/active" "$ROOT/.osc/plans/backlog" "$ROOT/.osc/plans/blocked" "$ROOT/.osc/plans/done" "$ROOT/.osc/plans"; do
     [ -d "$dir" ] || continue
@@ -173,8 +244,10 @@ if [ "$TIER" = "--strict" ]; then
       case "$basename" in
         *-amendment-*) continue ;;
       esac
-      for section in "Context" "Goal" "Constraints" "Files to touch" "Acceptance criteria" "Verification steps" "Open questions"; do
-        if ! grep -qi "## .*$section" "$f"; then
+      # Presence-only pre-flight: exact canonical H2 section names, case-sensitive,
+      # fence-aware. Order, emptiness, and content authority stay in validatePlanFile.
+      for section in "Status" "Context" "Goal" "Constraints / Out of scope" "Files to touch" "Acceptance criteria" "Verification steps" "Open questions"; do
+        if ! has_exact_markdown_heading "$f" "$section"; then
           warn "Plan $basename missing section: $section"
           SCHEMA_OK=false
         fi
@@ -182,7 +255,7 @@ if [ "$TIER" = "--strict" ]; then
     done
   done
   if $SCHEMA_OK; then
-    pass "Plan files contain all 7 required sections"
+    pass "Plan files contain all 8 required sections"
   fi
 
   # Check 6: CLAUDE.md and AGENTS.md both contain "Layered architecture" section
@@ -288,7 +361,12 @@ if [ "$TIER" = "--standard" ] || [ "$TIER" = "--strict" ]; then
       basename=$(basename "$f")
       [ "$basename" = "README.md" ] && continue
       for section in "Summary" "Traceability" "Verification" "Outcome"; do
-        if ! grep -qi "^## .*$section" "$f"; then
+        if [ "$section" = "Traceability" ]; then
+          if ! has_exact_markdown_heading "$f" "Traceability" && ! has_exact_markdown_heading "$f" "Traceability chain"; then
+            warn "Release note $basename missing section: $section"
+            RELEASES_OK=false
+          fi
+        elif ! has_exact_markdown_heading "$f" "$section"; then
           warn "Release note $basename missing section: $section"
           RELEASES_OK=false
         fi

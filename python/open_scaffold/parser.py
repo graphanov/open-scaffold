@@ -25,14 +25,49 @@ def _read_text(path: Path) -> str:
 
 
 def _normalize_heading(raw: str) -> str:
-    return re.sub(r"\s+", " ", raw.strip())
+    heading = raw.strip()
+    heading = re.sub(r"[ \t]+#+[ \t]*$", "", heading).strip()
+    return re.sub(r"\s+", " ", heading)
+
+
+def _fence_open(line: str) -> tuple[str, int] | None:
+    # Deliberately track only column-0 fenced code blocks, matching the
+    # TypeScript dependency-free parser in src/scaffold.ts.
+    match = re.match(r"^(`{3,}|~{3,})", line)
+    if not match:
+        return None
+    marker_run = match.group(1)
+    return marker_run[0], len(marker_run)
+
+
+def _fence_close(line: str, fence: tuple[str, int]) -> bool:
+    marker, count = fence
+    match = re.match(r"^(`{3,}|~{3,})[ \t]*$", line)
+    if not match:
+        return False
+    marker_run = match.group(1)
+    return marker_run[0] == marker and len(marker_run) >= count
+
+
+def _section_heading(line: str) -> str | None:
+    match = re.match(r"^##[ \t]+(.+)$", line)
+    if not match:
+        return None
+    heading = _normalize_heading(match.group(1))
+    return heading or None
 
 
 def split_sections(markdown: str) -> dict[str, str]:
-    """Split markdown into `## Heading` sections, matching TypeScript semantics."""
+    """Split markdown into canonical `## Heading` sections.
+
+    Mirrors the dependency-free TypeScript parser: front-anchored H2 only,
+    optional trailing ATX closing hashes, CRLF-tolerant, and fenced headings
+    ignored while preserving fenced content in the current section body.
+    """
     sections: dict[str, str] = {}
     current: str | None = None
     buffer: list[str] = []
+    fence: tuple[str, int] | None = None
 
     def flush() -> None:
         nonlocal buffer
@@ -40,11 +75,26 @@ def split_sections(markdown: str) -> dict[str, str]:
             sections[current] = "\n".join(buffer).strip()
         buffer = []
 
-    for line in re.split(r"\r?\n", markdown):
-        match = re.match(r"^##\s+(.+)$", line)
-        if match:
+    for raw_line in re.split(r"\r?\n", markdown):
+        line = raw_line.rstrip("\r")
+        if fence:
+            if current:
+                buffer.append(line)
+            if _fence_close(line, fence):
+                fence = None
+            continue
+
+        opening_fence = _fence_open(line)
+        if opening_fence:
+            if current:
+                buffer.append(line)
+            fence = opening_fence
+            continue
+
+        heading = _section_heading(line)
+        if heading:
             flush()
-            current = _normalize_heading(match.group(1))
+            current = heading
         elif current:
             buffer.append(line)
     flush()
