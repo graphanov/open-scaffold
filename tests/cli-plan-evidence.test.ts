@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -55,6 +55,52 @@ describe('osc plan/evidence helper CLI', () => {
 
     expect(readFileSync(join(target, '.osc/plans/backlog/002-later-task.md'), 'utf8')).toContain('## Status\n\nbacklog');
     expect(readFileSync(join(target, '.osc/plans/blocked/003-waiting-task.md'), 'utf8')).toContain('## Status\n\nblocked');
+  });
+
+  it('updates template plan status through canonical Status headings', () => {
+    const target = initializedScaffold();
+    const templateDir = join(target, '.osc/plans/templates');
+    mkdirSync(templateDir, { recursive: true });
+    writeFileSync(join(templateDir, 'canonical.md'), `# Plan: REPLACE_ME: template
+
+## Status ##
+
+active
+
+## Context
+
+Template context.
+
+## Goal
+
+Template goal.
+
+## Constraints / Out of scope
+
+- Template only.
+
+## Files to touch
+
+- None.
+
+## Acceptance criteria
+
+- [ ] Template works.
+
+## Verification steps
+
+1. Run tests.
+
+## Open questions
+
+- None.
+`);
+
+    execFileSync(tsx, [cli, 'plan', 'new', '004-from-template', '--stage', 'backlog', '--from-template', 'canonical'], { cwd: target, encoding: 'utf8' });
+
+    const text = readFileSync(join(target, '.osc/plans/backlog/004-from-template.md'), 'utf8');
+    expect(text).toContain('# Plan: 004-from-template');
+    expect(text).toContain('## Status ##\n\nbacklog\n\n## Context');
   });
 
   it('refuses duplicate, invalid-stage, unsafe-path, and missing-root plan requests', () => {

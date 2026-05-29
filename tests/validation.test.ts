@@ -247,6 +247,36 @@ Shipped.
     expect(result.warnings.map((w) => w.code)).not.toContain('release_note.traceability_missing_publication');
   });
 
+  it('preserves Traceability chain as a compatibility heading without adding missing-section warnings', () => {
+    const root = tempRepo();
+    writeFileSync(join(root, '.osc/plans/done/001-sample.md'), plan.replace('active', 'done'));
+    writeFileSync(join(root, '.osc/releases/2026-05-12-traceability-chain.md'), `# Release / Evidence Note
+
+## Summary
+
+Did a thing.
+
+## Traceability chain
+
+- Plan: .osc/plans/done/001-sample.md
+- PR: #42
+
+## Verification
+
+- npm test -> pass
+
+## Outcome
+
+Shipped.
+`);
+
+    const result = validateScaffold(root);
+    const chainWarnings = result.warnings.filter((warning) => warning.path === '.osc/releases/2026-05-12-traceability-chain.md');
+
+    expect(chainWarnings.map((w) => w.code)).not.toContain('release_note.missing_section');
+    expect(chainWarnings.map((w) => w.code)).not.toContain('release_note.traceability_missing_plan');
+  });
+
   it('warns when release note Outcome body is empty or placeholder', () => {
     const root = tempRepo();
     writeFileSync(join(root, '.osc/plans/done/001-sample.md'), plan.replace('active', 'done'));
