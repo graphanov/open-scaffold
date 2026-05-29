@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
-import { findScaffoldRoot, PLAN_STAGES, REQUIRED_PLAN_SECTIONS, splitSections, type PlanStage } from './scaffold.js';
+import { findScaffoldRoot, parseMarkdownSections, PLAN_STAGES, REQUIRED_PLAN_SECTIONS, type ParsedMarkdownSection, type PlanStage } from './scaffold.js';
 
 export type PlanIssueSeverity = 'error' | 'warning' | 'note';
 
@@ -25,13 +25,8 @@ function readText(path: string): string {
   return readFileSync(path, 'utf8');
 }
 
-function normalizeHeading(raw: string): string {
-  return raw.trim().replace(/\s+/g, ' ');
-}
-
-function lineNumberForHeading(lines: string[], heading: string): number {
-  const index = lines.findIndex((line) => normalizeHeading(line.replace(/^##\s+/, '')) === heading && /^##\s+/.test(line));
-  return index >= 0 ? index + 1 : 1;
+function lineNumberForHeading(sections: ParsedMarkdownSection[], heading: string): number {
+  return sections.find((section) => section.heading === heading)?.line ?? 1;
 }
 
 function firstContentLine(lines: string[], sectionLine: number): number {
@@ -132,7 +127,8 @@ function statusMatchesStage(status: string, stage: PlanStage): boolean {
 export function validatePlanFile(path: string, _options: PlanValidationOptions = {}): PlanValidationResult {
   const markdown = readText(path);
   const lines = markdown.split(/\r?\n/);
-  const sections = splitSections(markdown);
+  const parsedSections = parseMarkdownSections(markdown);
+  const sections = new Map(parsedSections.map((section) => [section.heading, section.body]));
   const issues: PlanValidationIssue[] = [];
 
   for (const required of REQUIRED_PLAN_SECTIONS) {
@@ -141,11 +137,9 @@ export function validatePlanFile(path: string, _options: PlanValidationOptions =
     }
   }
 
-  const observedRequiredHeadings = lines
-    .map((line) => line.match(/^##\s+(.+)$/)?.[1])
-    .filter((value): value is string => Boolean(value))
-    .map(normalizeHeading)
-    .filter((heading) => (REQUIRED_PLAN_SECTIONS as readonly string[]).includes(heading));
+  const observedRequiredHeadings = parsedSections
+    .map((section) => section.heading)
+    .filter((heading): heading is typeof REQUIRED_PLAN_SECTIONS[number] => (REQUIRED_PLAN_SECTIONS as readonly string[]).includes(heading));
   const expectedObservedOrder = [...observedRequiredHeadings].sort((a, b) => REQUIRED_PLAN_SECTIONS.indexOf(a as typeof REQUIRED_PLAN_SECTIONS[number]) - REQUIRED_PLAN_SECTIONS.indexOf(b as typeof REQUIRED_PLAN_SECTIONS[number]));
   if (observedRequiredHeadings.join('\u0000') !== expectedObservedOrder.join('\u0000')) {
     issues.push(issue('warning', 1, 'heading-order', 'Plan headings are not in the canonical order.', `Use heading order: ${REQUIRED_PLAN_SECTIONS.map((heading) => `## ${heading}`).join(' → ')}.`));
@@ -160,32 +154,32 @@ export function validatePlanFile(path: string, _options: PlanValidationOptions =
   const stage = planStageFromPath(path);
   const status = firstParagraph(sections.get('Status') ?? '');
   if (stage && status && !statusMatchesStage(status, stage)) {
-    issues.push(issue('error', lineNumberForHeading(lines, 'Status'), 'status-stage-consistency', `Plan is in ${stage}/ but ## Status says "${status}".`, `Move the plan to the matching folder or start ## Status with ${stage}.`));
+    issues.push(issue('error', lineNumberForHeading(parsedSections, 'Status'), 'status-stage-consistency', `Plan is in ${stage}/ but ## Status says "${status}".`, `Move the plan to the matching folder or start ## Status with ${stage}.`));
   }
 
   for (const section of REQUIRED_PLAN_SECTIONS) {
     if (section === 'Open questions' || !sections.has(section)) continue;
     const body = sections.get(section) ?? '';
     if (sectionBodyIsEmpty(body)) {
-      issues.push(issue('warning', lineNumberForHeading(lines, section), 'no-empty-sections', `Section ## ${section} is empty.`, `Fill ## ${section} with concrete, reviewable content.`));
+      issues.push(issue('warning', lineNumberForHeading(parsedSections, section), 'no-empty-sections', `Section ## ${section} is empty.`, `Fill ## ${section} with concrete, reviewable content.`));
     }
   }
 
   const acBody = sections.get('Acceptance criteria') ?? '';
   const acItems = bulletItems(acBody);
   if (sections.has('Acceptance criteria') && acItems.length === 0) {
-    issues.push(issue('warning', lineNumberForHeading(lines, 'Acceptance criteria'), 'non-empty-ac', 'Acceptance criteria section has no checklist or bullet items.', 'Add at least one testable acceptance criterion.'));
+    issues.push(issue('warning', lineNumberForHeading(parsedSections, 'Acceptance criteria'), 'non-empty-ac', 'Acceptance criteria section has no checklist or bullet items.', 'Add at least one testable acceptance criterion.'));
   }
 
   const goal = firstParagraph(sections.get('Goal') ?? '');
   if (sections.has('Goal') && isVagueGoal(goal)) {
-    issues.push(issue('warning', firstContentLine(lines, lineNumberForHeading(lines, 'Goal')), 'no-vague-goal', `Goal is too vague: "${goal || '(empty)'}".`, 'State one observable outcome with enough specifics to verify.'));
+    issues.push(issue('warning', firstContentLine(lines, lineNumberForHeading(parsedSections, 'Goal')), 'no-vague-goal', `Goal is too vague: "${goal || '(empty)'}".`, 'State one observable outcome with enough specifics to verify.'));
   }
 
   const questions = bulletItems(sections.get('Open questions') ?? '');
   for (const question of questions) {
     if (shouldBeBlockingQuestion(question)) {
-      issues.push(issue('warning', findLineContaining(lines, question, lineNumberForHeading(lines, 'Open questions')), 'blocking-questions-tagged', `Open question may block execution but is not tagged BLOCKING: ${question}`, 'Prefix genuinely blocking questions with BLOCKING: or resolve the question before implementation.'));
+      issues.push(issue('warning', findLineContaining(lines, question, lineNumberForHeading(parsedSections, 'Open questions')), 'blocking-questions-tagged', `Open question may block execution but is not tagged BLOCKING: ${question}`, 'Prefix genuinely blocking questions with BLOCKING: or resolve the question before implementation.'));
     }
   }
 

@@ -72,7 +72,7 @@ Plan amendments such as `001-slice-amendment-1.md` are ignored in plan listings 
 
 | TypeScript | Python | Notes |
 |---|---|---|
-| `splitSections(markdown)` | `split_sections(markdown)` | Same `## Heading` section extraction and whitespace normalization. |
+| `splitSections(markdown)` | `split_sections(markdown)` | Same canonical H2 section extraction: front-anchored `##`, fenced headings ignored, CRLF-tolerant, trailing ATX closing hashes normalized. |
 | `parsePlanFile(path)` | `parse_plan(path)` | Same core semantics; Python returns snake_case keys and adds declared/folder status mismatch fields. |
 | `inspectMission(root)` | `inspect_mission(root)` | Same mission-defined check for `mission:unset` and `TODO: define mission`. |
 | `findScaffoldRoot(start)` | `find_scaffold_root(start)` | Same ancestor search for `.osc/plans` and `.osc/releases`. |

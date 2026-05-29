@@ -106,4 +106,74 @@ describe('verification help flags', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('requires strict plan sections by exact front-anchored canonical heading names', () => {
+    const root = makeMinimalScaffold('open-scaffold-verify-sections-');
+    try {
+      const trickyPlan = validPlanBody
+        .replace('## Status\n\nbacklog\n\n', '')
+        .replace('## Context', '```markdown\n## Context\n```\n\n## My Context Notes');
+      writeFileSync(join(root, '.osc/plans/backlog/001-tricky-sections.md'), trickyPlan);
+
+      const result = spawnSync('bash', ['verify.sh', '--strict'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('missing section: Status');
+      expect(result.stdout).toContain('missing section: Context');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts CRLF plans without reporting canonical sections as missing', () => {
+    const root = makeMinimalScaffold('open-scaffold-verify-crlf-');
+    try {
+      const crlfPlan = validPlanBody.replace(/\n/g, '\r\n');
+      writeFileSync(join(root, '.osc/plans/backlog/001-crlf.md'), crlfPlan);
+
+      const result = spawnSync('bash', ['verify.sh', '--strict'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).not.toContain('missing section:');
+      expect(result.stdout).toContain('0 warn');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('requires release note sections by exact canonical heading names', () => {
+    const root = makeMinimalScaffold('open-scaffold-verify-release-sections-');
+    try {
+      writeFileSync(join(root, '.osc/plans/backlog/001-valid.md'), validPlanBody);
+      writeFileSync(join(root, '.osc/releases/2026-05-29-tricky.md'), `# Release / Evidence Note
+
+\`\`\`markdown
+## Summary
+\`\`\`
+
+## My Summary
+
+Substring headings must not satisfy the local shell gate.
+
+## Traceability
+
+- Plan: .osc/plans/backlog/001-valid.md
+
+## Verification
+
+- Local fixture.
+
+## Outcome
+
+Fixture only.
+`);
+
+      const result = spawnSync('bash', ['verify.sh', '--strict'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Release note 2026-05-29-tricky.md missing section: Summary');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

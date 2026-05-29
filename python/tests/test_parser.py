@@ -9,7 +9,7 @@ from pathlib import Path
 # Test the source tree package without requiring installation.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from open_scaffold.parser import inspect_scaffold, parse_plan
+from open_scaffold.parser import inspect_scaffold, parse_plan, split_sections
 
 
 SAMPLE_PLAN = """# Plan: sample
@@ -82,6 +82,33 @@ def make_repo() -> Path:
 
 
 class ParserTests(unittest.TestCase):
+    def test_split_sections_matches_canonical_heading_contract(self):
+        sections = split_sections(
+            "\r\n".join(
+                [
+                    "## Status",
+                    "active",
+                    "## Goal ##",
+                    "Before.",
+                    "```markdown",
+                    "## Hidden",
+                    "```",
+                    "After.",
+                    "~~~~",
+                    "```",
+                    "## Still hidden",
+                    "~~~~~",
+                    "## Verification steps",
+                    "1. Run tests.",
+                ]
+            )
+        )
+
+        self.assertEqual(list(sections.keys()), ["Status", "Goal", "Verification steps"])
+        self.assertNotIn("Hidden", sections)
+        self.assertNotIn("Still hidden", sections)
+        self.assertIn("## Hidden", sections["Goal"])
+
     def test_parse_plan_sections_lists_and_execution_strategy(self):
         root = make_repo()
         path = root / ".osc" / "plans" / "active" / "001-sample.md"

@@ -421,11 +421,23 @@ export function createEvidenceNoteSkeleton(slug: string, start = process.cwd(), 
 }
 
 function updatePlanStatus(markdown: string, stage: PlanCreationStage): string {
-  const statusPattern = /(^## Status[^\S\r\n]*\r?\n)(?:[^\S\r\n]*\r?\n)?([\s\S]*?)(?=\r?\n##\s+|$)/m;
-  if (!statusPattern.test(markdown)) {
+  const sections = parseMarkdownSections(markdown);
+  const statusIndex = sections.findIndex((section) => section.heading === 'Status');
+  if (statusIndex === -1) {
     throw new Error('Plan is missing a ## Status section. Refusing to move without a status to update.');
   }
-  return markdown.replace(statusPattern, `$1\n${stage}\n`);
+
+  const lines = markdown.split(/\r?\n/);
+  const statusLineIndex = sections[statusIndex].line - 1;
+  const nextSectionLine = sections[statusIndex + 1]?.line ?? lines.length + 1;
+  const updated = [
+    ...lines.slice(0, statusLineIndex + 1),
+    '',
+    stage,
+    '',
+    ...lines.slice(nextSectionLine - 1),
+  ].join('\n');
+  return markdown.endsWith('\n') && !updated.endsWith('\n') ? `${updated}\n` : updated;
 }
 
 export function movePlan(slug: string, toStage: PlanCreationStage, start = process.cwd()): MovedPlanResult {
@@ -540,29 +552,93 @@ export function closePlan(slug: string, start = process.cwd(), message = '', dat
   return { root, slug: safeSlug, fromStage: parent.stage, movedFiles: filesToMove, changelogStamped, alreadyDone: false };
 }
 
-function normalizeHeading(raw: string): string {
-  return raw.trim().replace(/\s+/g, ' ');
+export interface ParsedMarkdownSection {
+  heading: string;
+  body: string;
+  line: number;
 }
 
-export function splitSections(markdown: string): Map<string, string> {
-  const sections = new Map<string, string>();
+interface FenceState {
+  marker: '`' | '~';
+  count: number;
+}
+
+export function normalizeSectionHeading(raw: string): string {
+  return raw
+    .trim()
+    .replace(/[ \t]+#+[ \t]*$/, '')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function normalizeHeading(raw: string): string {
+  return normalizeSectionHeading(raw);
+}
+
+function fenceOpen(line: string): FenceState | null {
+  // Deliberately track only column-0 fenced code blocks. Four-space indented
+  // code blocks are a named non-goal of this small dependency-free parser.
+  const match = line.match(/^(`{3,}|~{3,})/);
+  if (!match) return null;
+  const marker = match[1][0] as '`' | '~';
+  return { marker, count: match[1].length };
+}
+
+function fenceClose(line: string, fence: FenceState): boolean {
+  const match = line.match(/^(`{3,}|~{3,})[ \t]*$/);
+  if (!match) return false;
+  return match[1][0] === fence.marker && match[1].length >= fence.count;
+}
+
+function sectionHeading(line: string): string | null {
+  const match = line.match(/^##[ \t]+(.+)$/);
+  if (!match) return null;
+  const heading = normalizeSectionHeading(match[1]);
+  return heading.length > 0 ? heading : null;
+}
+
+export function parseMarkdownSections(markdown: string): ParsedMarkdownSection[] {
+  const sections: ParsedMarkdownSection[] = [];
   const lines = markdown.split(/\r?\n/);
-  let current: string | null = null;
+  let current: { heading: string; line: number } | null = null;
   let buffer: string[] = [];
+  let fence: FenceState | null = null;
   const flush = () => {
-    if (current) sections.set(current, buffer.join('\n').trim());
+    if (current) sections.push({ heading: current.heading, line: current.line, body: buffer.join('\n').trim() });
     buffer = [];
   };
-  for (const line of lines) {
-    const match = line.match(/^##\s+(.+)$/);
-    if (match) {
+
+  for (const [index, line] of lines.entries()) {
+    if (fence) {
+      if (current) buffer.push(line);
+      if (fenceClose(line, fence)) fence = null;
+      continue;
+    }
+
+    const openingFence = fenceOpen(line);
+    if (openingFence) {
+      if (current) buffer.push(line);
+      fence = openingFence;
+      continue;
+    }
+
+    const heading = sectionHeading(line);
+    if (heading) {
       flush();
-      current = normalizeHeading(match[1]);
+      current = { heading, line: index + 1 };
     } else if (current) {
       buffer.push(line);
     }
   }
   flush();
+  return sections;
+}
+
+export function splitSections(markdown: string): Map<string, string> {
+  const sections = new Map<string, string>();
+  for (const section of parseMarkdownSections(markdown)) {
+    sections.set(section.heading, section.body);
+  }
   return sections;
 }
 
