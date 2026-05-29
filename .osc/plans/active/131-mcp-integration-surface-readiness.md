@@ -29,29 +29,28 @@ Produce the owner decision and supporting ADR that determine whether Open Scaffo
 - `docs/MCP.md` — append a readiness/gap assessment (current 060 surface vs. "standardized/contract-stable/conformance-tested"); no surface change.
 - `ROADMAP.md` — position MCP-readiness against the existing "MCP bridge" line and the post-v1 adoption workflow; do not promote to active without owner approval.
 - `docs/OPEN_SCAFFOLD_SYSTEM.md` — clarify the MCP server's place in the integration-layer ontology only if the ADR changes it.
-- `tests/section-parser.test.ts` — update only the live-plan corpus hash after moving this plan from backlog to active and checking off the ADR acceptance criteria; no product/test behavior change.
 - Future implementation files (only after the ADR is accepted and the owner promotes this plan): `src/mcp-*.ts`, `tests/mcp-*.test.ts`, and any conformance fixtures — listed here as the future queue, not touched in this slice.
 
 ## Acceptance criteria
 
-- [x] An ADR records the MCP posture decision — elevate to a standardized integration surface, hold at 060's optional read-only status quo, or defer — with decision drivers, alternatives considered, consequences, and a security analysis explicitly tested against MISSION non-goal #1.
-- [x] A readiness/gap assessment documents the current MCP surface (tools, resources, transport, write-gating from 060) and the concrete gap to "standardized, contract-stable, conformance-tested," including the dependency question (`@modelcontextprotocol/sdk` vs. the zero-dependency property protected by slice 130).
-- [x] The plan and ADR state explicitly that this slice authorizes no live MCP surface change, no write/spawn expansion, and no new runtime claim.
-- [x] The relationship between MCP-readiness and `119-osc-work-execute-controller`, `070-runtime-adapter-registry`, and `060-mcp-server` is documented so MCP is framed as an integration facet rather than a competing native runtime.
-- [x] Promotion to implementation is explicitly gated on owner approval recorded in the ADR's sign-off field; no `src/` change is proposed as in-scope for this slice.
-- [x] `./verify.sh --strict` passes (docs/decisions are additive; no plan/schema violations).
+- [ ] An ADR records the MCP posture decision — elevate to a standardized integration surface, hold at 060's optional read-only status quo, or defer — with decision drivers, alternatives considered, consequences, and a security analysis explicitly tested against MISSION non-goal #1.
+- [ ] A readiness/gap assessment documents the current MCP surface (tools, resources, transport, write-gating from 060) and the concrete gap to "standardized, contract-stable, conformance-tested," including the dependency question (`@modelcontextprotocol/sdk` vs. the zero-dependency property protected by slice 130).
+- [ ] The plan and ADR state explicitly that this slice authorizes no live MCP surface change, no write/spawn expansion, and no new runtime claim.
+- [ ] The relationship between MCP-readiness and `119-osc-work-execute-controller`, `070-runtime-adapter-registry`, and `060-mcp-server` is documented so MCP is framed as an integration facet rather than a competing native runtime.
+- [ ] Promotion to implementation is explicitly gated on owner approval recorded in the ADR's sign-off field; no `src/` change is proposed as in-scope for this slice.
+- [ ] `./verify.sh --strict` passes (docs/decisions are additive; no plan/schema violations).
 
 ## Verification steps
 
 1. `./verify.sh --strict` — methodology + plan-schema checks pass. Pass: exit 0.
 2. Review the ADR for the required structure (Decision, Drivers, Alternatives, Consequences, security analysis vs. non-goal #1, owner sign-off field). Pass: all present; sign-off field is unfilled/pending until the owner decides.
-3. `git diff` inspection. Pass: only `docs/**`, `ROADMAP.md`, this plan move/change, and the live-corpus hash in `tests/section-parser.test.ts`; no `src/**`, no live MCP surface change, no new dependency.
+3. `git diff` inspection. Pass: only `docs/**`, `ROADMAP.md`, and this plan change; no `src/**`, no live MCP surface change, no new dependency.
 4. Boundary review of the ADR and docs for forbidden implications. Pass: no hidden spawning, no native-runtime claim, no write-surface expansion, no assertion that MCP makes Open Scaffold a dynamic engine.
 
 ## Open questions
 
-- Resolved for this ADR: no standardized MCP write-surface now. Any future write-capable MCP work must inherit the `119-osc-work-execute-controller` gate model and receive a separate owner-approved implementation plan.
-- Resolved for this ADR: do not adopt `@modelcontextprotocol/sdk` now. Keep the zero-dependency JSON-RPC loop until conformance/client evidence justifies an ADR-level dependency decision.
-- Resolved for this ADR: read-only MCP readiness can proceed independently as schema/conformance work; write/execution MCP readiness is downstream of the 119 controller/human-gate model.
-- Resolved for this ADR: reuse the adapter-conformance pattern from `041`/`032`, but MCP needs its own JSON-RPC/tool-schema/resource fixture suite.
-- Resolved for this ADR: the minimal contract-stable guarantee is versioned tool/resource schemas plus golden JSON-RPC fixtures and a deprecation policy; it can ship without any spawn/native-runtime boundary change.
+- BLOCKING: should Open Scaffold expose a standardized MCP write-surface at all, given MISSION non-goal #1 and the gated-write model already being designed in `119-osc-work-execute-controller`? This is an owner decision and gates promotion.
+- BLOCKING: does elevating MCP require adopting `@modelcontextprotocol/sdk` as the first runtime dependency, and is that acceptable against the zero-dependency property that slice `130-section-parser-canonical-contract` exists to protect? Owner decision.
+- Is MCP-readiness downstream of the 119 `osc work` controller (so the controller's human-gate model governs any MCP write), or an independent integration facet that needs its own gate model?
+- Should MCP-surface conformance reuse the adapter-conformance contract (`041`) and fixture (`032`), or define its own conformance suite?
+- What is the minimal "contract-stable" guarantee for the existing read-only tools/resources (e.g., versioned tool schemas) that could ship without triggering the spawning/native-runtime boundary?
