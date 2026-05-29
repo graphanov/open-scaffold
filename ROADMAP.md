@@ -413,7 +413,7 @@ Owner gates:
 
 ### Milestone 19 — Post-v1 adoption workflow target
 
-Status: staged implementation through `.osc/plans/done/099-runtime-adoption-ux-reset.md`, `docs/RUNTIME_ADOPTION_WORKFLOW.md`, and follow-up Codex-first adoption slices through `104-osc-work-dry-run-target`. `osc work --dry-run` is now the first natural-language composition layer; the 2026-05-28 control-loop decision promotes future execution to backlog plan `119-osc-work-execute-controller` while rejecting a native core runtime. The active MCP readiness decision slice (`131-mcp-integration-surface-readiness`) keeps MCP as an integration facet and routes any future write/execution authority downstream of that controller model.
+Status: staged implementation through `.osc/plans/done/099-runtime-adoption-ux-reset.md`, `docs/RUNTIME_ADOPTION_WORKFLOW.md`, and follow-up Codex-first adoption slices through `104-osc-work-dry-run-target`. `osc work --dry-run` is now the first natural-language composition layer; the 2026-05-28 control-loop decision promotes future execution to backlog plan `119-osc-work-execute-controller` while rejecting a native core runtime. The completed MCP readiness decision slice (`.osc/plans/done/131-mcp-integration-surface-readiness.md`) keeps MCP as an integration facet and routes any future write/execution authority downstream of that controller model.
 
 Goal: turn the credible v1 work-record protocol into a smoother adoption path without collapsing Open Scaffold core into a provider-specific runtime.
 
