@@ -203,3 +203,19 @@ mcp_servers:
 - MCP exposes local scaffold state; it does not make MCP the source of truth.
 - Git-tracked Open Scaffold files, GitHub issues/PRs, evidence notes, and operator approvals remain the durable record.
 - `--allow-write` only enables scaffold file helpers. It still does not authorize merge, publication, release mutation, deployment, credential changes, or runtime spawning.
+
+## Readiness posture
+
+The current MCP server is useful, local-first, and optional. It is not yet a contract-stable integration surface.
+
+The 2026-05-29 MCP posture ADR keeps the surface read-oriented while Open Scaffold matures the surrounding contracts. Before MCP is promoted as standardized/conformance-tested, it needs:
+
+- versioned tool and resource schema fixtures;
+- golden JSON-RPC smoke fixtures for initialize, tool/resource listing, tool calls, resource reads, and error responses;
+- a compatibility matrix for documented clients;
+- a stability/deprecation policy for tool names, resource URIs, input schemas, and output fields;
+- an explicit decision on whether the zero-dependency JSON-RPC loop remains sufficient or whether adopting `@modelcontextprotocol/sdk` is worth the dependency tradeoff.
+
+Any future write-capable MCP surface must inherit the `osc work` controller gate model rather than bypass it: no adapter dispatch, verification command execution, runtime spawning, network/credential access, commit, push, PR, merge, publish, release, deploy, or external-production side effect without an explicit human approval gate.
+
+See [`docs/decisions/2026-05-29-mcp-integration-surface-posture.md`](decisions/2026-05-29-mcp-integration-surface-posture.md).
