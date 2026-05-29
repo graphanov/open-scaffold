@@ -16,6 +16,7 @@ import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvel
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { computeMetrics, formatMetrics, parseSinceDate } from './metrics.js';
+import { computeStudy, renderStudyMarkdown, validateStudyReport, writeStudyOutput } from './study.js';
 import { runMcpCommand } from './mcp-server.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
 import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
@@ -90,6 +91,7 @@ Lab and experimental:
 Diagnostics and advanced:
   osc mcp serve [--repo <path>] [--allow-write] [--validate]
   osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
+  osc study [--json] [--since <date>] [--out <path>]
   osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]
   osc runtimes list [--json]
   osc runtimes show <id>
@@ -2164,6 +2166,78 @@ function metricsCommand(args: string[]): void {
   }
 }
 
+function printStudyUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc study [--json] [--since <date>] [--out <path>]
+
+Computes source-labeled, observational evidence signals for the methodology's value
+hypotheses from this repository's own committed git history and .osc/ artifacts.
+Read-only and offline: it makes no network calls and imputes no numbers. See
+docs/EVIDENCE_METHODOLOGY.md for the protocol.
+
+Options:
+  --json            Print the machine-readable study report (open-scaffold.study.v1)
+  --since <date>    Restrict plans/commits to on or after the date; supports YYYY-MM-DD, ISO 8601, "30 days ago", "last month"
+  --out <path>      Write the report to a file (markdown by default, JSON when --json is set) instead of stdout`, stream);
+}
+
+function studyCommand(args: string[]): void {
+  if (isHelpArg(args[0])) {
+    printStudyUsage('stdout');
+    return;
+  }
+
+  let json = false;
+  let since: Date | undefined;
+  let out: string | undefined;
+
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--json':
+        json = true;
+        break;
+      case '--since':
+        try {
+          since = parseSinceDate(takeMetricsValue(args, i, flag));
+        } catch (error) {
+          console.error(error instanceof Error ? error.message : String(error));
+          process.exit(2);
+        }
+        i += 1;
+        break;
+      case '--out':
+        out = takeMetricsValue(args, i, flag);
+        i += 1;
+        break;
+      default:
+        console.error(`Unknown option for study: ${flag}`);
+        printStudyUsage();
+        process.exit(2);
+    }
+  }
+
+  try {
+    const report = computeStudy({ root: process.cwd(), since });
+    const validation = validateStudyReport(report);
+    if (!validation.ok) {
+      console.error('Study report failed its own honesty checks:');
+      for (const error of validation.errors) console.error(`  - ${error}`);
+      process.exit(1);
+    }
+    const format: 'markdown' | 'json' = json ? 'json' : 'markdown';
+    if (out) {
+      const written = writeStudyOutput(report, out, format, process.cwd());
+      console.log(`Wrote ${format} study report to ${written.path}`);
+      return;
+    }
+    if (json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderStudyMarkdown(report));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
 function printTaskUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage(`Usage: osc task new <title> [--priority <${TASK_PRIORITIES.join('|')}>] [--plan <slug>]
   osc task list [--status <${TASK_STATUSES.join('|')}>] [--priority <${TASK_PRIORITIES.join('|')}>] [--plan <slug>] [--json]
@@ -2724,6 +2798,9 @@ async function main(): Promise<void> {
     }
     case 'metrics':
       metricsCommand(args);
+      return;
+    case 'study':
+      studyCommand(args);
       return;
     case 'cockpit':
       await cockpitCommand(args);

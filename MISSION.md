@@ -29,6 +29,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-28: closed 125-methodology-evidence-harness — Close methodology evidence harness
 - 2026-05-28: closed 124-trace-package-release-sync — Close trace package release sync after npm and GitHub Release proof
 - 2026-05-28: closed 117-osc-trace-work-record-replay — added read-only work-record trace command
 - 2026-05-28: closed 123-evidence-chain-package-release-sync — Close evidence-chain package release sync after 0.20.0 npm publish and GitHub Release
