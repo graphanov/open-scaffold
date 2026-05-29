@@ -41,7 +41,7 @@ Open Scaffold core owns the portable project substrate:
 - `osc trace` — read-only local work-record replay for one plan.
 - `.github/` templates — issue and PR traceability for GitHub-centered workflows.
 
-Core does **not** spawn agents. It defines the contract that agents and tools can use. The MCP server is an interface over local repo truth, not a planner, task database, or runtime launcher.
+Core does **not** spawn agents. It defines the contract that agents and tools can use. The MCP server is an interface over local repo truth, not a planner, task database, execution controller, or runtime launcher. Per the 2026-05-29 MCP posture ADR, future write-capable MCP work must inherit the `osc work` controller/human-gate model rather than bypass it.
 
 ### 2. Coordinators, orchestrators, and agents
 
