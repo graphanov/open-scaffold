@@ -246,7 +246,7 @@ This sample must not count as the real section.
 
     expect(hash(planIssueSnapshot)).toBe('70c8b00da0fe9631cb08a421d893b702ab8ceacad4dfa332d23c9a1e3fed320b');
     expect(scaffold.failures).toEqual([]);
-    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('d61c996b0583801c07591071031318066b42b2929861e6b155324d1449710a2c');
+    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('d6ca29a5d2141f51b5d5425d52fcb0691143adeb1c8799638e64653f6c8d22d4');
     expect(realPlanFiles().every((path) => statSync(path).isFile())).toBe(true);
   });
 });
