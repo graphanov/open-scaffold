@@ -4,6 +4,28 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v0.20.2 — Methodology and reviewer evidence package sync
+
+Status: candidate only. Not yet published to npm; GitHub Release `v0.20.2` does not exist yet. Current npm `latest` remains `open-scaffold@0.20.1` until owner-approved merge, trusted publishing, fresh `npx` verification, and GitHub Release follow-through.
+
+Highlights:
+
+- Prepares the PR #145 package-visible methodology evidence command: `osc study [--json] [--since <date>] [--out <path>]`.
+- Prepares the PR #146 reviewer evidence mirror: `osc pr-summary <plan-slug> [--format <markdown|json>]`.
+- Prepares the PR #146 A/B pilot packet validator: `osc ab check <path>`.
+- Keeps A/B validation structural only: it checks packet shape and honesty guardrails, not experiment outcomes, scoring, causation, or improvement claims.
+- Keeps the PR-summary workflow optional and non-canonical: PR comments mirror repository artifacts and skip fork/Dependabot comment writes when the token is read-only.
+
+Evidence:
+
+- Methodology source plan: `.osc/plans/done/125-methodology-evidence-harness.md`
+- Methodology source PR: https://github.com/graphanov/open-scaffold/pull/145
+- PR-summary source plan: `.osc/plans/done/126-pr-native-evidence-surface.md`
+- A/B pilot source plan: `.osc/plans/done/127-ab-comparison-pilot-harness.md`
+- PR-summary / A/B source PR: https://github.com/graphanov/open-scaffold/pull/146
+- Release-sync plan: `.osc/plans/active/128-methodology-pr-summary-ab-package-sync.md`
+- Release-sync evidence note: `.osc/releases/2026-05-29-128-methodology-pr-summary-ab-package-sync.md`
+
 ## v0.20.1 — Trace work-record replay package sync
 
 Status: published to npm as `open-scaffold@0.20.1`; GitHub Release `v0.20.1` is Latest after owner-approved trusted publishing and release follow-through.
