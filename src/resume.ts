@@ -30,10 +30,23 @@ function amendmentKeepsAcceptanceCriteriaUnchanged(markdown: string): boolean {
   const sections = splitSections(markdown);
   const impact = (sections.get('Impact on acceptance criteria') ?? '').trim();
   if (!impact) return false;
-  if (/\bnone\b/i.test(impact) && /\bunchanged\b|\bno\s+change\b|\bdoes\s+not\s+change\b/i.test(impact)) {
+  const normalized = impact.toLowerCase().replace(/\s+/g, ' ');
+  const changedSignals = [
+    /\bnone\s+of\b/,
+    /\bexcept\b/,
+    /\bsupersed(?:e|es|ed|ing)\b/,
+    /\breplac(?:e|es|ed|ing)\b/,
+    /\brevis(?:e|es|ed|ing)\b/,
+    /\bmodif(?:y|ies|ied|ying)\b/,
+    /\bac\s*\d+\b/,
+    /\bcriterion\s+\d+\b/,
+    /\bcriteria\s+\d+\b/,
+  ];
+  if (changedSignals.some((pattern) => pattern.test(normalized))) return false;
+  if (/^none\b/.test(normalized) && /\bunchanged\b|\bno\s+change\b|\bdoes\s+not\s+change\b/.test(normalized)) {
     return true;
   }
-  if (/acceptance criteria remain unchanged/i.test(impact)) return true;
+  if (/\bacceptance criteria remain unchanged\b/.test(normalized)) return true;
   return false;
 }
 

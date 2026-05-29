@@ -49,20 +49,28 @@ describe('resume-snapshot', () => {
     expect(work_done.evidence).toContain('.osc/releases/2026-05-10-scaffold-init.md');
   });
 
-  it('fails loudly when an amendment changes acceptance criteria', () => {
-    const tempRoot = mkdtempSync(join(tmpdir(), 'osc-resume-amendment-'));
-    try {
-      cpSync(fixtureRoot, tempRoot, { recursive: true });
-      const amendmentPath = join(tempRoot, '.osc', 'plans', 'active', 'demo-add-greeting-amendment-1.md');
-      const amendment = readFileSync(amendmentPath, 'utf8').replace(
-        'None — all acceptance criteria remain unchanged. The observable behavior (greet function returns "Hello, <name>!", history written to releases, tests pass) is unaffected by the internal factory pattern change.',
-        'Criterion 1 is superseded: the greeting must return "Hi, <name>!" instead of the original text.'
-      );
-      writeFileSync(amendmentPath, amendment, 'utf8');
+  it('fails loudly when amendment impact text changes or negates unchanged criteria', () => {
+    const changingImpacts = [
+      'Criterion 1 is superseded: the greeting must return "Hi, <name>!" instead of the original text.',
+      'None of the original acceptance criteria remain unchanged; AC1 is superseded.',
+      'Acceptance criteria remain unchanged except AC2 is replaced.',
+    ];
 
-      expect(() => buildResumeSummary(tempRoot)).toThrow(/amendments that change or supersede acceptance criteria/);
-    } finally {
-      rmSync(tempRoot, { recursive: true, force: true });
+    for (const impact of changingImpacts) {
+      const tempRoot = mkdtempSync(join(tmpdir(), 'osc-resume-amendment-'));
+      try {
+        cpSync(fixtureRoot, tempRoot, { recursive: true });
+        const amendmentPath = join(tempRoot, '.osc', 'plans', 'active', 'demo-add-greeting-amendment-1.md');
+        const amendment = readFileSync(amendmentPath, 'utf8').replace(
+          'None — all acceptance criteria remain unchanged. The observable behavior (greet function returns "Hello, <name>!", history written to releases, tests pass) is unaffected by the internal factory pattern change.',
+          impact
+        );
+        writeFileSync(amendmentPath, amendment, 'utf8');
+
+        expect(() => buildResumeSummary(tempRoot)).toThrow(/amendments that change or supersede acceptance criteria/);
+      } finally {
+        rmSync(tempRoot, { recursive: true, force: true });
+      }
     }
   });
 });
