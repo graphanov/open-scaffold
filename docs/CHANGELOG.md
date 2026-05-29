@@ -4,6 +4,23 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v0.20.3 — Canonical section parser package sync
+
+Status: candidate prepared for `open-scaffold@0.20.3`; npm publication and GitHub Release follow-through are pending the package-sync PR merge.
+
+Highlights:
+
+- Publishes the PR #150 canonical Markdown H2 section parser across plan parsing, plan validation, release-note validation, strict shell verification, Python reference parsing, and template status updates.
+- Ignores fenced `## ...` lines inside column-0 backtick/tilde code fences, tolerates CRLF, and normalizes optional trailing ATX closing hashes such as `## Status ##`.
+- Tightens strict verifier section checks to exact, fence-aware plan and release-note headings while preserving the no-new-runtime-dependency boundary.
+- Keeps Open Scaffold core non-spawning: no runtime execution, no MCP surface expansion, and no new dynamic-runtime claim.
+
+Evidence:
+
+- Source plan: `.osc/plans/active/130-section-parser-canonical-contract.md`
+- Source PR: https://github.com/graphanov/open-scaffold/pull/150
+- Release-sync evidence note: `.osc/releases/2026-05-29-130-section-parser-canonical-contract.md`
+
 ## v0.20.2 — Methodology and reviewer evidence package sync
 
 Status: published to npm as `open-scaffold@0.20.2`; GitHub Release `v0.20.2` is Latest after owner-approved trusted publishing and release follow-through.
