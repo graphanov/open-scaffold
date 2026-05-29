@@ -29,7 +29,8 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
-- 2026-05-29: record MCP posture ADR and readiness proof — see .osc/plans/active/131-mcp-integration-surface-readiness-amendment-1.md
+- 2026-05-30: closed 131-mcp-integration-surface-readiness — closed 131-mcp-integration-surface-readiness after PR #153 MCP posture ADR merge
+- 2026-05-29: record MCP posture ADR and readiness proof — see .osc/plans/done/131-mcp-integration-surface-readiness-amendment-1.md
 - 2026-05-29: closed 130-section-parser-canonical-contract — published open-scaffold@0.20.3 and aligned canonical section parser public surfaces
 - 2026-05-29: closed 128-methodology-pr-summary-ab-package-sync — published open-scaffold@0.20.2, verified npm latest/fresh npx, and created GitHub Release v0.20.2
 - 2026-05-29: closed 126-pr-native-evidence-surface — PR-native read-only osc pr-summary renderer plus optional opt-in single-comment mirror

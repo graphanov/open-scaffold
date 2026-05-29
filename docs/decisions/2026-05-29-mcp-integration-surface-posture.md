@@ -2,7 +2,7 @@
 
 Date: 2026-05-29
 Status: proposed owner decision; implementation blocked until explicit owner sign-off
-Plan: `.osc/plans/active/131-mcp-integration-surface-readiness.md`
+Plan: `.osc/plans/done/131-mcp-integration-surface-readiness.md`
 
 ## Decision
 
