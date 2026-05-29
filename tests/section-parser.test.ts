@@ -244,7 +244,7 @@ This sample must not count as the real section.
 
     const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-    expect(hash(planIssueSnapshot)).toBe('70c8b00da0fe9631cb08a421d893b702ab8ceacad4dfa332d23c9a1e3fed320b');
+    expect(hash(planIssueSnapshot)).toBe('7947f2532fe642f11437e9575682b8df73102c42d999350aa0124c188fd81928');
     expect(scaffold.failures).toEqual([]);
     expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('d6ca29a5d2141f51b5d5425d52fcb0691143adeb1c8799638e64653f6c8d22d4');
     expect(realPlanFiles().every((path) => statSync(path).isFile())).toBe(true);

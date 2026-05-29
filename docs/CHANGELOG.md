@@ -6,7 +6,7 @@ For live package truth, check npm. For live release truth, check GitHub Releases
 
 ## v0.20.3 — Canonical section parser package sync
 
-Status: candidate prepared for `open-scaffold@0.20.3`; npm publication and GitHub Release follow-through are pending the package-sync PR merge.
+Status: published to npm as `open-scaffold@0.20.3`; GitHub Release `v0.20.3` is Latest after owner-preapproved trusted publishing and release follow-through.
 
 Highlights:
 
@@ -17,8 +17,9 @@ Highlights:
 
 Evidence:
 
-- Source plan: `.osc/plans/active/130-section-parser-canonical-contract.md`
+- Source plan: `.osc/plans/done/130-section-parser-canonical-contract.md`
 - Source PR: https://github.com/graphanov/open-scaffold/pull/150
+- Package-sync PR: https://github.com/graphanov/open-scaffold/pull/151
 - Release-sync evidence note: `.osc/releases/2026-05-29-130-section-parser-canonical-contract.md`
 
 ## v0.20.2 — Methodology and reviewer evidence package sync
