@@ -8,7 +8,7 @@ const DEFAULT_LOOKBACK_WEEKS = 12;
 const STALE_DAYS = 30;
 const APPROVAL_STATUSES = ['approved', 'weak_approved', 'rejected', 'blocked'] as const;
 
-type ApprovalStatus = typeof APPROVAL_STATUSES[number] | 'unknown';
+export type ApprovalStatus = typeof APPROVAL_STATUSES[number] | 'unknown';
 
 export interface MetricsOptions {
   root?: string;
@@ -277,9 +277,8 @@ function evidenceForPlan(notes: EvidenceNote[], slug: string): EvidenceNote | nu
   return newestEvidence(textMatches);
 }
 
-function approvalFromEvidence(note: EvidenceNote | null): ApprovalStatus {
-  if (!note || !note.text.trim()) return 'unknown';
-  const text = note.text;
+export function evidenceApprovalStatus(text: string): ApprovalStatus {
+  if (!text.trim()) return 'unknown';
   const explicit = text.match(/approval\.status\s*[:=]\s*(approved|weak_approved|rejected|blocked)\b/i);
   if (explicit) return explicit[1].toLowerCase() as ApprovalStatus;
   const ownerDecision = text.match(/owner decision\s*:\s*(approved|weak_approved|rejected|blocked)\b/i);
@@ -288,6 +287,10 @@ function approvalFromEvidence(note: EvidenceNote | null): ApprovalStatus {
   if (decision) return decision[1].toLowerCase() as ApprovalStatus;
   if (/\bweak approval\b|\bweak_approved\b/i.test(text)) return 'weak_approved';
   return 'unknown';
+}
+
+function approvalFromEvidence(note: EvidenceNote | null): ApprovalStatus {
+  return evidenceApprovalStatus(note?.text ?? '');
 }
 
 function percentile(values: number[], p: number): number | null {

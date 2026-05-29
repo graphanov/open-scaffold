@@ -17,6 +17,8 @@ import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, compareEvolutionLoop, record
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { computeMetrics, formatMetrics, parseSinceDate } from './metrics.js';
 import { computeStudy, renderStudyMarkdown, validateStudyReport, writeStudyOutput } from './study.js';
+import { computePrSummary, renderPrSummaryMarkdown } from './pr-summary.js';
+import { checkAbPacket, formatAbCheckReport } from './ab.js';
 import { runMcpCommand } from './mcp-server.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
 import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
@@ -92,6 +94,8 @@ Diagnostics and advanced:
   osc mcp serve [--repo <path>] [--allow-write] [--validate]
   osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
   osc study [--json] [--since <date>] [--out <path>]
+  osc pr-summary <plan-slug> [--format <markdown|json>]
+  osc ab check <path>
   osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]
   osc runtimes list [--json]
   osc runtimes show <id>
@@ -2238,6 +2242,96 @@ function studyCommand(args: string[]): void {
   }
 }
 
+function printPrSummaryUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc pr-summary <plan-slug> [--format <markdown|json>]
+
+Renders a read-only, reviewer-ready summary of a plan — goal, acceptance-criteria
+checklist state, evidence-note status, plan-validation result, and open questions —
+for mirroring into a pull request. Reuses the plan/evidence readers and the same
+checks as \`osc plan validate\`; it makes no network calls and is never a source of
+truth. A missing or unsafe plan reference renders an explicit "no plan found"
+summary and still exits 0 so it cannot break a PR check.
+
+Options:
+  --format <markdown|json>   Output format (default: markdown). JSON emits the open-scaffold.pr_summary.v1 report.`, stream);
+}
+
+function prSummaryCommand(args: string[]): void {
+  if (isHelpArg(args[0])) {
+    printPrSummaryUsage('stdout');
+    return;
+  }
+  const slug = requireArg(args, 'plan-slug');
+
+  let format: 'markdown' | 'json' = 'markdown';
+  for (let i = 1; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--format':
+        format = parseChoice(takeMetricsValue(args, i, flag), ['markdown', 'json'] as const, '--format');
+        i += 1;
+        break;
+      default:
+        console.error(`Unknown option for pr-summary: ${flag}`);
+        printPrSummaryUsage();
+        process.exit(2);
+    }
+  }
+
+  try {
+    const report = computePrSummary(slug, { root: process.cwd() });
+    if (format === 'json') console.log(JSON.stringify(report, null, 2));
+    else console.log(renderPrSummaryMarkdown(report));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
+function printAbUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc ab check <path>
+
+Read-only structural validator for an A/B comparison pilot packet (see
+docs/AB_COMPARISON_PILOT.md). Pass the packet directory (containing
+pre-registration.md and a raw-data .csv), or a single .md or .csv file.
+
+It confirms the pre-registration has its required sections and commit-before-data
+attestation, and that every raw-data row has a valid arm (A/B) and a source-labeled,
+source-consistent value. It never writes, scores, or interprets data. Exit 0 when
+well-formed, 1 when malformed. A pass means the instrument is well-formed — not that
+any experiment was run or that the scaffold improves any outcome.`, stream);
+}
+
+function abCommand(args: string[]): void {
+  const [subcommand, ...rest] = args;
+  if (isHelpArg(subcommand) || subcommand === undefined) {
+    printAbUsage('stdout');
+    return;
+  }
+  if (subcommand !== 'check') {
+    console.error(`Unknown subcommand for ab: ${subcommand}`);
+    printAbUsage();
+    process.exit(2);
+  }
+  if (isHelpArg(rest[0])) {
+    printAbUsage('stdout');
+    return;
+  }
+  const target = requireArg(rest, 'path');
+  if (rest.length > 1) {
+    console.error(`Unknown option for ab check: ${rest[1]}`);
+    printAbUsage();
+    process.exit(2);
+  }
+  const report = checkAbPacket(target, process.cwd());
+  if (report.ok) {
+    console.log(formatAbCheckReport(report));
+  } else {
+    console.error(formatAbCheckReport(report));
+    process.exit(1);
+  }
+}
+
 function printTaskUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage(`Usage: osc task new <title> [--priority <${TASK_PRIORITIES.join('|')}>] [--plan <slug>]
   osc task list [--status <${TASK_STATUSES.join('|')}>] [--priority <${TASK_PRIORITIES.join('|')}>] [--plan <slug>] [--json]
@@ -2801,6 +2895,12 @@ async function main(): Promise<void> {
       return;
     case 'study':
       studyCommand(args);
+      return;
+    case 'pr-summary':
+      prSummaryCommand(args);
+      return;
+    case 'ab':
+      abCommand(args);
       return;
     case 'cockpit':
       await cockpitCommand(args);

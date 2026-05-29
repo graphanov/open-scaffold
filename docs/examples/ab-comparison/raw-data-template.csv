@@ -1,0 +1,9 @@
+task_id,arm,metric,value,source,notes
+EXAMPLE-01,A,resume_time_seconds,,unavailable,illustrative row — replace with real measurements; no data collected yet
+EXAMPLE-01,A,rework_incidents,,unavailable,illustrative row — replace with real measurements; no data collected yet
+EXAMPLE-01,A,context_reexplanation_words,,unavailable,illustrative row — replace with real measurements; no data collected yet
+EXAMPLE-01,A,reconstruction_score,,unavailable,illustrative row — blinded reviewer score; no data collected yet
+EXAMPLE-02,B,resume_time_seconds,,unavailable,illustrative row — replace with real measurements; no data collected yet
+EXAMPLE-02,B,rework_incidents,,unavailable,illustrative row — replace with real measurements; no data collected yet
+EXAMPLE-02,B,context_reexplanation_words,,unavailable,illustrative row — replace with real measurements; no data collected yet
+EXAMPLE-02,B,reconstruction_score,,unavailable,illustrative row — blinded reviewer score; no data collected yet

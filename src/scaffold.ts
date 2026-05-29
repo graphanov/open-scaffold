@@ -579,6 +579,23 @@ function bulletItems(text: string): string[] {
     .filter(Boolean);
 }
 
+export interface ChecklistItem {
+  text: string;
+  checked: boolean;
+}
+
+export function parseChecklist(text: string): ChecklistItem[] {
+  const items: ChecklistItem[] = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const match = raw.trim().match(/^[-*]\s+\[([ xX])\]\s*(.*)$/);
+    if (!match) continue;
+    const body = match[2].trim();
+    if (!body) continue;
+    items.push({ text: body, checked: match[1].toLowerCase() === 'x' });
+  }
+  return items;
+}
+
 function numberedItems(text: string): string[] {
   return text
     .split(/\r?\n/)

@@ -1,6 +1,6 @@
 # Examples
 
-Five worked example paths a fresh user or agent can read end-to-end. The first four are operating modes; the fifth shows the evolution-ledger comparison wedge directly. Each path links to existing protocol docs and shipped fixtures rather than inventing new machinery.
+Six worked example paths a fresh user or agent can read end-to-end. The first four are operating modes; the fifth shows the evolution-ledger comparison wedge directly; the sixth is a pre-registered measurement instrument. Each path links to existing protocol docs and shipped fixtures rather than inventing new machinery.
 
 The example paths:
 
@@ -10,6 +10,7 @@ The example paths:
 4. [Runtime harness handoff](#4-runtime-harness-handoff) — packaging work for an external runtime lane to execute.
 5. [Evolution loop compare](evolution-loop-compare.md) — two attempts → `osc evolve compare` → frontier rationale.
    - [`examples/evolution-ledger-demo/`](../../examples/evolution-ledger-demo/) — runnable fixture: checked-in loop, attempts, evaluations, a promoted frontier, and committed expected compare output. Verified by the evolution CLI tests.
+6. [A/B comparison pilot packet](ab-comparison/README.md) — pre-registered templates to measure whether the scaffold helps. **Ships no data and proves no outcome.**
 
 If you want one complete non-recursive example first, start with [`downstream-walkthrough.md`](downstream-walkthrough.md). It shows the full mission → plan → optional `run.json` work package → evidence → close loop on a tiny shell CLI that is not Open Scaffold itself, then shows how a second session reconstructs the current state from files alone.
 
