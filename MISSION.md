@@ -29,6 +29,8 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-05-29: closed 126-pr-native-evidence-surface — PR-native read-only osc pr-summary renderer plus optional opt-in single-comment mirror
+- 2026-05-29: closed 127-ab-comparison-pilot-harness — Pre-registered A/B pilot packet (runbook, pre-registration, raw-data template, reviewer rubric) plus read-only osc ab check validator; no data collected and no causal claim
 - 2026-05-28: closed 125-methodology-evidence-harness — Close methodology evidence harness
 - 2026-05-28: closed 124-trace-package-release-sync — Close trace package release sync after npm and GitHub Release proof
 - 2026-05-28: closed 117-osc-trace-work-record-replay — added read-only work-record trace command

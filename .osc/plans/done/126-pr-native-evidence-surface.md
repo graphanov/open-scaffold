@@ -2,7 +2,8 @@
 
 ## Status
 
-backlog
+done
+
 
 ## Context
 
@@ -36,11 +37,11 @@ Provide an `osc pr-summary <plan-slug> [--format markdown]` renderer that emits 
 
 ## Acceptance criteria
 
-- [ ] Pre-work check recorded: a one-line note in the PR/commit stating whether `docs/GITHUB_WORKFLOW.md` / `063` / webhooks already cover this, with the decision to proceed or downgrade.
-- [ ] `osc pr-summary <slug>` renders goal, AC checklist with checked/unchecked state, evidence-note presence, and open questions.
-- [ ] The renderer reuses existing plan/evidence readers and `plan-validate` rather than re-parsing plans independently.
-- [ ] The optional GitHub Action is opt-in, runs read-only, and upserts exactly one PR comment on re-run.
-- [ ] Tests prove idempotent comment content (no duplication) and a graceful "no/invalid plan" path.
+- [x] Pre-work check recorded: a one-line note in the PR/commit stating whether `docs/GITHUB_WORKFLOW.md` / `063` / webhooks already cover this, with the decision to proceed or downgrade.
+- [x] `osc pr-summary <slug>` renders goal, AC checklist with checked/unchecked state, evidence-note presence, and open questions.
+- [x] The renderer reuses existing plan/evidence readers and `plan-validate` rather than re-parsing plans independently.
+- [x] The optional GitHub Action is opt-in, runs read-only, and upserts exactly one PR comment on re-run.
+- [x] Tests prove idempotent comment content (no duplication) and a graceful "no/invalid plan" path.
 
 ## Verification steps
 

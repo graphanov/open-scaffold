@@ -1,0 +1,121 @@
+name: PR summary (opt-in mirror)
+
+# Optional, opt-in, read-only mirror of an Open Scaffold plan onto its pull
+# request. It renders `osc pr-summary <plan>` and upserts a single PR comment.
+# It is NOT canonical state: the `.osc/` plan and evidence files remain the
+# source of truth. Enable it by setting the repository variable
+# OSC_PR_SUMMARY=true and pointing OSC_PR_SUMMARY_PLAN at the plan slug (or pass
+# the plan input on a manual run). Left disabled, this workflow does nothing.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      plan:
+        description: "Plan slug to summarize (e.g. 126-pr-native-evidence-surface)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  pr-summary:
+    name: Mirror plan summary to PR
+    if: vars.OSC_PR_SUMMARY == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository with public fallback
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init .
+          server_url="${GITHUB_SERVER_URL:-https://github.com}"
+          server_url="${server_url%/}"
+          git remote add origin "${server_url}/${GITHUB_REPOSITORY}.git"
+          fetch_refs() {
+            local mode="$1"
+            shift
+            if [[ "$mode" == "auth" && -n "${GITHUB_TOKEN:-}" ]]; then
+              local auth_header
+              auth_header="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\n')"
+              GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c "http.${server_url}/.extraheader=AUTHORIZATION: basic ${auth_header}" fetch "$@"
+            else
+              GIT_TERMINAL_PROMPT=0 git -c credential.helper= fetch "$@"
+            fi
+          }
+          fetch_with_fallback() {
+            local description="$1"
+            shift
+            if ! fetch_refs auth "$@"; then
+              echo "Authenticated ${description} fetch failed; falling back to public unauthenticated fetch."
+              fetch_refs public "$@"
+            fi
+          }
+          fetch_with_fallback repository --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            fetch_with_fallback pull-request-merge --no-tags origin "refs/pull/${{ github.event.pull_request.number }}/merge:refs/remotes/pull/${{ github.event.pull_request.number }}/merge"
+            git checkout --force "refs/remotes/pull/${{ github.event.pull_request.number }}/merge"
+          else
+            git checkout --force "$GITHUB_SHA"
+          fi
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.12.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build CLI
+        run: npm run build
+
+      - name: Render plan summary
+        id: summary
+        shell: bash
+        env:
+          OSC_PR_SUMMARY_PLAN: ${{ inputs.plan || vars.OSC_PR_SUMMARY_PLAN }}
+        run: |
+          set -euo pipefail
+          plan="${OSC_PR_SUMMARY_PLAN:-}"
+          if [[ -z "$plan" ]]; then
+            echo "No plan slug configured. Set repository variable OSC_PR_SUMMARY_PLAN or pass the workflow_dispatch 'plan' input. Skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # pr-summary is read-only and always exits 0, rendering an explicit
+          # "no plan found" body rather than failing if the slug is missing.
+          node dist/cli.js pr-summary "$plan" --format markdown > pr-summary.md
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Upsert single PR comment
+        if: >-
+          github.event_name == 'pull_request' &&
+          steps.summary.outputs.skip == 'false' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.actor != 'dependabot[bot]'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            // Must match PR_SUMMARY_MARKER in src/pr-summary.ts; the find-and-update
+            // by this marker is what keeps the mirror to exactly one comment.
+            const marker = '<!-- osc-pr-summary -->';
+            const body = fs.readFileSync('pr-summary.md', 'utf8');
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const existing = comments.find((comment) => typeof comment.body === 'string' && comment.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

@@ -1,0 +1,245 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
+import {
+  findScaffoldRoot,
+  parseChecklist,
+  parsePlanFile,
+  PLAN_STAGES,
+  type ChecklistItem,
+  type PlanStage,
+} from './scaffold.js';
+import { resolvePlanValidationPath, validatePlanFile, type PlanValidationIssue } from './plan-validate.js';
+import { findEvidenceNote } from './evidence.js';
+import { evidenceApprovalStatus, type ApprovalStatus } from './metrics.js';
+
+export const PR_SUMMARY_SCHEMA = 'open-scaffold.pr_summary.v1';
+
+// Hidden HTML comment placed on the first line of the rendered markdown so an
+// automated mirror (the optional pr-summary workflow) can find and update its
+// own single comment instead of posting a new one each run.
+export const PR_SUMMARY_MARKER = '<!-- osc-pr-summary -->';
+
+export interface PrSummaryEvidence {
+  present: boolean;
+  path: string | null;
+  approval_status: ApprovalStatus;
+  is_skeleton: boolean;
+}
+
+export interface PrSummaryValidationIssue {
+  severity: PlanValidationIssue['severity'];
+  rule: string;
+  line: number;
+  message: string;
+}
+
+export interface PrSummaryValidation {
+  ok: boolean;
+  error_count: number;
+  warning_count: number;
+  issues: PrSummaryValidationIssue[];
+}
+
+export interface PrSummaryReport {
+  schemaVersion: typeof PR_SUMMARY_SCHEMA;
+  computed_at: string;
+  slug: string;
+  plan_found: boolean;
+  plan_path: string | null;
+  stage: PlanStage | null;
+  goal: string | null;
+  acceptance_criteria: ChecklistItem[];
+  evidence: PrSummaryEvidence;
+  open_questions: string[];
+  validation: PrSummaryValidation;
+  notes: string[];
+}
+
+export interface PrSummaryOptions {
+  root?: string;
+  now?: Date;
+}
+
+function resolveRoot(root?: string): string {
+  const start = root ?? process.cwd();
+  const scaffoldRoot = findScaffoldRoot(start);
+  if (!scaffoldRoot) {
+    throw new Error(`No Open Scaffold root found from ${resolve(start)}. Run this inside a repo with .osc/plans and .osc/releases.`);
+  }
+  return scaffoldRoot;
+}
+
+function stageFromPath(path: string): PlanStage | null {
+  const normalized = path.replace(/\\/g, '/');
+  for (const stage of PLAN_STAGES) {
+    if (normalized.includes(`/.osc/plans/${stage}/`)) return stage;
+  }
+  return null;
+}
+
+function emptyEvidence(): PrSummaryEvidence {
+  return { present: false, path: null, approval_status: 'unknown', is_skeleton: false };
+}
+
+function notFoundReport(slug: string, now: Date, reason: string): PrSummaryReport {
+  return {
+    schemaVersion: PR_SUMMARY_SCHEMA,
+    computed_at: now.toISOString(),
+    slug,
+    plan_found: false,
+    plan_path: null,
+    stage: null,
+    goal: null,
+    acceptance_criteria: [],
+    evidence: emptyEvidence(),
+    open_questions: [],
+    validation: { ok: false, error_count: 0, warning_count: 0, issues: [] },
+    notes: [reason],
+  };
+}
+
+export function computePrSummary(slug: string, options: PrSummaryOptions = {}): PrSummaryReport {
+  const root = resolveRoot(options.root);
+  const now = options.now ?? new Date();
+
+  let planPath: string | null = null;
+  try {
+    planPath = resolvePlanValidationPath(slug, root);
+  } catch (error) {
+    // A missing or unsafe plan reference renders an explicit "no plan" summary
+    // rather than failing the PR check — the mirror must never break CI.
+    const reason = error instanceof Error ? error.message : String(error);
+    return notFoundReport(slug, now, reason);
+  }
+
+  const parsed = parsePlanFile(planPath);
+  const acceptanceCriteria = parseChecklist(parsed.sections.get('Acceptance criteria') ?? '');
+  const validation = validatePlanFile(planPath);
+  const issues = validation.issues.map((issue) => ({
+    severity: issue.severity,
+    rule: issue.rule,
+    line: issue.line,
+    message: issue.message,
+  }));
+
+  const evidencePath = findEvidenceNote(root, parsed.slug);
+  let evidence = emptyEvidence();
+  if (evidencePath && existsSync(evidencePath)) {
+    const evidenceText = readFileSync(evidencePath, 'utf8');
+    evidence = {
+      present: true,
+      path: relative(root, evidencePath),
+      approval_status: evidenceApprovalStatus(evidenceText),
+      is_skeleton: /(^|[\s>*-])TODO:\s*\S/m.test(evidenceText),
+    };
+  }
+
+  return {
+    schemaVersion: PR_SUMMARY_SCHEMA,
+    computed_at: now.toISOString(),
+    slug: parsed.slug,
+    plan_found: true,
+    plan_path: relative(root, planPath),
+    stage: stageFromPath(planPath),
+    goal: parsed.goal || null,
+    acceptance_criteria: acceptanceCriteria,
+    evidence,
+    open_questions: parsed.openQuestions,
+    validation: {
+      ok: !issues.some((issue) => issue.severity === 'error'),
+      error_count: issues.filter((issue) => issue.severity === 'error').length,
+      warning_count: issues.filter((issue) => issue.severity === 'warning').length,
+      issues,
+    },
+    notes: [],
+  };
+}
+
+const MIRROR_FOOTER =
+  '_Read-only mirror of `.osc/` artifacts, generated by `osc pr-summary`. ' +
+  'Not canonical state — the plan and evidence files in the repository are the source of truth._';
+
+// The rendered markdown is deterministic for a given repository state (no
+// wall-clock timestamp), so re-running against an unchanged plan produces an
+// identical comment body and the mirror updates one comment in place.
+export function renderPrSummaryMarkdown(report: PrSummaryReport): string {
+  const lines: string[] = [PR_SUMMARY_MARKER, `## Open Scaffold summary — \`${report.slug}\``, ''];
+
+  if (!report.plan_found) {
+    lines.push(
+      `No plan found for \`${report.slug}\` in \`.osc/plans/{active,backlog,blocked,done}\`. ` +
+        'This pull request has no Open Scaffold plan to summarize.',
+      '',
+      '---',
+      MIRROR_FOOTER,
+      '',
+    );
+    return lines.join('\n');
+  }
+
+  lines.push(`**Stage:** ${report.stage ?? 'unknown'}`, '');
+  lines.push('**Goal:** ' + (report.goal ?? '_No goal recorded._'), '');
+
+  const total = report.acceptance_criteria.length;
+  const checked = report.acceptance_criteria.filter((item) => item.checked).length;
+  lines.push(`### Acceptance criteria (${checked}/${total} checked)`, '');
+  if (total === 0) {
+    lines.push('_No acceptance-criteria checklist items found._', '');
+  } else {
+    for (const item of report.acceptance_criteria) {
+      lines.push(`- [${item.checked ? 'x' : ' '}] ${item.text}`);
+    }
+    lines.push('');
+  }
+
+  lines.push('### Evidence note', '');
+  if (report.evidence.present) {
+    lines.push(`- Present: yes — \`${report.evidence.path}\``);
+    lines.push(`- Approval: ${report.evidence.approval_status}`);
+    if (report.evidence.is_skeleton) {
+      lines.push('- Status: skeleton (contains TODO placeholders — not yet filled in)');
+    }
+  } else {
+    lines.push('- Present: no evidence note found yet.');
+  }
+  lines.push('');
+
+  lines.push('### Plan validation', '');
+  if (report.validation.ok && report.validation.warning_count === 0) {
+    lines.push('- Passed: no issues from `osc plan validate`.');
+  } else {
+    lines.push(`- ${report.validation.error_count} error(s), ${report.validation.warning_count} warning(s) from \`osc plan validate\`.`);
+    for (const issue of report.validation.issues) {
+      lines.push(`  - ${issue.severity} (${issue.rule}, line ${issue.line}): ${issue.message}`);
+    }
+  }
+  lines.push('');
+
+  lines.push('### Open questions', '');
+  if (report.open_questions.length === 0) {
+    lines.push('_None recorded._');
+  } else {
+    for (const question of report.open_questions) {
+      lines.push(`- ${question}`);
+    }
+  }
+  lines.push('', '---', MIRROR_FOOTER, '');
+
+  return lines.join('\n');
+}
+
+export interface CommentLike {
+  id: number | string;
+  body: string;
+}
+
+// Pure selector that makes the mirror idempotent: the optional workflow upserts
+// by finding the one existing comment that carries PR_SUMMARY_MARKER. If found,
+// it updates that comment; otherwise it creates one. Either way there is never
+// more than one summary comment on a PR.
+export function selectSummaryComment<T extends CommentLike>(comments: T[], marker: string = PR_SUMMARY_MARKER): T | null {
+  for (const comment of comments) {
+    if (typeof comment.body === 'string' && comment.body.includes(marker)) return comment;
+  }
+  return null;
+}

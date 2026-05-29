@@ -95,7 +95,7 @@ function findPlanPath(root: string, slug: string): string | null {
   return null;
 }
 
-function findEvidenceNote(root: string, slug: string): string | null {
+export function findEvidenceNote(root: string, slug: string): string | null {
   const releasesDir = join(root, '.osc', 'releases');
   if (!existsSync(releasesDir)) return null;
   const pattern = new RegExp(`^\\d{4}-\\d{2}-\\d{2}-${escapeRegex(slug)}\\.md$`);
