@@ -10,6 +10,31 @@ function loadGolden() {
   return JSON.parse(readFileSync(join(fixtureRoot, 'expected-resume-summary.json'), 'utf8'));
 }
 
+function renderUnchangedAmendment(number: number) {
+  return `# Amendment ${number}: demo-add-greeting
+
+## Parent
+
+demo-add-greeting
+
+## Date
+
+2026-05-15
+
+## Learning
+
+Additional internal implementation note ${number}; no observable behavior changes.
+
+## New direction
+
+Keep the existing public API and continue with the documented active plan.
+
+## Impact on acceptance criteria
+
+None — all acceptance criteria remain unchanged.
+`;
+}
+
 describe('resume-snapshot', () => {
   it('matches the committed golden file', () => {
     const summary = buildResumeSummary(fixtureRoot);
@@ -47,6 +72,24 @@ describe('resume-snapshot', () => {
     const { work_done } = buildResumeSummary(fixtureRoot);
     expect(work_done.done_slices).toContain('scaffold-init');
     expect(work_done.evidence).toContain('.osc/releases/2026-05-10-scaffold-init.md');
+  });
+
+  it('sorts amendment ids by numeric amendment order', () => {
+    const tempRoot = mkdtempSync(join(tmpdir(), 'osc-resume-amendment-order-'));
+    try {
+      cpSync(fixtureRoot, tempRoot, { recursive: true });
+      const activeDir = join(tempRoot, '.osc', 'plans', 'active');
+      writeFileSync(join(activeDir, 'demo-add-greeting-amendment-2.md'), renderUnchangedAmendment(2), 'utf8');
+      writeFileSync(join(activeDir, 'demo-add-greeting-amendment-10.md'), renderUnchangedAmendment(10), 'utf8');
+
+      expect(buildResumeSummary(tempRoot).amendments.ids).toEqual([
+        'demo-add-greeting-amendment-1',
+        'demo-add-greeting-amendment-2',
+        'demo-add-greeting-amendment-10',
+      ]);
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it('fails loudly when amendment impact text changes or negates unchanged criteria', () => {

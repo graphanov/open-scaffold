@@ -62,6 +62,11 @@ function assertAmendmentsDoNotChangeAcceptanceCriteria(planDir: string, amendmen
   }
 }
 
+function getAmendmentNumber(file: string, amendmentRe: RegExp): number {
+  const match = file.match(amendmentRe);
+  return Number.parseInt(match?.[1] ?? '0', 10);
+}
+
 export function buildResumeSummary(root: string): ResumeSummary {
   const scaffold = inspectScaffold(root);
 
@@ -80,7 +85,7 @@ export function buildResumeSummary(root: string): ResumeSummary {
   const amendmentRe = new RegExp(`^${escapeRegex(planSummary.slug)}-amendment-(\\d+)\\.md$`);
   const amendmentFiles = readdirSync(planDir)
     .filter((f) => amendmentRe.test(f))
-    .sort();
+    .sort((a, b) => getAmendmentNumber(a, amendmentRe) - getAmendmentNumber(b, amendmentRe));
   assertAmendmentsDoNotChangeAcceptanceCriteria(planDir, amendmentFiles);
   const amendmentIds = amendmentFiles.map((f) => f.slice(0, -3));
 
