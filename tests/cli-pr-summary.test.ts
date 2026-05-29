@@ -327,4 +327,9 @@ describe('pr-summary mirror workflow', () => {
   it('checks out without the forbidden actions/checkout helper', () => {
     expect(workflow).not.toContain('actions/checkout');
   });
+
+  it('keeps the PR-comment upsert non-blocking for forked and Dependabot PRs', () => {
+    expect(workflow).toContain('github.event.pull_request.head.repo.full_name == github.repository');
+    expect(workflow).toContain("github.actor != 'dependabot[bot]'");
+  });
 });

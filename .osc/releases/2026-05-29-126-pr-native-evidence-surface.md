@@ -23,9 +23,9 @@ Decision: not substantially covered — proceed with new code as a read-only ren
 
 ## Verification
 
-- `npx vitest run tests/cli-pr-summary.test.ts` — passed, 22 tests (renderer output, checkbox-state count, evidence/skeleton detection, validator reuse, graceful missing/unsafe-slug paths, idempotent upsert selector, CLI exit codes, and workflow marker-drift / opt-in / no-`actions/checkout` guards).
+- `npx vitest run tests/cli-pr-summary.test.ts` — passed, 23 tests (renderer output, checkbox-state count, evidence/skeleton detection, validator reuse, graceful missing/unsafe-slug paths, idempotent upsert selector, CLI exit codes, workflow marker-drift / opt-in / no-`actions/checkout` guards, and fork/Dependabot comment-upsert guard).
 - `npm run build` — passed (core and runtime-omx TypeScript builds).
-- `npm test -- --run` (full suite) — passed, 50 files / 480 tests after the combined plan-126 and plan-127 tree plus the post-Codex raw-data preference regression.
+- `npm test -- --run` (full suite) — passed, 50 files / 481 tests after the combined plan-126 and plan-127 tree plus the post-Codex raw-data preference and workflow-permission regressions.
 - `git diff --check` — clean, no whitespace errors.
 - Smoke: `osc pr-summary 125-methodology-evidence-harness --format markdown` — rendered stage `done`, goal, `Acceptance criteria (6/6 checked)` matching the plan file, evidence note present + `approved`, plan validation passed, and open questions; first line carried the `<!-- osc-pr-summary -->` upsert marker.
 - Smoke: `osc pr-summary 999-missing` and `osc pr-summary ../outside` — both exited `0` with an explicit "no plan found" body rather than failing the check.
@@ -37,7 +37,7 @@ The PR-native evidence surface slice is implemented and the plan is closed; all 
 1. Pre-work coverage check recorded (above) with a proceed decision.
 2. `osc pr-summary <slug>` renders goal, acceptance-criteria checklist with checked/unchecked state, evidence-note presence, and open questions.
 3. The renderer reuses the existing `parsePlanFile`/`parseChecklist` plan readers, `findEvidenceNote` + `evidenceApprovalStatus`, and `validatePlanFile` rather than re-parsing plans independently.
-4. The optional `pr-summary.yml` workflow is opt-in (gated on `vars.OSC_PR_SUMMARY == 'true'`), reads repository contents with `contents: read`, and upserts exactly one PR comment by finding the marker — re-runs update in place.
+4. The optional `pr-summary.yml` workflow is opt-in (gated on `vars.OSC_PR_SUMMARY == 'true'`), reads repository contents with `contents: read`, upserts exactly one PR comment by finding the marker on same-repo PRs, and skips the comment-write step for forked or Dependabot PRs so the mirror stays non-blocking — re-runs update in place where comment permissions are available.
 5. Tests prove idempotent comment content (single comment, no duplication) and a graceful "no/invalid plan" path.
 
 This note is not a merge, publication, GitHub Release, deployment, or npm publish approval; those remain owner gates.
