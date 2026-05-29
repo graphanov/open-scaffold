@@ -2,9 +2,9 @@
 
 ## Summary
 
-Prepares `open-scaffold@0.20.2` as the package/public-surface sync for the methodology evidence and reviewer evidence commands now present on `main`.
+Publishes `open-scaffold@0.20.2` as the package/public-surface sync for the methodology evidence and reviewer evidence commands now present on `main`.
 
-This candidate makes three local commands available through fresh installs after owner-approved publishing:
+This release makes three local commands available through fresh installs:
 
 - `osc study [--json] [--since <date>] [--out <path>]` — source-labeled methodology evidence/self-study read model.
 - `osc pr-summary <plan-slug> [--format <markdown|json>]` — reviewer-ready plan/evidence summary mirror.
@@ -24,13 +24,13 @@ The A/B command remains an instrument validator only: it does not run an experim
 - Source evidence note: `.osc/releases/2026-05-29-127-ab-comparison-pilot-harness.md`.
 - Source Pull Request: https://github.com/graphanov/open-scaffold/pull/146.
 - Source merge commit: `d0895744d1010d7ce54ae1c8d8d0c38b73b40e48`.
-- Release-sync plan: `.osc/plans/active/128-methodology-pr-summary-ab-package-sync.md`.
+- Release-sync plan: `.osc/plans/done/128-methodology-pr-summary-ab-package-sync.md`.
 - Release-sync branch: `release/package-sync-0202`.
 - Release-sync Pull Request: https://github.com/graphanov/open-scaffold/pull/147.
-- Release-sync merge commit: pending owner gate.
-- Trusted publishing workflow: pending owner gate.
-- npm package candidate: `open-scaffold@0.20.2` with intended dist-tag `latest`.
-- GitHub Release candidate: `v0.20.2`.
+- Release-sync merge commit: `542db9bddb6ee4c51f3e6ab20d119ae2da306a5b`.
+- Trusted publishing workflow: https://github.com/graphanov/open-scaffold/actions/runs/26627017065.
+- npm package: `open-scaffold@0.20.2` with dist-tag `latest`.
+- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v0.20.2.
 - Run ID / run packet: N/A for release-sync.
 
 ## Verification
@@ -49,26 +49,23 @@ Candidate gates completed before PR-ready:
 - [x] `npm pack --dry-run --json` — PASS for `open-scaffold@0.20.2` (177 files); includes `dist/study.js`, `dist/study.d.ts`, `dist/pr-summary.js`, `dist/pr-summary.d.ts`, `dist/ab.js`, `dist/ab.d.ts`, `docs/AB_COMPARISON_PILOT.md`, and the A/B example packet files.
 - [x] `npm publish --dry-run --tag latest` — PASS for `open-scaffold@0.20.2` with `latest` tag in dry-run mode.
 - [x] `git diff --check` — PASS.
-- [ ] PR CI and latest-head Codex review — pending.
+- [x] PR CI and latest-head Codex review — PASS; Codex reported no major issues on PR #147 head `73cccea` before merge.
 
 Post-merge/publication gates after owner approval:
 
-- [ ] Sync clean `main` after merge.
-- [ ] Trusted publishing workflow publishes `open-scaffold@0.20.2` with workflow input `npm-tag=latest`.
-- [ ] `npm view open-scaffold version dist-tags --json --prefer-online` reports `0.20.2` and `latest: 0.20.2`.
-- [ ] Fresh isolated-cache `npx --yes open-scaffold@latest --help` exposes `osc study`, `osc pr-summary`, and `osc ab check`.
-- [ ] Fresh isolated-cache command-specific smoke tests prove the published package surfaces print expected help/usage.
-- [ ] GitHub Release `v0.20.2` is created/marked Latest.
-- [ ] Release-sync plan can be closed to `done/` with final public proof.
+- [x] Sync clean `main` after merge — PASS at `542db9bddb6ee4c51f3e6ab20d119ae2da306a5b`.
+- [x] Trusted publishing workflow publishes `open-scaffold@0.20.2` with workflow input `npm-tag=latest` — PASS: run `26627017065` succeeded.
+- [x] `npm view open-scaffold version dist-tags --json --prefer-online` reports `0.20.2` and `latest: 0.20.2`.
+- [x] Fresh isolated-cache `npx --yes open-scaffold@latest --help` exposes `osc study`, `osc pr-summary`, and `osc ab check`.
+- [x] Fresh isolated-cache command-specific smoke tests prove the published package surfaces print expected help/usage/error text.
+- [x] GitHub Release `v0.20.2` is created/marked Latest.
+- [x] Release-sync plan is closed to `done/` with final public proof.
 
 ## Outcome
 
-Candidate PR open at https://github.com/graphanov/open-scaffold/pull/147. No npm publish, GitHub Release, merge, or final closeout has been performed.
+PR #147 merged, trusted publishing succeeded, npm `open-scaffold@latest` now resolves to `0.20.2`, fresh isolated-cache `npx` exposes the expected public commands, GitHub Release `v0.20.2` is Latest, and the release-sync plan is closed.
 
 ## Follow-up
 
-- Owner gate: merge package-sync PR after CI/Codex are clean.
-- Owner gate after merge: publish with trusted publishing and `npm-tag=latest`.
-- Owner gate after publish: create or update GitHub Release `v0.20.2` and mark it Latest.
 - Optional deferred decision: whether to run the actual A/B pilot using the package-visible packet after public release.
 - Optional deferred decision: whether to deprecate historical `1.0.x` npm versions with a gentle cadence-correction message, or leave them as published history.
