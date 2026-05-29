@@ -25,7 +25,7 @@ Decision: not substantially covered — proceed with new code as a read-only ren
 
 - `npx vitest run tests/cli-pr-summary.test.ts` — passed, 22 tests (renderer output, checkbox-state count, evidence/skeleton detection, validator reuse, graceful missing/unsafe-slug paths, idempotent upsert selector, CLI exit codes, and workflow marker-drift / opt-in / no-`actions/checkout` guards).
 - `npm run build` — passed (core and runtime-omx TypeScript builds).
-- `npm test -- --run` (full suite) — passed, 50 files / 479 tests after the combined plan-126 and plan-127 tree.
+- `npm test -- --run` (full suite) — passed, 50 files / 480 tests after the combined plan-126 and plan-127 tree plus the post-Codex raw-data preference regression.
 - `git diff --check` — clean, no whitespace errors.
 - Smoke: `osc pr-summary 125-methodology-evidence-harness --format markdown` — rendered stage `done`, goal, `Acceptance criteria (6/6 checked)` matching the plan file, evidence note present + `approved`, plan validation passed, and open questions; first line carried the `<!-- osc-pr-summary -->` upsert marker.
 - Smoke: `osc pr-summary 999-missing` and `osc pr-summary ../outside` — both exited `0` with an explicit "no plan found" body rather than failing the check.

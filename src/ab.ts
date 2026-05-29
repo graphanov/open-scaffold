@@ -115,7 +115,11 @@ function checkRawData(path: string, file: string, issues: AbCheckIssue[]): void 
 function findRawDataFile(dir: string): string | null {
   const csvFiles = readdirSync(dir).filter((name) => name.toLowerCase().endsWith('.csv'));
   if (csvFiles.length === 0) return null;
-  const preferred = ['raw-data-template.csv', 'raw-data.csv'];
+  // Prefer actual collected data over the shipped blank template. Teams may keep
+  // `raw-data-template.csv` next to a filled `raw-data.csv`; the directory check
+  // must not report success by validating the untouched template while ignoring
+  // malformed collected rows.
+  const preferred = ['raw-data.csv', 'raw-data-template.csv'];
   for (const name of preferred) {
     if (csvFiles.includes(name)) return join(dir, name);
   }

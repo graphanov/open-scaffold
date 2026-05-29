@@ -19,7 +19,7 @@ instrument only; running the experiment remains separate, owner-gated work.
 
 ## Verification
 
-- `npm test -- --run tests/ab.test.ts` — 14 passed (validator unit + CLI + honesty-guard tests).
+- `npm test -- --run tests/ab.test.ts` — 15 passed (validator unit + CLI + honesty-guard tests, including preference for filled `raw-data.csv` over the blank template when both are present).
 - `osc ab check docs/examples/ab-comparison` — exit 0, "A/B pilot packet is well-formed"; report states this is not evidence any experiment was run.
 - `osc ab check` on a raw-data file with the `source` column dropped — exit 1, "Raw-data file is missing required column: source."
 - `npm run build` — pass (build:core + build:runtime-omx, no tsc errors).

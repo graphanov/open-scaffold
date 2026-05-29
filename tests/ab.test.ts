@@ -73,6 +73,18 @@ describe('checkAbPacket', () => {
     expect(report.issues.some((issue) => /missing required column: source/i.test(issue.message))).toBe(true);
   });
 
+  it('prefers filled raw-data.csv over the shipped raw-data-template.csv when both exist', () => {
+    const dir = tempDir();
+    writePacket(dir, VALID_PREREG, VALID_CSV);
+    writeFileSync(join(dir, 'raw-data.csv'), 'task_id,arm,metric,value\nT01,A,resume_time_seconds,12\n');
+
+    const report = checkAbPacket(dir, dir);
+
+    expect(report.rawData).toBe('raw-data.csv');
+    expect(report.ok).toBe(false);
+    expect(report.issues.some((issue) => /missing required column: source/i.test(issue.message))).toBe(true);
+  });
+
   it('rejects a row whose arm is not A or B', () => {
     const dir = tempDir();
     writePacket(dir, VALID_PREREG, 'task_id,arm,metric,value,source,notes\nT01,C,resume_time_seconds,,unavailable,x\n');
