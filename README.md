@@ -17,6 +17,8 @@ Open Scaffold gives AI-assisted work a durable repo record.
 
 It keeps the goal, plan, handoff, evidence, approval trail, and lessons from repeated attempts in git-tracked files that a human, agent, runtime, or future session can inspect cold.
 
+Any agent or operator can **resume bounded work straight from the repo after total chat-context loss** — no re-explaining needed. Start at [`docs/START_HERE.md`](docs/START_HERE.md), try the committed mid-flight fixture at [`examples/resume-demo/`](examples/resume-demo/), or read the narrated path in [`docs/RESUME_WALKTHROUGH.md`](docs/RESUME_WALKTHROUGH.md).
+
 Use it when AI-assisted work needs **control**, **clarity**, **reviewability**, **handoff**, or **improvement over time**.
 
 It does not replace your agent, IDE, task tracker, CI, or compliance process. Those tools do the work or run the program. Open Scaffold records what was asked, what was handed off, what came back, what was checked, and what humans approved. For the boundary between structural evidence and process assurance, see [`docs/AUDITABILITY.md`](docs/AUDITABILITY.md).
@@ -300,7 +302,7 @@ Use cases the current contract supports today:
 - teams that want PRs to carry intent, evidence, and approval state;
 - consulting or audit-sensitive delivery where later readers need to reconstruct what happened.
 
-Publication truth lives outside git, and the two public surfaces move separately. Check `npm view open-scaffold version dist-tags --json` to see which package `npx open-scaffold@latest` installs. Check the GitHub Release marked **Latest** to see which release note GitHub highlights. The historical `v1.0.x` tags remain published history; the current forward-moving line is `v0.20.x` until the protocol and product surface earn a real 1.0 again. See [`docs/STABILITY.md`](docs/STABILITY.md), [`docs/CHANGELOG.md`](docs/CHANGELOG.md), and the landing page [`docs/index.html`](docs/index.html).
+Publication truth lives outside git, and the two public surfaces move separately. Check `npm view open-scaffold version dist-tags --json` to see which package `npx open-scaffold@latest` installs. Check the GitHub Release marked **Latest** to see which release note GitHub highlights. The historical `v1.0.5` / `v1.0.x` tags remain published history; the current forward-moving line is `v0.20.x` until the protocol and product surface earn a real 1.0 again. See [`docs/VERSION_TRUTH.md`](docs/VERSION_TRUTH.md), [`docs/STABILITY.md`](docs/STABILITY.md), [`docs/CHANGELOG.md`](docs/CHANGELOG.md), and the landing page [`docs/index.html`](docs/index.html).
 
 ---
 
