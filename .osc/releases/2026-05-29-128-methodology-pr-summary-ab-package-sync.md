@@ -42,7 +42,7 @@ Candidate gates completed before PR-ready:
 - [x] `npm run build` — PASS.
 - [x] `node dist/cli.js --help` — PASS: includes `osc study`, `osc pr-summary`, and `osc ab check`.
 - [x] `npm run osc -- plan validate .osc/plans/active/128-methodology-pr-summary-ab-package-sync.md` — PASS: `0 issues found`.
-- [x] `./verify.sh --strict` — PASS in the release-sync worktree: 9 pass / 0 fail / 1 worktree immutability warning.
+- [x] `./verify.sh --strict` — PASS in the release-sync worktree: 9 pass / 0 fail / 1 worktree immutability warning; PASS from a fresh clone of `release/package-sync-0202`: 10 pass / 0 fail / 0 warn.
 - [x] `node dist/cli.js pr-summary 126-pr-native-evidence-surface` — PASS: renders the PR summary marker, done stage, and 5/5 checked AC.
 - [x] `node dist/cli.js ab check docs/examples/ab-comparison` — PASS: packet well-formed, with explicit no-experiment/no-outcome claim wording.
 - [x] `npm test -- --run` — PASS: 50 files / 481 tests.
