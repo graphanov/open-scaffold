@@ -380,3 +380,5 @@ Translations for agent entry files: Chinese, Japanese, Korean, Spanish, Portugue
 ## Dogfooded
 
 Open Scaffold is built with Open Scaffold. This repo contains its own roadmap, plans, evidence notes, decisions, releases, and PR history so the method can be inspected instead of merely claimed.
+
+For proof of use **outside** this repo, see [`docs/examples/downstream-proof.md`](docs/examples/downstream-proof.md): [`tally`](https://github.com/graphanov/tally), a small standalone CLI where one real feature was planned, executed, verified, and closed as an Open Scaffold work record.
