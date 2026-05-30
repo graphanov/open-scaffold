@@ -34,6 +34,7 @@ const topLevelHelpCommands = [
   'osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]',
   'osc plan move <slug> --to <active|backlog|blocked>',
   'osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]',
+  'osc plan stats [--json]',
   'osc amend <plan-slug> [--message <text>]',
   'osc evidence new <slug>',
   'osc evidence collect <slug> [--ci] [--dry-run] [--verbose]',
@@ -106,6 +107,12 @@ const cases: HelpCase[] = [
     args: ['plan', 'move', '--help'],
     expected: 'Usage: osc plan move <slug> --to <active|backlog|blocked>',
     forbidden: 'Missing required option',
+  },
+  {
+    name: 'plan stats',
+    args: ['plan', 'stats', '--help'],
+    expected: 'Usage: osc plan stats [--json]',
+    forbidden: 'Unknown option',
   },
   {
     name: 'amend',

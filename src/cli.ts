@@ -26,6 +26,7 @@ import { addTaskComment, createTask, formatTaskDetails, formatTaskSummary, forma
 import { validateScaffold } from './validation.js';
 import { formatPlanValidationIssues, hasBlockingIssues, resolvePlanValidationPath, validatePlanFile } from './plan-validate.js';
 import { buildPlanGraph, normalizePlanReference, renderPlanGraphAscii, renderPlanGraphMermaid, type PlanGraphDirection, type PlanGraphFormat, type PlanGraphStageFilter } from './plan-graph.js';
+import { computePlanStats, formatPlanStats } from './plan-stats.js';
 import { askInteractiveAnswers, assertWizardReady, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
 import { buildWorkDryRunPreview, formatWorkDryRunPreview } from './work.js';
 import { buildTrace, formatTraceReport, TraceUsageError } from './trace.js';
@@ -51,6 +52,7 @@ Stable core protocol:
   osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
   osc plan move <slug> --to <active|backlog|blocked>
   osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]
+  osc plan stats [--json]
   osc amend <plan-slug> [--message <text>]
   osc evidence new <slug>
   osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
@@ -514,7 +516,8 @@ function printPlanUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   osc plan validate <slug-or-path> [--json] [--strict]
   osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
   osc plan move <slug> --to <active|backlog|blocked>
-  osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]`, stream);
+  osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]
+  osc plan stats [--json]`, stream);
 }
 
 function printPlanNewUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
@@ -531,6 +534,10 @@ function printPlanMoveUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
 
 function printPlanGraphUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage('Usage: osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]', stream);
+}
+
+function printPlanStatsUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc plan stats [--json]', stream);
 }
 
 function parsePlanGraphOptions(args: string[]): { format: PlanGraphFormat; stage?: PlanGraphStageFilter; direction: PlanGraphDirection; plan?: string } {
@@ -874,6 +881,33 @@ async function planCommand(args: string[]): Promise<void> {
       console.log(`From: ${result.fromStage}`);
       console.log(`To: ${result.toStage}`);
       console.log(`Moved files: ${result.movedFiles.join(', ')}`);
+      return;
+    } catch (error) {
+      exitForScaffoldHelperError(error);
+    }
+  }
+
+  if (subcommand === 'stats') {
+    if (isHelpArg(rest[0])) {
+      printPlanStatsUsage('stdout');
+      return;
+    }
+    let json = false;
+    for (const flag of rest) {
+      if (flag === '--json') json = true;
+      else {
+        console.error(`Unknown option for plan stats: ${flag}`);
+        printPlanStatsUsage();
+        process.exit(2);
+      }
+    }
+    try {
+      const stats = computePlanStats(process.cwd());
+      if (json) {
+        console.log(JSON.stringify(stats, null, 2));
+      } else {
+        console.log(formatPlanStats(stats));
+      }
       return;
     } catch (error) {
       exitForScaffoldHelperError(error);
