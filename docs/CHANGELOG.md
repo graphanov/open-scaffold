@@ -4,6 +4,22 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v0.20.4 — Fresh npx compare demo repair candidate
+
+Status: release candidate prepared in the repository. It is not published until the repair PR is merged, trusted npm publishing succeeds, fresh isolated-cache `npx` proves the zero-context command, and GitHub Release `v0.20.4` is created and marked Latest.
+
+Highlights:
+
+- Repairs the advertised first-read command so `npx open-scaffold@latest compare examples/attempt-compare/attempt-a examples/attempt-compare/attempt-b` can run from a fresh external directory after publication.
+- Keeps `osc compare` local and read-only: no runtime spawning, no model scoring, no frontier promotion, and no approval automation.
+- Adds extracted-package regression coverage proving the packaged demo resolves from outside the package directory.
+- Keeps plan `129-zero-context-resume-proof` active until merge, npm publication, fresh `npx`, GitHub Release Latest, and final closeout evidence are complete.
+
+Evidence:
+
+- Source plan: `.osc/plans/active/129-zero-context-resume-proof.md`
+- Candidate evidence note: `.osc/releases/2026-05-30-129-npx-compare-demo-repair.md`
+
 ## v0.20.3 — Canonical section parser package sync
 
 Status: published to npm as `open-scaffold@0.20.3`; GitHub Release `v0.20.3` is Latest after owner-preapproved trusted publishing and release follow-through.
