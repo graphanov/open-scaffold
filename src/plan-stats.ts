@@ -25,7 +25,10 @@ export interface PlanStats {
  * filesystem modification time — the least recently touched in-flight work.
  */
 export function computePlanStats(start = process.cwd()): PlanStats {
-  const root = findScaffoldRoot(start) ?? start;
+  const root = findScaffoldRoot(start);
+  if (!root) {
+    throw new Error(`No Open Scaffold root found from ${start}. Run this inside a repo with .osc/plans and .osc/releases.`);
+  }
   const state = inspectScaffold(root);
 
   const counts: PlanStageCounts = { active: 0, backlog: 0, blocked: 0, done: 0 };

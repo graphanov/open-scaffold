@@ -80,6 +80,16 @@ describe('osc plan stats logic', () => {
     expect(stats.oldestActive).toBeNull();
     expect(formatPlanStats(stats)).toContain('Oldest active plan: none (no active plans)');
   }, 20_000);
+
+  it('throws (rather than reporting an all-zero portfolio) when run outside an Open Scaffold root', () => {
+    // A bare temp dir with no .osc/plans is NOT a scaffold. Reporting total: 0
+    // here would be indistinguishable from a real empty scaffold and would give
+    // misleading data in a wrong-directory CI/scripting context, so the command
+    // must fail the same way other plan-scoped commands (plan graph/validate) do.
+    const notAScaffold = tempDir('osc-plan-stats-noroot-');
+
+    expect(() => computePlanStats(notAScaffold)).toThrow(/No Open Scaffold root found/);
+  }, 20_000);
 });
 
 describe('osc plan stats CLI', () => {
@@ -142,5 +152,14 @@ describe('osc plan stats CLI', () => {
     const result = spawnSync(tsx, [cli, 'plan', 'stats', '--bogus'], { cwd: target, encoding: 'utf8' });
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('Unknown option for plan stats');
+  }, 20_000);
+
+  it('fails with a non-zero exit and the scaffold-root error when run outside a scaffold', () => {
+    const notAScaffold = tempDir('osc-plan-stats-cli-noroot-');
+
+    const result = spawnSync(tsx, [cli, 'plan', 'stats'], { cwd: notAScaffold, encoding: 'utf8' });
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('No Open Scaffold root found');
+    expect(result.stdout).not.toContain('total:');
   }, 20_000);
 });
