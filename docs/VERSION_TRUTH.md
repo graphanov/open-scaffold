@@ -4,7 +4,7 @@ This page is the canonical reconciliation between the current package version an
 
 ## Current line: `v0.20.x` (pre-1.0 hardening)
 
-- **Current `package.json` version:** `0.20.3`
+- **Current `package.json` version:** `0.20.4` (release candidate in this repository until npm/GitHub Release follow-through proves publication)
 - **npm latest:** check `npm view open-scaffold version dist-tags --json` for live truth.
 - **GitHub Release latest:** check the GitHub Releases page for the release marked **Latest**.
 - **Maturity:** pre-1.0 hardening. The core work-record protocol is usable, but the public product surface, runtime boundary, and adoption story are still moving. See [`docs/STABILITY.md`](STABILITY.md) for the full stable-vs-experimental boundary.
@@ -25,7 +25,7 @@ The `v0.20.x` line defines a stable-enough core (the repo-native work-record loo
 
 | Surface | Value |
 |---|---|
-| `package.json` version | `0.20.3` |
+| `package.json` version | `0.20.4` candidate |
 | Current package line | `v0.20.x` (pre-1.0) |
 | Most recent historical tag | `v1.0.5` |
 | Historical package line | `v1.0.x` (over-eager launch; not current) |

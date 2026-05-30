@@ -80,6 +80,46 @@ describe('npm package payload', () => {
     }
   }, 20_000);
 
+  it('runs compare demo from an extracted npm tarball while invoked from a fresh external cwd', () => {
+    const packDir = mkdtempSync(join(tmpdir(), 'open-scaffold-pack-'));
+    const extractDir = mkdtempSync(join(tmpdir(), 'open-scaffold-extract-'));
+    const freshCwd = mkdtempSync(join(tmpdir(), 'open-scaffold-fresh-cwd-'));
+
+    try {
+      const output = execFileSync('npm', ['pack', '--json', '--pack-destination', packDir], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      const [pack] = JSON.parse(output) as PackResult[];
+      const tarball = resolve(packDir, pack.filename);
+
+      execFileSync('tar', ['-xzf', tarball, '-C', extractDir], {
+        cwd: repoRoot,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      const packageDir = join(extractDir, 'package');
+      const compareOutput = execFileSync('node', [
+        join(packageDir, 'dist/cli.js'),
+        'compare',
+        'examples/attempt-compare/attempt-a',
+        'examples/attempt-compare/attempt-b',
+      ], {
+        cwd: freshCwd,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      expect(compareOutput).toContain('# Attempt comparison: attempt-a → attempt-b');
+      expect(compareOutput).toContain('This command reads local files only. It does not spawn runtimes, promote a frontier, or approve work.');
+    } finally {
+      rmSync(packDir, { recursive: true, force: true });
+      rmSync(extractDir, { recursive: true, force: true });
+      rmSync(freshCwd, { recursive: true, force: true });
+    }
+  }, 40_000);
+
   it('runs init successfully from an extracted npm tarball', () => {
     const packDir = mkdtempSync(join(tmpdir(), 'open-scaffold-pack-'));
     const extractDir = mkdtempSync(join(tmpdir(), 'open-scaffold-extract-'));

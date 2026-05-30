@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { basename, resolve } from 'node:path';
+import { basename, isAbsolute, join, normalize, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const ATTEMPT_COMPARISON_SCHEMA = 'open-scaffold.attempt-comparison.v1';
 
@@ -102,6 +103,28 @@ function readOptionalFile(dir: string, name: AttemptFileName, readContent = true
   return { present: true, bytes: stat.size, content };
 }
 
+const packageRoot = fileURLToPath(new URL('..', import.meta.url));
+const packagedCompareExamplePrefix = 'examples/attempt-compare/';
+
+function normalizeRelativePath(pathArg: string): string {
+  return normalize(pathArg).split(sep).join('/').replace(/^\.\/+/, '');
+}
+
+function resolveAttemptDirectory(pathArg: string): string {
+  const callerRelative = resolve(pathArg);
+  if (existsSync(callerRelative)) return callerRelative;
+  if (isAbsolute(pathArg)) return callerRelative;
+
+  const normalized = normalizeRelativePath(pathArg);
+  if (normalized === '..' || normalized.startsWith('../')) return callerRelative;
+  if (normalized === 'examples/attempt-compare' || normalized.startsWith(packagedCompareExamplePrefix)) {
+    const packagedPath = join(packageRoot, ...normalized.split('/'));
+    if (existsSync(packagedPath)) return packagedPath;
+  }
+
+  return callerRelative;
+}
+
 function normalizeChangedFile(value: string): string | null {
   const withoutTimestamp = value.split('\t', 1)[0];
   const trimmed = withoutTimestamp.trim();
@@ -167,7 +190,7 @@ function parseAcStatus(content: string): { score: number | null; scoreLabel: str
 }
 
 function loadBareAttempt(pathArg: string, label: 'attempt-a' | 'attempt-b'): BareAttemptSummary {
-  const absolute = resolve(pathArg);
+  const absolute = resolveAttemptDirectory(pathArg);
   if (!existsSync(absolute)) throw new Error(`${label}: attempt folder does not exist: ${pathArg}`);
   if (!statSync(absolute).isDirectory()) throw new Error(`${label}: attempt path must be a directory: ${pathArg}`);
 
