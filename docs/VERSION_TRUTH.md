@@ -4,9 +4,9 @@ This page is the canonical reconciliation between the current package version an
 
 ## Current line: `v0.20.x` (pre-1.0 hardening)
 
-- **Current `package.json` version:** `0.20.4` (release candidate in this repository until npm/GitHub Release follow-through proves publication)
-- **npm latest:** check `npm view open-scaffold version dist-tags --json` for live truth.
-- **GitHub Release latest:** check the GitHub Releases page for the release marked **Latest**.
+- **Current `package.json` version:** `0.20.4`
+- **npm latest:** `0.20.4` with dist-tag `latest` after trusted publishing run `26689646203`; run `npm view open-scaffold version dist-tags --json` for live confirmation.
+- **GitHub Release latest:** `v0.20.4` is marked **Latest** after the fresh npx compare-demo repair release.
 - **Maturity:** pre-1.0 hardening. The core work-record protocol is usable, but the public product surface, runtime boundary, and adoption story are still moving. See [`docs/STABILITY.md`](STABILITY.md) for the full stable-vs-experimental boundary.
 
 Do not treat the repository version alone as proof of npm publication or GitHub Release movement. Verify the registry and release surfaces separately.
@@ -25,7 +25,7 @@ The `v0.20.x` line defines a stable-enough core (the repo-native work-record loo
 
 | Surface | Value |
 |---|---|
-| `package.json` version | `0.20.4` candidate |
+| `package.json` version | `0.20.4` |
 | Current package line | `v0.20.x` (pre-1.0) |
 | Most recent historical tag | `v1.0.5` |
 | Historical package line | `v1.0.x` (over-eager launch; not current) |

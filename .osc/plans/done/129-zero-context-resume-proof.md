@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 
 **Approval state:** approved for execution by owner. AC-7 interpretation approved: feature the zero-context-resume narrative prominently in the README first screen, immediately after the locked work-record promise paragraph, without displacing existing positioning tokens. Consensus-approved by `/ralplan --consensus` (Planner → Architect → Critic, 2 iterations: Architect **SOUND**, Critic **APPROVE**). No commit, push, publish, release, merge, or PR without a separate owner gate.
