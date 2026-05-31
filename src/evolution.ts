@@ -1172,10 +1172,14 @@ export function analyzeEvolutionLoop(loopDir: string, options: EvolutionAnalyzeO
     const previous = previousMap.get(id);
     const frontierSnapshot = frontierMap.get(id);
     const metadataSources = [current, previous, frontierSnapshot].filter((snapshot): snapshot is EvolutionAnalysisCriterionSnapshot => Boolean(snapshot));
-    const impossible = metadataSources.some((snapshot) => snapshot.impossible);
-    const reasons = uniqueRefs(metadataSources.flatMap((snapshot) => snapshot.reasons)).sort();
-    const evidence = uniqueRefs(metadataSources.flatMap((snapshot) => snapshot.evidence));
-    const sensitivityOverride = metadataSources.map((snapshot) => snapshot.sensitivityOverride).find((value): value is EvolutionCriterionSensitivity => value !== null) ?? null;
+    const currentMetadataSources = current ? [current] : metadataSources;
+    const impossible = current?.impossible ?? false;
+    const reasons = uniqueRefs(currentMetadataSources.flatMap((snapshot) => snapshot.reasons)).sort();
+    const evidence = uniqueRefs(currentMetadataSources.flatMap((snapshot) => snapshot.evidence));
+    let sensitivityOverride = current?.sensitivityOverride ?? null;
+    if (!current && sensitivityOverride === null) {
+      sensitivityOverride = metadataSources.map((snapshot) => snapshot.sensitivityOverride).find((value): value is EvolutionCriterionSensitivity => value !== null) ?? null;
+    }
     const observed = inferObservedSensitivity(id, attempts, criteriaByAttempt);
     const sensitivity = sensitivityOverride ?? (impossible ? 'none' : observed ?? 'unknown');
     return {

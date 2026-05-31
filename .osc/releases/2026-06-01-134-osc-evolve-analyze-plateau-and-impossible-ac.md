@@ -14,9 +14,9 @@ Added `osc evolve analyze`, a read-only loop-analysis command for existing evolu
 ## Verification
 
 - RED focused tests first: `npm test -- --run tests/evolution.test.ts tests/cli-evolution.test.ts` failed as expected before implementation because `analyzeEvolutionLoop` / `osc evolve analyze` did not exist.
-- `npm test -- --run tests/evolution.test.ts tests/cli-evolution.test.ts` — PASS (35 tests).
+- `npm test -- --run tests/evolution.test.ts tests/cli-evolution.test.ts` — PASS (36 tests).
 - `npm test -- --run tests/evolution.test.ts tests/cli-evolution.test.ts tests/cli-lifecycle-help.test.ts` — PASS (45 tests).
-- `npm test` — PASS (54 files / 544 tests).
+- `npm test` — PASS (54 files / 545 tests).
 - `npm run build` — PASS (core and runtime-omx TypeScript builds).
 - `git diff --check` — PASS.
 - `./verify.sh --strict` — PASS (10 pass / 0 fail / 0 warn).

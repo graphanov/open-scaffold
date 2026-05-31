@@ -213,6 +213,71 @@ function writePlateauLoop() {
   return { root, outDir };
 }
 
+function writeStaleBlockerEvaluation(root: string, runId: string, hasBlocker: boolean) {
+  const evalPath = join(root, `docs/evidence/${runId}-stale-blocker-evaluation.json`);
+  const ac28: Record<string, unknown> = {
+    id: 'AC28',
+    text: 'Renderer evidence is evaluated against the current scorer contract.',
+    status: 'fail',
+    evaluator: { kind: 'automated-check', name: 'synthetic-scorer', ref: 'docs/evidence/proof.md' },
+    evidence: [{ kind: 'path', ref: 'docs/evidence/proof.md', summary: 'Current scorer still reports a reachable failure.' }],
+    rationale: 'Current attempt still fails, but current scorer metadata now treats the criterion as reachable.',
+  };
+  if (hasBlocker) {
+    ac28.analysis = {
+      score_sensitivity: 'none',
+      impossible: true,
+      reason: 'probe_only',
+      source: 'docs/evidence/scorer.md#old-AC28',
+    };
+    ac28.rationale = 'Old scorer metadata marked this criterion probe-only.';
+  }
+  writeFileSync(evalPath, JSON.stringify({
+    schema: 'open-scaffold.evaluation.v1',
+    evaluation_id: `eval-${runId}`,
+    subject: { source: 'run', plan: '.osc/plans/active/087-demo.md', plan_slug: '087-demo', task_id: 'task-123', run_id: runId, run_packet: `.osc/runs/${runId}/run.json` },
+    acceptance_criteria: [
+      {
+        id: 'AC1',
+        text: 'Loop state is created.',
+        status: 'pass',
+        evaluator: { kind: 'human', name: 'reviewer', ref: 'docs/evidence/proof.md' },
+        evidence: [{ kind: 'path', ref: 'docs/evidence/proof.md', summary: 'Synthetic evidence.' }],
+        rationale: 'Loop state exists.',
+      },
+      ac28,
+    ],
+    decision: { status: 'rejected', approver: 'human', rationale: 'Current scorer still reports a reachable failure.' },
+    improvement: { route: 'retry_run', target: null, carried_forward: ['AC28 still needs implementation work.'], do_not_assume: ['No raw benchmark win.'] },
+  }, null, 2));
+  return evalPath;
+}
+
+function writeStaleBlockerLoop() {
+  const root = tempRepo();
+  const planPath = writePlan(root);
+  const outDir = join(root, '.osc/evolution/stale-blocker-loop');
+  writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-31T10:00:00.000Z'), strategy: 'greedy' });
+  const attempts = [
+    { runId: 'attempt-a', blocker: true, decision: 'promote' as const },
+    { runId: 'attempt-b', blocker: false, decision: 'retry' as const },
+    { runId: 'attempt-c', blocker: false, decision: 'retry' as const },
+  ];
+  for (const [index, attempt] of attempts.entries()) {
+    const runPath = writeRunPacket(root, attempt.runId);
+    const evalPath = writeStaleBlockerEvaluation(root, attempt.runId, attempt.blocker);
+    recordEvolutionAttempt(outDir, {
+      runPath,
+      evaluationPath: evalPath,
+      decision: attempt.decision,
+      score: 0.7,
+      rationale: index === 0 ? 'Initial frontier with old scorer metadata.' : 'Retry plateaued after scorer metadata changed.',
+      now: new Date(`2026-05-31T10:${String(10 + index).padStart(2, '0')}:00.000Z`),
+    }, root);
+  }
+  return { root, outDir };
+}
+
 function writeOrdinaryFailureEvaluation(root: string, runId: string, privateRefs = false) {
   const evalPath = join(root, `docs/evidence/${runId}-ordinary-evaluation.json`);
   writeFileSync(evalPath, JSON.stringify({
@@ -584,6 +649,23 @@ describe('evolution analysis', () => {
     expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe(before.attempts);
     expect(readFileSync(join(outDir, 'frontier.json'), 'utf8')).toBe(before.frontier);
     expect(readFileSync(join(root, 'docs/evidence/attempt-d-evaluation.json'), 'utf8')).toBe(before.evaluation);
+  });
+
+  it('uses current-attempt blocker metadata for recommendation instead of stale frontier metadata', () => {
+    const { outDir, root } = writeStaleBlockerLoop();
+
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+    const ac28 = analysis.criteria.find((criterion) => criterion.id === 'AC28');
+
+    expect(analysis.plateau.status).toBe('plateau');
+    expect(ac28).toMatchObject({
+      currentStatus: 'fail',
+      frontierStatus: 'fail',
+      sensitivity: 'unknown',
+      impossible: false,
+    });
+    expect(ac28?.reasons).not.toContain('probe_only');
+    expect(analysis.recommendation.action).toBe('inspect_scorer');
   });
 
   it('does not classify ordinary reachable failure reasons as impossible redesign-only blockers', () => {
