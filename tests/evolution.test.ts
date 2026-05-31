@@ -324,7 +324,7 @@ function writeOrdinaryFailureEvaluation(root: string, runId: string, privateRefs
         status: 'fail',
         source: privateRefs ? 'docs/../../.osc-dev/notes.md' : undefined,
         evaluator: { kind: 'human', name: 'reviewer', ref: privateRefs ? '/private/scorer.md' : 'docs/evidence/proof.md' },
-        evidence: [{ kind: 'path', ref: privateRefs ? '.osc/research/private-scorer.md' : 'docs/evidence/proof.md', summary: 'Reachable work remains incomplete.' }],
+        evidence: [{ kind: 'path', ref: privateRefs ? '.osc/research/private-scorer.md' : 'docs/evidence/skipped-rows-report.md', summary: 'Reachable work remains incomplete.' }],
         rationale: 'Missing tests for a reachable behavior; another implementation or scorer inspection can still help.',
         analysis: {
           reason: 'missing_tests',

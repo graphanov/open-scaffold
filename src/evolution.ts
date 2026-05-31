@@ -956,7 +956,7 @@ function metadataForCriterion(criterion: Record<string, unknown>): { impossible:
     asString(analysis.notes),
     ...asStringArray(criterion.gaps),
     ...asStringArray(analysis.gaps),
-    ...evidence.flatMap((item) => [asString(item.summary), asString(item.ref)]),
+    ...evidence.map((item) => asString(item.summary)),
   ].filter((value): value is string => Boolean(value));
   addReasonFromText(textParts.join('\n'), reasons);
 
