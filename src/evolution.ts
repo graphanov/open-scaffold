@@ -900,10 +900,12 @@ function normalizeSensitivity(value: string | null): EvolutionCriterionSensitivi
 const BLOCKING_IMPOSSIBLE_REASONS = new Set(['probe_only', 'hardcoded_non_pass', 'skipped', 'stale', 'impossible', 'artifact_type_mismatch']);
 
 function isAnalysisRefSafe(ref: string): boolean {
-  if (/^file:/i.test(ref)) return false;
-  if (/^https?:\/\//i.test(ref)) return true;
-  const normalized = toPosix(ref).replace(/^\.\//, '');
-  if (isAbsolute(ref) || win32.isAbsolute(ref) || normalized.startsWith('/') || normalized.startsWith('~')) return false;
+  const clean = ref.trim();
+  if (/^file:/i.test(clean)) return false;
+  if (/^https?:\/\//i.test(clean)) return true;
+  const normalized = toPosix(clean).replace(/^\.\//, '');
+  if (isAbsolute(clean) || win32.isAbsolute(clean) || normalized.startsWith('/') || normalized.startsWith('~')) return false;
+  if (normalized.split('/').some((segment) => segment === '..')) return false;
   if (isPrivatePath(normalized)) return false;
   return true;
 }

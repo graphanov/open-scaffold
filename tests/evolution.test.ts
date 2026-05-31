@@ -322,10 +322,15 @@ function writeOrdinaryFailureEvaluation(root: string, runId: string, privateRefs
         id: 'AC2',
         text: 'Skipped rows are listed in the report while tests cover the remaining reachable behavior.',
         status: 'fail',
+        source: privateRefs ? 'docs/../../.osc-dev/notes.md' : undefined,
         evaluator: { kind: 'human', name: 'reviewer', ref: privateRefs ? '/private/scorer.md' : 'docs/evidence/proof.md' },
         evidence: [{ kind: 'path', ref: privateRefs ? '.osc/research/private-scorer.md' : 'docs/evidence/proof.md', summary: 'Reachable work remains incomplete.' }],
         rationale: 'Missing tests for a reachable behavior; another implementation or scorer inspection can still help.',
-        analysis: { reason: 'missing_tests', source: privateRefs ? 'file:///private/scorer.md' : 'docs/evidence/proof.md' },
+        analysis: {
+          reason: 'missing_tests',
+          source: privateRefs ? 'file:///private/scorer.md' : 'docs/evidence/proof.md',
+          evidence_source: privateRefs ? '../raw-scorer.log' : undefined,
+        },
       },
     ],
     decision: { status: 'rejected', approver: 'human', rationale: 'Reachable behavior remains incomplete.' },
@@ -744,9 +749,13 @@ describe('evolution analysis', () => {
     expect(terminal).not.toContain('/private/scorer.md');
     expect(terminal).not.toContain('file:///private/scorer.md');
     expect(terminal).not.toContain('.osc/research/private-scorer.md');
+    expect(terminal).not.toContain('../raw-scorer.log');
+    expect(terminal).not.toContain('docs/../../.osc-dev/notes.md');
     expect(markdown).not.toContain('/private/scorer.md');
     expect(markdown).not.toContain('file:///private/scorer.md');
     expect(markdown).not.toContain('.osc/research/private-scorer.md');
+    expect(markdown).not.toContain('../raw-scorer.log');
+    expect(markdown).not.toContain('docs/../../.osc-dev/notes.md');
   });
 });
 
