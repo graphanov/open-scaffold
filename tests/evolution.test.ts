@@ -230,7 +230,7 @@ function writeOrdinaryFailureEvaluation(root: string, runId: string, privateRefs
       },
       {
         id: 'AC2',
-        text: 'Tests cover the remaining reachable behavior.',
+        text: 'Skipped rows are listed in the report while tests cover the remaining reachable behavior.',
         status: 'fail',
         evaluator: { kind: 'human', name: 'reviewer', ref: privateRefs ? '/private/scorer.md' : 'docs/evidence/proof.md' },
         evidence: [{ kind: 'path', ref: privateRefs ? '.osc/research/private-scorer.md' : 'docs/evidence/proof.md', summary: 'Reachable work remains incomplete.' }],
@@ -599,6 +599,7 @@ describe('evolution analysis', () => {
       impossible: false,
       reasons: expect.arrayContaining(['missing_tests']),
     });
+    expect(ac2?.reasons).not.toContain('skipped');
     expect(analysis.recommendation.action).toBe('inspect_scorer');
     expect(analysis.recommendation.summary).toContain('Scores have stopped improving');
   });

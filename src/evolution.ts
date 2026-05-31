@@ -949,7 +949,6 @@ function metadataForCriterion(criterion: Record<string, unknown>): { impossible:
 
   const evidence = Array.isArray(criterion.evidence) ? criterion.evidence.filter(isRecord) : [];
   const textParts = [
-    asString(criterion.text),
     asString(criterion.rationale),
     asString(analysis.rationale),
     asString(analysis.notes),
