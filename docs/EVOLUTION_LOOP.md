@@ -70,7 +70,19 @@ Check loop structure:
 osc evolve check .osc/evolution/demo-loop
 ```
 
-`osc evolve` does not create a run, launch a runtime, call an LLM, publish benchmark rankings, certify compliance, approve a merge, or decide product taste. It only records curated loop state.
+Analyze a stopped or in-flight loop without recording a new attempt:
+
+```bash
+osc evolve analyze .osc/evolution/demo-loop
+osc evolve analyze .osc/evolution/demo-loop --format json
+osc evolve analyze .osc/evolution/demo-loop --format markdown --out docs/evidence/evolution-analysis.md
+```
+
+`osc evolve analyze` reads `loop.json`, `attempts.jsonl`, `frontier.json`, and linked evaluation envelopes. It reports plateau/stagnation, current-vs-previous and current-vs-frontier acceptance-criteria deltas, observed score sensitivity, criteria flagged as probe-only / hardcoded non-pass / skipped / stale / impossible, and a next-action recommendation: `continue`, `stop`, `redesign`, or `inspect_scorer`. Criterion-level hints can come from evaluation/scorer metadata such as `analysis.score_sensitivity`, `analysis.impossible`, `analysis.reason`, and `analysis.source`, or from explicit evidence/rationale wording.
+
+The analysis command is a decision aid. It does not mutate loop files unless `--out` is supplied for a rendered report, and even then it writes only the requested report path. It does not spawn runtimes, rerun benchmarks, rank models, certify compliance, promote a frontier, or approve work.
+
+`osc evolve` does not create a run, launch a runtime, call an LLM, publish benchmark rankings, certify compliance, approve a merge, or decide product taste. It only records and analyzes curated loop state.
 
 ## See it in one screen
 

@@ -112,6 +112,64 @@ Improve the run contract.
   return { root, planPath, runPath, evalPath, receiptPath, adapterEvidencePath, adapterLogPath };
 }
 
+function writePlateauCliEvaluation(root: string, runId: string, ac2Status: 'pass' | 'fail') {
+  const evalPath = join(root, `docs/evidence/${runId}-evaluation.json`);
+  writeFileSync(evalPath, JSON.stringify({
+    schema: 'open-scaffold.evaluation.v1',
+    evaluation_id: `eval-${runId}`,
+    subject: { source: 'run', plan: '.osc/plans/active/087-demo.md', plan_slug: '087-demo', task_id: 'task-123', run_id: runId, run_packet: `.osc/runs/${runId}/run.json` },
+    acceptance_criteria: [
+      {
+        id: 'AC1',
+        text: 'Loop state is created.',
+        status: 'pass',
+        evaluator: { kind: 'human', name: 'reviewer', ref: null },
+        evidence: [{ kind: 'path', ref: 'docs/evidence/demo-run-proof.md', summary: 'Synthetic CLI evidence.' }],
+        rationale: 'Loop state exists.',
+      },
+      {
+        id: 'AC2',
+        text: 'Frontier promotion is explicit.',
+        status: ac2Status,
+        evaluator: { kind: 'human', name: 'reviewer', ref: null },
+        evidence: [{ kind: 'path', ref: 'docs/evidence/demo-run-proof.md', summary: 'Synthetic CLI evidence.' }],
+        rationale: ac2Status === 'pass' ? 'Reachable criterion fixed.' : 'Reachable criterion failed.',
+      },
+      {
+        id: 'AC28',
+        text: 'Renderer probe returns a playable visual artifact.',
+        status: 'fail',
+        evaluator: { kind: 'domain-tool', name: 'synthetic-scorer', ref: 'docs/evidence/scorer.md' },
+        evidence: [{ kind: 'path', ref: 'docs/evidence/scorer.md', summary: 'Probe-only criterion is hardcoded pass=false for headless JSON drivers.' }],
+        rationale: 'Probe-only and impossible for the current artifact type.',
+        analysis: { score_sensitivity: 'none', impossible: true, reason: 'probe_only', source: 'docs/evidence/scorer.md#AC28' },
+      },
+    ],
+    decision: { status: 'rejected', approver: 'human', rationale: 'Score frontier is not acceptance approval.' },
+    improvement: { route: 'create_next_slice', target: null, carried_forward: [], do_not_assume: ['No raw benchmark win.'] },
+  }, null, 2));
+  return evalPath;
+}
+
+function writePlateauCliLoop() {
+  const { root, planPath } = tempRepo();
+  const outDir = join(root, '.osc/evolution/plateau-loop');
+  writeFileSync(join(root, 'docs/evidence/scorer.md'), 'AC28 is probe-only/pass-false for this synthetic driver.');
+  execFileSync(tsx, [cli, 'evolve', 'init', planPath, '--out', outDir, '--strategy', 'greedy'], { cwd: root, encoding: 'utf8' });
+  const attempts = [
+    { runId: 'attempt-a', score: '0.9', ac2Status: 'fail' as const, decision: 'promote', rationale: 'First score frontier.' },
+    { runId: 'attempt-b', score: '0.944893', ac2Status: 'pass' as const, decision: 'promote', rationale: 'Improved reachable AC2.' },
+    { runId: 'attempt-c', score: '0.944893', ac2Status: 'pass' as const, decision: 'retry', rationale: 'Retry plateaued.' },
+    { runId: 'attempt-d', score: '0.944893', ac2Status: 'pass' as const, decision: 'retry', rationale: 'Remaining failure is probe-only.' },
+  ];
+  for (const attempt of attempts) {
+    const runPath = writeRunPacket(root, attempt.runId);
+    const evalPath = writePlateauCliEvaluation(root, attempt.runId, attempt.ac2Status);
+    execFileSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runPath, '--evaluation', evalPath, '--decision', attempt.decision, '--score', attempt.score, '--rationale', attempt.rationale], { cwd: root, encoding: 'utf8' });
+  }
+  return { root, outDir };
+}
+
 describe('checked-in evolution ledger demo fixture through the CLI', () => {
   it('checks the committed fixture and renders the expected markdown exactly', () => {
     const check = execFileSync(tsx, [cli, 'evolve', 'check', evolutionDemoLoop], { cwd: repoRoot, encoding: 'utf8' });
@@ -306,6 +364,37 @@ describe('osc evolve CLI', () => {
     expect(report).toContain('**B (promote):** Better frontier.');
     expect(report).toContain('## Acceptance criteria delta');
     expect(report).toContain('| AC2 — Frontier promotion is explicit. | ✗ fail | ✓ pass ▲ |');
+  });
+
+  it('analyzes a plateau loop in terminal, markdown, and JSON without mutating evidence unless --out is supplied', () => {
+    const { root, outDir } = writePlateauCliLoop();
+    const before = {
+      loop: readFileSync(join(outDir, 'loop.json'), 'utf8'),
+      attempts: readFileSync(join(outDir, 'attempts.jsonl'), 'utf8'),
+      frontier: readFileSync(join(outDir, 'frontier.json'), 'utf8'),
+    };
+    const reportPath = join(root, 'docs/evidence/evolution-analysis.md');
+
+    const terminal = execFileSync(tsx, [cli, 'evolve', 'analyze', outDir], { cwd: root, encoding: 'utf8' });
+    expect(terminal).toContain('Evolution Analysis: plateau-loop');
+    expect(terminal).toContain('Plateau: plateau — 2 attempt(s) since last score improvement');
+    expect(terminal).toContain('Recommendation: redesign');
+    expect(existsSync(reportPath)).toBe(false);
+
+    const json = JSON.parse(execFileSync(tsx, [cli, 'evolve', 'analyze', outDir, '--format', 'json'], { cwd: root, encoding: 'utf8' }));
+    expect(json.recommendation.action).toBe('redesign');
+    expect(json.criteria.find((criterion: { id: string }) => criterion.id === 'AC28')).toMatchObject({ impossible: true, sensitivity: 'none' });
+
+    const output = execFileSync(tsx, [cli, 'evolve', 'analyze', outDir, '--format', 'markdown', '--out', reportPath], { cwd: root, encoding: 'utf8' });
+    expect(output).toContain('Wrote evolution analysis:');
+    const report = readFileSync(reportPath, 'utf8');
+    expect(report).toContain('# Evolution analysis: plateau-loop');
+    expect(report).toContain('## Current vs frontier AC delta');
+    expect(report).toContain('`redesign`');
+
+    expect(readFileSync(join(outDir, 'loop.json'), 'utf8')).toBe(before.loop);
+    expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe(before.attempts);
+    expect(readFileSync(join(outDir, 'frontier.json'), 'utf8')).toBe(before.frontier);
   });
 
   it('rejects unknown strategies and prints evolve usage', () => {

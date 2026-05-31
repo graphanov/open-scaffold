@@ -105,6 +105,10 @@ function asNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function asBoolean(value: unknown): boolean | null {
+  return typeof value === 'boolean' ? value : null;
+}
+
 function meaningfulString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && !/^(todo|tbd|n\/a|none)$/i.test(value.trim());
 }
@@ -818,6 +822,516 @@ export function renderEvolutionComparison(comparison: EvolutionCompareResult, fo
   }
   if (format === 'markdown') return renderMarkdownComparison(comparison);
   return renderTerminalComparison(comparison);
+}
+
+export type EvolutionAnalysisFormat = EvolutionCompareFormat;
+export type EvolutionAnalysisRecommendationAction = 'continue' | 'stop' | 'redesign' | 'inspect_scorer';
+
+type EvolutionPlateauStatus = 'insufficient_data' | 'improving' | 'stagnating' | 'plateau' | 'regressed';
+type EvolutionCriterionSensitivity = 'observed_positive' | 'observed_negative' | 'none' | 'unknown';
+
+interface EvolutionAnalysisCriterionSnapshot {
+  id: string;
+  text: string;
+  status: string | null;
+  reasons: string[];
+  evidence: string[];
+  impossible: boolean;
+  sensitivityOverride: EvolutionCriterionSensitivity | null;
+}
+
+export interface EvolutionAnalysisDeltaRow {
+  id: string;
+  text: string;
+  previousStatus?: string | null;
+  frontierStatus?: string | null;
+  currentStatus: string | null;
+}
+
+export interface EvolutionAnalysisCriterion {
+  id: string;
+  text: string;
+  currentStatus: string | null;
+  previousStatus: string | null;
+  frontierStatus: string | null;
+  sensitivity: EvolutionCriterionSensitivity;
+  impossible: boolean;
+  reasons: string[];
+  evidence: string[];
+}
+
+export interface EvolutionAnalysisResult {
+  kind: 'analysis';
+  loop: { loopDir: string; loopId: string | null; objective: string | null; strategy: string | null; attemptCount: number };
+  plateau: { status: EvolutionPlateauStatus; threshold: number; noImprovementCount: number; currentScore: number | null; bestScore: number | null; bestAttemptId: string | null };
+  currentAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null };
+  previousAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null };
+  frontierAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null };
+  acceptanceSummary: { currentPass: number; currentTotal: number; frontierPass: number; frontierTotal: number; remainingFailures: string[] };
+  criteria: EvolutionAnalysisCriterion[];
+  currentVsPrevious: { present: boolean; previousAttemptId: string | null; currentAttemptId: string | null; rows: EvolutionAnalysisDeltaRow[] };
+  currentVsFrontier: { present: boolean; frontierAttemptId: string | null; currentAttemptId: string | null; rows: EvolutionAnalysisDeltaRow[] };
+  recommendation: { action: EvolutionAnalysisRecommendationAction; summary: string; reasons: string[] };
+  notes: string[];
+}
+
+export interface EvolutionAnalyzeOptions {
+  plateauThreshold?: number;
+}
+
+function normalizeReason(value: string): string {
+  const normalized = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  if (normalized === 'probe_only_criterion') return 'probe_only';
+  if (normalized === 'hardcoded_pass_false' || normalized === 'pass_false' || normalized === 'hardcoded_non_pass') return 'hardcoded_non_pass';
+  if (normalized === 'artifact_type' || normalized === 'current_artifact_type') return 'artifact_type_mismatch';
+  return normalized || 'impossible';
+}
+
+function normalizeSensitivity(value: string | null): EvolutionCriterionSensitivity | null {
+  if (!value) return null;
+  const normalized = normalizeReason(value);
+  if (['none', 'no', 'no_score_movement', 'no_score_sensitivity', 'zero', 'low', 'probe_only'].includes(normalized)) return 'none';
+  if (['observed_positive', 'positive', 'score_moving', 'score_sensitive'].includes(normalized)) return 'observed_positive';
+  if (['observed_negative', 'negative', 'inverse'].includes(normalized)) return 'observed_negative';
+  if (normalized === 'unknown') return 'unknown';
+  return null;
+}
+
+const BLOCKING_IMPOSSIBLE_REASONS = new Set(['probe_only', 'hardcoded_non_pass', 'skipped', 'stale', 'impossible', 'artifact_type_mismatch']);
+
+function isAnalysisRefSafe(ref: string): boolean {
+  if (/^file:/i.test(ref)) return false;
+  if (/^https?:\/\//i.test(ref)) return true;
+  const normalized = toPosix(ref).replace(/^\.\//, '');
+  if (isAbsolute(ref) || win32.isAbsolute(ref) || normalized.startsWith('/') || normalized.startsWith('~')) return false;
+  if (isPrivatePath(normalized)) return false;
+  return true;
+}
+
+function addReasonFromText(text: string, reasons: Set<string>): void {
+  const lower = text.toLowerCase();
+  if (/probe[- ]only|probe only/.test(lower)) reasons.add('probe_only');
+  if (/hardcoded[^\n.]*(pass\s*=\s*false|non[- ]pass|fail)|pass\s*=\s*false|pass-false|always fail/.test(lower)) reasons.add('hardcoded_non_pass');
+  if (/\bskipped\b|\bskip-only\b/.test(lower)) reasons.add('skipped');
+  if (/\bstale\b|out[- ]of[- ]date/.test(lower)) reasons.add('stale');
+  if (/impossible|cannot pass|can't pass|no attempt can|unreachable/.test(lower)) reasons.add('impossible');
+  if (/current artifact type|artifact type mismatch|headless json driver/.test(lower)) reasons.add('artifact_type_mismatch');
+}
+
+function collectEvidenceRefsFromCriterion(criterion: Record<string, unknown>, analysis: Record<string, unknown>): string[] {
+  const refs = [
+    asString(analysis.source),
+    asString(analysis.evidence_source),
+    asString(analysis.ref),
+    asString(criterion.source),
+  ];
+  const evaluator = isRecord(criterion.evaluator) ? criterion.evaluator : null;
+  refs.push(evaluator ? asString(evaluator.ref) : null);
+  const evidence = Array.isArray(criterion.evidence) ? criterion.evidence.filter(isRecord) : [];
+  for (const item of evidence) refs.push(asString(item.ref));
+  return uniqueRefs(refs.filter((ref): ref is string => Boolean(ref && ref.trim() && isAnalysisRefSafe(ref))));
+}
+
+function metadataForCriterion(criterion: Record<string, unknown>): { impossible: boolean; reasons: string[]; evidence: string[]; sensitivityOverride: EvolutionCriterionSensitivity | null } {
+  const analysis = isRecord(criterion.analysis) ? criterion.analysis : {};
+  const reasons = new Set<string>();
+  for (const value of [analysis.reason, criterion.reason]) {
+    if (typeof value === 'string') reasons.add(normalizeReason(value));
+  }
+  for (const value of [analysis.reasons, criterion.reasons]) {
+    for (const reason of asStringArray(value)) reasons.add(normalizeReason(reason));
+  }
+  if (asBoolean(analysis.impossible) === true || asBoolean(criterion.impossible) === true) reasons.add('impossible');
+  if (asBoolean(analysis.probe_only) === true || asBoolean(criterion.probe_only) === true) reasons.add('probe_only');
+  if (asBoolean(analysis.hardcoded_non_pass) === true || asBoolean(criterion.hardcoded_non_pass) === true) reasons.add('hardcoded_non_pass');
+  if (asBoolean(analysis.skipped) === true || asBoolean(criterion.skipped) === true) reasons.add('skipped');
+  if (asBoolean(analysis.stale) === true || asBoolean(criterion.stale) === true) reasons.add('stale');
+
+  const evidence = Array.isArray(criterion.evidence) ? criterion.evidence.filter(isRecord) : [];
+  const textParts = [
+    asString(criterion.text),
+    asString(criterion.rationale),
+    asString(analysis.rationale),
+    asString(analysis.notes),
+    ...asStringArray(criterion.gaps),
+    ...asStringArray(analysis.gaps),
+    ...evidence.flatMap((item) => [asString(item.summary), asString(item.ref)]),
+  ].filter((value): value is string => Boolean(value));
+  addReasonFromText(textParts.join('\n'), reasons);
+
+  const sensitivityOverride = normalizeSensitivity(asString(analysis.score_sensitivity) ?? asString(criterion.score_sensitivity) ?? asString(analysis.sensitivity) ?? asString(criterion.sensitivity));
+  const impossible = asBoolean(analysis.impossible) === true
+    || asBoolean(criterion.impossible) === true
+    || [...reasons].some((reason) => BLOCKING_IMPOSSIBLE_REASONS.has(reason));
+  return {
+    impossible,
+    reasons: [...reasons].sort(),
+    evidence: collectEvidenceRefsFromCriterion(criterion, analysis),
+    sensitivityOverride,
+  };
+}
+
+function readEvaluationCriteriaForAnalysis(root: string, evaluationRef: string | null): EvolutionAnalysisCriterionSnapshot[] {
+  if (!evaluationRef) return [];
+  const evaluationPath = isAbsolute(evaluationRef) || win32.isAbsolute(evaluationRef) ? evaluationRef : resolve(root, evaluationRef);
+  try {
+    const parsed = readJson(evaluationPath);
+    if (!isRecord(parsed) || parsed.schema !== EVALUATION_SCHEMA) return [];
+    const criteria = Array.isArray(parsed.acceptance_criteria) ? parsed.acceptance_criteria.filter(isRecord) : [];
+    return criteria.map((criterion, index) => {
+      const metadata = metadataForCriterion(criterion);
+      const id = asString(criterion.id) ?? `AC${index + 1}`;
+      return {
+        id,
+        text: asString(criterion.text) ?? id,
+        status: asString(criterion.status),
+        reasons: metadata.reasons,
+        evidence: metadata.evidence,
+        impossible: metadata.impossible,
+        sensitivityOverride: metadata.sensitivityOverride,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+function criterionStatusRank(status: string | null): number {
+  switch (status) {
+    case 'pass':
+      return 4;
+    case 'partial':
+      return 3;
+    case 'blocked':
+      return 2;
+    case 'fail':
+      return 1;
+    case 'not_evaluated':
+      return 0;
+    default:
+      return -1;
+  }
+}
+
+function analyzePlateau(attempts: EvolutionCompareAttempt[], threshold: number) {
+  const scored = attempts.filter((attempt) => attempt.score !== null);
+  if (scored.length < 2) {
+    return { status: 'insufficient_data' as const, threshold, noImprovementCount: 0, currentScore: scored.at(-1)?.score ?? null, bestScore: scored.at(-1)?.score ?? null, bestAttemptId: scored.at(-1)?.attemptId ?? null };
+  }
+  let bestScore = scored[0].score ?? null;
+  let bestAttemptId = scored[0].attemptId;
+  let lastImprovementIndex = 0;
+  const epsilon = 1e-9;
+  for (let index = 1; index < scored.length; index += 1) {
+    const score = scored[index].score;
+    if (score !== null && bestScore !== null && score > bestScore + epsilon) {
+      bestScore = score;
+      bestAttemptId = scored[index].attemptId;
+      lastImprovementIndex = index;
+    }
+  }
+  const currentScore = scored[scored.length - 1].score;
+  const noImprovementCount = Math.max(0, scored.length - lastImprovementIndex - 1);
+  let status: EvolutionPlateauStatus = 'improving';
+  if (currentScore !== null && bestScore !== null && currentScore < bestScore - epsilon) status = 'regressed';
+  else if (noImprovementCount >= threshold) status = 'plateau';
+  else if (noImprovementCount > 0) status = 'stagnating';
+  return { status, threshold, noImprovementCount, currentScore, bestScore, bestAttemptId };
+}
+
+function snapshotById(snapshots: EvolutionAnalysisCriterionSnapshot[]): Map<string, EvolutionAnalysisCriterionSnapshot> {
+  return new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
+}
+
+function buildCurrentPreviousRows(ids: string[], textById: Map<string, string>, previous: Map<string, EvolutionAnalysisCriterionSnapshot>, current: Map<string, EvolutionAnalysisCriterionSnapshot>): EvolutionAnalysisDeltaRow[] {
+  return ids.map((id) => ({
+    id,
+    text: textById.get(id) ?? id,
+    previousStatus: previous.get(id)?.status ?? null,
+    currentStatus: current.get(id)?.status ?? null,
+  }));
+}
+
+function buildCurrentFrontierRows(ids: string[], textById: Map<string, string>, frontier: Map<string, EvolutionAnalysisCriterionSnapshot>, current: Map<string, EvolutionAnalysisCriterionSnapshot>): EvolutionAnalysisDeltaRow[] {
+  return ids.map((id) => ({
+    id,
+    text: textById.get(id) ?? id,
+    frontierStatus: frontier.get(id)?.status ?? null,
+    currentStatus: current.get(id)?.status ?? null,
+  }));
+}
+
+function countPassing(snapshots: EvolutionAnalysisCriterionSnapshot[]): { pass: number; total: number; remainingFailures: string[] } {
+  return {
+    pass: snapshots.filter((snapshot) => snapshot.status === 'pass').length,
+    total: snapshots.length,
+    remainingFailures: snapshots.filter((snapshot) => snapshot.status !== 'pass').map((snapshot) => snapshot.id),
+  };
+}
+
+function inferObservedSensitivity(id: string, attempts: EvolutionCompareAttempt[], criteriaByAttempt: Map<string, Map<string, EvolutionAnalysisCriterionSnapshot>>): EvolutionCriterionSensitivity | null {
+  let observedPositive = false;
+  let observedNegative = false;
+  for (let index = 1; index < attempts.length; index += 1) {
+    const previous = attempts[index - 1];
+    const current = attempts[index];
+    if (previous.score === null || current.score === null) continue;
+    const previousStatus = criteriaByAttempt.get(previous.attemptId)?.get(id)?.status ?? null;
+    const currentStatus = criteriaByAttempt.get(current.attemptId)?.get(id)?.status ?? null;
+    if (previousStatus === currentStatus) continue;
+    const scoreDelta = current.score - previous.score;
+    const statusDelta = criterionStatusRank(currentStatus) - criterionStatusRank(previousStatus);
+    if (Math.abs(scoreDelta) < 1e-9 || statusDelta === 0) continue;
+    if ((scoreDelta > 0 && statusDelta > 0) || (scoreDelta < 0 && statusDelta < 0)) observedPositive = true;
+    if ((scoreDelta > 0 && statusDelta < 0) || (scoreDelta < 0 && statusDelta > 0)) observedNegative = true;
+  }
+  if (observedPositive) return 'observed_positive';
+  if (observedNegative) return 'observed_negative';
+  return null;
+}
+
+function attemptSummary(attempt: EvolutionCompareAttempt | null) {
+  return {
+    attemptId: attempt?.attemptId ?? null,
+    runId: attempt?.runId ?? null,
+    decision: attempt?.decision ?? null,
+    score: attempt?.score ?? null,
+    evaluation: attempt?.evaluation ?? null,
+  };
+}
+
+function recommendAnalysis(plateau: EvolutionAnalysisResult['plateau'], criteria: EvolutionAnalysisCriterion[], currentTotal: number): EvolutionAnalysisResult['recommendation'] {
+  if (currentTotal === 0) {
+    return { action: 'inspect_scorer', summary: 'No current acceptance-criteria evidence is available; inspect the scorer or evaluation envelope before retrying.', reasons: ['no_current_acceptance_criteria'] };
+  }
+  const remaining = criteria.filter((criterion) => criterion.currentStatus !== 'pass');
+  if (remaining.length === 0) {
+    return { action: 'stop', summary: 'Current evaluation has all criteria passing; stop retrying and route to human approval/closeout.', reasons: ['all_current_criteria_pass'] };
+  }
+  const plateaued = plateau.status === 'plateau' || plateau.status === 'stagnating';
+  const remainingNonMoving = remaining.every((criterion) => criterion.impossible || criterion.sensitivity === 'none');
+  if (plateaued && remainingNonMoving) {
+    return {
+      action: 'redesign',
+      summary: `Plateaued with ${remaining.length} remaining failing criteria that are impossible or not moving the score; redesign the criterion, scorer, artifact shape, or benchmark instead of retrying.`,
+      reasons: ['plateau', 'remaining_failures_non_score_moving'],
+    };
+  }
+  if (plateaued) {
+    return { action: 'inspect_scorer', summary: 'Scores have stopped improving while failures remain; inspect scorer sensitivity and evaluation evidence before another attempt.', reasons: ['plateau', 'remaining_failures'] };
+  }
+  if (plateau.status === 'regressed') {
+    return { action: 'inspect_scorer', summary: 'Latest score is below the best recorded score; inspect scorer/evidence before continuing.', reasons: ['score_regressed'] };
+  }
+  return { action: 'continue', summary: 'Score or acceptance-criteria evidence is still moving; one more bounded attempt may be useful.', reasons: ['still_moving'] };
+}
+
+export function analyzeEvolutionLoop(loopDir: string, options: EvolutionAnalyzeOptions = {}, root = process.cwd()): EvolutionAnalysisResult {
+  const absoluteLoopDir = isAbsolute(loopDir) ? loopDir : resolve(root, loopDir);
+  const analysisRoot = findScaffoldRoot(absoluteLoopDir) ?? inferScaffoldRootFromLoopDir(absoluteLoopDir) ?? root;
+  const loopPath = join(absoluteLoopDir, 'loop.json');
+  const attemptsPath = join(absoluteLoopDir, 'attempts.jsonl');
+  const frontierPath = join(absoluteLoopDir, 'frontier.json');
+  const loop = readJson(loopPath);
+  if (!isRecord(loop) || loop.schema !== EVOLUTION_LOOP_SCHEMA) {
+    throw new Error(`Evolution loop must declare schema: ${EVOLUTION_LOOP_SCHEMA}`);
+  }
+  const frontier = readJson(frontierPath);
+  if (!isRecord(frontier) || frontier.schema !== EVOLUTION_FRONTIER_SCHEMA) {
+    throw new Error(`Evolution frontier must declare schema: ${EVOLUTION_FRONTIER_SCHEMA}`);
+  }
+  const attempts = readAttempts(attemptsPath).map(normalizeCompareAttempt);
+  const strategy = isRecord(loop.strategy) ? asString(loop.strategy.name) : null;
+  const loopInfo = {
+    loopDir: basename(absoluteLoopDir),
+    loopId: asString(loop.loop_id),
+    objective: asString(loop.objective),
+    strategy,
+    attemptCount: attempts.length,
+  };
+  const currentAttempt = attempts.at(-1) ?? null;
+  const previousAttempt = attempts.length > 1 ? attempts[attempts.length - 2] : null;
+  const frontierIds = frontierAttemptIds(frontier);
+  const frontierAttempt = frontierIds.current ? attempts.find((attempt) => attempt.attemptId === frontierIds.current) ?? null : null;
+  const criteriaByAttempt = new Map<string, Map<string, EvolutionAnalysisCriterionSnapshot>>();
+  const textById = new Map<string, string>();
+  for (const attempt of attempts) {
+    const snapshots = readEvaluationCriteriaForAnalysis(analysisRoot, attempt.evaluation);
+    const mapped = snapshotById(snapshots);
+    criteriaByAttempt.set(attempt.attemptId, mapped);
+    for (const snapshot of snapshots) {
+      if (!textById.has(snapshot.id) || snapshot.text !== snapshot.id) textById.set(snapshot.id, snapshot.text);
+    }
+  }
+  const currentMap = currentAttempt ? criteriaByAttempt.get(currentAttempt.attemptId) ?? new Map() : new Map<string, EvolutionAnalysisCriterionSnapshot>();
+  const previousMap = previousAttempt ? criteriaByAttempt.get(previousAttempt.attemptId) ?? new Map() : new Map<string, EvolutionAnalysisCriterionSnapshot>();
+  const frontierMap = frontierAttempt ? criteriaByAttempt.get(frontierAttempt.attemptId) ?? new Map() : new Map<string, EvolutionAnalysisCriterionSnapshot>();
+  const ids = [...new Set([...textById.keys(), ...currentMap.keys(), ...previousMap.keys(), ...frontierMap.keys()])].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const plateau = analyzePlateau(attempts, Math.max(1, options.plateauThreshold ?? 2));
+  const criteria = ids.map((id) => {
+    const current = currentMap.get(id);
+    const previous = previousMap.get(id);
+    const frontierSnapshot = frontierMap.get(id);
+    const metadataSources = [current, previous, frontierSnapshot].filter((snapshot): snapshot is EvolutionAnalysisCriterionSnapshot => Boolean(snapshot));
+    const impossible = metadataSources.some((snapshot) => snapshot.impossible);
+    const reasons = uniqueRefs(metadataSources.flatMap((snapshot) => snapshot.reasons)).sort();
+    const evidence = uniqueRefs(metadataSources.flatMap((snapshot) => snapshot.evidence));
+    const sensitivityOverride = metadataSources.map((snapshot) => snapshot.sensitivityOverride).find((value): value is EvolutionCriterionSensitivity => value !== null) ?? null;
+    const observed = inferObservedSensitivity(id, attempts, criteriaByAttempt);
+    const sensitivity = sensitivityOverride ?? (impossible ? 'none' : observed ?? 'unknown');
+    return {
+      id,
+      text: textById.get(id) ?? id,
+      currentStatus: current?.status ?? null,
+      previousStatus: previous?.status ?? null,
+      frontierStatus: frontierSnapshot?.status ?? null,
+      sensitivity,
+      impossible,
+      reasons,
+      evidence,
+    };
+  });
+  const currentCounts = countPassing([...currentMap.values()]);
+  const frontierCounts = countPassing([...frontierMap.values()]);
+  const acceptanceSummary = {
+    currentPass: currentCounts.pass,
+    currentTotal: currentCounts.total,
+    frontierPass: frontierCounts.pass,
+    frontierTotal: frontierCounts.total,
+    remainingFailures: currentCounts.remainingFailures,
+  };
+  const recommendation = recommendAnalysis(plateau, criteria, currentCounts.total);
+  return {
+    kind: 'analysis',
+    loop: loopInfo,
+    plateau,
+    currentAttempt: attemptSummary(currentAttempt),
+    previousAttempt: attemptSummary(previousAttempt),
+    frontierAttempt: attemptSummary(frontierAttempt),
+    acceptanceSummary,
+    criteria,
+    currentVsPrevious: {
+      present: Boolean(currentAttempt && previousAttempt),
+      previousAttemptId: previousAttempt?.attemptId ?? null,
+      currentAttemptId: currentAttempt?.attemptId ?? null,
+      rows: buildCurrentPreviousRows(ids, textById, previousMap, currentMap),
+    },
+    currentVsFrontier: {
+      present: Boolean(currentAttempt && frontierAttempt),
+      frontierAttemptId: frontierAttempt?.attemptId ?? null,
+      currentAttemptId: currentAttempt?.attemptId ?? null,
+      rows: buildCurrentFrontierRows(ids, textById, frontierMap, currentMap),
+    },
+    recommendation,
+    notes: [
+      'This analysis is read-only and does not spawn runtimes, rerun benchmarks, mutate loop state, rank models, or approve work.',
+      'Score-frontier promotion is not acceptance approval; use human/maintainer review for closeout decisions.',
+    ],
+  };
+}
+
+function impossibleLabel(criterion: EvolutionAnalysisCriterion): string {
+  if (!criterion.impossible) return '—';
+  if (criterion.reasons.length === 0) return 'yes';
+  const priority = ['probe_only', 'hardcoded_non_pass', 'skipped', 'stale', 'artifact_type_mismatch', 'impossible'];
+  const ordered = [
+    ...priority.filter((reason) => criterion.reasons.includes(reason)),
+    ...criterion.reasons.filter((reason) => !priority.includes(reason)),
+  ];
+  return ordered.join(',');
+}
+
+function renderAnalysisTerminal(analysis: EvolutionAnalysisResult): string {
+  const lines = [
+    `Evolution Analysis: ${analysis.loop.loopDir}`,
+    `Objective: ${analysis.loop.objective ?? '—'}`,
+    `Strategy: ${analysis.loop.strategy ?? '—'}`,
+    `Attempts: ${analysis.loop.attemptCount} recorded`,
+    '',
+    `Plateau: ${analysis.plateau.status} — ${analysis.plateau.noImprovementCount} attempt(s) since last score improvement (current=${formatScore(analysis.plateau.currentScore)}, best=${formatScore(analysis.plateau.bestScore)})`,
+    `Acceptance: current=${analysis.acceptanceSummary.currentPass}/${analysis.acceptanceSummary.currentTotal} pass | frontier=${analysis.acceptanceSummary.frontierPass}/${analysis.acceptanceSummary.frontierTotal} pass`,
+    '',
+    'Score sensitivity',
+    ...(analysis.criteria.length > 0 ? analysis.criteria.map((criterion) => {
+      const evidence = criterion.evidence.length > 0 ? ` | evidence=${criterion.evidence.join(', ')}` : '';
+      return `  ${criterion.id}: ${criterion.currentStatus ?? '—'} | sensitivity=${criterion.sensitivity} | impossible=${impossibleLabel(criterion)} — ${criterion.text}${evidence}`;
+    }) : ['  —']),
+    '',
+    'Current vs previous AC delta',
+    ...(analysis.currentVsPrevious.rows.length > 0 ? analysis.currentVsPrevious.rows.map((row) => `  ${row.id}: previous=${formatPlainCriterionStatus(row.previousStatus ?? null)} | current=${formatPlainCriterionStatus(row.currentStatus)}${criterionDeltaMarker(row.previousStatus ?? null, row.currentStatus)} — ${row.text}`) : ['  —']),
+    '',
+    'Current vs frontier AC delta',
+    ...(analysis.currentVsFrontier.rows.length > 0 ? analysis.currentVsFrontier.rows.map((row) => `  ${row.id}: frontier=${formatPlainCriterionStatus(row.frontierStatus ?? null)} | current=${formatPlainCriterionStatus(row.currentStatus)}${criterionDeltaMarker(row.frontierStatus ?? null, row.currentStatus)} — ${row.text}`) : ['  —']),
+    '',
+    `Recommendation: ${analysis.recommendation.action}`,
+    `  ${analysis.recommendation.summary}`,
+    '',
+    'Notes',
+    ...analysis.notes.map((note) => `  ${note}`),
+    '',
+    'Use --format markdown --out <path> to export this analysis for a PR or review thread.',
+  ];
+  return `${lines.join('\n')}\n`;
+}
+
+function renderAnalysisMarkdown(analysis: EvolutionAnalysisResult): string {
+  const lines = [
+    `# Evolution analysis: ${analysis.loop.loopDir}`,
+    '',
+    `**Attempts:** ${analysis.loop.attemptCount} recorded`,
+    `**Current attempt:** ${analysis.currentAttempt.attemptId ?? '—'}`,
+    `**Frontier attempt:** ${analysis.frontierAttempt.attemptId ?? '—'}`,
+    '',
+    '## Plateau / stagnation',
+    '',
+    `- Status: \`${analysis.plateau.status}\``,
+    `- Attempts since last score improvement: ${analysis.plateau.noImprovementCount}`,
+    `- Current score: ${formatScore(analysis.plateau.currentScore)}`,
+    `- Best score: ${formatScore(analysis.plateau.bestScore)}${analysis.plateau.bestAttemptId ? ` (\`${analysis.plateau.bestAttemptId}\`)` : ''}`,
+    '',
+    '## Score sensitivity and impossible criteria',
+    '',
+    '| Criterion | Current | Sensitivity | Impossible / blocked evidence |',
+    '|---|---|---|---|',
+    ...(analysis.criteria.length > 0 ? analysis.criteria.map((criterion) => {
+      const criterionLabel = `${criterion.id} — ${criterion.text}`;
+      const impossible = criterion.impossible ? `${impossibleLabel(criterion)}${criterion.evidence.length > 0 ? ` (${criterion.evidence.map((ref) => `\`${ref}\``).join(', ')})` : ''}` : '—';
+      return `| ${escapeMarkdownTableCell(criterionLabel)} | ${formatCriterionStatus(criterion.currentStatus)} | ${criterion.sensitivity} | ${escapeMarkdownTableCell(impossible)} |`;
+    }) : ['| — | — | — | — |']),
+    '',
+    '## Current vs previous AC delta',
+    '',
+    '| Criterion | Previous | Current |',
+    '|---|---|---|',
+    ...(analysis.currentVsPrevious.rows.length > 0 ? analysis.currentVsPrevious.rows.map((row) => {
+      const criterion = `${row.id} — ${row.text}`;
+      return `| ${escapeMarkdownTableCell(criterion)} | ${formatCriterionStatus(row.previousStatus ?? null)} | ${formatCriterionStatus(row.currentStatus)}${criterionDeltaMarker(row.previousStatus ?? null, row.currentStatus)} |`;
+    }) : ['| — | — | — |']),
+    '',
+    '## Current vs frontier AC delta',
+    '',
+    '| Criterion | Frontier | Current |',
+    '|---|---|---|',
+    ...(analysis.currentVsFrontier.rows.length > 0 ? analysis.currentVsFrontier.rows.map((row) => {
+      const criterion = `${row.id} — ${row.text}`;
+      return `| ${escapeMarkdownTableCell(criterion)} | ${formatCriterionStatus(row.frontierStatus ?? null)} | ${formatCriterionStatus(row.currentStatus)}${criterionDeltaMarker(row.frontierStatus ?? null, row.currentStatus)} |`;
+    }) : ['| — | — | — |']),
+    '',
+    '## Recommendation',
+    '',
+    `\`${analysis.recommendation.action}\` — ${analysis.recommendation.summary}`,
+    '',
+    '## Boundaries',
+    '',
+    ...analysis.notes.map((note) => `- ${note}`),
+  ];
+  return `${lines.join('\n')}\n`;
+}
+
+export function renderEvolutionAnalysis(analysis: EvolutionAnalysisResult, format: EvolutionAnalysisFormat = 'terminal'): string {
+  if (format === 'json') return `${JSON.stringify(analysis, null, 2)}\n`;
+  if (format === 'markdown') return renderAnalysisMarkdown(analysis);
+  return renderAnalysisTerminal(analysis);
 }
 
 export function recordEvolutionAttempt(loopDir: string, options: RecordEvolutionAttemptOptions, root = process.cwd()): RecordEvolutionAttemptResult {

@@ -4,9 +4,11 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
   EVOLUTION_LOOP_SCHEMA,
+  analyzeEvolutionLoop,
   compareEvolutionLoop,
   loadEvolutionSource,
   recordEvolutionAttempt,
+  renderEvolutionAnalysis,
   renderEvolutionComparison,
   renderEvolutionLoopFiles,
   validateEvolutionLoopDir,
@@ -131,6 +133,135 @@ function writeDispatchReceipt(root: string, runId = 'demo-run') {
   writeFileSync(evidencePath, 'runtime omx evidence');
   writeFileSync(logPath, 'runtime omx log');
   return { receiptPath, evidencePath, logPath };
+}
+
+function writePlateauEvaluation(root: string, runId: string, ac2Status: 'pass' | 'fail' = 'fail') {
+  const evalPath = join(root, `docs/evidence/${runId}-evaluation.json`);
+  writeFileSync(evalPath, JSON.stringify({
+    schema: 'open-scaffold.evaluation.v1',
+    evaluation_id: `eval-${runId}`,
+    subject: {
+      source: 'run',
+      plan: '.osc/plans/active/087-demo.md',
+      plan_slug: '087-demo',
+      task_id: 'task-123',
+      run_id: runId,
+      run_packet: `.osc/runs/${runId}/run.json`,
+    },
+    acceptance_criteria: [
+      {
+        id: 'AC1',
+        text: 'Deterministic driver output is produced.',
+        status: 'pass',
+        evaluator: { kind: 'automated-check', name: 'synthetic-scorer', ref: 'docs/evidence/scorer.md' },
+        evidence: [{ kind: 'path', ref: 'docs/evidence/proof.md', summary: 'Determinism probe passed.' }],
+        rationale: 'Stable deterministic output.',
+      },
+      {
+        id: 'AC2',
+        text: 'Frontier promotion improves one reachable criterion.',
+        status: ac2Status,
+        evaluator: { kind: 'automated-check', name: 'synthetic-scorer', ref: 'docs/evidence/scorer.md' },
+        evidence: [{ kind: 'path', ref: 'docs/evidence/proof.md', summary: ac2Status === 'pass' ? 'Reachable criterion passed.' : 'Reachable criterion still failed.' }],
+        rationale: ac2Status === 'pass' ? 'Fixed by the second attempt.' : 'Not fixed yet.',
+      },
+      {
+        id: 'AC28',
+        text: 'Renderer probe returns a playable visual artifact.',
+        status: 'fail',
+        evaluator: { kind: 'domain-tool', name: 'synthetic-2000m-scorer', ref: 'docs/evidence/scorer.md' },
+        evidence: [{ kind: 'path', ref: 'docs/evidence/scorer.md', summary: 'Probe-only criterion is hardcoded pass=false for headless JSON drivers.' }],
+        rationale: 'The scorer marks this criterion probe-only and impossible for the current artifact type.',
+        analysis: {
+          score_sensitivity: 'none',
+          impossible: true,
+          reason: 'probe_only',
+          source: 'docs/evidence/scorer.md#AC28',
+        },
+      },
+    ],
+    decision: { status: 'rejected', approver: 'human', rationale: 'Score frontier is not acceptance approval.' },
+    improvement: { route: 'create_next_slice', target: null, carried_forward: ['AC28 requires benchmark redesign.'], do_not_assume: ['No raw benchmark win.'] },
+  }, null, 2));
+  return evalPath;
+}
+
+function writePlateauLoop() {
+  const root = tempRepo();
+  const planPath = writePlan(root);
+  const outDir = join(root, '.osc/evolution/plateau-loop');
+  writeFileSync(join(root, 'docs/evidence/scorer.md'), 'Synthetic scorer metadata: AC28 is probe-only/pass-false for headless JSON drivers.');
+  writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-31T08:00:00.000Z'), strategy: 'greedy' });
+  const attempts = [
+    { runId: 'attempt-a', score: 0.9, ac2Status: 'fail' as const, decision: 'promote' as const, rationale: 'First score frontier.' },
+    { runId: 'attempt-b', score: 0.944893, ac2Status: 'pass' as const, decision: 'promote' as const, rationale: 'Improved reachable AC2 but AC28 remains scorer-blocked.' },
+    { runId: 'attempt-c', score: 0.944893, ac2Status: 'pass' as const, decision: 'retry' as const, rationale: 'Retry plateaued at the same score.' },
+    { runId: 'attempt-d', score: 0.944893, ac2Status: 'pass' as const, decision: 'retry' as const, rationale: 'Another retry plateaued; remaining failure is probe-only.' },
+  ];
+  for (const [index, attempt] of attempts.entries()) {
+    const runPath = writeRunPacket(root, attempt.runId);
+    const evalPath = writePlateauEvaluation(root, attempt.runId, attempt.ac2Status);
+    recordEvolutionAttempt(outDir, {
+      runPath,
+      evaluationPath: evalPath,
+      decision: attempt.decision,
+      score: attempt.score,
+      rationale: attempt.rationale,
+      now: new Date(`2026-05-31T08:${String(10 + index).padStart(2, '0')}:00.000Z`),
+    }, root);
+  }
+  return { root, outDir };
+}
+
+function writeOrdinaryFailureEvaluation(root: string, runId: string, privateRefs = false) {
+  const evalPath = join(root, `docs/evidence/${runId}-ordinary-evaluation.json`);
+  writeFileSync(evalPath, JSON.stringify({
+    schema: 'open-scaffold.evaluation.v1',
+    evaluation_id: `eval-${runId}`,
+    subject: { source: 'run', plan: '.osc/plans/active/087-demo.md', plan_slug: '087-demo', task_id: 'task-123', run_id: runId, run_packet: `.osc/runs/${runId}/run.json` },
+    acceptance_criteria: [
+      {
+        id: 'AC1',
+        text: 'Loop state is created.',
+        status: 'pass',
+        evaluator: { kind: 'human', name: 'reviewer', ref: 'docs/evidence/proof.md' },
+        evidence: [{ kind: 'path', ref: 'docs/evidence/proof.md', summary: 'Synthetic evidence.' }],
+        rationale: 'Loop state exists.',
+      },
+      {
+        id: 'AC2',
+        text: 'Tests cover the remaining reachable behavior.',
+        status: 'fail',
+        evaluator: { kind: 'human', name: 'reviewer', ref: privateRefs ? '/private/scorer.md' : 'docs/evidence/proof.md' },
+        evidence: [{ kind: 'path', ref: privateRefs ? '.osc/research/private-scorer.md' : 'docs/evidence/proof.md', summary: 'Reachable work remains incomplete.' }],
+        rationale: 'Missing tests for a reachable behavior; another implementation or scorer inspection can still help.',
+        analysis: { reason: 'missing_tests', source: privateRefs ? 'file:///private/scorer.md' : 'docs/evidence/proof.md' },
+      },
+    ],
+    decision: { status: 'rejected', approver: 'human', rationale: 'Reachable behavior remains incomplete.' },
+    improvement: { route: 'retry_run', target: null, carried_forward: ['AC2 needs tests.'], do_not_assume: ['No model benchmark claim.'] },
+  }, null, 2));
+  return evalPath;
+}
+
+function writeOrdinaryFailureLoop(privateRefs = false) {
+  const root = tempRepo();
+  const planPath = writePlan(root);
+  const outDir = join(root, '.osc/evolution/ordinary-failure-loop');
+  writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-31T09:00:00.000Z'), strategy: 'greedy' });
+  for (const [index, runId] of ['attempt-a', 'attempt-b', 'attempt-c'].entries()) {
+    const runPath = writeRunPacket(root, runId);
+    const evalPath = writeOrdinaryFailureEvaluation(root, runId, privateRefs);
+    recordEvolutionAttempt(outDir, {
+      runPath,
+      evaluationPath: evalPath,
+      decision: index === 0 ? 'promote' : 'retry',
+      score: 0.7,
+      rationale: index === 0 ? 'Initial score frontier.' : 'Retry did not move score, but remaining failure is reachable.',
+      now: new Date(`2026-05-31T09:${String(10 + index).padStart(2, '0')}:00.000Z`),
+    }, root);
+  }
+  return { root, outDir };
 }
 
 describe('checked-in evolution ledger demo fixture', () => {
@@ -399,6 +530,94 @@ describe('evolution attempt recording and validation', () => {
     expect(result.failures.map((failure) => failure.code)).toContain('evolution.boundary.unsupported_true');
     expect(result.failures.map((failure) => failure.code)).toContain('evolution.source_ref.private_path');
     expect(result.failures.map((failure) => failure.code)).toContain('evolution.attempt.duplicate_id');
+  });
+});
+
+describe('evolution analysis', () => {
+  it('reports plateau, impossible probe-only criteria, AC deltas, sensitivity, and redesign recommendation without mutating loop state', () => {
+    const { root, outDir } = writePlateauLoop();
+    const before = {
+      loop: readFileSync(join(outDir, 'loop.json'), 'utf8'),
+      attempts: readFileSync(join(outDir, 'attempts.jsonl'), 'utf8'),
+      frontier: readFileSync(join(outDir, 'frontier.json'), 'utf8'),
+      evaluation: readFileSync(join(root, 'docs/evidence/attempt-d-evaluation.json'), 'utf8'),
+    };
+
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+
+    expect(analysis.loop).toMatchObject({ loopDir: 'plateau-loop', attemptCount: 4 });
+    expect(analysis.plateau).toMatchObject({ status: 'plateau', noImprovementCount: 2, currentScore: 0.944893 });
+    expect(analysis.acceptanceSummary).toMatchObject({ currentPass: 2, currentTotal: 3, frontierPass: 2, frontierTotal: 3 });
+    expect(analysis.currentVsPrevious.rows.find((row) => row.id === 'AC28')).toMatchObject({ previousStatus: 'fail', currentStatus: 'fail' });
+    expect(analysis.currentVsFrontier.rows.find((row) => row.id === 'AC2')).toMatchObject({ frontierStatus: 'pass', currentStatus: 'pass' });
+    const ac2 = analysis.criteria.find((criterion) => criterion.id === 'AC2');
+    expect(ac2).toMatchObject({ currentStatus: 'pass', sensitivity: 'observed_positive' });
+    const ac28 = analysis.criteria.find((criterion) => criterion.id === 'AC28');
+    expect(ac28).toMatchObject({
+      currentStatus: 'fail',
+      sensitivity: 'none',
+      impossible: true,
+      evidence: expect.arrayContaining(['docs/evidence/scorer.md#AC28']),
+      reasons: expect.arrayContaining(['probe_only']),
+    });
+    expect(analysis.recommendation).toMatchObject({ action: 'redesign' });
+    expect(analysis.recommendation.summary).toContain('remaining failing criteria');
+    expect(analysis.notes.join('\n')).toContain('Score-frontier promotion is not acceptance approval');
+
+    const terminal = renderEvolutionAnalysis(analysis, 'terminal');
+    expect(terminal).toContain('Plateau: plateau — 2 attempt(s) since last score improvement');
+    expect(terminal).toContain('AC28: fail | sensitivity=none | impossible=probe_only');
+    expect(terminal).toContain('Recommendation: redesign');
+
+    const markdown = renderEvolutionAnalysis(analysis, 'markdown');
+    expect(markdown).toContain('# Evolution analysis: plateau-loop');
+    expect(markdown).toContain('## Current vs frontier AC delta');
+    expect(markdown).toContain('| AC28 — Renderer probe returns a playable visual artifact. | ✗ fail | ✗ fail |');
+    expect(markdown).toContain('## Recommendation');
+    expect(markdown).toContain('`redesign`');
+
+    const json = JSON.parse(renderEvolutionAnalysis(analysis, 'json'));
+    expect(json.recommendation.action).toBe('redesign');
+    expect(json.criteria.find((criterion: { id: string }) => criterion.id === 'AC28').impossible).toBe(true);
+
+    expect(readFileSync(join(outDir, 'loop.json'), 'utf8')).toBe(before.loop);
+    expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe(before.attempts);
+    expect(readFileSync(join(outDir, 'frontier.json'), 'utf8')).toBe(before.frontier);
+    expect(readFileSync(join(root, 'docs/evidence/attempt-d-evaluation.json'), 'utf8')).toBe(before.evaluation);
+  });
+
+  it('does not classify ordinary reachable failure reasons as impossible redesign-only blockers', () => {
+    const { outDir, root } = writeOrdinaryFailureLoop();
+
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+    const ac2 = analysis.criteria.find((criterion) => criterion.id === 'AC2');
+
+    expect(analysis.plateau.status).toBe('plateau');
+    expect(ac2).toMatchObject({
+      currentStatus: 'fail',
+      sensitivity: 'unknown',
+      impossible: false,
+      reasons: expect.arrayContaining(['missing_tests']),
+    });
+    expect(analysis.recommendation.action).toBe('inspect_scorer');
+    expect(analysis.recommendation.summary).toContain('Scores have stopped improving');
+  });
+
+  it('suppresses private or internal criterion evidence refs from analysis reports', () => {
+    const { outDir, root } = writeOrdinaryFailureLoop(true);
+
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+    const ac2 = analysis.criteria.find((criterion) => criterion.id === 'AC2');
+    const terminal = renderEvolutionAnalysis(analysis, 'terminal');
+    const markdown = renderEvolutionAnalysis(analysis, 'markdown');
+
+    expect(ac2?.evidence).toEqual([]);
+    expect(terminal).not.toContain('/private/scorer.md');
+    expect(terminal).not.toContain('file:///private/scorer.md');
+    expect(terminal).not.toContain('.osc/research/private-scorer.md');
+    expect(markdown).not.toContain('/private/scorer.md');
+    expect(markdown).not.toContain('file:///private/scorer.md');
+    expect(markdown).not.toContain('.osc/research/private-scorer.md');
   });
 });
 
