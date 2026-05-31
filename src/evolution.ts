@@ -1103,13 +1103,17 @@ function recommendAnalysis(plateau: EvolutionAnalysisResult['plateau'], criteria
   if (currentTotal === 0) {
     return { action: 'inspect_scorer', summary: 'No current acceptance-criteria evidence is available; inspect the scorer or evaluation envelope before retrying.', reasons: ['no_current_acceptance_criteria'] };
   }
-  const remaining = criteria.filter((criterion) => criterion.currentStatus !== 'pass');
+  const missingCurrent = criteria.filter((criterion) => criterion.currentStatus === null && (criterion.previousStatus !== null || criterion.frontierStatus !== null));
+  const remaining = criteria.filter((criterion) => criterion.currentStatus !== null && criterion.currentStatus !== 'pass');
   if (remaining.length === 0) {
+    if (missingCurrent.length > 0) {
+      return { action: 'inspect_scorer', summary: 'Current evaluation omits criteria seen in earlier attempts; inspect the scorer or evaluation envelope before stopping.', reasons: ['missing_current_acceptance_criteria'] };
+    }
     return { action: 'stop', summary: 'Current evaluation has all criteria passing; stop retrying and route to human approval/closeout.', reasons: ['all_current_criteria_pass'] };
   }
   const plateaued = plateau.status === 'plateau' || plateau.status === 'stagnating';
   const remainingNonMoving = remaining.every((criterion) => criterion.impossible || criterion.sensitivity === 'none');
-  if (plateaued && remainingNonMoving) {
+  if (plateaued && missingCurrent.length === 0 && remainingNonMoving) {
     return {
       action: 'redesign',
       summary: `Plateaued with ${remaining.length} remaining failing criteria that are impossible or not moving the score; redesign the criterion, scorer, artifact shape, or benchmark instead of retrying.`,
@@ -1171,15 +1175,11 @@ export function analyzeEvolutionLoop(loopDir: string, options: EvolutionAnalyzeO
     const current = currentMap.get(id);
     const previous = previousMap.get(id);
     const frontierSnapshot = frontierMap.get(id);
-    const metadataSources = [current, previous, frontierSnapshot].filter((snapshot): snapshot is EvolutionAnalysisCriterionSnapshot => Boolean(snapshot));
-    const currentMetadataSources = current ? [current] : metadataSources;
+    const currentMetadataSources = current ? [current] : [];
     const impossible = current?.impossible ?? false;
     const reasons = uniqueRefs(currentMetadataSources.flatMap((snapshot) => snapshot.reasons)).sort();
     const evidence = uniqueRefs(currentMetadataSources.flatMap((snapshot) => snapshot.evidence));
-    let sensitivityOverride = current?.sensitivityOverride ?? null;
-    if (!current && sensitivityOverride === null) {
-      sensitivityOverride = metadataSources.map((snapshot) => snapshot.sensitivityOverride).find((value): value is EvolutionCriterionSensitivity => value !== null) ?? null;
-    }
+    const sensitivityOverride = current?.sensitivityOverride ?? null;
     const observed = inferObservedSensitivity(id, attempts, criteriaByAttempt);
     const sensitivity = sensitivityOverride ?? (impossible ? 'none' : observed ?? 'unknown');
     return {

@@ -213,7 +213,7 @@ function writePlateauLoop() {
   return { root, outDir };
 }
 
-function writeStaleBlockerEvaluation(root: string, runId: string, hasBlocker: boolean) {
+function writeStaleBlockerEvaluation(root: string, runId: string, hasBlocker: boolean, omitAc28 = false) {
   const evalPath = join(root, `docs/evidence/${runId}-stale-blocker-evaluation.json`);
   const ac28: Record<string, unknown> = {
     id: 'AC28',
@@ -245,7 +245,7 @@ function writeStaleBlockerEvaluation(root: string, runId: string, hasBlocker: bo
         evidence: [{ kind: 'path', ref: 'docs/evidence/proof.md', summary: 'Synthetic evidence.' }],
         rationale: 'Loop state exists.',
       },
-      ac28,
+      ...(omitAc28 ? [] : [ac28]),
     ],
     decision: { status: 'rejected', approver: 'human', rationale: 'Current scorer still reports a reachable failure.' },
     improvement: { route: 'retry_run', target: null, carried_forward: ['AC28 still needs implementation work.'], do_not_assume: ['No raw benchmark win.'] },
@@ -259,13 +259,13 @@ function writeStaleBlockerLoop() {
   const outDir = join(root, '.osc/evolution/stale-blocker-loop');
   writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-31T10:00:00.000Z'), strategy: 'greedy' });
   const attempts = [
-    { runId: 'attempt-a', blocker: true, decision: 'promote' as const },
-    { runId: 'attempt-b', blocker: false, decision: 'retry' as const },
-    { runId: 'attempt-c', blocker: false, decision: 'retry' as const },
+    { runId: 'attempt-a', blocker: true, omitAc28: false, decision: 'promote' as const },
+    { runId: 'attempt-b', blocker: false, omitAc28: false, decision: 'retry' as const },
+    { runId: 'attempt-c', blocker: false, omitAc28: false, decision: 'retry' as const },
   ];
   for (const [index, attempt] of attempts.entries()) {
     const runPath = writeRunPacket(root, attempt.runId);
-    const evalPath = writeStaleBlockerEvaluation(root, attempt.runId, attempt.blocker);
+    const evalPath = writeStaleBlockerEvaluation(root, attempt.runId, attempt.blocker, attempt.omitAc28);
     recordEvolutionAttempt(outDir, {
       runPath,
       evaluationPath: evalPath,
@@ -273,6 +273,31 @@ function writeStaleBlockerLoop() {
       score: 0.7,
       rationale: index === 0 ? 'Initial frontier with old scorer metadata.' : 'Retry plateaued after scorer metadata changed.',
       now: new Date(`2026-05-31T10:${String(10 + index).padStart(2, '0')}:00.000Z`),
+    }, root);
+  }
+  return { root, outDir };
+}
+
+function writeMissingCurrentBlockerLoop() {
+  const root = tempRepo();
+  const planPath = writePlan(root);
+  const outDir = join(root, '.osc/evolution/missing-current-blocker-loop');
+  writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-31T11:00:00.000Z'), strategy: 'greedy' });
+  const attempts = [
+    { runId: 'attempt-a', blocker: true, omitAc28: false, decision: 'promote' as const },
+    { runId: 'attempt-b', blocker: false, omitAc28: true, decision: 'retry' as const },
+    { runId: 'attempt-c', blocker: false, omitAc28: true, decision: 'retry' as const },
+  ];
+  for (const [index, attempt] of attempts.entries()) {
+    const runPath = writeRunPacket(root, attempt.runId);
+    const evalPath = writeStaleBlockerEvaluation(root, attempt.runId, attempt.blocker, attempt.omitAc28);
+    recordEvolutionAttempt(outDir, {
+      runPath,
+      evaluationPath: evalPath,
+      decision: attempt.decision,
+      score: 0.7,
+      rationale: index === 0 ? 'Initial frontier with old scorer metadata.' : 'Retry plateaued after current scorer omitted AC28.',
+      now: new Date(`2026-05-31T11:${String(10 + index).padStart(2, '0')}:00.000Z`),
     }, root);
   }
   return { root, outDir };
@@ -666,6 +691,27 @@ describe('evolution analysis', () => {
     });
     expect(ac28?.reasons).not.toContain('probe_only');
     expect(analysis.recommendation.action).toBe('inspect_scorer');
+  });
+
+  it('treats missing current criterion metadata as scorer-inspection instead of stale blocker evidence', () => {
+    const { outDir, root } = writeMissingCurrentBlockerLoop();
+
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+    const ac28 = analysis.criteria.find((criterion) => criterion.id === 'AC28');
+
+    expect(analysis.acceptanceSummary).toMatchObject({ currentPass: 1, currentTotal: 1 });
+    expect(ac28).toMatchObject({
+      currentStatus: null,
+      frontierStatus: 'fail',
+      sensitivity: 'unknown',
+      impossible: false,
+      reasons: [],
+      evidence: [],
+    });
+    expect(analysis.recommendation).toMatchObject({
+      action: 'inspect_scorer',
+      reasons: expect.arrayContaining(['missing_current_acceptance_criteria']),
+    });
   });
 
   it('does not classify ordinary reachable failure reasons as impossible redesign-only blockers', () => {
