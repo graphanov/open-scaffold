@@ -13,7 +13,7 @@ import { openDashboardUrl, serveDashboard, writeWebDashboard } from './dashboard
 import { collectEvidence } from './evidence.js';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
 import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
-import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
+import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, analyzeEvolutionLoop, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionAnalysis, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionAnalysisFormat, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { computeMetrics, formatMetrics, parseSinceDate } from './metrics.js';
 import { computeStudy, renderStudyMarkdown, validateStudyReport, writeStudyOutput } from './study.js';
@@ -84,6 +84,7 @@ Lab and experimental:
   osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>]
   osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text>
   osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>]
+  osc evolve analyze <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>]
   osc evolve check <loop-dir>
   osc cockpit config
   osc cockpit test [--dry-run]
@@ -1865,7 +1866,7 @@ function evalCommand(args: string[]): void {
 }
 
 function printEvolutionUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> | osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>] | osc evolve check <loop-dir>', stream);
+  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> | osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>] | osc evolve analyze <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>] | osc evolve check <loop-dir>', stream);
 }
 
 function takeEvolutionValue(args: string[], index: number, flag: string): string {
@@ -1896,6 +1897,10 @@ function parseEvolutionCompareFormat(value: string): EvolutionCompareFormat {
   console.error(`Invalid value for --format: ${value}. Expected one of: terminal, markdown, json`);
   printEvolutionUsage();
   process.exit(2);
+}
+
+function parseEvolutionAnalysisFormat(value: string): EvolutionAnalysisFormat {
+  return parseEvolutionCompareFormat(value);
 }
 
 function evolutionRootFor(path: string): string {
@@ -2084,6 +2089,62 @@ function evolutionCommand(args: string[]): void {
         const resolvedOut = resolve(outPath);
         writeFileSync(resolvedOut, rendered, 'utf8');
         console.log(`Wrote evolution comparison: ${resolvedOut}`);
+      } else {
+        process.stdout.write(rendered.endsWith('\n') ? rendered : `${rendered}\n`);
+      }
+      return;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  }
+
+  if (subcommand === 'analyze') {
+    if (!sourceOrPath) {
+      printEvolutionUsage();
+      process.exit(2);
+    }
+    let format: EvolutionAnalysisFormat = 'terminal';
+    let outPath: string | undefined;
+    let plateauThreshold: number | undefined;
+    for (let i = 0; i < rest.length; i += 1) {
+      const flag = rest[i];
+      switch (flag) {
+        case '--format':
+          format = parseEvolutionAnalysisFormat(takeEvolutionValue(rest, i, flag));
+          i += 1;
+          break;
+        case '--out':
+        case '--output':
+          outPath = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--plateau-threshold': {
+          const raw = takeEvolutionValue(rest, i, flag);
+          const parsed = Number(raw);
+          if (!Number.isInteger(parsed) || parsed < 1) {
+            console.error(`Invalid value for --plateau-threshold: ${raw}. Expected a positive integer.`);
+            process.exit(2);
+          }
+          plateauThreshold = parsed;
+          i += 1;
+          break;
+        }
+        default:
+          console.error(`Unknown option for evolve analyze: ${flag}`);
+          printEvolutionUsage();
+          process.exit(2);
+      }
+    }
+    try {
+      const loopDir = resolve(sourceOrPath);
+      const root = evolutionRootFor(loopDir);
+      const analysis = analyzeEvolutionLoop(loopDir, { plateauThreshold }, root);
+      const rendered = renderEvolutionAnalysis(analysis, format);
+      if (outPath) {
+        const resolvedOut = resolve(outPath);
+        writeFileSync(resolvedOut, rendered, 'utf8');
+        console.log(`Wrote evolution analysis: ${resolvedOut}`);
       } else {
         process.stdout.write(rendered.endsWith('\n') ? rendered : `${rendered}\n`);
       }
