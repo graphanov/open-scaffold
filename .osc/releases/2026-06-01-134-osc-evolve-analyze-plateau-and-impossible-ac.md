@@ -28,5 +28,5 @@ Implemented a package-visible analysis surface only. The command inspects existi
 
 ## Follow-up
 
-- Release gate: this slice changed package-visible CLI/help, so npm publication and GitHub Release remain a separate owner-gated release-sync decision.
-- Next slices remain separate: external-scorer import for `osc eval`, compact evidence mode, and benchmark-v2 design outside this implementation slice.
+- Public package drift can be noted, but there is no automatic release-sync PR after this slice; npm publication and GitHub Release changes require an explicit release-train decision.
+- Next functional slices remain separate: external-scorer import for `osc eval`, compact evidence mode, and benchmark-v2 design outside this implementation slice.

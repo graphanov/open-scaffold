@@ -57,6 +57,7 @@ const topLevelHelpCommands = [
   'osc task link <task-id> --plan <slug>',
   'osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]',
   'osc eval init <run-or-plan> [--out <path>]',
+  'osc eval import <run-or-plan> --adapter 2000m-v1 --scorer <scorer-json> [--out <path>]',
   'osc eval check <evaluation-path>',
   'osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]',
   'osc audit check <audit-manifest-path>',
