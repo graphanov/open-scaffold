@@ -12,7 +12,7 @@ import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, ty
 import { openDashboardUrl, serveDashboard, writeWebDashboard } from './dashboard-web.js';
 import { collectEvidence } from './evidence.js';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
-import { loadEvaluationSource, renderEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope } from './evaluation.js';
+import { EXTERNAL_SCORER_ADAPTERS, loadEvaluationSource, renderEvaluationEnvelope, renderImportedEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope, writeImportedEvaluationEnvelope, type ExternalScorerAdapter } from './evaluation.js';
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, analyzeEvolutionLoop, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionAnalysis, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionAnalysisFormat, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { computeMetrics, formatMetrics, parseSinceDate } from './metrics.js';
@@ -78,6 +78,7 @@ Lab and experimental:
   osc task comment <task-id> <comment>
   osc task link <task-id> --plan <slug>
   osc eval init <run-or-plan> [--out <path>]
+  osc eval import <run-or-plan> --adapter 2000m-v1 --scorer <scorer-json> [--out <path>]
   osc eval check <evaluation-path>
   osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]
   osc audit check <audit-manifest-path>
@@ -1752,7 +1753,7 @@ function auditCommand(args: string[]): void {
 }
 
 function printEvalUsage(): void {
-  console.error('Usage: osc eval init <run-or-plan> [--out <path>] | osc eval check <evaluation-path>');
+  console.error('Usage: osc eval init <run-or-plan> [--out <path>] | osc eval import <run-or-plan> --adapter 2000m-v1 --scorer <scorer-json> [--out <path>] | osc eval check <evaluation-path>');
 }
 
 function findScaffoldRoot(start: string): string | null {
@@ -1776,6 +1777,13 @@ function takeEvalValue(args: string[], index: number, flag: string): string {
     process.exit(2);
   }
   return value;
+}
+
+function parseExternalScorerAdapter(value: string): ExternalScorerAdapter {
+  if (EXTERNAL_SCORER_ADAPTERS.includes(value as ExternalScorerAdapter)) return value as ExternalScorerAdapter;
+  console.error(`Unsupported eval import adapter: ${value}`);
+  printEvalUsage();
+  process.exit(2);
 }
 
 function evalCommand(args: string[]): void {
@@ -1823,6 +1831,77 @@ function evalCommand(args: string[]): void {
       }
       console.log(`Created evaluation envelope: ${absoluteOut}`);
       console.log('Note: this is a structure/coverage template only; fill evidence, evaluator, decision, and routing before check/close.');
+      return;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  }
+
+  if (subcommand === 'import') {
+    if (!sourceOrPath) {
+      printEvalUsage();
+      process.exit(2);
+    }
+    let adapter: ExternalScorerAdapter | null = null;
+    let scorerPath: string | null = null;
+    let outPath: string | null = null;
+    let force = false;
+    for (let i = 0; i < rest.length; i += 1) {
+      const flag = rest[i];
+      switch (flag) {
+        case '--adapter':
+          adapter = parseExternalScorerAdapter(takeEvalValue(rest, i, flag));
+          i += 1;
+          break;
+        case '--scorer':
+        case '--scorer-json':
+          scorerPath = takeEvalValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--out':
+        case '--output':
+          outPath = takeEvalValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--force':
+          force = true;
+          break;
+        default:
+          console.error(`Unknown option for eval import: ${flag}`);
+          printEvalUsage();
+          process.exit(2);
+      }
+    }
+    if (!adapter) {
+      console.error('Missing required option for eval import: --adapter');
+      printEvalUsage();
+      process.exit(2);
+    }
+    if (!scorerPath) {
+      console.error('Missing required option for eval import: --scorer');
+      printEvalUsage();
+      process.exit(2);
+    }
+    try {
+      if (!outPath) {
+        const source = loadEvaluationSource(sourceOrPath, process.cwd());
+        process.stdout.write(renderImportedEvaluationEnvelope(source, scorerPath, process.cwd(), { adapter }));
+        return;
+      }
+      const absoluteOut = resolve(outPath);
+      if (existsSync(absoluteOut) && !force) {
+        console.error(`Refusing to overwrite existing evaluation envelope: ${absoluteOut}`);
+        process.exit(1);
+      }
+      if (force && existsSync(absoluteOut)) {
+        const source = loadEvaluationSource(sourceOrPath, process.cwd());
+        writeFileSync(absoluteOut, renderImportedEvaluationEnvelope(source, scorerPath, process.cwd(), { adapter }), 'utf8');
+      } else {
+        writeImportedEvaluationEnvelope(sourceOrPath, scorerPath, absoluteOut, process.cwd(), { adapter });
+      }
+      console.log(`Created imported evaluation envelope: ${absoluteOut}`);
+      console.log('Note: imported scorer evidence does not make Open Scaffold the scorer and does not certify correctness, compliance, production readiness, or model quality.');
       return;
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error));

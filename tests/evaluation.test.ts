@@ -6,6 +6,7 @@ import {
   EVALUATION_SCHEMA,
   loadEvaluationSource,
   renderEvaluationEnvelope,
+  renderImportedEvaluationEnvelope,
   validateEvaluationEnvelopeText,
 } from '../src/evaluation.js';
 
@@ -106,6 +107,38 @@ function validEnvelope(root: string, overrides: Record<string, unknown> = {}) {
   };
 }
 
+function scorer2000m(overrides: Record<string, unknown> = {}) {
+  return {
+    passCount: 1,
+    totalAcs: 2,
+    determinism: { verdict: 'PASS', pass: true },
+    composite: 94.4892857143,
+    acs: [
+      {
+        id: 'AC1',
+        name: 'First thing works.',
+        pass: true,
+        skipped: false,
+        quality: 1,
+        detail: 'Reached target checkpoint.',
+        breakdown: { checkpoint: 'reached' },
+      },
+      {
+        id: 'AC2',
+        name: 'Second thing routes feedback.',
+        pass: false,
+        skipped: true,
+        probe_only: true,
+        quality: 0.2,
+        detail: 'Probe-only metadata came from /Users/example/private/raw-log.json and key=/workspace/open-scaffold/.osc-dev/raw.log; path:/opt/project/trace.log cannot mechanically pass headless output.',
+        breakdown: { events: ['/Users/example/private/raw-log.json', 'path=/workspace/open-scaffold/.osc-dev/events.log'], 'log=/workspace/open-scaffold/.osc-dev/keyed-log.json': true },
+        score_sensitivity: 'none',
+      },
+    ],
+    ...overrides,
+  };
+}
+
 describe('evaluation envelope generation', () => {
   it('renders a JSON evaluation envelope template from a plan with deterministic fallback AC ids', () => {
     const root = tempRepo();
@@ -139,6 +172,177 @@ describe('evaluation envelope generation', () => {
     expect(envelope.subject).toMatchObject({ source: 'run', task_id: 'task-123', run_id: 'demo-run', run_packet: '.osc/runs/demo-run/run.json' });
     expect(envelope.inputs.evidence).toEqual([{ kind: 'path', ref: 'docs/evidence/run-proof.md', summary: 'Evidence from run packet.' }]);
     expect(envelope.acceptance_criteria[0].id).toBe('AC1');
+  });
+
+  it('imports 2000m-v1 scorer JSON into a valid evaluation envelope without approving non-pass criteria or leaking local paths', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const scorerPath = join(root, 'docs/evidence/2000m-score.json');
+    writeFileSync(scorerPath, JSON.stringify(scorer2000m(), null, 2));
+
+    const output = renderImportedEvaluationEnvelope(loadEvaluationSource(planPath, root), scorerPath, root, { now: new Date('2026-06-01T08:00:00.000Z') });
+    const envelope = JSON.parse(output);
+    const validation = validateEvaluationEnvelopeText(output, join(root, 'docs/evidence/imported-eval.json'), root);
+
+    expect(validation.ok).toBe(true);
+    expect(envelope.schema).toBe(EVALUATION_SCHEMA);
+    expect(envelope.acceptance_criteria.map((criterion: any) => [criterion.id, criterion.status])).toEqual([
+      ['AC1', 'pass'],
+      ['AC2', 'not_evaluated'],
+    ]);
+    expect(envelope.acceptance_criteria[1].analysis).toMatchObject({ adapter: '2000m-v1', skipped: true, probe_only: true, score_sensitivity: 'none' });
+    expect(envelope.decision.status).toBe('blocked');
+    expect(envelope.improvement.route).toBe('block');
+    expect(output).not.toContain('/Users/example');
+    expect(output).not.toContain('/workspace/open-scaffold');
+    expect(output).not.toContain('/opt/project');
+    expect(output).toContain('[local-path omitted]');
+    expect(output).toContain('Open Scaffold maps scorer evidence into an evaluation envelope');
+  });
+
+  it('rejects malformed scorer output before creating empty acceptance criteria', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const scorerPath = join(root, 'docs/evidence/bad-score.json');
+    writeFileSync(scorerPath, JSON.stringify({ passCount: 0, totalAcs: 0, acs: [] }, null, 2));
+
+    expect(() => renderImportedEvaluationEnvelope(loadEvaluationSource(planPath, root), scorerPath, root)).toThrow(/non-empty acs array/);
+  });
+
+  it('rejects scorer files that do not cover the source acceptance criteria', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const scorerPath = join(root, 'docs/evidence/stale-score.json');
+    writeFileSync(scorerPath, JSON.stringify({
+      passCount: 1,
+      totalAcs: 1,
+      determinism: 'PASS',
+      composite: 100,
+      acs: [{ id: 'AC1', name: 'Only one stale criterion.', pass: true }],
+    }, null, 2));
+
+    expect(() => renderImportedEvaluationEnvelope(loadEvaluationSource(planPath, root), scorerPath, root)).toThrow(/coverage does not match source acceptance criteria/);
+  });
+
+  it('rejects scorer files that reuse fallback ids for different acceptance criteria text', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const scorerPath = join(root, 'docs/evidence/wrong-text-score.json');
+    writeFileSync(scorerPath, JSON.stringify({
+      passCount: 2,
+      totalAcs: 2,
+      determinism: 'PASS',
+      composite: 100,
+      acs: [
+        { id: 'AC1', name: 'Unrelated stale criterion one.', pass: true },
+        { id: 'AC2', name: 'Unrelated stale criterion two.', pass: true },
+      ],
+    }, null, 2));
+
+    expect(() => renderImportedEvaluationEnvelope(loadEvaluationSource(planPath, root), scorerPath, root)).toThrow(/AC text does not match source acceptance criteria/);
+  });
+
+  it('normalizes scorer AC ids the same way as explicit source criteria ids', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root, ['AC-1: Explicit dash id works.', 'AC_2: Explicit underscore id works.']);
+    const scorerPath = join(root, 'docs/evidence/explicit-id-score.json');
+    writeFileSync(scorerPath, JSON.stringify({
+      passCount: 2,
+      totalAcs: 2,
+      determinism: 'PASS',
+      composite: 100,
+      acs: [
+        { id: 'AC-1', name: 'Explicit dash id works.', pass: true },
+        { id: 'AC_2', name: 'Explicit underscore id works.', pass: true },
+      ],
+    }, null, 2));
+
+    const envelope = JSON.parse(renderImportedEvaluationEnvelope(loadEvaluationSource(planPath, root), scorerPath, root));
+
+    expect(envelope.acceptance_criteria.map((criterion: any) => [criterion.id, criterion.status])).toEqual([
+      ['AC1', 'pass'],
+      ['AC2', 'pass'],
+    ]);
+    expect(envelope.decision.status).toBe('approved');
+  });
+
+  it('rejects scorer imports when the source has no acceptance criteria', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root, []);
+    const scorerPath = join(root, 'docs/evidence/source-empty-score.json');
+    writeFileSync(scorerPath, JSON.stringify({
+      passCount: 1,
+      totalAcs: 1,
+      determinism: 'PASS',
+      composite: 100,
+      acs: [{ id: 'AC1', name: 'Scorer-only criterion.', pass: true }],
+    }, null, 2));
+
+    expect(() => renderImportedEvaluationEnvelope(loadEvaluationSource(planPath, root), scorerPath, root)).toThrow(/requires source acceptance criteria/);
+  });
+
+  it('includes determinism metadata in imported evaluation idempotency keys', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root, ['Deterministic all-pass criterion.']);
+    const passScorerPath = join(root, 'docs/evidence/determinism-pass-score.json');
+    const failScorerPath = join(root, 'docs/evidence/determinism-fail-score.json');
+    const baseScorer = {
+      passCount: 1,
+      totalAcs: 1,
+      composite: 100,
+      acs: [{ id: 'AC1', name: 'Deterministic all-pass criterion.', pass: true }],
+    };
+    writeFileSync(passScorerPath, JSON.stringify({ ...baseScorer, determinism: { verdict: 'PASS', pass: true } }, null, 2));
+    writeFileSync(failScorerPath, JSON.stringify({ ...baseScorer, determinism: { verdict: 'FAIL', pass: false } }, null, 2));
+
+    const source = loadEvaluationSource(planPath, root);
+    const passEnvelope = JSON.parse(renderImportedEvaluationEnvelope(source, passScorerPath, root));
+    const failEnvelope = JSON.parse(renderImportedEvaluationEnvelope(source, failScorerPath, root));
+
+    expect(passEnvelope.decision.status).toBe('approved');
+    expect(failEnvelope.decision.status).toBe('blocked');
+    expect(passEnvelope.idempotency_key).not.toBe(failEnvelope.idempotency_key);
+  });
+
+  it('blocks skipped or probe-only criteria even if the scorer also marks them pass', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root, ['Probe-only passed flag should not approve.']);
+    const scorerPath = join(root, 'docs/evidence/skipped-pass-score.json');
+    writeFileSync(scorerPath, JSON.stringify({
+      passCount: 1,
+      totalAcs: 1,
+      determinism: 'PASS',
+      composite: 100,
+      acs: [{ id: 'AC1', name: 'Probe-only passed flag should not approve.', pass: true, skipped: true, probe_only: true, detail: 'Skipped/probe-only.' }],
+    }, null, 2));
+
+    const envelope = JSON.parse(renderImportedEvaluationEnvelope(loadEvaluationSource(planPath, root), scorerPath, root));
+
+    expect(envelope.acceptance_criteria[0]).toMatchObject({ status: 'not_evaluated', correction: { route: 'block' } });
+    expect(envelope.decision.status).toBe('blocked');
+    expect(envelope.improvement.route).toBe('block');
+  });
+
+  it('rejects unsafe scorer criterion ids instead of echoing private paths', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const scorerPath = join(root, 'docs/evidence/unsafe-id-score.json');
+    writeFileSync(scorerPath, JSON.stringify({
+      passCount: 1,
+      totalAcs: 1,
+      acs: [{ id: '/Users/example/private/raw-log.json', name: 'Unsafe id.', pass: true }],
+    }, null, 2));
+
+    expect(() => renderImportedEvaluationEnvelope(loadEvaluationSource(planPath, root), scorerPath, root)).toThrow(/unsafe id/);
+  });
+
+  it('rejects scorer pass counts that do not match imported AC states', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const scorerPath = join(root, 'docs/evidence/mismatched-score.json');
+    writeFileSync(scorerPath, JSON.stringify(scorer2000m({ passCount: 2 }), null, 2));
+
+    expect(() => renderImportedEvaluationEnvelope(loadEvaluationSource(planPath, root), scorerPath, root)).toThrow(/passCount/);
   });
 });
 

@@ -82,6 +82,17 @@ osc evolve analyze .osc/evolution/demo-loop --format markdown --out docs/evidenc
 
 The analysis command is a decision aid. It does not mutate loop files unless `--out` is supplied for a rendered report, and even then it writes only the requested report path. It does not spawn runtimes, rerun benchmarks, rank models, certify compliance, promote a frontier, or approve work.
 
+Import structured external scorer output into an evaluation envelope when a domain tool already did the judging:
+
+```bash
+osc eval import .osc/runs/demo-run/run.json \
+  --adapter 2000m-v1 \
+  --scorer docs/evidence/2000m-v1-score.json \
+  --out docs/evidence/demo-evaluation.json
+```
+
+The first adapter maps 2000m v1 conformance JSON (`passCount`, `totalAcs`, `acs[].id`, `name`, `pass`, `skipped`, `quality`, `detail`, `breakdown`, determinism, and composite score) into `open-scaffold.evaluation.v1`. It records scorer provenance and routes non-pass or skipped/probe-only criteria to retry/block instead of approval. Composite score and determinism are verification metadata, not acceptance approval, and the import path does not run the scorer, call an API, rerun a benchmark, or embed raw/private logs.
+
 `osc evolve` does not create a run, launch a runtime, call an LLM, publish benchmark rankings, certify compliance, approve a merge, or decide product taste. It only records and analyzes curated loop state.
 
 ## See it in one screen
