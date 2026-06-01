@@ -9,9 +9,9 @@ This slice removes the Open Scaffold-owned benchmark-v2 proposal, generalizes `o
 ## Traceability
 
 - Roadmap / issue / task: owner-directed repair after PR #164 was closed as the wrong benchmark-v2 coupling shape.
-- Plan: `.osc/plans/active/137-decouple-2000m-benchmark-boundary.md`.
+- Plan: `.osc/plans/done/137-decouple-2000m-benchmark-boundary.md`.
 - Run ID / run packet: N/A — direct docs/code/test repair slice; no runtime, benchmark rerun, npm publish, or GitHub Release.
-- Branch / PR: branch `fix/decouple-2000m-boundary`; PR pending.
+- Branch / PR: branch `fix/decouple-2000m-boundary`; PR #165 merged.
 
 ## Verification
 
@@ -25,10 +25,10 @@ This slice removes the Open Scaffold-owned benchmark-v2 proposal, generalizes `o
 
 ## Outcome
 
-Implemented and locally verified on the repair branch. Open Scaffold keeps generic evaluator/import/analyze/evidence mechanics while 2000m remains the independent home for benchmark design/scorer/harness work.
+Merged and locally verified in PR #165. The plan has been closed to `done/`. Open Scaffold keeps generic evaluator/import/analyze/evidence mechanics while 2000m remains the independent home for benchmark design/scorer/harness work.
 
 ## Follow-up
 
-- Do not merge without owner approval.
+- Closeout PR remains owner-gated.
 - No npm publish or GitHub Release work is included in this slice.
 - If a future 2000m-specific converter is needed, put it in `graphanov/2000m` or an optional integration rather than Open Scaffold core.
