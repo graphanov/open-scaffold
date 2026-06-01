@@ -165,6 +165,10 @@ function safeRef(root: string, ref: string): string {
   if (!isInside(lexicalRoot, absolute)) return '[local-path omitted]';
   const realAbsolute = realPathIfExists(absolute);
   if (realAbsolute && !isInside(realRoot, realAbsolute)) return '[local-path omitted]';
+  if (realAbsolute) {
+    const realRelativeRef = toPosix(relative(realRoot, realAbsolute)) || '.';
+    if (isPrivateRef(realRelativeRef)) return '[private-ref omitted]';
+  }
   const relativeRef = toPosix(relative(lexicalRoot, absolute)) || '.';
   if (isPrivateRef(relativeRef)) return '[private-ref omitted]';
   return relativeRef;

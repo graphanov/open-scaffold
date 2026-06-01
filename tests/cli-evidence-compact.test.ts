@@ -284,22 +284,28 @@ describe('osc evidence compact', () => {
     const { root, runPath } = tempRepo();
     mkdirSync(join(root, '.osc-dev'), { recursive: true });
     const privateEval = '.osc-dev/private-evaluation.json';
-    writeFileSync(join(root, privateEval), JSON.stringify({
+    const privateEvalPath = join(root, privateEval);
+    writeFileSync(privateEvalPath, JSON.stringify({
       schema: 'open-scaffold.evaluation.v1',
       evaluation_id: 'PRIVATE_EVAL_SECRET',
       acceptance_criteria: [{ id: 'AC_PRIVATE', text: 'Private criterion should not be copied.', status: 'fail', evaluator: {}, evidence: [], rationale: 'PRIVATE_EVAL_SECRET /workspace/private-eval' }],
       decision: { status: 'rejected', rationale: 'PRIVATE_EVAL_SECRET' },
       improvement: { route: 'redesign' },
     }, null, 2));
+    const publicSymlink = 'docs/evidence/private-evaluation-symlink.json';
+    symlinkSync(privateEvalPath, join(root, publicSymlink));
 
-    const manifestText = execFileSync(tsx, [cli, 'evidence', 'compact', runPath, '--evaluation', privateEval, '--json'], { cwd: root, encoding: 'utf8' });
-    const manifest = JSON.parse(manifestText);
+    for (const evaluationRef of [privateEval, publicSymlink]) {
+      const manifestText = execFileSync(tsx, [cli, 'evidence', 'compact', runPath, '--evaluation', evaluationRef, '--json'], { cwd: root, encoding: 'utf8' });
+      const manifest = JSON.parse(manifestText);
 
-    expect(manifest.evaluation.present).toBe(false);
-    expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '[private-ref omitted]' && ref.role === 'evaluation_envelope')).toBe(true);
-    expect(manifest.promoted_evidence.some((ref: any) => ref.ref === '[private-ref omitted]')).toBe(false);
-    expect(manifestText).not.toContain('PRIVATE_EVAL_SECRET');
-    expect(manifestText).not.toContain('/workspace/private-eval');
+      expect(manifest.evaluation.present).toBe(false);
+      expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '[private-ref omitted]' && ref.role === 'evaluation_envelope')).toBe(true);
+      expect(manifest.promoted_evidence.some((ref: any) => ref.ref === '[private-ref omitted]')).toBe(false);
+      expect(manifestText).not.toContain('PRIVATE_EVAL_SECRET');
+      expect(manifestText).not.toContain('/workspace/private-eval');
+      expect(manifestText).not.toContain(publicSymlink);
+    }
   });
 
   it('does not dereference loop run packets outside the scaffold root', () => {
