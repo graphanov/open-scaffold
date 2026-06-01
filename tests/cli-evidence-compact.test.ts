@@ -38,7 +38,7 @@ function tempRepo() {
       manifest: '.osc/runs/demo-run/run.json',
       logs: ['.osc/runs/demo-run/codex-events.jsonl'],
       outputs: ['.osc/runs/demo-run/runtime-output.log'],
-      evidence: ['docs/evidence/proof.md'],
+      evidence: ['docs/evidence/proof.md', '.osc/state/session.log', '.osc-dev/research/client-log.jsonl'],
     },
   }, null, 2));
   writeFileSync(join(root, '.osc/runs/demo-run/runtime-output.log'), 'RAW_OUTPUT_SECRET should stay local.');
@@ -149,7 +149,10 @@ describe('osc evidence compact', () => {
     expect(manifest.summary.next_recommendation).toBe('retry_run');
     expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '.osc/runs/demo-run/codex-events.jsonl' && ref.digest_sha256)).toBe(true);
     expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '[local-path omitted]' && ref.role === 'evaluation_evidence_ref')).toBe(true);
+    expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '[private-ref omitted]' && ref.role === 'run_artifact_ref')).toBe(true);
+    expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '[private-ref omitted]' && ref.digest_sha256 === null && ref.size_bytes === null)).toBe(true);
     expect(manifest.promoted_evidence.some((ref: any) => ref.ref === '[local-path omitted]')).toBe(false);
+    expect(manifest.promoted_evidence.some((ref: any) => ref.ref === '[private-ref omitted]')).toBe(false);
     expect(manifest.promoted_evidence.some((ref: any) => ref.ref === 'docs/evidence/demo-run-evaluation.json' && ref.role === 'evaluation_envelope')).toBe(true);
     expect(manifest.candidate_notes[0]).toMatchObject({ ref: 'docs/evidence/model-candidate-note.md', canonical: false });
 
@@ -165,6 +168,9 @@ describe('osc evidence compact', () => {
     expect(`${markdown}\n${manifestText}`).not.toContain('Users\\\\alice');
     expect(`${markdown}\n${manifestText}`).not.toContain('secret.log');
     expect(`${markdown}\n${manifestText}`).not.toContain('secret-output.md');
+    expect(`${markdown}\n${manifestText}`).not.toContain('.osc/state');
+    expect(`${markdown}\n${manifestText}`).not.toContain('.osc-dev');
+    expect(`${markdown}\n${manifestText}`).not.toContain('client-log');
     expect(readFileSync(rawLog, 'utf8')).toContain('RAW_TRANSCRIPT_SECRET');
   });
 

@@ -147,7 +147,11 @@ function safeRef(root: string, ref: string): string {
   if (isForeignWindowsAbsolutePath(ref)) return sanitizeText(ref, '[local-path omitted]') || '[local-path omitted]';
   const realRoot = existsSync(root) ? resolve(root) : root;
   const absolute = isAbsolute(ref) || win32.isAbsolute(ref) ? resolve(ref) : resolve(realRoot, ref);
-  if (isInside(realRoot, absolute)) return toPosix(relative(realRoot, absolute)) || '.';
+  if (isInside(realRoot, absolute)) {
+    const relativeRef = toPosix(relative(realRoot, absolute)) || '.';
+    if (isPrivateRef(relativeRef)) return '[private-ref omitted]';
+    return relativeRef;
+  }
   return sanitizeText(ref, '[local-path omitted]') || '[local-path omitted]';
 }
 
@@ -160,6 +164,7 @@ function refAbsolute(root: string, ref: string): string | null {
 }
 
 function digestRef(root: string, ref: string): { digest: string | null; size: number | null } {
+  if (isOmittedRef(safeRef(root, ref))) return { digest: null, size: null };
   const absolute = refAbsolute(root, ref);
   if (!absolute || !existsSync(absolute) || !statSync(absolute).isFile()) return { digest: null, size: null };
   const bytes = readFileSync(absolute);
@@ -171,10 +176,14 @@ function isPrivateRef(ref: string): boolean {
   return PRIVATE_PREFIXES.some((prefix) => normalized === prefix.slice(0, -1) || normalized.startsWith(prefix));
 }
 
+function isOmittedRef(ref: string): boolean {
+  return ref.includes('[local-path omitted]') || ref.includes('[private-ref omitted]');
+}
+
 function isRawLocalRef(root: string, ref: string, role: string): boolean {
   if (CANONICAL_EVIDENCE_ROLES.has(role)) return false;
   const safe = safeRef(root, ref);
-  if (safe.includes('[local-path omitted]')) return true;
+  if (isOmittedRef(safe)) return true;
   const normalized = toPosix(ref).replace(/^\.\//, '');
   const lower = normalized.toLowerCase();
   const ext = extname(lower);
