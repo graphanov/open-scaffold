@@ -1,0 +1,160 @@
+{
+  "schema": "open-scaffold.workflow-benchmark-scenario.v1",
+  "scenario_id": "2000m-v2-workflow-value",
+  "purpose": "Test whether repo-native work records improve recovery, handoff, stop-condition correctness, scorer-feedback integration, and artifact reviewability after the 2000m v1 raw-score tie.",
+  "benchmark_owner": {
+    "repo": "graphanov/2000m",
+    "owns": [
+      "v2 scorer and harness implementation",
+      "context-wipe execution mechanics",
+      "hidden and randomized seed policy",
+      "reviewer-injection fixtures",
+      "replay/viewer metrics",
+      "result schema for source-labeled benchmark outputs"
+    ]
+  },
+  "non_claims": [
+    "does_not_claim_open_scaffold_improved_2000m_v1_raw_score",
+    "does_not_claim_model_intelligence_gain",
+    "does_not_claim_adoption_or_market_proof",
+    "does_not_claim_benchmark_win_from_evidence_quality",
+    "does_not_rank_models_without_repeated_controlled_runs"
+  ],
+  "conditions": [
+    {
+      "id": "naked-runtime",
+      "description": "A capable model/runtime receives benchmark docs, neutral scorer feedback, and a plain trajectory log without Open Scaffold records.",
+      "allowed_inputs": ["benchmark spec", "scorer output", "plain trajectory"]
+    },
+    {
+      "id": "open-scaffold-ledger",
+      "description": "The same model/runtime receives plan, run, eval, evolve, and compact evidence records, but no autonomous controller authority.",
+      "allowed_inputs": ["active plan", "run packet", "evaluation envelope", "evolution loop", "compact evidence"]
+    },
+    {
+      "id": "open-scaffold-controller-candidate",
+      "description": "A future reviewed controller candidate uses the same records plus explicit hypotheses, deltas, and stop/redesign recommendations.",
+      "allowed_inputs": ["active plan", "run packet", "evaluation envelope", "evolution analysis", "compact evidence", "explicit controller decision log"]
+    }
+  ],
+  "tracks": [
+    {
+      "id": "mechanical_conformance",
+      "weight": 0.25,
+      "measures": [
+        "deterministic protocol checks",
+        "fixed-seed hidden regression checks",
+        "source-labeled scorer output"
+      ],
+      "must_not_measure": ["model ranking by itself", "workflow value by itself"]
+    },
+    {
+      "id": "artifact_quality",
+      "weight": 0.20,
+      "measures": [
+        "state-trace replay richness",
+        "obstacle spread and density balance",
+        "event richness and recovery cadence",
+        "viewer or renderer replayability"
+      ],
+      "must_not_measure": ["native game UI unless one exists", "taste as mechanical pass"]
+    },
+    {
+      "id": "process_control",
+      "weight": 0.30,
+      "measures": [
+        "plateau detection",
+        "impossible or stale requirement detection",
+        "scorer-feedback integration",
+        "continue stop redesign or inspect-scorer recommendation quality"
+      ],
+      "must_not_measure": ["more attempts as automatically better", "score-frontier promotion as approval"]
+    },
+    {
+      "id": "handoff_recovery",
+      "weight": 0.25,
+      "measures": [
+        "fresh-agent recovery after context wipe",
+        "current best attempt reconstruction",
+        "passed and failed criterion reconstruction",
+        "evidence and blocker traceability",
+        "next-action clarity"
+      ],
+      "must_not_measure": ["chat-memory recall", "private transcript access"]
+    }
+  ],
+  "phases": [
+    {
+      "id": "baseline-driver",
+      "generation": 1,
+      "stimulus": "Implement or repair a deterministic baseline headless driver under the published benchmark contract.",
+      "workflow_value_under_test": ["baseline evidence capture", "clear current objective"],
+      "evidence_required": ["scorer output", "run or trajectory record", "failed criterion list"],
+      "expected_decision": "continue"
+    },
+    {
+      "id": "staged-requirement-change",
+      "generation": 2,
+      "stimulus": "Introduce a new requirement after generation 1, such as a scoring variant or slalom-gate behavior.",
+      "workflow_value_under_test": ["plan or requirement update", "avoidance of stale goal drift"],
+      "evidence_required": ["updated acceptance criteria", "delta from prior attempt", "regression check output"],
+      "expected_decision": "continue"
+    },
+    {
+      "id": "reviewer-injection",
+      "generation": 3,
+      "stimulus": "Inject a valid reviewer finding that maps to a criterion or correction route.",
+      "workflow_value_under_test": ["review-feedback capture", "fix routing", "evidence of correction"],
+      "evidence_required": ["review finding", "mapped criterion or amendment", "post-fix scorer output"],
+      "expected_decision": "fix"
+    },
+    {
+      "id": "regression-trap",
+      "generation": 4,
+      "stimulus": "Reveal hidden or delayed seed checks that catch a patch overfit to public examples.",
+      "workflow_value_under_test": ["regression resistance", "source-labeled scorer feedback"],
+      "evidence_required": ["hidden-seed summary", "previous invariant status", "new failure route"],
+      "expected_decision": "continue"
+    },
+    {
+      "id": "context-wipe-handoff",
+      "generation": 5,
+      "stimulus": "Wipe chat context and give a fresh worker only the repo artifacts and allowed benchmark outputs.",
+      "workflow_value_under_test": ["fresh-agent recovery", "handoff quality", "next-action reconstruction"],
+      "evidence_required": ["fresh-worker recovery report", "current best attempt", "remaining blockers", "next recommended action"],
+      "expected_decision": "handoff"
+    },
+    {
+      "id": "impossible-or-stale-requirement",
+      "generation": 6,
+      "stimulus": "Introduce a requirement that is impossible under the current artifact type, stale after a spec change, or contradictory with another criterion.",
+      "workflow_value_under_test": ["impossible requirement handling", "stop-condition correctness", "scorer inspection"],
+      "evidence_required": ["criterion sensitivity analysis", "scorer metadata or reviewer rationale", "stop or redesign recommendation"],
+      "expected_decision": "redesign"
+    }
+  ],
+  "open_scaffold_surfaces": [
+    "osc evolve analyze",
+    "osc eval import --adapter 2000m-v1",
+    "osc evidence compact",
+    "plan/run/evaluation/evolution records",
+    "public-safe evidence note"
+  ],
+  "success_gate": {
+    "requires": [
+      "all tracks are reported separately",
+      "mechanical conformance is source-labeled and not treated as the whole verdict",
+      "context-wipe recovery is scored without chat history",
+      "review feedback changes the work record or a correction route",
+      "impossible or stale requirements produce stop, redesign, or inspect_scorer instead of blind retry",
+      "compact evidence preserves failed criteria and verification status"
+    ],
+    "rejects": [
+      "single aggregate score presented as benchmark win",
+      "adoption proof from an owner-run local experiment",
+      "Open Scaffold raw-score-improvement claim from the v1 tie",
+      "private transcript or local path access as a recovery input",
+      "model leaderboard claim without repeated controlled runs"
+    ]
+  }
+}

@@ -10,6 +10,18 @@ A useful v2 should not be just “more SkiFree acceptance criteria.” It should
 
 Separate the scores. Do not collapse everything into one flattering number.
 
+## First implementation slice
+
+The first benchmark-v2 slice should be a **two-repo protocol plus benchmark fixture**:
+
+- Open Scaffold provides the public-safe scenario contract, scenario fixture, and claim boundaries.
+- The `graphanov/2000m` benchmark repo later ports that fixture into a real v2 scorer and harness.
+- Results records stay separate and source-label every mechanical, artifact, process, and recovery metric.
+
+This is narrower than a full benchmark implementation but stronger than a design-only note. It gives the benchmark repo a concrete packet to implement while keeping Open Scaffold honest about what it owns: `osc evolve analyze`, `osc eval import`, compact evidence, plans, run packets, evaluation envelopes, and public non-claims.
+
+The initial machine-readable handoff lives at [`../examples/benchmark-v2-workflow/`](../examples/benchmark-v2-workflow/).
+
 | Track | What it measures | Where it belongs |
 | --- | --- | --- |
 | Mechanical conformance | Does the produced driver satisfy deterministic protocol checks? | Benchmark scorer. |
@@ -109,6 +121,8 @@ The benchmark repo should own:
 - regression-trap tests;
 - replay/viewer metrics;
 - result schema for separate mechanical, artifact, process, and handoff tracks.
+
+The handoff fixture in this repository should be treated as input to that work, not as the benchmark implementation itself. A later `graphanov/2000m` slice should decide whether the scenario becomes `v2/scenarios/workflow-value.json`, a scorer fixture, or both.
 
 Open Scaffold should own:
 

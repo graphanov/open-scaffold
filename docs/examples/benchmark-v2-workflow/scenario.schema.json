@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/graphanov/open-scaffold/docs/examples/benchmark-v2-workflow/scenario.schema.json",
+  "title": "Open Scaffold workflow benchmark scenario v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "scenario_id",
+    "purpose",
+    "benchmark_owner",
+    "non_claims",
+    "conditions",
+    "tracks",
+    "phases",
+    "open_scaffold_surfaces",
+    "success_gate"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "open-scaffold.workflow-benchmark-scenario.v1"
+    },
+    "scenario_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 40
+    },
+    "benchmark_owner": {
+      "type": "object",
+      "required": ["repo", "owns"],
+      "additionalProperties": false,
+      "properties": {
+        "repo": { "type": "string" },
+        "owns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 3
+        }
+      }
+    },
+    "non_claims": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 4,
+      "uniqueItems": true
+    },
+    "conditions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "allowed_inputs"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "description": { "type": "string" },
+          "allowed_inputs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          }
+        }
+      },
+      "minItems": 3
+    },
+    "tracks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "weight", "measures", "must_not_measure"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+          "measures": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2
+          },
+          "must_not_measure": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          }
+        }
+      },
+      "minItems": 4
+    },
+    "phases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "generation", "stimulus", "workflow_value_under_test", "evidence_required", "expected_decision"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "generation": { "type": "integer", "minimum": 1 },
+          "stimulus": { "type": "string" },
+          "workflow_value_under_test": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "evidence_required": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "expected_decision": {
+            "type": "string",
+            "enum": ["continue", "fix", "handoff", "stop", "redesign", "inspect_scorer"]
+          }
+        }
+      },
+      "minItems": 5
+    },
+    "open_scaffold_surfaces": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 3,
+      "uniqueItems": true
+    },
+    "success_gate": {
+      "type": "object",
+      "required": ["requires", "rejects"],
+      "additionalProperties": false,
+      "properties": {
+        "requires": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 4
+        },
+        "rejects": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 3
+        }
+      }
+    }
+  }
+}
