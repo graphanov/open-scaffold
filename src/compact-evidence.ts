@@ -122,7 +122,7 @@ function sanitizeText(value: string | null | undefined, fallback: string | null 
     .replace(/\b[A-Za-z]:[\\/][^\s,;)\]]+/g, '[local-path omitted]')
     .replace(/(^|[\s("'`=:])\/(?!\/)(?:[A-Za-z0-9._-]+\/)+[^\s,;)\]}'"]+/g, '$1[local-path omitted]')
     .replace(/\/(?:Users|home|tmp|private|var|Volumes)\/[^\s,;)\]]+/g, '[local-path omitted]')
-    .replace(/(^|[\s("'`=:])(?:\.[\\/])?(?:\.git|\.osc[\\/](?:state|research)|\.osc-dev|\.hermes|node_modules)(?:[\\/][^\s,;)\]}'"]+)?(?=$|[\s,.;:)\]}'"])/g, '$1[private-ref omitted]')
+    .replace(/(^|[\s("'`=:\[{])(?:\.[\\/])?(?:\.git|\.osc[\\/](?:state|research)|\.osc-dev|\.hermes|node_modules)(?:[\\/][^\s,;)\]}'"]+)?(?=$|[\s,.;:)\]}'"])/g, '$1[private-ref omitted]')
     .replace(/[\r\n]+/g, ' ')
     .trim()
     .slice(0, 1000);
