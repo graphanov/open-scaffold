@@ -32,7 +32,7 @@ function tempRepo() {
       path: '.osc/plans/active/136-demo.md',
       goal: 'Compact repeated-run evidence without leaking raw logs or .osc/state/session.log.',
       acceptanceCriteria: ['AC1: Summary exists.', 'AC2: Failures remain visible.'],
-      verificationSteps: ['npm test -- --run tests/cli-evidence-compact.test.ts', 'npm run build', 'inspect .osc-dev/research/client-log.jsonl', 'inspect .osc-dev', 'inspect .osc\\state\\session.log', 'inspect [.osc\\state\\session.log]'],
+      verificationSteps: ['npm test -- --run tests/cli-evidence-compact.test.ts', 'npm run build', 'inspect .osc-dev/research/client-log.jsonl', 'inspect .osc-dev', 'inspect .osc\\state\\session.log', 'inspect [.osc\\state\\session.log]', 'inspect [/workspace/open-scaffold/.osc/state/session.log]'],
     },
     artifacts: {
       manifest: '.osc/runs/demo-run/run.json',
@@ -163,6 +163,7 @@ describe('osc evidence compact', () => {
     expect(`${markdown}\n${manifestText}`).not.toContain('RAW_OUTPUT_SECRET');
     expect(`${markdown}\n${manifestText}`).not.toContain('MODEL_CANDIDATE_SECRET');
     expect(`${markdown}\n${manifestText}`).not.toContain('/home/example');
+    expect(`${markdown}\n${manifestText}`).not.toContain('/workspace');
     expect(`${markdown}\n${manifestText}`).not.toContain('C:/Users');
     expect(`${markdown}\n${manifestText}`).not.toContain('C:\\Users');
     expect(`${markdown}\n${manifestText}`).not.toContain('Users\\\\alice');
