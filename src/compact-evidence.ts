@@ -190,7 +190,8 @@ function containedExistingPath(root: string, path: string, label: string): strin
 
 function isCanonicalRunPacketRef(root: string, ref: string): boolean {
   const safe = safeRef(root, ref);
-  return !isOmittedRef(safe) && safe.startsWith('.osc/runs/') && basename(safe) === 'run.json';
+  const parts = safe.split('/');
+  return !isOmittedRef(safe) && parts.length === 4 && parts[0] === '.osc' && parts[1] === 'runs' && Boolean(parts[2]) && parts[3] === 'run.json';
 }
 
 function digestRef(root: string, ref: string): { digest: string | null; size: number | null } {
@@ -258,6 +259,21 @@ function statusCounts(criteria: Record<string, unknown>[]): Record<string, numbe
 
 function summarizeEvaluation(root: string, evaluationRef: string | null | undefined): EvaluationSummary {
   if (!evaluationRef) {
+    return {
+      present: false,
+      path: null,
+      evaluation_id: null,
+      decision: null,
+      decision_rationale: null,
+      improvement_route: null,
+      next_recommendation: 'inspect_evaluation',
+      status_counts: {},
+      failed_criteria: [],
+      evaluator_refs: [],
+      evidence_refs: [],
+    };
+  }
+  if (isOmittedRef(safeRef(root, evaluationRef))) {
     return {
       present: false,
       path: null,

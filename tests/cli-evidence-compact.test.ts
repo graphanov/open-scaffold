@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -280,6 +280,28 @@ describe('osc evidence compact', () => {
     expect(manifestText).not.toContain('.osc-dev/private-status');
   });
 
+  it('does not dereference private evaluation envelopes', () => {
+    const { root, runPath } = tempRepo();
+    mkdirSync(join(root, '.osc-dev'), { recursive: true });
+    const privateEval = '.osc-dev/private-evaluation.json';
+    writeFileSync(join(root, privateEval), JSON.stringify({
+      schema: 'open-scaffold.evaluation.v1',
+      evaluation_id: 'PRIVATE_EVAL_SECRET',
+      acceptance_criteria: [{ id: 'AC_PRIVATE', text: 'Private criterion should not be copied.', status: 'fail', evaluator: {}, evidence: [], rationale: 'PRIVATE_EVAL_SECRET /workspace/private-eval' }],
+      decision: { status: 'rejected', rationale: 'PRIVATE_EVAL_SECRET' },
+      improvement: { route: 'redesign' },
+    }, null, 2));
+
+    const manifestText = execFileSync(tsx, [cli, 'evidence', 'compact', runPath, '--evaluation', privateEval, '--json'], { cwd: root, encoding: 'utf8' });
+    const manifest = JSON.parse(manifestText);
+
+    expect(manifest.evaluation.present).toBe(false);
+    expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '[private-ref omitted]' && ref.role === 'evaluation_envelope')).toBe(true);
+    expect(manifest.promoted_evidence.some((ref: any) => ref.ref === '[private-ref omitted]')).toBe(false);
+    expect(manifestText).not.toContain('PRIVATE_EVAL_SECRET');
+    expect(manifestText).not.toContain('/workspace/private-eval');
+  });
+
   it('does not dereference loop run packets outside the scaffold root', () => {
     const { root, runPath, evalPath } = tempRepo();
     const loopDir = writeLoop(root, runPath, evalPath);
@@ -322,36 +344,40 @@ describe('osc evidence compact', () => {
   it('does not dereference noncanonical loop run packet JSON refs', () => {
     const { root, runPath, evalPath } = tempRepo();
     const loopDir = writeLoop(root, runPath, evalPath);
-    const noncanonicalRef = 'docs/evidence/not-a-run-packet.json';
-    writeFileSync(join(root, noncanonicalRef), JSON.stringify({
-      schemaVersion: 'open-scaffold.run.v1',
-      runId: 'NONCANONICAL_RUN_SECRET',
-      plan: { verificationSteps: ['NONCANONICAL_RUN_SECRET /workspace/noncanonical'] },
-      artifacts: {},
-    }, null, 2));
-    writeFileSync(join(loopDir, 'attempts.jsonl'), `${JSON.stringify({
-      schema: 'open-scaffold.evolution-attempt.v1',
-      attempt_id: 'demo-run',
-      run_id: 'demo-run',
-      task_id: 'task-123',
-      run_packet: noncanonicalRef,
-      evaluation: 'docs/evidence/demo-run-evaluation.json',
-      evaluation_decision: 'rejected',
-      evidence_refs: ['docs/evidence/proof.md'],
-      adapter_receipts: [],
-      decision: 'retry',
-      score: 0.5,
-      rationale: 'AC2 remains failed.',
-    })}\n`);
+    const noncanonicalRefs = ['docs/evidence/not-a-run-packet.json', '.osc/runs/demo-run/raw/run.json'];
 
-    const manifestText = execFileSync(tsx, [cli, 'evidence', 'compact', loopDir, '--json'], { cwd: root, encoding: 'utf8' });
-    const manifest = JSON.parse(manifestText);
+    for (const noncanonicalRef of noncanonicalRefs) {
+      mkdirSync(dirname(join(root, noncanonicalRef)), { recursive: true });
+      writeFileSync(join(root, noncanonicalRef), JSON.stringify({
+        schemaVersion: 'open-scaffold.run.v1',
+        runId: 'NONCANONICAL_RUN_SECRET',
+        plan: { verificationSteps: ['NONCANONICAL_RUN_SECRET /workspace/noncanonical'] },
+        artifacts: {},
+      }, null, 2));
+      writeFileSync(join(loopDir, 'attempts.jsonl'), `${JSON.stringify({
+        schema: 'open-scaffold.evolution-attempt.v1',
+        attempt_id: 'demo-run',
+        run_id: 'demo-run',
+        task_id: 'task-123',
+        run_packet: noncanonicalRef,
+        evaluation: 'docs/evidence/demo-run-evaluation.json',
+        evaluation_decision: 'rejected',
+        evidence_refs: ['docs/evidence/proof.md'],
+        adapter_receipts: [],
+        decision: 'retry',
+        score: 0.5,
+        rationale: 'AC2 remains failed.',
+      })}\n`);
 
-    expect(manifest.verification_commands).toEqual([]);
-    expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === noncanonicalRef && ref.role === 'run_packet')).toBe(true);
-    expect(manifest.promoted_evidence.some((ref: any) => ref.ref === noncanonicalRef)).toBe(false);
-    expect(manifestText).not.toContain('NONCANONICAL_RUN_SECRET');
-    expect(manifestText).not.toContain('/workspace/noncanonical');
+      const manifestText = execFileSync(tsx, [cli, 'evidence', 'compact', loopDir, '--json'], { cwd: root, encoding: 'utf8' });
+      const manifest = JSON.parse(manifestText);
+
+      expect(manifest.verification_commands).toEqual([]);
+      expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === noncanonicalRef && ref.role === 'run_packet')).toBe(true);
+      expect(manifest.promoted_evidence.some((ref: any) => ref.ref === noncanonicalRef)).toBe(false);
+      expect(manifestText).not.toContain('NONCANONICAL_RUN_SECRET');
+      expect(manifestText).not.toContain('/workspace/noncanonical');
+    }
   });
 
   it('rejects symlinked loop state files outside the scaffold root', () => {
