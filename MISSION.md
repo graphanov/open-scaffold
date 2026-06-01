@@ -29,6 +29,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-01: closed 136-compact-evidence-mode — Add compact evidence mode for run and evolution-loop summaries
 - 2026-06-01: closed 135-osc-eval-external-scorer-adapter — Close 135 after eval external scorer import
 - 2026-06-01: closed 134-osc-evolve-analyze-plateau-and-impossible-ac — shipped osc evolve analyze via PR #160
 - 2026-05-31: closed 133-2000m-postmortem-evolve-reset — Create 2000m benchmark postmortem and evolve reset package

@@ -57,6 +57,12 @@ One integrity-oriented envelope for reconstructing the slice/run evidence bundle
 
 The audit envelope is not raw runtime state. It points to promoted artifacts and safe evidence, preserving privacy and source-of-truth boundaries.
 
+### `compact_evidence_id`
+
+One repo-hygiene summary for a run or evolution loop. It keeps the objective, run/attempt ids, evaluation status counts, failed criteria, verification commands, decision, next recommendation, and digest-backed evidence refs in a small public-safe bundle.
+
+Compact evidence is not a replacement for raw local forensics and is not tamper-proof external anchoring. Raw logs, JSONL transcripts, private runtime state, and model-authored candidate notes stay local or are represented as safe labels plus digests; candidate notes must remain `canonical=false` and cannot overwrite `attempts.jsonl` or `frontier.json`.
+
 ### `question_id`
 
 One blocking clarification, approval request, or human decision inside a run. Human replies should route by structured correlation:

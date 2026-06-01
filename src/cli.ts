@@ -10,6 +10,7 @@ import { runDashboard, type DashboardRunOptions } from './dashboard.js';
 import { DispatchUsageError, formatDispatchSummary, runDispatch } from './dispatch.js';
 import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
 import { openDashboardUrl, serveDashboard, writeWebDashboard } from './dashboard-web.js';
+import { buildCompactEvidence, renderCompactEvidenceMarkdown, writeCompactEvidence } from './compact-evidence.js';
 import { collectEvidence } from './evidence.js';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
 import { EXTERNAL_SCORER_ADAPTERS, loadEvaluationSource, renderEvaluationEnvelope, renderImportedEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope, writeImportedEvaluationEnvelope, type ExternalScorerAdapter } from './evaluation.js';
@@ -56,6 +57,7 @@ Stable core protocol:
   osc amend <plan-slug> [--message <text>]
   osc evidence new <slug>
   osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
+  osc evidence compact <run-or-loop> [--evaluation <evaluation-json>] [--candidate-note <path>]... [--out <dir>] [--json]
   osc close <plan-slug> [--message <text>]
   osc trace <plan-slug> [--json] [--include-unverified]
   osc verify [--evidence-chain [--plan <slug>] [--json] [--strict]]
@@ -989,7 +991,7 @@ function compareCommand(args: string[]): void {
 }
 
 function printEvidenceUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc evidence new <slug> | osc evidence collect <slug> [--ci] [--dry-run] [--verbose]', stream);
+  printUsage('Usage: osc evidence new <slug> | osc evidence collect <slug> [--ci] [--dry-run] [--verbose] | osc evidence compact <run-or-loop> [--evaluation <evaluation-json>] [--candidate-note <path>]... [--out <dir>] [--json]', stream);
 }
 
 function printEvidenceNewUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
@@ -998,6 +1000,10 @@ function printEvidenceNewUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
 
 function printEvidenceCollectUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage('Usage: osc evidence collect <slug> [--ci] [--dry-run] [--verbose]', stream);
+}
+
+function printEvidenceCompactUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc evidence compact <run-or-loop> [--evaluation <evaluation-json>] [--candidate-note <path>]... [--out <dir>] [--json]', stream);
 }
 
 function printTraceUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
@@ -1273,6 +1279,69 @@ function evidenceCommand(args: string[]): void {
       return;
     } catch (error) {
       exitForScaffoldHelperError(error);
+    }
+  }
+
+  if (subcommand === 'compact') {
+    if (isHelpArg(rest[0])) {
+      printEvidenceCompactUsage('stdout');
+      return;
+    }
+    const source = requireArg(rest, 'run-or-loop');
+    let evaluationPath: string | undefined;
+    let outDir: string | undefined;
+    let json = false;
+    const candidateNotes: string[] = [];
+    for (let i = 1; i < rest.length; i += 1) {
+      const flag = rest[i];
+      const take = () => {
+        const value = rest[i + 1];
+        if (!value || value.startsWith('--')) {
+          console.error(`Missing value for ${flag}`);
+          printEvidenceCompactUsage();
+          process.exit(2);
+        }
+        i += 1;
+        return value;
+      };
+      switch (flag) {
+        case '--evaluation':
+          evaluationPath = take();
+          break;
+        case '--candidate-note':
+          candidateNotes.push(take());
+          break;
+        case '--out':
+        case '--output':
+          outDir = take();
+          break;
+        case '--json':
+          json = true;
+          break;
+        default:
+          console.error(`Unknown option for evidence compact: ${flag}`);
+          printEvidenceCompactUsage();
+          process.exit(2);
+      }
+    }
+    try {
+      const options = { evaluationPath, candidateNotes };
+      if (outDir) {
+        const result = writeCompactEvidence(source, outDir, process.cwd(), options);
+        console.log(`Wrote compact evidence summary: ${result.summaryPath}`);
+        console.log(`Wrote compact evidence manifest: ${result.manifestPath}`);
+      } else {
+        const manifest = buildCompactEvidence(source, process.cwd(), options);
+        if (json) {
+          console.log(JSON.stringify(manifest, null, 2));
+        } else {
+          process.stdout.write(renderCompactEvidenceMarkdown(manifest));
+        }
+      }
+      return;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
     }
   }
 

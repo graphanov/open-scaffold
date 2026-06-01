@@ -93,6 +93,18 @@ osc eval import .osc/runs/demo-run/run.json \
 
 The first adapter maps 2000m v1 conformance JSON (`passCount`, `totalAcs`, `acs[].id`, `name`, `pass`, `skipped`, `quality`, `detail`, `breakdown`, determinism, and composite score) into `open-scaffold.evaluation.v1`. It records scorer provenance and routes non-pass or skipped/probe-only criteria to retry/block instead of approval. Composite score and determinism are verification metadata, not acceptance approval, and the import path does not run the scorer, call an API, rerun a benchmark, or embed raw/private logs.
 
+Write compact evidence when a repeated loop has useful raw local forensics but the repo should promote only a concise public-safe summary and digest-backed manifest:
+
+```bash
+osc evidence compact .osc/evolution/demo-loop --out docs/evidence/demo-compact
+osc evidence compact .osc/runs/demo-run/run.json \
+  --evaluation docs/evidence/demo-evaluation.json \
+  --candidate-note docs/evidence/model-note.md \
+  --out docs/evidence/demo-run-compact
+```
+
+`osc evidence compact` writes `compact-evidence.md` and `compact-evidence.json` when `--out` is supplied. The summary keeps objective, run/attempt ids, evaluation status counts, failed criteria, verification commands, decision, and next recommendation visible. Raw logs, JSONL transcripts, private runtime state, and local absolute paths are not embedded; local files are represented as safe repo-relative labels plus SHA-256 digests when available. `--candidate-note` refs are marked `canonical=false` and do not rewrite `attempts.jsonl` or `frontier.json`.
+
 `osc evolve` does not create a run, launch a runtime, call an LLM, publish benchmark rankings, certify compliance, approve a merge, or decide product taste. It only records and analyzes curated loop state.
 
 ## See it in one screen
