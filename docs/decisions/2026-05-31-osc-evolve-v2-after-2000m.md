@@ -4,6 +4,8 @@ Date: 2026-05-31
 
 Status: accepted for backlog planning; implementation gated by follow-up plans
 
+Superseding correction, 2026-06-01: the benchmark must remain independent from Open Scaffold. Benchmark findings may inform generic Open Scaffold improvements, but Open Scaffold must not host 2000m-specific benchmark-v2 fixtures/contracts or make 2000m a core dependency. Benchmark-specific design, scorers, harnesses, hidden seeds, and result schemas belong in the benchmark repo.
+
 ## Verdict
 
 The 2000m v1 two-lane run showed that current `osc evolve` is useful as a record of repeated attempts, but not yet good enough to call an improvement controller.
@@ -55,18 +57,18 @@ Minimum output:
 
 This is backlog plan `134-osc-evolve-analyze-plateau-and-impossible-ac`.
 
-### 3. Add scorer adapters before more hand-filled evaluation records
+### 3. Add generic external scorer import before more hand-filled evaluation records
 
 The run exposed brittle hand-filled evaluation envelopes. `osc eval` should support external scorer import so a domain tool can mechanically map its output into an Open Scaffold evaluation envelope.
 
-The first adapter should target 2000m v1 conformance JSON because it has enough structure:
+The Open Scaffold core contract should stay benchmark-neutral. It can import a generic AC-result JSON shape with enough structure:
 
 - `passCount` / `totalAcs`;
 - per-AC ids, names, pass/skipped states, quality, detail, and breakdown;
 - determinism verdict;
 - composite score.
 
-The adapter must not mark the evaluation `approved` while any mechanical criterion fails.
+The importer must not mark the evaluation `approved` while any mechanical criterion fails, is skipped, or is probe-only. Benchmark-specific converters belong in the benchmark repo or optional integrations, not in Open Scaffold core.
 
 This is backlog plan `135-osc-eval-external-scorer-adapter`.
 
@@ -83,16 +85,16 @@ This is backlog plan `136-compact-evidence-mode`.
 
 ### 5. Do not turn this into a model-ranking claim
 
-The 2000m run was useful because it failed a narrow claim. The next benchmark must test recovery, handoff, stop-condition correctness, and artifact quality. It must not market Open Scaffold as making models smarter by default.
+The 2000m run was useful because it failed a narrow claim. Any next benchmark must be designed and owned independently by the benchmark repo. Open Scaffold should only absorb the generic product lesson: repeated-attempt workflows need recovery, handoff, stop-condition correctness, artifact quality, and honest non-claims. It must not market Open Scaffold as making models smarter by default.
 
 ## Implementation order
 
 1. Postmortem and backlog reset package.
 2. `osc evolve analyze`: plateau, impossible-AC, score-sensitivity, AC deltas, and stop/redesign recommendation.
-3. `osc eval` external-scorer import, starting with 2000m v1 conformance JSON.
+3. `osc eval` generic external-scorer import for a benchmark-neutral AC-result JSON shape.
 4. Compact evidence mode for repeated attempts.
-5. Benchmark v2 in the benchmark repo: context wipe, handoff, reviewer injection, regression traps, hidden seeds, replay/viewer track, and impossible/stale requirement handling.
-6. Re-run the comparison only after the above exists, with at least three conditions: naked, current Open Scaffold ledger, and redesigned Open Scaffold controller.
+5. Benchmark v2 in the benchmark repo, independent of Open Scaffold: context wipe, handoff, reviewer injection, regression traps, hidden seeds, replay/viewer track, and impossible/stale requirement handling.
+6. Re-run the comparison only after independent benchmark-v2 mechanics and generic Open Scaffold controller improvements exist, with at least three conditions: naked, current Open Scaffold ledger, and redesigned Open Scaffold controller.
 
 ## Non-goals
 

@@ -29,4 +29,4 @@ Implemented a package-visible analysis surface only. The command inspects existi
 ## Follow-up
 
 - Public package drift can be noted, but there is no automatic release-sync PR after this slice; npm publication and GitHub Release changes require an explicit release-train decision.
-- Next functional slices remain separate: external-scorer import for `osc eval`, compact evidence mode, and benchmark-v2 design outside this implementation slice.
+- Next functional slices remain separate: generic external-scorer import for `osc eval`, compact evidence mode, and any benchmark-v2 design in the benchmark repo, not Open Scaffold.

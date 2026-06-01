@@ -166,22 +166,22 @@ function writePlateauEvaluation(root: string, runId: string, ac2Status: 'pass' |
         rationale: ac2Status === 'pass' ? 'Fixed by the second attempt.' : 'Not fixed yet.',
       },
       {
-        id: 'AC28',
-        text: 'Renderer probe returns a playable visual artifact.',
+        id: 'AC3',
+        text: 'Third criterion is probe-only for the current artifact shape.',
         status: 'fail',
-        evaluator: { kind: 'domain-tool', name: 'synthetic-2000m-scorer', ref: 'docs/evidence/scorer.md' },
-        evidence: [{ kind: 'path', ref: 'docs/evidence/scorer.md', summary: 'Probe-only criterion is hardcoded pass=false for headless JSON drivers.' }],
+        evaluator: { kind: 'domain-tool', name: 'synthetic-ac-scorer', ref: 'docs/evidence/scorer.md' },
+        evidence: [{ kind: 'path', ref: 'docs/evidence/scorer.md', summary: 'Probe-only criterion is hardcoded pass=false for the current synthetic artifact shape.' }],
         rationale: 'The scorer marks this criterion probe-only and impossible for the current artifact type.',
         analysis: {
           score_sensitivity: 'none',
           impossible: true,
           reason: 'probe_only',
-          source: 'docs/evidence/scorer.md#AC28',
+          source: 'docs/evidence/scorer.md#AC3',
         },
       },
     ],
     decision: { status: 'rejected', approver: 'human', rationale: 'Score frontier is not acceptance approval.' },
-    improvement: { route: 'create_next_slice', target: null, carried_forward: ['AC28 requires benchmark redesign.'], do_not_assume: ['No raw benchmark win.'] },
+    improvement: { route: 'create_next_slice', target: null, carried_forward: ['AC3 requires criterion redesign.'], do_not_assume: ['No raw score win.'] },
   }, null, 2));
   return evalPath;
 }
@@ -190,11 +190,11 @@ function writePlateauLoop() {
   const root = tempRepo();
   const planPath = writePlan(root);
   const outDir = join(root, '.osc/evolution/plateau-loop');
-  writeFileSync(join(root, 'docs/evidence/scorer.md'), 'Synthetic scorer metadata: AC28 is probe-only/pass-false for headless JSON drivers.');
+  writeFileSync(join(root, 'docs/evidence/scorer.md'), 'Synthetic scorer metadata: AC3 is probe-only/pass-false for the current synthetic artifact shape.');
   writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-31T08:00:00.000Z'), strategy: 'greedy' });
   const attempts = [
     { runId: 'attempt-a', score: 0.9, ac2Status: 'fail' as const, decision: 'promote' as const, rationale: 'First score frontier.' },
-    { runId: 'attempt-b', score: 0.944893, ac2Status: 'pass' as const, decision: 'promote' as const, rationale: 'Improved reachable AC2 but AC28 remains scorer-blocked.' },
+    { runId: 'attempt-b', score: 0.944893, ac2Status: 'pass' as const, decision: 'promote' as const, rationale: 'Improved reachable AC2 but AC3 remains scorer-blocked.' },
     { runId: 'attempt-c', score: 0.944893, ac2Status: 'pass' as const, decision: 'retry' as const, rationale: 'Retry plateaued at the same score.' },
     { runId: 'attempt-d', score: 0.944893, ac2Status: 'pass' as const, decision: 'retry' as const, rationale: 'Another retry plateaued; remaining failure is probe-only.' },
   ];
@@ -216,8 +216,8 @@ function writePlateauLoop() {
 function writeStaleBlockerEvaluation(root: string, runId: string, hasBlocker: boolean, omitAc28 = false) {
   const evalPath = join(root, `docs/evidence/${runId}-stale-blocker-evaluation.json`);
   const ac28: Record<string, unknown> = {
-    id: 'AC28',
-    text: 'Renderer evidence is evaluated against the current scorer contract.',
+    id: 'AC3',
+    text: 'Third criterion is evaluated against the current scorer contract.',
     status: 'fail',
     evaluator: { kind: 'automated-check', name: 'synthetic-scorer', ref: 'docs/evidence/proof.md' },
     evidence: [{ kind: 'path', ref: 'docs/evidence/proof.md', summary: 'Current scorer still reports a reachable failure.' }],
@@ -228,7 +228,7 @@ function writeStaleBlockerEvaluation(root: string, runId: string, hasBlocker: bo
       score_sensitivity: 'none',
       impossible: true,
       reason: 'probe_only',
-      source: 'docs/evidence/scorer.md#old-AC28',
+      source: 'docs/evidence/scorer.md#old-AC3',
     };
     ac28.rationale = 'Old scorer metadata marked this criterion probe-only.';
   }
@@ -248,7 +248,7 @@ function writeStaleBlockerEvaluation(root: string, runId: string, hasBlocker: bo
       ...(omitAc28 ? [] : [ac28]),
     ],
     decision: { status: 'rejected', approver: 'human', rationale: 'Current scorer still reports a reachable failure.' },
-    improvement: { route: 'retry_run', target: null, carried_forward: ['AC28 still needs implementation work.'], do_not_assume: ['No raw benchmark win.'] },
+    improvement: { route: 'retry_run', target: null, carried_forward: ['AC3 still needs implementation work.'], do_not_assume: ['No raw score win.'] },
   }, null, 2));
   return evalPath;
 }
@@ -296,7 +296,7 @@ function writeMissingCurrentBlockerLoop() {
       evaluationPath: evalPath,
       decision: attempt.decision,
       score: 0.7,
-      rationale: index === 0 ? 'Initial frontier with old scorer metadata.' : 'Retry plateaued after current scorer omitted AC28.',
+      rationale: index === 0 ? 'Initial frontier with old scorer metadata.' : 'Retry plateaued after current scorer omitted AC3.',
       now: new Date(`2026-05-31T11:${String(10 + index).padStart(2, '0')}:00.000Z`),
     }, root);
   }
@@ -643,16 +643,16 @@ describe('evolution analysis', () => {
     expect(analysis.loop).toMatchObject({ loopDir: 'plateau-loop', attemptCount: 4 });
     expect(analysis.plateau).toMatchObject({ status: 'plateau', noImprovementCount: 2, currentScore: 0.944893 });
     expect(analysis.acceptanceSummary).toMatchObject({ currentPass: 2, currentTotal: 3, frontierPass: 2, frontierTotal: 3 });
-    expect(analysis.currentVsPrevious.rows.find((row) => row.id === 'AC28')).toMatchObject({ previousStatus: 'fail', currentStatus: 'fail' });
+    expect(analysis.currentVsPrevious.rows.find((row) => row.id === 'AC3')).toMatchObject({ previousStatus: 'fail', currentStatus: 'fail' });
     expect(analysis.currentVsFrontier.rows.find((row) => row.id === 'AC2')).toMatchObject({ frontierStatus: 'pass', currentStatus: 'pass' });
     const ac2 = analysis.criteria.find((criterion) => criterion.id === 'AC2');
     expect(ac2).toMatchObject({ currentStatus: 'pass', sensitivity: 'observed_positive' });
-    const ac28 = analysis.criteria.find((criterion) => criterion.id === 'AC28');
+    const ac28 = analysis.criteria.find((criterion) => criterion.id === 'AC3');
     expect(ac28).toMatchObject({
       currentStatus: 'fail',
       sensitivity: 'none',
       impossible: true,
-      evidence: expect.arrayContaining(['docs/evidence/scorer.md#AC28']),
+      evidence: expect.arrayContaining(['docs/evidence/scorer.md#AC3']),
       reasons: expect.arrayContaining(['probe_only']),
     });
     expect(analysis.recommendation).toMatchObject({ action: 'redesign' });
@@ -661,19 +661,19 @@ describe('evolution analysis', () => {
 
     const terminal = renderEvolutionAnalysis(analysis, 'terminal');
     expect(terminal).toContain('Plateau: plateau — 2 attempt(s) since last score improvement');
-    expect(terminal).toContain('AC28: fail | sensitivity=none | impossible=probe_only');
+    expect(terminal).toContain('AC3: fail | sensitivity=none | impossible=probe_only');
     expect(terminal).toContain('Recommendation: redesign');
 
     const markdown = renderEvolutionAnalysis(analysis, 'markdown');
     expect(markdown).toContain('# Evolution analysis: plateau-loop');
     expect(markdown).toContain('## Current vs frontier AC delta');
-    expect(markdown).toContain('| AC28 — Renderer probe returns a playable visual artifact. | ✗ fail | ✗ fail |');
+    expect(markdown).toContain('| AC3 — Third criterion is probe-only for the current artifact shape. | ✗ fail | ✗ fail |');
     expect(markdown).toContain('## Recommendation');
     expect(markdown).toContain('`redesign`');
 
     const json = JSON.parse(renderEvolutionAnalysis(analysis, 'json'));
     expect(json.recommendation.action).toBe('redesign');
-    expect(json.criteria.find((criterion: { id: string }) => criterion.id === 'AC28').impossible).toBe(true);
+    expect(json.criteria.find((criterion: { id: string }) => criterion.id === 'AC3').impossible).toBe(true);
 
     expect(readFileSync(join(outDir, 'loop.json'), 'utf8')).toBe(before.loop);
     expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe(before.attempts);
@@ -685,7 +685,7 @@ describe('evolution analysis', () => {
     const { outDir, root } = writeStaleBlockerLoop();
 
     const analysis = analyzeEvolutionLoop(outDir, {}, root);
-    const ac28 = analysis.criteria.find((criterion) => criterion.id === 'AC28');
+    const ac28 = analysis.criteria.find((criterion) => criterion.id === 'AC3');
 
     expect(analysis.plateau.status).toBe('plateau');
     expect(ac28).toMatchObject({
@@ -702,7 +702,7 @@ describe('evolution analysis', () => {
     const { outDir, root } = writeMissingCurrentBlockerLoop();
 
     const analysis = analyzeEvolutionLoop(outDir, {}, root);
-    const ac28 = analysis.criteria.find((criterion) => criterion.id === 'AC28');
+    const ac28 = analysis.criteria.find((criterion) => criterion.id === 'AC3');
 
     expect(analysis.acceptanceSummary).toMatchObject({ currentPass: 1, currentTotal: 1 });
     expect(ac28).toMatchObject({
