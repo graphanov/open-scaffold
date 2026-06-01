@@ -84,6 +84,13 @@ function writeLoop(root: string, runPath: string, evalPath: string) {
     subject: { plan_slug: '136-demo', task_id: 'task-123' },
     strategy: { name: 'manual', executes_in_core: false },
   }, null, 2));
+  writeFileSync(join(root, 'docs/evidence/unpromoted-evaluation.json'), JSON.stringify({
+    schema: 'open-scaffold.evaluation.v1',
+    evaluation_id: 'eval-unpromoted',
+    acceptance_criteria: [{ id: 'AC_UNPROMOTED', text: 'Unpromoted retry should not drive compact summary.', status: 'fail', evaluator: {}, evidence: [], rationale: 'This later attempt was not promoted.' }],
+    decision: { status: 'rejected', rationale: 'Unpromoted attempt remains worse.' },
+    improvement: { route: 'redesign' },
+  }, null, 2));
   writeFileSync(join(loopDir, 'attempts.jsonl'), `${JSON.stringify({
     schema: 'open-scaffold.evolution-attempt.v1',
     attempt_id: 'demo-run',
@@ -97,6 +104,19 @@ function writeLoop(root: string, runPath: string, evalPath: string) {
     decision: 'retry',
     score: 0.5,
     rationale: 'AC2 remains failed.',
+  })}\n${JSON.stringify({
+    schema: 'open-scaffold.evolution-attempt.v1',
+    attempt_id: 'unpromoted-run',
+    run_id: 'unpromoted-run',
+    task_id: 'task-123',
+    run_packet: '.osc/runs/unpromoted-run/run.json',
+    evaluation: 'docs/evidence/unpromoted-evaluation.json',
+    evaluation_decision: 'rejected',
+    evidence_refs: ['docs/evidence/unpromoted-evidence.md'],
+    adapter_receipts: [],
+    decision: 'stop',
+    score: 0.1,
+    rationale: 'Later attempt was not promoted to frontier.',
   })}\n`);
   writeFileSync(join(loopDir, 'frontier.json'), JSON.stringify({
     schema: 'open-scaffold.evolution-frontier.v1',
@@ -160,8 +180,11 @@ describe('osc evidence compact', () => {
     const manifest = JSON.parse(execFileSync(tsx, [cli, 'evidence', 'compact', loopDir, '--json'], { cwd: root, encoding: 'utf8' }));
 
     expect(manifest.subject).toMatchObject({ kind: 'evolution_loop', loop_id: 'demo-loop', plan_slug: '136-demo' });
-    expect(manifest.summary).toMatchObject({ attempt_count: 1, current_attempt_id: 'demo-run', frontier_attempt_id: 'demo-run', decision: 'retry' });
+    expect(manifest.summary).toMatchObject({ attempt_count: 2, current_attempt_id: 'demo-run', frontier_attempt_id: 'demo-run', decision: 'retry', score: 0.5 });
+    expect(manifest.evaluation).toMatchObject({ evaluation_id: 'eval-demo-run' });
     expect(manifest.evaluation.failed_criteria[0]).toMatchObject({ id: 'AC2', status: 'fail' });
+    expect(JSON.stringify(manifest)).not.toContain('eval-unpromoted');
+    expect(JSON.stringify(manifest)).not.toContain('AC_UNPROMOTED');
     expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '.osc/runs/demo-run/codex-events.jsonl')).toBe(true);
     expect(manifest.promoted_evidence.some((ref: any) => ref.ref === '.osc/evolution/demo-loop/attempts.jsonl' && ref.role === 'attempt_journal')).toBe(true);
     expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '.osc/evolution/demo-loop/attempts.jsonl')).toBe(false);

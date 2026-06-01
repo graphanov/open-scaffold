@@ -295,6 +295,11 @@ function latestAttempt(attempts: Record<string, unknown>[]): Record<string, unkn
   return attempts.length ? attempts[attempts.length - 1] : null;
 }
 
+function attemptById(attempts: Record<string, unknown>[], attemptId: string | null): Record<string, unknown> | null {
+  if (!attemptId) return null;
+  return attempts.find((attempt) => asString(attempt.attempt_id) === attemptId) ?? null;
+}
+
 function readAttempts(path: string): Record<string, unknown>[] {
   if (!existsSync(path)) return [];
   return readFileSync(path, 'utf8')
@@ -366,8 +371,8 @@ function buildLoopCompact(inputPath: string, root: string, options: CompactEvide
   const frontier = readJson(frontierPath);
   if (!isRecord(frontier) || frontier.schema !== EVOLUTION_FRONTIER_SCHEMA) throw new Error(`Evolution frontier must declare schema: ${EVOLUTION_FRONTIER_SCHEMA}`);
   const attempts = readAttempts(attemptsPath);
-  const current = latestAttempt(attempts);
   const frontierAttemptId = frontierCurrentAttemptId(frontier);
+  const current = attemptById(attempts, frontierAttemptId) ?? latestAttempt(attempts);
   const evaluationRef = options.evaluationPath ?? asString(current?.evaluation) ?? null;
   const evaluation = summarizeEvaluation(root, evaluationRef);
   const evidence = { promoted: [] as CompactEvidenceRef[], raw: [] as CompactEvidenceRef[] };
