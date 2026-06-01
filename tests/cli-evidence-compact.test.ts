@@ -38,7 +38,7 @@ function tempRepo() {
       manifest: '.osc/runs/demo-run/run.json',
       logs: ['.osc/runs/demo-run/codex-events.jsonl'],
       outputs: ['.osc/runs/demo-run/runtime-output.log'],
-      evidence: ['docs/evidence/proof.md', '.osc/state/session.log', '.osc-dev/research/client-log.jsonl'],
+      evidence: ['docs/evidence/proof.md', '.osc/state/session.log', '.osc-dev/research/client-log.jsonl', '../client/secret.md'],
     },
   }, null, 2));
   writeFileSync(join(root, '.osc/runs/demo-run/runtime-output.log'), 'RAW_OUTPUT_SECRET should stay local.');
@@ -172,6 +172,7 @@ describe('osc evidence compact', () => {
     expect(`${markdown}\n${manifestText}`).not.toContain('Users\\\\alice');
     expect(`${markdown}\n${manifestText}`).not.toContain('secret.log');
     expect(`${markdown}\n${manifestText}`).not.toContain('secret-output.md');
+    expect(`${markdown}\n${manifestText}`).not.toContain('../client');
     expect(`${markdown}\n${manifestText}`).not.toContain('.osc/state');
     expect(`${markdown}\n${manifestText}`).not.toContain('.osc\\\\state');
     expect(`${markdown}\n${manifestText}`).not.toContain('.osc-dev');

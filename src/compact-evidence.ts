@@ -148,6 +148,8 @@ function safeRef(root: string, ref: string): string {
   if (/^file:\/\//i.test(ref)) return '[local-path omitted]';
   if (/^[a-z]+:\/\//i.test(ref)) return ref;
   if (isForeignWindowsAbsolutePath(ref)) return sanitizeText(ref, '[local-path omitted]') || '[local-path omitted]';
+  const normalizedInput = toPosix(ref).replace(/^\.\//, '');
+  if (normalizedInput === '..' || normalizedInput.startsWith('../')) return '[local-path omitted]';
   const realRoot = existsSync(root) ? resolve(root) : root;
   const absolute = isAbsolute(ref) || win32.isAbsolute(ref) ? resolve(ref) : resolve(realRoot, ref);
   if (isInside(realRoot, absolute)) {
