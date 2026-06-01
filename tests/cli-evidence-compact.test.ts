@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 
@@ -231,6 +231,27 @@ describe('osc evidence compact', () => {
     expect(manifestText).not.toContain('/workspace/symlink-private');
   });
 
+  it('sanitizes evaluation status labels before counting', () => {
+    const { root, runPath } = tempRepo();
+    const evalPath = join(root, 'docs/evidence/weird-status-evaluation.json');
+    writeFileSync(evalPath, JSON.stringify({
+      schema: 'open-scaffold.evaluation.v1',
+      evaluation_id: 'eval-weird-status',
+      acceptance_criteria: [{ id: 'AC_STATUS', text: 'Status should be redacted before counting.', status: 'fail /workspace/status-secret .osc-dev/private-status', evaluator: {}, evidence: [], rationale: 'Status label regression.' }],
+      decision: { status: 'rejected', rationale: 'Status label is malformed.' },
+      improvement: { route: 'inspect_evaluation' },
+    }, null, 2));
+
+    const manifestText = execFileSync(tsx, [cli, 'evidence', 'compact', runPath, '--evaluation', evalPath, '--json'], { cwd: root, encoding: 'utf8' });
+    const manifest = JSON.parse(manifestText);
+    const statusKeys = Object.keys(manifest.evaluation.status_counts).join(' ');
+
+    expect(statusKeys).not.toContain('/workspace/status-secret');
+    expect(statusKeys).not.toContain('.osc-dev');
+    expect(manifestText).not.toContain('/workspace/status-secret');
+    expect(manifestText).not.toContain('.osc-dev/private-status');
+  });
+
   it('does not dereference loop run packets outside the scaffold root', () => {
     const { root, runPath, evalPath } = tempRepo();
     const loopDir = writeLoop(root, runPath, evalPath);
@@ -268,6 +289,33 @@ describe('osc evidence compact', () => {
     expect(manifestText).not.toContain('OUTSIDE_RUN_PACKET_SECRET');
     expect(manifestText).not.toContain(traversalRef);
     expect(manifestText).not.toContain('/workspace/outside-run');
+  });
+
+  it('rejects symlinked loop state files outside the scaffold root', () => {
+    const { root, runPath, evalPath } = tempRepo();
+    const loopDir = writeLoop(root, runPath, evalPath);
+    const outsideDir = mkdtempSync(join(tmpdir(), 'osc-outside-loop-state-'));
+    const outsideLoop = join(outsideDir, 'loop.json');
+    writeFileSync(outsideLoop, JSON.stringify({
+      schema: 'open-scaffold.evolution-loop.v1',
+      loop_id: 'SYMLINK_LOOP_SECRET',
+      objective: 'SYMLINK_LOOP_SECRET /workspace/loop-state',
+      subject: { plan_slug: 'secret-plan', task_id: 'secret-task' },
+      strategy: { name: 'manual', executes_in_core: false },
+    }, null, 2));
+    unlinkSync(join(loopDir, 'loop.json'));
+    symlinkSync(outsideLoop, join(loopDir, 'loop.json'));
+
+    let errorText = '';
+    try {
+      execFileSync(tsx, [cli, 'evidence', 'compact', loopDir, '--json'], { cwd: root, encoding: 'utf8', stdio: 'pipe' });
+    } catch (error: any) {
+      errorText = `${error.stdout ?? ''}\n${error.stderr ?? ''}\n${error.message ?? ''}`;
+    }
+
+    expect(errorText).toContain('loop.json must remain inside the scaffold root');
+    expect(errorText).not.toContain('SYMLINK_LOOP_SECRET');
+    expect(errorText).not.toContain('/workspace/loop-state');
   });
 
   it('prints compact loop JSON without mutating loop state', () => {

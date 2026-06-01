@@ -182,6 +182,12 @@ function refAbsolute(root: string, ref: string): string | null {
   return realAbsolute ?? absolute;
 }
 
+function containedExistingPath(root: string, path: string, label: string): string {
+  const absolute = refAbsolute(root, path);
+  if (!absolute || !existsSync(absolute)) throw new Error(`${label} must remain inside the scaffold root.`);
+  return absolute;
+}
+
 function digestRef(root: string, ref: string): { digest: string | null; size: number | null } {
   if (isOmittedRef(safeRef(root, ref))) return { digest: null, size: null };
   const absolute = refAbsolute(root, ref);
@@ -238,7 +244,7 @@ function addEvidenceRef(root: string, target: { promoted: CompactEvidenceRef[]; 
 function statusCounts(criteria: Record<string, unknown>[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const criterion of criteria) {
-    const status = asString(criterion.status) ?? 'unknown';
+    const status = sanitizeText(asString(criterion.status), 'unknown') || 'unknown';
     counts[status] = (counts[status] ?? 0) + 1;
   }
   return counts;
@@ -406,9 +412,12 @@ function buildRunCompact(inputPath: string, root: string, options: CompactEviden
 
 function buildLoopCompact(inputPath: string, root: string, options: CompactEvidenceOptions): CompactEvidenceManifest {
   const absoluteLoopDir = isAbsolute(inputPath) ? inputPath : resolve(root, inputPath);
-  const loopPath = join(absoluteLoopDir, 'loop.json');
-  const attemptsPath = join(absoluteLoopDir, 'attempts.jsonl');
-  const frontierPath = join(absoluteLoopDir, 'frontier.json');
+  const loopPathRef = join(absoluteLoopDir, 'loop.json');
+  const attemptsPathRef = join(absoluteLoopDir, 'attempts.jsonl');
+  const frontierPathRef = join(absoluteLoopDir, 'frontier.json');
+  const loopPath = containedExistingPath(root, loopPathRef, 'loop.json');
+  const attemptsPath = containedExistingPath(root, attemptsPathRef, 'attempts.jsonl');
+  const frontierPath = containedExistingPath(root, frontierPathRef, 'frontier.json');
   const loop = readJson(loopPath);
   if (!isRecord(loop) || loop.schema !== EVOLUTION_LOOP_SCHEMA) throw new Error(`Evolution loop must declare schema: ${EVOLUTION_LOOP_SCHEMA}`);
   const frontier = readJson(frontierPath);
@@ -419,9 +428,9 @@ function buildLoopCompact(inputPath: string, root: string, options: CompactEvide
   const evaluationRef = options.evaluationPath ?? asString(current?.evaluation) ?? null;
   const evaluation = summarizeEvaluation(root, evaluationRef);
   const evidence = { promoted: [] as CompactEvidenceRef[], raw: [] as CompactEvidenceRef[] };
-  addEvidenceRef(root, evidence, safeRef(root, loopPath), 'loop_state');
-  addEvidenceRef(root, evidence, safeRef(root, attemptsPath), 'attempt_journal');
-  addEvidenceRef(root, evidence, safeRef(root, frontierPath), 'frontier_state');
+  addEvidenceRef(root, evidence, loopPathRef, 'loop_state');
+  addEvidenceRef(root, evidence, attemptsPathRef, 'attempt_journal');
+  addEvidenceRef(root, evidence, frontierPathRef, 'frontier_state');
   if (evaluationRef) addEvidenceRef(root, evidence, evaluationRef, 'evaluation_envelope');
   if (current) {
     asStringArray(current.evidence_refs).forEach((ref) => addEvidenceRef(root, evidence, ref, 'attempt_evidence_ref'));
