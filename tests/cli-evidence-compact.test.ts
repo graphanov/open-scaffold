@@ -30,9 +30,9 @@ function tempRepo() {
     plan: {
       slug: '136-demo',
       path: '.osc/plans/active/136-demo.md',
-      goal: 'Compact repeated-run evidence without leaking raw logs.',
+      goal: 'Compact repeated-run evidence without leaking raw logs or .osc/state/session.log.',
       acceptanceCriteria: ['AC1: Summary exists.', 'AC2: Failures remain visible.'],
-      verificationSteps: ['npm test -- --run tests/cli-evidence-compact.test.ts', 'npm run build'],
+      verificationSteps: ['npm test -- --run tests/cli-evidence-compact.test.ts', 'npm run build', 'inspect .osc-dev/research/client-log.jsonl'],
     },
     artifacts: {
       manifest: '.osc/runs/demo-run/run.json',
@@ -66,7 +66,7 @@ function tempRepo() {
           { kind: 'path', ref: 'C:\\Users\\alice\\secret.log', summary: 'Synthetic Windows local path; must be omitted from compact output.' },
           { kind: 'path', ref: 'C:/Users/alice/secret-output.md', summary: 'Synthetic forward-slash Windows local path; must remain raw/local.' },
         ],
-        rationale: 'Failure was reproduced at /home/example/private/raw.log.',
+        rationale: 'Failure was reproduced at /home/example/private/raw.log and .osc-dev/research/client-log.jsonl.',
       },
     ],
     decision: { status: 'rejected', approver: 'human', rationale: 'AC2 remains failed.' },
