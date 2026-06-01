@@ -120,7 +120,7 @@ function toPosix(value: string): string {
 function sanitizeText(value: string | null | undefined, fallback: string | null = ''): string {
   return (value ?? fallback ?? '')
     .replace(/\b[A-Za-z]:[\\/][^\s,;)\]]+/g, '[local-path omitted]')
-    .replace(/(^|[\s("'`=:\[{])\/(?!\/)[^\s,;)\]}'"]+/g, '$1[local-path omitted]')
+    .replace(/(^|[\s("'`=:\[{,;])\/(?!\/)[^\s,;)\]}'"]+/g, '$1[local-path omitted]')
     .replace(/\/(?:Users|home|tmp|private|var|Volumes)\/[^\s,;)\]]+/g, '[local-path omitted]')
     .replace(/(^|[\s("'`=:\[{])(?:\.[\\/])?(?:\.git|\.osc[\\/](?:state|research)|\.osc-dev|\.hermes|node_modules)(?:[\\/][^\s,;)\]}'"]+)?(?=$|[\s,.;:)\]}'"])/g, '$1[private-ref omitted]')
     .replace(/[\r\n]+/g, ' ')
@@ -144,6 +144,7 @@ function isForeignWindowsAbsolutePath(ref: string): boolean {
 }
 
 function safeRef(root: string, ref: string): string {
+  if (/^file:\/\//i.test(ref)) return '[local-path omitted]';
   if (/^[a-z]+:\/\//i.test(ref)) return ref;
   if (isForeignWindowsAbsolutePath(ref)) return sanitizeText(ref, '[local-path omitted]') || '[local-path omitted]';
   const realRoot = existsSync(root) ? resolve(root) : root;

@@ -32,7 +32,7 @@ function tempRepo() {
       path: '.osc/plans/active/136-demo.md',
       goal: 'Compact repeated-run evidence without leaking raw logs or .osc/state/session.log.',
       acceptanceCriteria: ['AC1: Summary exists.', 'AC2: Failures remain visible.'],
-      verificationSteps: ['npm test -- --run tests/cli-evidence-compact.test.ts', 'npm run build', 'inspect .osc-dev/research/client-log.jsonl', 'inspect .osc-dev', 'inspect .osc\\state\\session.log', 'inspect [.osc\\state\\session.log]', 'inspect [/workspace/open-scaffold/.osc/state/session.log]', 'inspect [/workspace] and /repo'],
+      verificationSteps: ['npm test -- --run tests/cli-evidence-compact.test.ts', 'npm run build', 'inspect .osc-dev/research/client-log.jsonl', 'inspect .osc-dev', 'inspect .osc\\state\\session.log', 'inspect [.osc\\state\\session.log]', 'inspect [/workspace/open-scaffold/.osc/state/session.log]', 'inspect [/workspace] and /repo', 'inspect,/repo and failed;/workspace/log'],
     },
     artifacts: {
       manifest: '.osc/runs/demo-run/run.json',
@@ -65,6 +65,7 @@ function tempRepo() {
           { kind: 'path', ref: 'docs/evidence/proof.md', summary: 'Curated proof.' },
           { kind: 'path', ref: 'C:\\Users\\alice\\secret.log', summary: 'Synthetic Windows local path; must be omitted from compact output.' },
           { kind: 'path', ref: 'C:/Users/alice/secret-output.md', summary: 'Synthetic forward-slash Windows local path; must remain raw/local.' },
+          { kind: 'path', ref: 'file:///workspace/run.log', summary: 'Synthetic local file URL; must remain raw/local.' },
         ],
         rationale: 'Failure was reproduced at /home/example/private/raw.log, .osc-dev/research/client-log.jsonl, .osc/state, and .osc-dev\\research\\client-log.jsonl.',
       },
@@ -165,6 +166,7 @@ describe('osc evidence compact', () => {
     expect(`${markdown}\n${manifestText}`).not.toContain('/home/example');
     expect(`${markdown}\n${manifestText}`).not.toContain('/workspace');
     expect(`${markdown}\n${manifestText}`).not.toContain('/repo');
+    expect(`${markdown}\n${manifestText}`).not.toContain('file:///');
     expect(`${markdown}\n${manifestText}`).not.toContain('C:/Users');
     expect(`${markdown}\n${manifestText}`).not.toContain('C:\\Users');
     expect(`${markdown}\n${manifestText}`).not.toContain('Users\\\\alice');
