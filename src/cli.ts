@@ -80,7 +80,7 @@ Lab and experimental:
   osc task comment <task-id> <comment>
   osc task link <task-id> --plan <slug>
   osc eval init <run-or-plan> [--out <path>]
-  osc eval import <run-or-plan> --adapter 2000m-v1 --scorer <scorer-json> [--out <path>]
+  osc eval import <run-or-plan> --adapter generic-ac-json-v1 --scorer <scorer-json> [--out <path>]
   osc eval check <evaluation-path>
   osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]
   osc audit check <audit-manifest-path>
@@ -1822,7 +1822,7 @@ function auditCommand(args: string[]): void {
 }
 
 function printEvalUsage(): void {
-  console.error('Usage: osc eval init <run-or-plan> [--out <path>] | osc eval import <run-or-plan> --adapter 2000m-v1 --scorer <scorer-json> [--out <path>] | osc eval check <evaluation-path>');
+  console.error('Usage: osc eval init <run-or-plan> [--out <path>] | osc eval import <run-or-plan> --adapter generic-ac-json-v1 --scorer <scorer-json> [--out <path>] | osc eval check <evaluation-path>');
 }
 
 function findScaffoldRoot(start: string): string | null {

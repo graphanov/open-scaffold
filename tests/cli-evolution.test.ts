@@ -136,17 +136,17 @@ function writePlateauCliEvaluation(root: string, runId: string, ac2Status: 'pass
         rationale: ac2Status === 'pass' ? 'Reachable criterion fixed.' : 'Reachable criterion failed.',
       },
       {
-        id: 'AC28',
-        text: 'Renderer probe returns a playable visual artifact.',
+        id: 'AC3',
+        text: 'Third criterion is probe-only for the current artifact shape.',
         status: 'fail',
         evaluator: { kind: 'domain-tool', name: 'synthetic-scorer', ref: 'docs/evidence/scorer.md' },
-        evidence: [{ kind: 'path', ref: 'docs/evidence/scorer.md', summary: 'Probe-only criterion is hardcoded pass=false for headless JSON drivers.' }],
+        evidence: [{ kind: 'path', ref: 'docs/evidence/scorer.md', summary: 'Probe-only criterion is hardcoded pass=false for the current synthetic artifact shape.' }],
         rationale: 'Probe-only and impossible for the current artifact type.',
-        analysis: { score_sensitivity: 'none', impossible: true, reason: 'probe_only', source: 'docs/evidence/scorer.md#AC28' },
+        analysis: { score_sensitivity: 'none', impossible: true, reason: 'probe_only', source: 'docs/evidence/scorer.md#AC3' },
       },
     ],
     decision: { status: 'rejected', approver: 'human', rationale: 'Score frontier is not acceptance approval.' },
-    improvement: { route: 'create_next_slice', target: null, carried_forward: [], do_not_assume: ['No raw benchmark win.'] },
+    improvement: { route: 'create_next_slice', target: null, carried_forward: [], do_not_assume: ['No raw score win.'] },
   }, null, 2));
   return evalPath;
 }
@@ -154,7 +154,7 @@ function writePlateauCliEvaluation(root: string, runId: string, ac2Status: 'pass
 function writePlateauCliLoop() {
   const { root, planPath } = tempRepo();
   const outDir = join(root, '.osc/evolution/plateau-loop');
-  writeFileSync(join(root, 'docs/evidence/scorer.md'), 'AC28 is probe-only/pass-false for this synthetic driver.');
+  writeFileSync(join(root, 'docs/evidence/scorer.md'), 'AC3 is probe-only/pass-false for this this synthetic artifact shape.');
   execFileSync(tsx, [cli, 'evolve', 'init', planPath, '--out', outDir, '--strategy', 'greedy'], { cwd: root, encoding: 'utf8' });
   const attempts = [
     { runId: 'attempt-a', score: '0.9', ac2Status: 'fail' as const, decision: 'promote', rationale: 'First score frontier.' },
@@ -383,7 +383,7 @@ describe('osc evolve CLI', () => {
 
     const json = JSON.parse(execFileSync(tsx, [cli, 'evolve', 'analyze', outDir, '--format', 'json'], { cwd: root, encoding: 'utf8' }));
     expect(json.recommendation.action).toBe('redesign');
-    expect(json.criteria.find((criterion: { id: string }) => criterion.id === 'AC28')).toMatchObject({ impossible: true, sensitivity: 'none' });
+    expect(json.criteria.find((criterion: { id: string }) => criterion.id === 'AC3')).toMatchObject({ impossible: true, sensitivity: 'none' });
 
     const output = execFileSync(tsx, [cli, 'evolve', 'analyze', outDir, '--format', 'markdown', '--out', reportPath], { cwd: root, encoding: 'utf8' });
     expect(output).toContain('Wrote evolution analysis:');

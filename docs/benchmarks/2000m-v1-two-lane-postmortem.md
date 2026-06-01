@@ -57,7 +57,7 @@ The Open Scaffold lane also produced a more game-like headless trace in the obse
 | `osc evolve compare` was often empty or self-comparing. | Add useful current-vs-frontier and current-vs-previous deltas, not only frontier-history rendering. |
 | The loop did not flag plateau. | Add plateau detection before burning more generations. |
 | The loop did not flag an impossible/probe-only AC. | Add score-sensitivity and impossible-AC detection. |
-| Evaluation records were brittle when filled by hand. | Add external-scorer adapters that mechanically map scorer output into evaluation envelopes. |
+| Evaluation records were brittle when filled by hand. | Add a benchmark-neutral external scorer import contract that maps structured AC results into evaluation envelopes. |
 | Score frontier and acceptance approval were too easy to confuse. | Keep best-score promotion separate from acceptance/compliance decisions. A best-scoring attempt can still fail acceptance criteria. |
 | Candidate/model-authored attempt notes coexisted with canonical attempts. | Canonical attempts/frontier must be controller- or judge-owned. Model notes can be inputs, not truth. |
 | Evidence volume was high. | Add compact evidence mode: raw logs local, curated summaries promoted. |
@@ -72,7 +72,7 @@ The Open Scaffold lane also produced a more game-like headless trace in the obse
 | Plateau/impossible-AC/current-vs-frontier analysis | Open Scaffold backlog plan `134-osc-evolve-analyze-plateau-and-impossible-ac`. |
 | External scorer to evaluation-envelope import | Open Scaffold backlog plan `135-osc-eval-external-scorer-adapter`. |
 | Evidence bloat and canonical-summary mode | Open Scaffold backlog plan `136-compact-evidence-mode`. |
-| Benchmark v2 mechanics such as context wipe, reviewer injection, hidden seeds, and handoff scoring | The 2000m benchmark repo should own implementation; this repo keeps only the public handoff proposal. |
+| Benchmark v2 mechanics such as context wipe, reviewer injection, hidden seeds, and handoff scoring | The benchmark repo owns benchmark design, scorer mechanics, harnesses, fixtures, and result schemas. Open Scaffold should not host the benchmark-v2 proposal or fixture contract. |
 | Raw logs, process lists, local paths, screenshots, JSONL traces, and private operator notes | Do not promote into public docs. Keep local/private only. |
 | Qualitative artifact-quality observation | Safe to mention as unproven signal; not safe as causality or adoption proof. |
 
@@ -86,16 +86,17 @@ The Open Scaffold lane also produced a more game-like headless trace in the obse
    - current-vs-frontier and current-vs-previous AC deltas;
    - JSON plus markdown output;
    - stop/redesign recommendations.
-3. Build an external-scorer adapter for `osc eval`:
-   - import 2000m v1 conformance JSON;
+3. Build benchmark-neutral external scorer import for `osc eval`:
+   - import a generic AC-result JSON shape from any external domain tool;
    - generate a full evaluation envelope without hand-filled missing criteria;
-   - reject or block when mechanical ACs fail;
-   - never call non-pass evidence `approved`.
+   - reject or block when mechanical ACs fail, are skipped, or are probe-only;
+   - never call non-pass evidence `approved`;
+   - keep benchmark-specific converters in the benchmark repo or optional integrations, not Open Scaffold core.
 4. Add compact evidence mode:
    - raw logs stay local;
    - committed evidence is a curated summary, manifest, and digest list;
    - model-authored candidate notes do not become canonical attempts.
-5. Design benchmark v2 in the benchmark repo:
+5. Design benchmark v2 in the benchmark repo, independent of Open Scaffold:
    - context wipe;
    - fresh-agent handoff;
    - staged requirements;
@@ -104,7 +105,7 @@ The Open Scaffold lane also produced a more game-like headless trace in the obse
    - hidden or randomized seeds;
    - impossible/stale requirement handling;
    - replay/viewer track for headless artifacts.
-6. Repeat the experiment only after the above exists:
+6. Repeat the experiment only after independent benchmark-v2 mechanics and generic Open Scaffold controller improvements exist:
    - A / naked;
    - B / current Open Scaffold ledger;
    - C / redesigned Open Scaffold controller;

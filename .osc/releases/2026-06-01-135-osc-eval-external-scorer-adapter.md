@@ -2,14 +2,16 @@
 
 ## Summary
 
-Adds `osc eval import`, a read-only external-scorer import path that maps structured 2000m v1 scorer JSON into an `open-scaffold.evaluation.v1` envelope. The adapter records scorer provenance, criterion status, correction routes, determinism/composite-score metadata, and analysis hints for `osc evolve analyze` without running the scorer or turning Open Scaffold into a domain judge.
+Adds `osc eval import`, a read-only external-scorer import path that maps structured scorer JSON into an `open-scaffold.evaluation.v1` envelope. The adapter records scorer provenance, criterion status, correction routes, determinism/composite-score metadata, and analysis hints for `osc evolve analyze` without running the scorer or turning Open Scaffold into a domain judge.
+
+Superseding correction, 2026-06-01: the initial `2000m-v1` adapter name was too benchmark-specific for Open Scaffold core. Plan `137-decouple-2000m-benchmark-boundary` generalizes the public adapter surface to a benchmark-neutral AC-result JSON contract.
 
 ## Traceability
 
 - Roadmap / issue / task: follow-up from the 2000m v1 two-lane benchmark reset; no separate GitHub issue in this slice.
 - Plan: `.osc/plans/done/135-osc-eval-external-scorer-adapter.md`.
 - Run ID / run packet: N/A — direct CLI/evaluation-contract feature slice; no runtime or benchmark rerun.
-- Branch / PR: branch `feat/osc-eval-import-scorer`; PR pending.
+- Branch / PR: branch `feat/osc-eval-import-scorer`; PR #162.
 
 ## Verification
 
@@ -19,7 +21,7 @@ Adds `osc eval import`, a read-only external-scorer import path that maps struct
 - `git diff --check` — PASS.
 - `./verify.sh --strict` — PASS (10 pass / 0 fail / 0 warn).
 - Added-line public-safety scan — PASS.
-- Built CLI smoke: `node dist/cli.js eval import ... --adapter 2000m-v1 --scorer <tmp>/scorer.json --out <tmp>/imported-evaluation.json` then `node dist/cli.js eval check <tmp>/imported-evaluation.json` — PASS; imported schema `open-scaffold.evaluation.v1`, decision `rejected`, 2 criteria.
+- Historical built CLI smoke for PR #162 used the original `--adapter 2000m-v1` surface and passed; that benchmark-specific public adapter name is superseded by plan 137's generic adapter repair.
 
 ## Outcome
 

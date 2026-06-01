@@ -86,12 +86,12 @@ Import structured external scorer output into an evaluation envelope when a doma
 
 ```bash
 osc eval import .osc/runs/demo-run/run.json \
-  --adapter 2000m-v1 \
-  --scorer docs/evidence/2000m-v1-score.json \
+  --adapter generic-ac-json-v1 \
+  --scorer docs/evidence/external-ac-score.json \
   --out docs/evidence/demo-evaluation.json
 ```
 
-The first adapter maps 2000m v1 conformance JSON (`passCount`, `totalAcs`, `acs[].id`, `name`, `pass`, `skipped`, `quality`, `detail`, `breakdown`, determinism, and composite score) into `open-scaffold.evaluation.v1`. It records scorer provenance and routes non-pass or skipped/probe-only criteria to retry/block instead of approval. Composite score and determinism are verification metadata, not acceptance approval, and the import path does not run the scorer, call an API, rerun a benchmark, or embed raw/private logs.
+The generic adapter maps AC-result JSON (`passCount`, `totalAcs`, `acs[].id`, `name`, `pass`, `skipped`, `quality`, `detail`, `breakdown`, determinism, and composite score) into `open-scaffold.evaluation.v1`. It records scorer provenance and routes non-pass or skipped/probe-only criteria to retry/block instead of approval. Composite score and determinism are verification metadata, not acceptance approval. The import path does not run the scorer, call an API, rerun a benchmark, embed raw/private logs, or make Open Scaffold depend on any particular benchmark. Benchmark-specific converters belong in benchmark repos or optional integrations.
 
 Write compact evidence when a repeated loop has useful raw local forensics but the repo should promote only a concise public-safe summary and digest-backed manifest:
 

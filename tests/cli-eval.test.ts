@@ -86,7 +86,7 @@ function validEnvelope(root: string) {
   };
 }
 
-function scorer2000m() {
+function genericScorer() {
   return {
     passCount: 1,
     totalAcs: 2,
@@ -125,13 +125,13 @@ describe('osc eval CLI', () => {
     expect(overwrite.stderr).toContain('Refusing to overwrite');
   });
 
-  it('imports external 2000m-v1 scorer output as an evaluation envelope and validates it', () => {
+  it('imports external generic AC scorer output as an evaluation envelope and validates it', () => {
     const { root, planPath } = tempRepo();
-    const scorerPath = join(root, 'docs/evidence/2000m-score.json');
+    const scorerPath = join(root, 'docs/evidence/generic-score.json');
     const outPath = join(root, 'docs/evidence/imported-evaluation.json');
-    writeFileSync(scorerPath, JSON.stringify(scorer2000m(), null, 2));
+    writeFileSync(scorerPath, JSON.stringify(genericScorer(), null, 2));
 
-    const jsonOutput = execFileSync(tsx, [cli, 'eval', 'import', planPath, '--adapter', '2000m-v1', '--scorer', scorerPath], { cwd: root, encoding: 'utf8' });
+    const jsonOutput = execFileSync(tsx, [cli, 'eval', 'import', planPath, '--adapter', 'generic-ac-json-v1', '--scorer', scorerPath], { cwd: root, encoding: 'utf8' });
     const envelope = JSON.parse(jsonOutput);
     expect(envelope.acceptance_criteria.map((criterion: any) => [criterion.id, criterion.status])).toEqual([
       ['AC1', 'pass'],
@@ -140,21 +140,21 @@ describe('osc eval CLI', () => {
     expect(envelope.decision.status).toBe('rejected');
     expect(jsonOutput).not.toContain('/Users/');
 
-    const writeOutput = execFileSync(tsx, [cli, 'eval', 'import', planPath, '--adapter', '2000m-v1', '--scorer', scorerPath, '--out', outPath], { cwd: root, encoding: 'utf8' });
+    const writeOutput = execFileSync(tsx, [cli, 'eval', 'import', planPath, '--adapter', 'generic-ac-json-v1', '--scorer', scorerPath, '--out', outPath], { cwd: root, encoding: 'utf8' });
     expect(writeOutput).toContain('Created imported evaluation envelope:');
     expect(existsSync(outPath)).toBe(true);
     const checkOutput = execFileSync(tsx, [cli, 'eval', 'check', outPath], { cwd: root, encoding: 'utf8' });
     expect(checkOutput).toContain('PASS evaluation envelope structure valid');
 
-    const overwrite = spawnSync(tsx, [cli, 'eval', 'import', planPath, '--adapter', '2000m-v1', '--scorer', scorerPath, '--out', outPath], { cwd: root, encoding: 'utf8' });
+    const overwrite = spawnSync(tsx, [cli, 'eval', 'import', planPath, '--adapter', 'generic-ac-json-v1', '--scorer', scorerPath, '--out', outPath], { cwd: root, encoding: 'utf8' });
     expect(overwrite.status).toBe(1);
     expect(overwrite.stderr).toContain('Refusing to overwrite');
   });
 
   it('rejects missing or unsupported eval import adapters as usage errors', () => {
     const { root, planPath } = tempRepo();
-    const scorerPath = join(root, 'docs/evidence/2000m-score.json');
-    writeFileSync(scorerPath, JSON.stringify(scorer2000m(), null, 2));
+    const scorerPath = join(root, 'docs/evidence/generic-score.json');
+    writeFileSync(scorerPath, JSON.stringify(genericScorer(), null, 2));
 
     const missing = spawnSync(tsx, [cli, 'eval', 'import', planPath, '--scorer', scorerPath], { cwd: root, encoding: 'utf8' });
     expect(missing.status).toBe(2);
@@ -230,6 +230,6 @@ describe('osc eval CLI', () => {
     const result = spawnSync(tsx, [cli, 'eval', 'judge'], { cwd: root, encoding: 'utf8' });
 
     expect(result.status).toBe(2);
-    expect(result.stderr).toContain('Usage: osc eval init <run-or-plan> [--out <path>] | osc eval import <run-or-plan> --adapter 2000m-v1 --scorer <scorer-json> [--out <path>] | osc eval check <evaluation-path>');
+    expect(result.stderr).toContain('Usage: osc eval init <run-or-plan> [--out <path>] | osc eval import <run-or-plan> --adapter generic-ac-json-v1 --scorer <scorer-json> [--out <path>] | osc eval check <evaluation-path>');
   });
 });

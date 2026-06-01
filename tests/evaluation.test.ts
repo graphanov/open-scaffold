@@ -107,7 +107,7 @@ function validEnvelope(root: string, overrides: Record<string, unknown> = {}) {
   };
 }
 
-function scorer2000m(overrides: Record<string, unknown> = {}) {
+function genericScorer(overrides: Record<string, unknown> = {}) {
   return {
     passCount: 1,
     totalAcs: 2,
@@ -174,11 +174,11 @@ describe('evaluation envelope generation', () => {
     expect(envelope.acceptance_criteria[0].id).toBe('AC1');
   });
 
-  it('imports 2000m-v1 scorer JSON into a valid evaluation envelope without approving non-pass criteria or leaking local paths', () => {
+  it('imports generic AC scorer JSON into a valid evaluation envelope without approving non-pass criteria or leaking local paths', () => {
     const root = tempRepo();
     const planPath = writePlan(root);
-    const scorerPath = join(root, 'docs/evidence/2000m-score.json');
-    writeFileSync(scorerPath, JSON.stringify(scorer2000m(), null, 2));
+    const scorerPath = join(root, 'docs/evidence/generic-score.json');
+    writeFileSync(scorerPath, JSON.stringify(genericScorer(), null, 2));
 
     const output = renderImportedEvaluationEnvelope(loadEvaluationSource(planPath, root), scorerPath, root, { now: new Date('2026-06-01T08:00:00.000Z') });
     const envelope = JSON.parse(output);
@@ -190,14 +190,14 @@ describe('evaluation envelope generation', () => {
       ['AC1', 'pass'],
       ['AC2', 'not_evaluated'],
     ]);
-    expect(envelope.acceptance_criteria[1].analysis).toMatchObject({ adapter: '2000m-v1', skipped: true, probe_only: true, score_sensitivity: 'none' });
+    expect(envelope.acceptance_criteria[1].analysis).toMatchObject({ adapter: 'generic-ac-json-v1', skipped: true, probe_only: true, score_sensitivity: 'none' });
     expect(envelope.decision.status).toBe('blocked');
     expect(envelope.improvement.route).toBe('block');
     expect(output).not.toContain('/Users/example');
     expect(output).not.toContain('/workspace/open-scaffold');
     expect(output).not.toContain('/opt/project');
     expect(output).toContain('[local-path omitted]');
-    expect(output).toContain('Open Scaffold maps scorer evidence into an evaluation envelope');
+    expect(output).toContain('Open Scaffold maps external scorer evidence into an evaluation envelope');
   });
 
   it('rejects malformed scorer output before creating empty acceptance criteria', () => {
@@ -340,7 +340,7 @@ describe('evaluation envelope generation', () => {
     const root = tempRepo();
     const planPath = writePlan(root);
     const scorerPath = join(root, 'docs/evidence/mismatched-score.json');
-    writeFileSync(scorerPath, JSON.stringify(scorer2000m({ passCount: 2 }), null, 2));
+    writeFileSync(scorerPath, JSON.stringify(genericScorer({ passCount: 2 }), null, 2));
 
     expect(() => renderImportedEvaluationEnvelope(loadEvaluationSource(planPath, root), scorerPath, root)).toThrow(/passCount/);
   });

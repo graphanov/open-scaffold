@@ -30,9 +30,9 @@ export interface RenderEvaluationOptions {
   now?: Date;
 }
 
-export type ExternalScorerAdapter = '2000m-v1';
+export type ExternalScorerAdapter = 'generic-ac-json-v1';
 
-export const EXTERNAL_SCORER_ADAPTERS: ExternalScorerAdapter[] = ['2000m-v1'];
+export const EXTERNAL_SCORER_ADAPTERS: ExternalScorerAdapter[] = ['generic-ac-json-v1'];
 
 export interface RenderImportedEvaluationOptions extends RenderEvaluationOptions {
   adapter?: ExternalScorerAdapter;
@@ -154,7 +154,7 @@ function scorerInputEvidence(root: string, scorerPath: string) {
   if (rel && !rel.startsWith('..') && !isAbsolute(rel)) {
     return { kind: 'path', ref: rel, summary: 'External scorer JSON imported into this evaluation envelope.' };
   }
-  return { kind: 'other', ref: 'external-scorer:2000m-v1:input', summary: 'External scorer JSON imported without embedding a local absolute path.' };
+  return { kind: 'other', ref: 'external-scorer:generic-ac-json-v1:input', summary: 'Generic external scorer JSON imported without embedding a local absolute path.' };
 }
 
 function pathRelativeToRoot(root: string, path: string): string {
@@ -359,22 +359,22 @@ function normalizeScorerCriterion(raw: unknown, index: number) {
   };
 }
 
-function load2000mV1Scorer(path: string) {
+function loadGenericAcJsonScorer(path: string) {
   const parsed = readJson(path);
   if (!isRecord(parsed)) throw new Error('External scorer output must be a JSON object.');
   const acsRaw = valueFor(parsed, ['acs', 'acceptance_criteria', 'acceptanceCriteria', 'criteria']);
   if (!Array.isArray(acsRaw) || acsRaw.length === 0) {
-    throw new Error('2000m-v1 scorer output must include a non-empty acs array.');
+    throw new Error('Generic AC scorer output must include a non-empty acs array.');
   }
   const passCount = requiredNumber(parsed, ['passCount', 'pass_count', 'passedAcs', 'passed_acs'], 'passCount');
   const totalAcs = requiredNumber(parsed, ['totalAcs', 'total_acs', 'totalACs'], 'totalAcs');
   const acs = acsRaw.map((item, index) => normalizeScorerCriterion(item, index));
   const computedPassCount = acs.filter((criterion) => criterion.pass).length;
   if (totalAcs !== acs.length) {
-    throw new Error(`2000m-v1 scorer totalAcs (${totalAcs}) does not match acs length (${acs.length}).`);
+    throw new Error(`Generic AC scorer totalAcs (${totalAcs}) does not match acs length (${acs.length}).`);
   }
   if (passCount !== computedPassCount) {
-    throw new Error(`2000m-v1 scorer passCount (${passCount}) does not match passed AC count (${computedPassCount}).`);
+    throw new Error(`Generic AC scorer passCount (${passCount}) does not match passed AC count (${computedPassCount}).`);
   }
   const determinism = determinismVerdict(valueFor(parsed, ['determinism', 'determinismPass', 'determinism_pass', 'deterministic']));
   const compositeScore = asNumber(valueFor(parsed, ['composite', 'compositeScore', 'composite_score', 'score']));
@@ -387,7 +387,7 @@ function load2000mV1Scorer(path: string) {
   };
 }
 
-function validateScorerCoverage(source: EvaluationSource, scorer: ReturnType<typeof load2000mV1Scorer>): void {
+function validateScorerCoverage(source: EvaluationSource, scorer: ReturnType<typeof loadGenericAcJsonScorer>): void {
   const expectedCriteria = criterionIdentities(source.acceptanceCriteria);
   const expected = expectedCriteria.map((criterion) => criterion.id);
   if (expected.length === 0) {
@@ -428,10 +428,10 @@ function correctionForImportedCriterion(criterion: ReturnType<typeof normalizeSc
 }
 
 export function renderImportedEvaluationEnvelope(source: EvaluationSource, scorerPath: string, root = process.cwd(), options: RenderImportedEvaluationOptions = {}): string {
-  const adapter = options.adapter ?? '2000m-v1';
-  if (adapter !== '2000m-v1') throw new Error(`Unsupported external scorer adapter: ${adapter}`);
+  const adapter = options.adapter ?? 'generic-ac-json-v1';
+  if (adapter !== 'generic-ac-json-v1') throw new Error(`Unsupported external scorer adapter: ${adapter}`);
   const absoluteScorerPath = isAbsolute(scorerPath) ? scorerPath : resolve(root, scorerPath);
-  const scorer = load2000mV1Scorer(absoluteScorerPath);
+  const scorer = loadGenericAcJsonScorer(absoluteScorerPath);
   validateScorerCoverage(source, scorer);
   const now = options.now ?? new Date();
   const createdAt = now.toISOString();
@@ -446,7 +446,7 @@ export function renderImportedEvaluationEnvelope(source: EvaluationSource, score
   const determinismSummary = scorer.determinism.label ?? 'not reported';
   const envelope = {
     schema: EVALUATION_SCHEMA,
-    evaluation_id: `${stamp}-${source.runId ?? source.planSlug}-2000m-v1-eval`,
+    evaluation_id: `${stamp}-${source.runId ?? source.planSlug}-generic-ac-json-v1-eval`,
     idempotency_key: `eval:import:${adapter}:${source.runId ?? source.planSlug}:${digest([JSON.stringify(scorer.acs), String(scorer.passCount), String(scorer.totalAcs), String(scorer.compositeScore ?? ''), String(scorer.determinism.pass ?? ''), scorer.determinism.label ?? ''])}`,
     created_at: createdAt,
     evaluated_at: createdAt,
@@ -480,10 +480,10 @@ export function renderImportedEvaluationEnvelope(source: EvaluationSource, score
         status,
         evaluator: {
           kind: 'domain-tool',
-          name: '2000m-v1 scorer',
-          ref: 'external-scorer:2000m-v1',
+          name: 'generic AC JSON scorer',
+          ref: 'external-scorer:generic-ac-json-v1',
         },
-        evidence: [{ kind: 'other', ref: `external-scorer:2000m-v1:${criterion.id}`, summary: `Scorer result: ${reason}; ${scoreSummary}.` }],
+        evidence: [{ kind: 'other', ref: `external-scorer:generic-ac-json-v1:${criterion.id}`, summary: `Scorer result: ${reason}; ${scoreSummary}.` }],
         rationale: criterion.detail || `External scorer reported ${criterion.id} as ${reason}.`,
         confidence: 'medium',
         gaps: status === 'pass' ? [] : [`External scorer reported ${criterion.id} as ${reason}.`],
@@ -514,18 +514,18 @@ export function renderImportedEvaluationEnvelope(source: EvaluationSource, score
     }),
     verification: [
       {
-        id: 'external-scorer-2000m-v1-summary',
+        id: 'external-scorer-generic-ac-json-v1-summary',
         kind: 'external-scorer',
         status: allPass ? 'pass' : 'fail',
-        summary: `2000m-v1 scorer reported ${scorer.passCount}/${scorer.totalAcs} ACs passed; ${scoreSummary}.`,
-        evidence: [{ kind: 'other', ref: 'external-scorer:2000m-v1:summary', summary: 'Structured scorer output was imported; raw scorer output is not embedded.' }],
+        summary: `Generic AC JSON scorer reported ${scorer.passCount}/${scorer.totalAcs} ACs passed; ${scoreSummary}.`,
+        evidence: [{ kind: 'other', ref: 'external-scorer:generic-ac-json-v1:summary', summary: 'Structured scorer output was imported; raw scorer output is not embedded.' }],
       },
       {
-        id: 'external-scorer-2000m-v1-determinism',
+        id: 'external-scorer-generic-ac-json-v1-determinism',
         kind: 'external-scorer',
         status: scorer.determinism.pass === true ? 'pass' : scorer.determinism.pass === false ? 'fail' : 'not_evaluated',
         summary: `Determinism verdict: ${determinismSummary}.`,
-        evidence: [{ kind: 'other', ref: 'external-scorer:2000m-v1:determinism', summary: 'Determinism is scorer metadata, not acceptance approval.' }],
+        evidence: [{ kind: 'other', ref: 'external-scorer:generic-ac-json-v1:determinism', summary: 'Determinism is scorer metadata, not acceptance approval.' }],
       },
     ],
     decision: {
@@ -549,7 +549,7 @@ export function renderImportedEvaluationEnvelope(source: EvaluationSource, score
       ],
     },
     notes: [
-      'Imported from 2000m-v1 external scorer JSON. Open Scaffold maps scorer evidence into an evaluation envelope; it does not certify correctness, compliance, production readiness, or model quality.',
+      'Imported from generic AC JSON scorer output. Open Scaffold maps external scorer evidence into an evaluation envelope; it does not certify correctness, compliance, production readiness, or model quality.',
     ],
   };
   return `${JSON.stringify(envelope, null, 2)}\n`;
