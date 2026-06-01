@@ -119,7 +119,7 @@ function toPosix(value: string): string {
 
 function sanitizeText(value: string | null | undefined, fallback: string | null = ''): string {
   return (value ?? fallback ?? '')
-    .replace(/\b[A-Za-z]:\\[^\s,;)\]]+/g, '[local-path omitted]')
+    .replace(/\b[A-Za-z]:[\\/][^\s,;)\]]+/g, '[local-path omitted]')
     .replace(/(^|[\s("'`=:])\/(?!\/)(?:[A-Za-z0-9._-]+\/)+[^\s,;)\]}'"]+/g, '$1[local-path omitted]')
     .replace(/\/(?:Users|home|tmp|private|var|Volumes)\/[^\s,;)\]]+/g, '[local-path omitted]')
     .replace(/[\r\n]+/g, ' ')
@@ -171,8 +171,10 @@ function isPrivateRef(ref: string): boolean {
   return PRIVATE_PREFIXES.some((prefix) => normalized === prefix.slice(0, -1) || normalized.startsWith(prefix));
 }
 
-function isRawLocalRef(ref: string, role: string): boolean {
+function isRawLocalRef(root: string, ref: string, role: string): boolean {
   if (CANONICAL_EVIDENCE_ROLES.has(role)) return false;
+  const safe = safeRef(root, ref);
+  if (safe.includes('[local-path omitted]')) return true;
   const normalized = toPosix(ref).replace(/^\.\//, '');
   const lower = normalized.toLowerCase();
   const ext = extname(lower);
@@ -199,7 +201,7 @@ function compactRef(root: string, ref: string, role: string, note?: string): Com
 
 function addEvidenceRef(root: string, target: { promoted: CompactEvidenceRef[]; raw: CompactEvidenceRef[] }, ref: string, role: string): void {
   if (!ref.trim()) return;
-  const rawLocal = isRawLocalRef(ref, role);
+  const rawLocal = isRawLocalRef(root, ref, role);
   const entry = compactRef(root, ref, role, rawLocal ? 'Payload omitted; digest identifies the local file if present.' : undefined);
   const collection = rawLocal ? target.raw : target.promoted;
   if (!collection.some((existing) => existing.ref === entry.ref && existing.role === entry.role)) collection.push(entry);

@@ -64,6 +64,7 @@ function tempRepo() {
         evidence: [
           { kind: 'path', ref: 'docs/evidence/proof.md', summary: 'Curated proof.' },
           { kind: 'path', ref: 'C:\\Users\\alice\\secret.log', summary: 'Synthetic Windows local path; must be omitted from compact output.' },
+          { kind: 'path', ref: 'C:/Users/alice/secret-output.md', summary: 'Synthetic forward-slash Windows local path; must remain raw/local.' },
         ],
         rationale: 'Failure was reproduced at /home/example/private/raw.log.',
       },
@@ -127,6 +128,8 @@ describe('osc evidence compact', () => {
     expect(manifest.evaluation.failed_criteria[0]).toMatchObject({ id: 'AC2', status: 'fail' });
     expect(manifest.summary.next_recommendation).toBe('retry_run');
     expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '.osc/runs/demo-run/codex-events.jsonl' && ref.digest_sha256)).toBe(true);
+    expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '[local-path omitted]' && ref.role === 'evaluation_evidence_ref')).toBe(true);
+    expect(manifest.promoted_evidence.some((ref: any) => ref.ref === '[local-path omitted]')).toBe(false);
     expect(manifest.promoted_evidence.some((ref: any) => ref.ref === 'docs/evidence/demo-run-evaluation.json' && ref.role === 'evaluation_envelope')).toBe(true);
     expect(manifest.candidate_notes[0]).toMatchObject({ ref: 'docs/evidence/model-candidate-note.md', canonical: false });
 
@@ -141,6 +144,7 @@ describe('osc evidence compact', () => {
     expect(`${markdown}\n${manifestText}`).not.toContain('C:\\Users');
     expect(`${markdown}\n${manifestText}`).not.toContain('Users\\\\alice');
     expect(`${markdown}\n${manifestText}`).not.toContain('secret.log');
+    expect(`${markdown}\n${manifestText}`).not.toContain('secret-output.md');
     expect(readFileSync(rawLog, 'utf8')).toContain('RAW_TRANSCRIPT_SECRET');
   });
 
