@@ -15,9 +15,9 @@ Adds `osc evidence compact` as a repo-hygiene surface for run packets and evolut
 
 - `git diff --check` — PASS.
 - `node dist/cli.js plan validate .osc/plans/done/136-compact-evidence-mode.md --strict` — PASS, `0 issues found`.
-- `npm test -- --run tests/cli-evidence-compact.test.ts tests/cli-lifecycle-help.test.ts` — PASS, 2 files / 14 tests.
+- `npm test -- --run tests/cli-evidence-compact.test.ts tests/cli-lifecycle-help.test.ts` — PASS, 2 files / 16 tests.
 - `node dist/cli.js evidence compact --help` — PASS; prints the compact-evidence usage surface.
-- `npm test` — PASS, 55 files / 562 tests.
+- `npm test` — PASS, 55 files / 564 tests.
 - `npm run build` — PASS, core and runtime-omx TypeScript builds.
 - `./verify.sh --strict` — PASS, 10 pass / 0 fail / 0 warn.
 - Public-safety scan over changed files — PASS; no owner identity, local absolute path, secret-token, raw-score-win, or unsupported proof-claim hits.

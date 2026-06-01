@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 
@@ -204,6 +204,70 @@ describe('osc evidence compact', () => {
     expect(manifestText).not.toContain('OUTSIDE_EVAL_SECRET');
     expect(manifestText).not.toContain(traversalRef);
     expect(manifestText).not.toContain('/workspace/private');
+  });
+
+  it('does not dereference symlinked evaluation refs outside the scaffold root', () => {
+    const { root, runPath } = tempRepo();
+    const outsideDir = mkdtempSync(join(tmpdir(), 'osc-outside-symlink-eval-'));
+    const outsideEval = join(outsideDir, 'eval.json');
+    writeFileSync(outsideEval, JSON.stringify({
+      schema: 'open-scaffold.evaluation.v1',
+      evaluation_id: 'SYMLINK_EVAL_SECRET',
+      acceptance_criteria: [{ id: 'AC_SYMLINK', text: 'Symlinked outside criterion should never be copied.', status: 'fail', evaluator: {}, evidence: [], rationale: 'SYMLINK_EVAL_SECRET /workspace/symlink-private' }],
+      decision: { status: 'rejected', rationale: 'SYMLINK_EVAL_SECRET' },
+      improvement: { route: 'redesign' },
+    }, null, 2));
+    const symlinkRef = 'docs/evidence/symlink-eval.json';
+    symlinkSync(outsideEval, join(root, symlinkRef));
+
+    const manifestText = execFileSync(tsx, [cli, 'evidence', 'compact', runPath, '--evaluation', symlinkRef, '--json'], { cwd: root, encoding: 'utf8' });
+    const manifest = JSON.parse(manifestText);
+
+    expect(manifest.evaluation.present).toBe(false);
+    expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '[local-path omitted]' && ref.role === 'evaluation_envelope')).toBe(true);
+    expect(manifest.promoted_evidence.some((ref: any) => ref.ref === '[local-path omitted]')).toBe(false);
+    expect(manifestText).not.toContain('SYMLINK_EVAL_SECRET');
+    expect(manifestText).not.toContain(symlinkRef);
+    expect(manifestText).not.toContain('/workspace/symlink-private');
+  });
+
+  it('does not dereference loop run packets outside the scaffold root', () => {
+    const { root, runPath, evalPath } = tempRepo();
+    const loopDir = writeLoop(root, runPath, evalPath);
+    const outsideDir = mkdtempSync(join(tmpdir(), 'osc-outside-run-packet-'));
+    const outsideRun = join(outsideDir, 'run.json');
+    writeFileSync(outsideRun, JSON.stringify({
+      schemaVersion: 'open-scaffold.run.v1',
+      runId: 'outside-run',
+      plan: { verificationSteps: ['OUTSIDE_RUN_PACKET_SECRET /workspace/outside-run'] },
+      artifacts: {},
+    }, null, 2));
+    const traversalRef = relative(root, outsideRun);
+    expect(traversalRef.startsWith('..')).toBe(true);
+    writeFileSync(join(loopDir, 'attempts.jsonl'), `${JSON.stringify({
+      schema: 'open-scaffold.evolution-attempt.v1',
+      attempt_id: 'demo-run',
+      run_id: 'demo-run',
+      task_id: 'task-123',
+      run_packet: traversalRef,
+      evaluation: 'docs/evidence/demo-run-evaluation.json',
+      evaluation_decision: 'rejected',
+      evidence_refs: ['docs/evidence/proof.md'],
+      adapter_receipts: [],
+      decision: 'retry',
+      score: 0.5,
+      rationale: 'AC2 remains failed.',
+    })}\n`);
+
+    const manifestText = execFileSync(tsx, [cli, 'evidence', 'compact', loopDir, '--json'], { cwd: root, encoding: 'utf8' });
+    const manifest = JSON.parse(manifestText);
+
+    expect(manifest.verification_commands).toEqual([]);
+    expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '[local-path omitted]' && ref.role === 'run_packet')).toBe(true);
+    expect(manifest.promoted_evidence.some((ref: any) => ref.ref === '[local-path omitted]')).toBe(false);
+    expect(manifestText).not.toContain('OUTSIDE_RUN_PACKET_SECRET');
+    expect(manifestText).not.toContain(traversalRef);
+    expect(manifestText).not.toContain('/workspace/outside-run');
   });
 
   it('prints compact loop JSON without mutating loop state', () => {

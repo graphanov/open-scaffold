@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, win32 } from 'node:path';
 import { findScaffoldRoot } from './scaffold.js';
 
@@ -144,28 +144,42 @@ function isForeignWindowsAbsolutePath(ref: string): boolean {
   return win32.isAbsolute(ref) && !isAbsolute(ref);
 }
 
+function realPathIfExists(path: string): string | null {
+  if (!existsSync(path)) return null;
+  try {
+    return realpathSync(path);
+  } catch {
+    return null;
+  }
+}
+
 function safeRef(root: string, ref: string): string {
   if (/^file:\/\//i.test(ref)) return '[local-path omitted]';
   if (/^[a-z]+:\/\//i.test(ref)) return ref;
   if (isForeignWindowsAbsolutePath(ref)) return sanitizeText(ref, '[local-path omitted]') || '[local-path omitted]';
   const normalizedInput = toPosix(ref).replace(/^\.\//, '');
   if (normalizedInput === '..' || normalizedInput.startsWith('../')) return '[local-path omitted]';
-  const realRoot = existsSync(root) ? resolve(root) : root;
-  const absolute = isAbsolute(ref) || win32.isAbsolute(ref) ? resolve(ref) : resolve(realRoot, ref);
-  if (isInside(realRoot, absolute)) {
-    const relativeRef = toPosix(relative(realRoot, absolute)) || '.';
-    if (isPrivateRef(relativeRef)) return '[private-ref omitted]';
-    return relativeRef;
-  }
-  return '[local-path omitted]';
+  const lexicalRoot = resolve(root);
+  const realRoot = realPathIfExists(lexicalRoot) ?? lexicalRoot;
+  const absolute = isAbsolute(ref) || win32.isAbsolute(ref) ? resolve(ref) : resolve(lexicalRoot, ref);
+  if (!isInside(lexicalRoot, absolute)) return '[local-path omitted]';
+  const realAbsolute = realPathIfExists(absolute);
+  if (realAbsolute && !isInside(realRoot, realAbsolute)) return '[local-path omitted]';
+  const relativeRef = toPosix(relative(lexicalRoot, absolute)) || '.';
+  if (isPrivateRef(relativeRef)) return '[private-ref omitted]';
+  return relativeRef;
 }
 
 function refAbsolute(root: string, ref: string): string | null {
   if (/^[a-z]+:\/\//i.test(ref)) return null;
   if (isForeignWindowsAbsolutePath(ref)) return null;
-  const absolute = isAbsolute(ref) || win32.isAbsolute(ref) ? resolve(ref) : resolve(root, ref);
-  if (!isInside(resolve(root), absolute)) return null;
-  return absolute;
+  const lexicalRoot = resolve(root);
+  const realRoot = realPathIfExists(lexicalRoot) ?? lexicalRoot;
+  const absolute = isAbsolute(ref) || win32.isAbsolute(ref) ? resolve(ref) : resolve(lexicalRoot, ref);
+  if (!isInside(lexicalRoot, absolute)) return null;
+  const realAbsolute = realPathIfExists(absolute);
+  if (realAbsolute && !isInside(realRoot, realAbsolute)) return null;
+  return realAbsolute ?? absolute;
 }
 
 function digestRef(root: string, ref: string): { digest: string | null; size: number | null } {
@@ -419,8 +433,9 @@ function buildLoopCompact(inputPath: string, root: string, options: CompactEvide
   const currentRunPacket = asString(current?.run_packet);
   let verification: string[] = [];
   if (currentRunPacket) {
+    const currentRunPacketPath = refAbsolute(root, currentRunPacket);
     try {
-      verification = runPacketInfo(root, resolve(root, currentRunPacket)).verification;
+      verification = currentRunPacketPath ? runPacketInfo(root, currentRunPacketPath).verification : [];
     } catch {
       verification = [];
     }
