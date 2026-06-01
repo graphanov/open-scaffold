@@ -7,9 +7,9 @@ Added `osc evolve analyze`, a read-only loop-analysis command for existing evolu
 ## Traceability
 
 - Roadmap / issue / task: follow-up from the 2000m v1 two-lane benchmark reset; no separate GitHub issue in this slice.
-- Plan: `.osc/plans/active/134-osc-evolve-analyze-plateau-and-impossible-ac.md` during implementation.
+- Plan: `.osc/plans/done/134-osc-evolve-analyze-plateau-and-impossible-ac.md`.
 - Run ID / run packet: N/A — direct CLI feature slice; no runtime or benchmark rerun.
-- Branch / PR: branch `feat/evolve-analyze-plateau`; PR pending owner review.
+- Branch / PR: branch `feat/evolve-analyze-plateau`; PR #160 (`https://github.com/graphanov/open-scaffold/pull/160`), merged 2026-06-01.
 
 ## Verification
 
@@ -24,9 +24,9 @@ Added `osc evolve analyze`, a read-only loop-analysis command for existing evolu
 
 ## Outcome
 
-Implemented a package-visible analysis surface only. The command inspects existing curated loop/evaluation evidence and can render terminal, Markdown, or JSON output; `--out` writes only the requested report file. Runtime spawning, benchmark reruns, benchmark-v2, external-scorer adapters, npm publication, GitHub Release changes, merge, and acceptance approval remain out of scope and owner-gated.
+Implemented a package-visible analysis surface only. The command inspects existing curated loop/evaluation evidence and can render terminal, Markdown, or JSON output; `--out` writes only the requested report file. PR #160 merged this slice. Runtime spawning, benchmark reruns, benchmark-v2, external-scorer adapters, npm publication, GitHub Release changes, and acceptance approval remain out of scope and owner-gated.
 
 ## Follow-up
 
-- Owner gate: review the PR when opened; merge is not authorized by this note.
+- Release gate: this slice changed package-visible CLI/help, so npm publication and GitHub Release remain a separate owner-gated release-sync decision.
 - Next slices remain separate: external-scorer import for `osc eval`, compact evidence mode, and benchmark-v2 design outside this implementation slice.

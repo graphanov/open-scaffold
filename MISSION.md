@@ -29,6 +29,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-01: closed 134-osc-evolve-analyze-plateau-and-impossible-ac — shipped osc evolve analyze via PR #160
 - 2026-05-31: closed 133-2000m-postmortem-evolve-reset — Create 2000m benchmark postmortem and evolve reset package
 - 2026-05-30: closed 132-plan-stats-command — Add osc plan stats portfolio summary command
 - 2026-05-30: closed 129-zero-context-resume-proof — published open-scaffold@0.20.4, verified fresh npx compare demo, and created GitHub Release v0.20.4
