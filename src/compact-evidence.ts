@@ -120,6 +120,7 @@ function toPosix(value: string): string {
 function sanitizeText(value: string | null | undefined, fallback: string | null = ''): string {
   return (value ?? fallback ?? '')
     .replace(/file:\/\/\/??[^\s,;)\]}'"]+/gi, '[local-path omitted]')
+    .replace(/(^|[\s("'`=:\[{,;])~[^\s,;)\]}'"]*/g, '$1[local-path omitted]')
     .replace(/\b[A-Za-z]:[\\/][^\s,;)\]]+/g, '[local-path omitted]')
     .replace(/(^|[\s("'`=:\[{,;])\/(?!\/)[^\s,;)\]}'"]+/g, '$1[local-path omitted]')
     .replace(/\/(?:Users|home|tmp|private|var|Volumes)\/[^\s,;)\]]+/g, '[local-path omitted]')
@@ -157,6 +158,7 @@ function safeRef(root: string, ref: string): string {
   if (/^file:\/\//i.test(ref)) return '[local-path omitted]';
   if (/^[a-z]+:\/\//i.test(ref)) return ref;
   if (isForeignWindowsAbsolutePath(ref)) return sanitizeText(ref, '[local-path omitted]') || '[local-path omitted]';
+  if (ref.startsWith('~')) return '[local-path omitted]';
   const normalizedInput = toPosix(ref).replace(/^\.\//, '');
   if (normalizedInput === '..' || normalizedInput.startsWith('../')) return '[local-path omitted]';
   const lexicalRoot = resolve(root);

@@ -32,13 +32,13 @@ function tempRepo() {
       path: '.osc/plans/active/136-demo.md',
       goal: 'Compact repeated-run evidence without leaking raw logs or .osc/state/session.log.',
       acceptanceCriteria: ['AC1: Summary exists.', 'AC2: Failures remain visible.'],
-      verificationSteps: ['npm test -- --run tests/cli-evidence-compact.test.ts', 'npm run build', 'inspect .osc-dev/research/client-log.jsonl', 'inspect .osc-dev', 'inspect .osc\\state\\session.log', 'inspect [.osc\\state\\session.log]', 'inspect [/workspace/open-scaffold/.osc/state/session.log]', 'inspect [/workspace] and /repo', 'inspect,/repo and failed;/workspace/log', 'inspect file:///workspace/run.log and inspect,.osc-dev/research/client-log.jsonl'],
+      verificationSteps: ['npm test -- --run tests/cli-evidence-compact.test.ts', 'npm run build', 'inspect .osc-dev/research/client-log.jsonl', 'inspect .osc-dev', 'inspect .osc\\state\\session.log', 'inspect [.osc\\state\\session.log]', 'inspect [/workspace/open-scaffold/.osc/state/session.log]', 'inspect [/workspace] and /repo', 'inspect,/repo and failed;/workspace/log', 'inspect file:///workspace/run.log and inspect,.osc-dev/research/client-log.jsonl', 'inspect ~/.osc-dev/research/client-log.jsonl and ~/private/run.log'],
     },
     artifacts: {
       manifest: '.osc/runs/demo-run/run.json',
       logs: ['.osc/runs/demo-run/codex-events.jsonl'],
       outputs: ['.osc/runs/demo-run/runtime-output.log'],
-      evidence: ['docs/evidence/proof.md', '.osc/state/session.log', '.osc-dev/research/client-log.jsonl', '../client/secret.md', 'docs/../../client/secret.md'],
+      evidence: ['docs/evidence/proof.md', '.osc/state/session.log', '.osc-dev/research/client-log.jsonl', '../client/secret.md', 'docs/../../client/secret.md', '~/.osc-dev/research/client-log.jsonl', '~/private/run.log'],
     },
   }, null, 2));
   writeFileSync(join(root, '.osc/runs/demo-run/runtime-output.log'), 'RAW_OUTPUT_SECRET should stay local.');
@@ -174,6 +174,8 @@ describe('osc evidence compact', () => {
     expect(`${markdown}\n${manifestText}`).not.toContain('secret-output.md');
     expect(`${markdown}\n${manifestText}`).not.toContain('../client');
     expect(`${markdown}\n${manifestText}`).not.toContain('docs/../../client');
+    expect(`${markdown}\n${manifestText}`).not.toContain('~/');
+    expect(`${markdown}\n${manifestText}`).not.toContain('~/.osc-dev');
     expect(`${markdown}\n${manifestText}`).not.toContain('.osc/state');
     expect(`${markdown}\n${manifestText}`).not.toContain('.osc\\\\state');
     expect(`${markdown}\n${manifestText}`).not.toContain('.osc-dev');
