@@ -157,7 +157,7 @@ function safeRef(root: string, ref: string): string {
     if (isPrivateRef(relativeRef)) return '[private-ref omitted]';
     return relativeRef;
   }
-  return sanitizeText(ref, '[local-path omitted]') || '[local-path omitted]';
+  return '[local-path omitted]';
 }
 
 function refAbsolute(root: string, ref: string): string | null {
