@@ -61,7 +61,10 @@ function tempRepo() {
         text: 'Failures remain visible.',
         status: 'fail',
         evaluator: { kind: 'automated-check', name: 'compact-fixture', ref: 'docs/evidence/proof.md' },
-        evidence: [{ kind: 'path', ref: 'docs/evidence/proof.md', summary: 'Curated proof.' }],
+        evidence: [
+          { kind: 'path', ref: 'docs/evidence/proof.md', summary: 'Curated proof.' },
+          { kind: 'path', ref: 'C:\\Users\\alice\\secret.log', summary: 'Synthetic Windows local path; must be omitted from compact output.' },
+        ],
         rationale: 'Failure was reproduced at /home/example/private/raw.log.',
       },
     ],
@@ -134,6 +137,10 @@ describe('osc evidence compact', () => {
     expect(`${markdown}\n${manifestText}`).not.toContain('RAW_OUTPUT_SECRET');
     expect(`${markdown}\n${manifestText}`).not.toContain('MODEL_CANDIDATE_SECRET');
     expect(`${markdown}\n${manifestText}`).not.toContain('/home/example');
+    expect(`${markdown}\n${manifestText}`).not.toContain('C:/Users');
+    expect(`${markdown}\n${manifestText}`).not.toContain('C:\\Users');
+    expect(`${markdown}\n${manifestText}`).not.toContain('Users\\\\alice');
+    expect(`${markdown}\n${manifestText}`).not.toContain('secret.log');
     expect(readFileSync(rawLog, 'utf8')).toContain('RAW_TRANSCRIPT_SECRET');
   });
 

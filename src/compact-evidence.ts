@@ -138,8 +138,13 @@ function isInside(parent: string, child: string): boolean {
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
 }
 
+function isForeignWindowsAbsolutePath(ref: string): boolean {
+  return win32.isAbsolute(ref) && !isAbsolute(ref);
+}
+
 function safeRef(root: string, ref: string): string {
   if (/^[a-z]+:\/\//i.test(ref)) return ref;
+  if (isForeignWindowsAbsolutePath(ref)) return sanitizeText(ref, '[local-path omitted]') || '[local-path omitted]';
   const realRoot = existsSync(root) ? resolve(root) : root;
   const absolute = isAbsolute(ref) || win32.isAbsolute(ref) ? resolve(ref) : resolve(realRoot, ref);
   if (isInside(realRoot, absolute)) return toPosix(relative(realRoot, absolute)) || '.';
@@ -148,6 +153,7 @@ function safeRef(root: string, ref: string): string {
 
 function refAbsolute(root: string, ref: string): string | null {
   if (/^[a-z]+:\/\//i.test(ref)) return null;
+  if (isForeignWindowsAbsolutePath(ref)) return null;
   const absolute = isAbsolute(ref) || win32.isAbsolute(ref) ? resolve(ref) : resolve(root, ref);
   if (!isInside(resolve(root), absolute)) return null;
   return absolute;
@@ -170,6 +176,7 @@ function isRawLocalRef(ref: string, role: string): boolean {
   const normalized = toPosix(ref).replace(/^\.\//, '');
   const lower = normalized.toLowerCase();
   const ext = extname(lower);
+  if (normalized === '[local-path omitted]') return true;
   if (RAW_EXTENSIONS.has(ext)) return true;
   if (lower.includes('/raw/') || lower.includes('/logs/') || lower.includes('transcript') || lower.includes('codex-events')) return true;
   if (lower.startsWith('.osc/runs/') && !lower.endsWith('/run.json') && !lower.endsWith('evaluation.json') && !lower.endsWith('dispatch-receipt.json')) return true;
@@ -260,7 +267,7 @@ function summarizeEvaluation(root: string, evaluationRef: string | null | undefi
     status_counts: statusCounts(criteria),
     failed_criteria: failedCriteria,
     evaluator_refs: evaluatorRefs,
-    evidence_refs: [...new Set(evidenceRefs)],
+    evidence_refs: [...new Set(evidenceRefs.map((ref) => safeRef(root, ref)))],
   };
 }
 

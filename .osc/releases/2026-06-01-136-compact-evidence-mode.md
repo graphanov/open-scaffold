@@ -9,7 +9,7 @@ Adds `osc evidence compact` as a repo-hygiene surface for run packets and evolut
 - Roadmap / issue / task: Post-2000m evolve-v2 evidence-volume follow-up from `docs/decisions/2026-05-31-osc-evolve-v2-after-2000m.md`; no GitHub issue selected for this bounded slice.
 - Plan: `.osc/plans/done/136-compact-evidence-mode.md`
 - Run ID / run packet: `N/A` — this slice changed the CLI/docs/tests directly and did not spawn a runtime.
-- Branch / PR: `feat/compact-evidence-mode`; PR pending owner review.
+- Branch / PR: `feat/compact-evidence-mode`; https://github.com/graphanov/open-scaffold/pull/163
 
 ## Verification
 
