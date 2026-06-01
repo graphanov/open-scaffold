@@ -188,6 +188,11 @@ function containedExistingPath(root: string, path: string, label: string): strin
   return absolute;
 }
 
+function isCanonicalRunPacketRef(root: string, ref: string): boolean {
+  const safe = safeRef(root, ref);
+  return !isOmittedRef(safe) && safe.startsWith('.osc/runs/') && basename(safe) === 'run.json';
+}
+
 function digestRef(root: string, ref: string): { digest: string | null; size: number | null } {
   if (isOmittedRef(safeRef(root, ref))) return { digest: null, size: null };
   const absolute = refAbsolute(root, ref);
@@ -208,6 +213,7 @@ function isOmittedRef(ref: string): boolean {
 function isRawLocalRef(root: string, ref: string, role: string): boolean {
   const safe = safeRef(root, ref);
   if (isOmittedRef(safe)) return true;
+  if (role === 'run_packet' && !isCanonicalRunPacketRef(root, ref)) return true;
   if (CANONICAL_EVIDENCE_ROLES.has(role)) return false;
   const normalized = toPosix(ref).replace(/^\.\//, '');
   const lower = normalized.toLowerCase();
@@ -375,7 +381,7 @@ function buildRunCompact(inputPath: string, root: string, options: CompactEviden
   const runPathRef = isAbsolute(inputPath) ? inputPath : resolve(root, inputPath);
   const runPath = containedExistingPath(root, runPathRef, 'run packet');
   const runRef = safeRef(root, runPathRef);
-  if (isOmittedRef(runRef) || !runRef.startsWith('.osc/runs/') || basename(runRef) !== 'run.json') {
+  if (!isCanonicalRunPacketRef(root, runPathRef)) {
     throw new Error('Run packet must remain under .osc/runs/<run-id>/run.json.');
   }
   const { packet, refs, verification } = runPacketInfo(root, runPath);
@@ -447,7 +453,7 @@ function buildLoopCompact(inputPath: string, root: string, options: CompactEvide
   const currentRunPacket = asString(current?.run_packet);
   let verification: string[] = [];
   if (currentRunPacket) {
-    const currentRunPacketPath = refAbsolute(root, currentRunPacket);
+    const currentRunPacketPath = isCanonicalRunPacketRef(root, currentRunPacket) ? refAbsolute(root, currentRunPacket) : null;
     try {
       verification = currentRunPacketPath ? runPacketInfo(root, currentRunPacketPath).verification : [];
     } catch {

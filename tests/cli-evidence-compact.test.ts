@@ -319,6 +319,41 @@ describe('osc evidence compact', () => {
     expect(manifestText).not.toContain('/workspace/outside-run');
   });
 
+  it('does not dereference noncanonical loop run packet JSON refs', () => {
+    const { root, runPath, evalPath } = tempRepo();
+    const loopDir = writeLoop(root, runPath, evalPath);
+    const noncanonicalRef = 'docs/evidence/not-a-run-packet.json';
+    writeFileSync(join(root, noncanonicalRef), JSON.stringify({
+      schemaVersion: 'open-scaffold.run.v1',
+      runId: 'NONCANONICAL_RUN_SECRET',
+      plan: { verificationSteps: ['NONCANONICAL_RUN_SECRET /workspace/noncanonical'] },
+      artifacts: {},
+    }, null, 2));
+    writeFileSync(join(loopDir, 'attempts.jsonl'), `${JSON.stringify({
+      schema: 'open-scaffold.evolution-attempt.v1',
+      attempt_id: 'demo-run',
+      run_id: 'demo-run',
+      task_id: 'task-123',
+      run_packet: noncanonicalRef,
+      evaluation: 'docs/evidence/demo-run-evaluation.json',
+      evaluation_decision: 'rejected',
+      evidence_refs: ['docs/evidence/proof.md'],
+      adapter_receipts: [],
+      decision: 'retry',
+      score: 0.5,
+      rationale: 'AC2 remains failed.',
+    })}\n`);
+
+    const manifestText = execFileSync(tsx, [cli, 'evidence', 'compact', loopDir, '--json'], { cwd: root, encoding: 'utf8' });
+    const manifest = JSON.parse(manifestText);
+
+    expect(manifest.verification_commands).toEqual([]);
+    expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === noncanonicalRef && ref.role === 'run_packet')).toBe(true);
+    expect(manifest.promoted_evidence.some((ref: any) => ref.ref === noncanonicalRef)).toBe(false);
+    expect(manifestText).not.toContain('NONCANONICAL_RUN_SECRET');
+    expect(manifestText).not.toContain('/workspace/noncanonical');
+  });
+
   it('rejects symlinked loop state files outside the scaffold root', () => {
     const { root, runPath, evalPath } = tempRepo();
     const loopDir = writeLoop(root, runPath, evalPath);
