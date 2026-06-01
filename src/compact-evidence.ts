@@ -372,13 +372,18 @@ function recommendationFor(evaluation: EvaluationSummary, decision: string | nul
 }
 
 function buildRunCompact(inputPath: string, root: string, options: CompactEvidenceOptions): CompactEvidenceManifest {
-  const absoluteInput = isAbsolute(inputPath) ? inputPath : resolve(root, inputPath);
-  const { packet, refs, verification } = runPacketInfo(root, absoluteInput);
+  const runPathRef = isAbsolute(inputPath) ? inputPath : resolve(root, inputPath);
+  const runPath = containedExistingPath(root, runPathRef, 'run packet');
+  const runRef = safeRef(root, runPathRef);
+  if (isOmittedRef(runRef) || !runRef.startsWith('.osc/runs/') || basename(runRef) !== 'run.json') {
+    throw new Error('Run packet must remain under .osc/runs/<run-id>/run.json.');
+  }
+  const { packet, refs, verification } = runPacketInfo(root, runPath);
   const plan = isRecord(packet.plan) ? packet.plan : {};
   const runId = asString(packet.runId);
   const evaluation = summarizeEvaluation(root, options.evaluationPath ?? null);
   const evidence = { promoted: [] as CompactEvidenceRef[], raw: [] as CompactEvidenceRef[] };
-  addEvidenceRef(root, evidence, safeRef(root, absoluteInput), 'run_packet');
+  addEvidenceRef(root, evidence, runPathRef, 'run_packet');
   if (options.evaluationPath) addEvidenceRef(root, evidence, options.evaluationPath, 'evaluation_envelope');
   refs.forEach((ref) => addEvidenceRef(root, evidence, ref, 'run_artifact_ref'));
   evaluation.evidence_refs.forEach((ref) => addEvidenceRef(root, evidence, ref, 'evaluation_evidence_ref'));
@@ -386,7 +391,7 @@ function buildRunCompact(inputPath: string, root: string, options: CompactEviden
   return baseManifest(root, options, {
     subject: {
       kind: 'run',
-      source: safeRef(root, absoluteInput),
+      source: runRef,
       plan_slug: sanitizeText(asString(plan.slug), null) || null,
       objective: sanitizeText(asString(plan.goal), null) || null,
       run_id: sanitizeText(runId, null) || null,
@@ -519,7 +524,9 @@ export function buildCompactEvidence(inputPath: string, root = process.cwd(), op
   const scaffoldRoot = scaffoldRootFor(inputPath, root);
   const absolute = isAbsolute(inputPath) ? inputPath : resolve(root, inputPath);
   if (!existsSync(absolute)) throw new Error(`Compact evidence source not found: ${inputPath}`);
-  if (statSync(absolute).isDirectory()) return buildLoopCompact(absolute, scaffoldRoot, options);
+  const contained = refAbsolute(scaffoldRoot, absolute);
+  if (!contained || !existsSync(contained)) throw new Error('Compact evidence source must remain inside the scaffold root.');
+  if (statSync(contained).isDirectory()) return buildLoopCompact(absolute, scaffoldRoot, options);
   if (extname(absolute).toLowerCase() === '.json') return buildRunCompact(absolute, scaffoldRoot, options);
   throw new Error('Compact evidence source must be a run packet JSON or an evolution loop directory.');
 }

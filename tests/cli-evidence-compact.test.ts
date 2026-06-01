@@ -181,6 +181,34 @@ describe('osc evidence compact', () => {
     expect(readFileSync(rawLog, 'utf8')).toContain('RAW_TRANSCRIPT_SECRET');
   });
 
+  it('does not dereference symlinked or outside run-packet sources', () => {
+    const { root } = tempRepo();
+    const outsideDir = mkdtempSync(join(tmpdir(), 'osc-outside-run-source-'));
+    const outsideRun = join(outsideDir, 'run.json');
+    writeFileSync(outsideRun, JSON.stringify({
+      schemaVersion: 'open-scaffold.run.v1',
+      runId: 'OUTSIDE_RUN_SOURCE_SECRET',
+      plan: { slug: 'secret-plan', goal: 'OUTSIDE_RUN_SOURCE_SECRET /workspace/source', verificationSteps: ['OUTSIDE_RUN_SOURCE_SECRET'] },
+      artifacts: {},
+    }, null, 2));
+    const symlinkDir = join(root, '.osc/runs/symlink-run');
+    mkdirSync(symlinkDir, { recursive: true });
+    const symlinkRun = join(symlinkDir, 'run.json');
+    symlinkSync(outsideRun, symlinkRun);
+
+    for (const source of [symlinkRun, outsideRun]) {
+      let errorText = '';
+      try {
+        execFileSync(tsx, [cli, 'evidence', 'compact', source, '--json'], { cwd: root, encoding: 'utf8', stdio: 'pipe' });
+      } catch (error: any) {
+        errorText = `${error.stdout ?? ''}\n${error.stderr ?? ''}\n${error.message ?? ''}`;
+      }
+      expect(errorText).toMatch(/Compact evidence source must remain inside the scaffold root|Run packet must remain under \.osc\/runs\/\<run-id\>\/run\.json/);
+      expect(errorText).not.toContain('OUTSIDE_RUN_SOURCE_SECRET');
+      expect(errorText).not.toContain('/workspace/source');
+    }
+  });
+
   it('does not dereference evaluation refs outside the scaffold root', () => {
     const { root, runPath } = tempRepo();
     const outsideDir = mkdtempSync(join(tmpdir(), 'osc-outside-eval-'));
