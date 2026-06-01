@@ -186,9 +186,9 @@ function isOmittedRef(ref: string): boolean {
 }
 
 function isRawLocalRef(root: string, ref: string, role: string): boolean {
-  if (CANONICAL_EVIDENCE_ROLES.has(role)) return false;
   const safe = safeRef(root, ref);
   if (isOmittedRef(safe)) return true;
+  if (CANONICAL_EVIDENCE_ROLES.has(role)) return false;
   const normalized = toPosix(ref).replace(/^\.\//, '');
   const lower = normalized.toLowerCase();
   const ext = extname(lower);
@@ -246,7 +246,22 @@ function summarizeEvaluation(root: string, evaluationRef: string | null | undefi
       evidence_refs: [],
     };
   }
-  const evaluationPath = refAbsolute(root, evaluationRef) ?? resolve(root, evaluationRef);
+  const evaluationPath = refAbsolute(root, evaluationRef);
+  if (!evaluationPath) {
+    return {
+      present: false,
+      path: null,
+      evaluation_id: null,
+      decision: null,
+      decision_rationale: null,
+      improvement_route: null,
+      next_recommendation: 'inspect_evaluation',
+      status_counts: {},
+      failed_criteria: [],
+      evaluator_refs: [],
+      evidence_refs: [],
+    };
+  }
   const parsed = readJson(evaluationPath);
   if (!isRecord(parsed) || parsed.schema !== EVALUATION_SCHEMA) throw new Error(`Evaluation must declare schema: ${EVALUATION_SCHEMA}`);
   const criteria = Array.isArray(parsed.acceptance_criteria) ? parsed.acceptance_criteria.filter(isRecord) : [];

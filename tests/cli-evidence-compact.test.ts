@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -179,6 +179,31 @@ describe('osc evidence compact', () => {
     expect(`${markdown}\n${manifestText}`).not.toContain('.osc-dev');
     expect(`${markdown}\n${manifestText}`).not.toContain('client-log');
     expect(readFileSync(rawLog, 'utf8')).toContain('RAW_TRANSCRIPT_SECRET');
+  });
+
+  it('does not dereference evaluation refs outside the scaffold root', () => {
+    const { root, runPath } = tempRepo();
+    const outsideDir = mkdtempSync(join(tmpdir(), 'osc-outside-eval-'));
+    const outsideEval = join(outsideDir, 'eval.json');
+    writeFileSync(outsideEval, JSON.stringify({
+      schema: 'open-scaffold.evaluation.v1',
+      evaluation_id: 'OUTSIDE_EVAL_SECRET',
+      acceptance_criteria: [{ id: 'AC_OUTSIDE', text: 'Outside criterion should never be copied.', status: 'fail', evaluator: {}, evidence: [], rationale: 'OUTSIDE_EVAL_SECRET /workspace/private' }],
+      decision: { status: 'rejected', rationale: 'OUTSIDE_EVAL_SECRET' },
+      improvement: { route: 'redesign' },
+    }, null, 2));
+    const traversalRef = relative(root, outsideEval);
+    expect(traversalRef.startsWith('..')).toBe(true);
+
+    const manifestText = execFileSync(tsx, [cli, 'evidence', 'compact', runPath, '--evaluation', traversalRef, '--json'], { cwd: root, encoding: 'utf8' });
+    const manifest = JSON.parse(manifestText);
+
+    expect(manifest.evaluation.present).toBe(false);
+    expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '[local-path omitted]' && ref.role === 'evaluation_envelope')).toBe(true);
+    expect(manifest.promoted_evidence.some((ref: any) => ref.ref === '[local-path omitted]')).toBe(false);
+    expect(manifestText).not.toContain('OUTSIDE_EVAL_SECRET');
+    expect(manifestText).not.toContain(traversalRef);
+    expect(manifestText).not.toContain('/workspace/private');
   });
 
   it('prints compact loop JSON without mutating loop state', () => {
