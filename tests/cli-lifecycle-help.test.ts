@@ -38,6 +38,7 @@ const topLevelHelpCommands = [
   'osc amend <plan-slug> [--message <text>]',
   'osc evidence new <slug>',
   'osc evidence collect <slug> [--ci] [--dry-run] [--verbose]',
+  'osc evidence compact <run-or-loop> [--evaluation <evaluation-json>] [--candidate-note <path>]... [--out <dir>] [--json]',
   'osc close <plan-slug> [--message <text>]',
   'osc trace <plan-slug> [--json] [--include-unverified]',
   'osc verify [--evidence-chain [--plan <slug>] [--json] [--strict]]',
@@ -132,6 +133,12 @@ const cases: HelpCase[] = [
     name: 'trace',
     args: ['trace', '--help'],
     expected: 'Usage: osc trace <plan-slug> [--json] [--include-unverified]',
+    forbidden: 'Missing required argument',
+  },
+  {
+    name: 'evidence compact',
+    args: ['evidence', 'compact', '--help'],
+    expected: 'Usage: osc evidence compact <run-or-loop> [--evaluation <evaluation-json>] [--candidate-note <path>]... [--out <dir>] [--json]',
     forbidden: 'Missing required argument',
   },
 ];
