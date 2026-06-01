@@ -185,6 +185,8 @@ describe('osc evidence compact', () => {
     expect(manifest.evaluation.failed_criteria[0]).toMatchObject({ id: 'AC2', status: 'fail' });
     expect(JSON.stringify(manifest)).not.toContain('eval-unpromoted');
     expect(JSON.stringify(manifest)).not.toContain('AC_UNPROMOTED');
+    expect(JSON.stringify(manifest)).not.toContain('unpromoted-evidence.md');
+    expect(JSON.stringify(manifest)).not.toContain('.osc/runs/unpromoted-run/run.json');
     expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '.osc/runs/demo-run/codex-events.jsonl')).toBe(true);
     expect(manifest.promoted_evidence.some((ref: any) => ref.ref === '.osc/evolution/demo-loop/attempts.jsonl' && ref.role === 'attempt_journal')).toBe(true);
     expect(manifest.raw_local_evidence.some((ref: any) => ref.ref === '.osc/evolution/demo-loop/attempts.jsonl')).toBe(false);

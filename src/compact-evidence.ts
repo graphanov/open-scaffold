@@ -380,10 +380,10 @@ function buildLoopCompact(inputPath: string, root: string, options: CompactEvide
   addEvidenceRef(root, evidence, safeRef(root, attemptsPath), 'attempt_journal');
   addEvidenceRef(root, evidence, safeRef(root, frontierPath), 'frontier_state');
   if (evaluationRef) addEvidenceRef(root, evidence, evaluationRef, 'evaluation_envelope');
-  for (const attempt of attempts) {
-    asStringArray(attempt.evidence_refs).forEach((ref) => addEvidenceRef(root, evidence, ref, 'attempt_evidence_ref'));
-    asStringArray(attempt.adapter_receipts).forEach((ref) => addEvidenceRef(root, evidence, ref, 'adapter_receipt'));
-    const runPacket = asString(attempt.run_packet);
+  if (current) {
+    asStringArray(current.evidence_refs).forEach((ref) => addEvidenceRef(root, evidence, ref, 'attempt_evidence_ref'));
+    asStringArray(current.adapter_receipts).forEach((ref) => addEvidenceRef(root, evidence, ref, 'adapter_receipt'));
+    const runPacket = asString(current.run_packet);
     if (runPacket) addEvidenceRef(root, evidence, runPacket, 'run_packet');
   }
   evaluation.evidence_refs.forEach((ref) => addEvidenceRef(root, evidence, ref, 'evaluation_evidence_ref'));
