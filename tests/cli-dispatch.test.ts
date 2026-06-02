@@ -189,6 +189,27 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('invalidates trust when adapter-local helper files change', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'helper.mjs'), "export const marker = 'trusted-helper';\n");
+      writeFileSync(join(adapterDir, 'runner.mjs'), "import { marker } from './helper.mjs';\nconsole.log(marker);\n");
+      writeAdapterConfig(root, 'helper-runner', ['node', '.osc/adapters/runner.mjs']);
+      const before = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'helper-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+
+      writeFileSync(join(adapterDir, 'helper.mjs'), "export const marker = 'changed-helper';\n");
+      const after = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'helper-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status).toBe(2);
+      expect(after.stderr).toContain('trusted digest no longer matches');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('discovers adapter artifacts before redacting persisted private paths', () => {
     const root = tempRepo(join(repoRoot, '.tmp-dispatch-redaction-'));
     try {

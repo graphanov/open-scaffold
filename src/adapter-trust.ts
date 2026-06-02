@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { basename, isAbsolute, join, relative, resolve } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { findScaffoldRoot } from './scaffold.js';
 
 export class AdapterTrustError extends Error {}
@@ -52,7 +52,27 @@ function isInsideOrSame(parent: string, child: string): boolean {
   return rel === '' || rel === '.' || (!rel.startsWith('..') && !isAbsolute(rel));
 }
 
-function adapterCommandFiles(root: string, rawConfig: Buffer): string[] {
+function addAdapterLocalFiles(root: string, commandFile: string, files: Set<string>): void {
+  const adaptersRoot = resolve(root, '.osc', 'adapters');
+  const commandDir = dirname(commandFile);
+  if (!isInsideOrSame(adaptersRoot, commandDir)) {
+    files.add(commandFile);
+    return;
+  }
+
+  const visit = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const candidate = resolve(dir, entry);
+      if (!isInsideOrSame(root, candidate)) continue;
+      const stat = statSync(candidate);
+      if (stat.isDirectory()) visit(candidate);
+      else if (stat.isFile()) files.add(candidate);
+    }
+  };
+  visit(commandDir);
+}
+
+function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
   let parsed: { command?: unknown };
   try {
     parsed = JSON.parse(rawConfig.toString('utf8')) as { command?: unknown };
@@ -67,7 +87,7 @@ function adapterCommandFiles(root: string, rawConfig: Buffer): string[] {
     if (!isInsideOrSame(root, candidate)) continue;
     if (!existsSync(candidate)) continue;
     if (!statSync(candidate).isFile()) continue;
-    files.add(candidate);
+    addAdapterLocalFiles(root, candidate, files);
   }
   return [...files].sort();
 }
@@ -77,8 +97,8 @@ export function adapterConfigDigest(root: string, adapterId: string): { path: st
   if (!existsSync(path)) throw new AdapterTrustError(`Adapter config not found: .osc/adapters/${adapterId}.json`);
   const raw = readFileSync(path);
   const hash = createHash('sha256').update('open-scaffold.adapter-trust.v2\0').update(raw);
-  for (const commandFile of adapterCommandFiles(root, raw)) {
-    hash.update('\0command-file:').update(relative(root, commandFile).replace(/\\/g, '/')).update('\0').update(readFileSync(commandFile));
+  for (const digestFile of adapterDigestFiles(root, raw)) {
+    hash.update('\0adapter-file:').update(relative(root, digestFile).replace(/\\/g, '/')).update('\0').update(readFileSync(digestFile));
   }
   const digest = `sha256:${hash.digest('hex')}`;
   return { path, digest };
