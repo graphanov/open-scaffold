@@ -87,7 +87,6 @@ function resolveLocalModule(fromFile: string, specifier: string): string | null 
 }
 
 function addAdapterDependencyFiles(root: string, file: string, files: Set<string>, seen = new Set<string>()): void {
-  if (!isInsideOrSame(root, file)) return;
   const trustedFile = trustedExistingFile(root, file);
   if (!trustedFile || seen.has(trustedFile)) return;
   seen.add(trustedFile);
@@ -97,7 +96,7 @@ function addAdapterDependencyFiles(root: string, file: string, files: Set<string
     const specifier = match[1] ?? match[2];
     if (!specifier) continue;
     const dependency = resolveLocalModule(trustedFile, specifier);
-    if (dependency && isInsideOrSame(root, dependency)) addAdapterDependencyFiles(root, dependency, files, seen);
+    if (dependency) addAdapterDependencyFiles(root, dependency, files, seen);
   }
 }
 

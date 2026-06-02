@@ -210,6 +210,26 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('refuses adapter helper imports that resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalHelper = join(dirname(root), `${basename(root)}-external-helper.mjs`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalHelper, "export const marker = 'external-helper';\n");
+      writeFileSync(join(adapterDir, 'escape-helper-runner.mjs'), `import { marker } from '../../../${basename(externalHelper)}';\nconsole.log(marker);\n`);
+      writeFileSync(join(adapterDir, 'escape-helper.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'escape-helper', command: ['node', '.osc/adapters/escape-helper-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'escape-helper'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalHelper, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('does not invalidate one adapter when an unrelated adapter file is added', () => {
     const root = tempRepo();
     try {
