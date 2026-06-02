@@ -80,6 +80,12 @@ function createRunPacket(root: string): string {
   return latestRunJson(root);
 }
 
+function updateRunRuntime(runJson: string, runtime: Record<string, unknown>): void {
+  const packet = JSON.parse(readFileSync(runJson, 'utf8')) as { runtime?: Record<string, unknown> };
+  packet.runtime = { ...(packet.runtime ?? {}), ...runtime };
+  writeFileSync(runJson, JSON.stringify(packet, null, 2) + '\n');
+}
+
 function trustAdapterConfig(root: string, id: string): void {
   const result = spawnSync(tsx, [cli, 'adapter', 'trust', id], { cwd: root, encoding: 'utf8' });
   expect(result.status, result.stderr).toBe(0);
@@ -233,6 +239,54 @@ console.log('evidence written: ' + evidencePath);
       const same = spawnSync(tsx, [cli, 'dispatch', sameRunJson, '--adapter', 'isolated'], { cwd: root, encoding: 'utf8' });
       expect(same.status).toBe(2);
       expect(same.stderr).toContain('requires an isolated worktree path outside runtime.repoPath');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves relative runtime isolation paths from the run root rather than caller cwd', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'isolated.mjs'), "console.log('isolated adapter ran');\n");
+      writeAdapterConfig(root, 'isolated', ['node', '.osc/adapters/isolated.mjs'], { requiresWorktreeIsolation: true });
+      const runJson = createRunPacket(root);
+      updateRunRuntime(runJson, { repoPath: '.', worktreePath: '../isolated-worktree', branch: 'feature/relative-isolation' });
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'isolated'], { cwd: join(root, '.osc'), encoding: 'utf8' });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Worktree isolation: enforced');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses protected branch refs in runtime isolation packets', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'isolated.mjs'), "console.log('isolated adapter should not run');\n");
+      writeAdapterConfig(root, 'isolated', ['node', '.osc/adapters/isolated.mjs'], { requiresWorktreeIsolation: true });
+
+      const localRefRunJson = createRunPacket(root);
+      updateRunRuntime(localRefRunJson, { repoPath: '.', worktreePath: '../protected-ref-worktree', branch: 'refs/heads/main' });
+      const localRef = spawnSync(tsx, [cli, 'dispatch', localRefRunJson, '--adapter', 'isolated'], { cwd: root, encoding: 'utf8' });
+      expect(localRef.status).toBe(2);
+      expect(localRef.stderr).toContain('refuses protected branch execution: refs/heads/main');
+
+      const remoteRefRunJson = createRunPacket(root);
+      updateRunRuntime(remoteRefRunJson, { repoPath: '.', worktreePath: '../protected-remote-worktree', branch: 'origin/master' });
+      const remoteRef = spawnSync(tsx, [cli, 'dispatch', remoteRefRunJson, '--adapter', 'isolated'], { cwd: root, encoding: 'utf8' });
+      expect(remoteRef.status).toBe(2);
+      expect(remoteRef.stderr).toContain('refuses protected branch execution: origin/master');
+
+      const featureContainingMainRunJson = createRunPacket(root);
+      updateRunRuntime(featureContainingMainRunJson, { repoPath: '.', worktreePath: '../feature-main-worktree', branch: 'feature/main-fix' });
+      const featureContainingMain = spawnSync(tsx, [cli, 'dispatch', featureContainingMainRunJson, '--adapter', 'isolated'], { cwd: root, encoding: 'utf8' });
+      expect(featureContainingMain.status, featureContainingMain.stderr).toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

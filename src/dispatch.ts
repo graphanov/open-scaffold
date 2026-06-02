@@ -370,8 +370,8 @@ function isTimeoutError(error: Error | undefined): boolean {
   return coded?.code === 'ETIMEDOUT';
 }
 
-function resolveExistingOrLexical(path: string): string {
-  const absolute = resolve(path);
+function resolveExistingOrLexical(base: string, path: string): string {
+  const absolute = isAbsolute(path) ? resolve(path) : resolve(base, path);
   if (existsSync(absolute)) return realpathSync.native(absolute);
 
   let existingParent = dirname(absolute);
@@ -384,14 +384,24 @@ function resolveExistingOrLexical(path: string): string {
   return resolve(realpathSync.native(existingParent), relative(existingParent, absolute));
 }
 
+function isProtectedBranchRef(branch: string): boolean {
+  const normalized = branch.trim().replace(/\\/g, '/');
+  const protectedName = /^(?:main|master|trunk|release)$/i;
+  if (protectedName.test(normalized)) return true;
+  const localRef = normalized.match(/^refs\/heads\/(.+)$/i);
+  if (localRef) return protectedName.test(localRef[1]!);
+  const remoteRef = normalized.match(/^(?:refs\/remotes\/[^/]+|remotes\/[^/]+|origin|upstream)\/(.+)$/i);
+  return Boolean(remoteRef && protectedName.test(remoteRef[1]!));
+}
+
 function assertWorktreeIsolation(adapter: AdapterDefinition, run: { root: string; runtime: { worktreePath: string | null; branch: string | null; repoPath: string | null } }): 'not-required' | 'enforced' {
   if (!adapter.requiresWorktreeIsolation) return 'not-required';
   const { worktreePath, branch, repoPath } = run.runtime;
   if (!worktreePath) throw new DispatchUsageError(`Adapter ${adapter.id} requires runtime.worktreePath in the run packet.`);
   if (!branch) throw new DispatchUsageError(`Adapter ${adapter.id} requires runtime.branch in the run packet.`);
-  if (/^(?:main|master|trunk|release)$/i.test(branch)) throw new DispatchUsageError(`Adapter ${adapter.id} refuses protected branch execution: ${branch}. Use an isolated non-main branch.`);
-  const resolvedRepoPath = resolveExistingOrLexical(repoPath ?? run.root);
-  const resolvedWorktreePath = resolveExistingOrLexical(worktreePath);
+  if (isProtectedBranchRef(branch)) throw new DispatchUsageError(`Adapter ${adapter.id} refuses protected branch execution: ${branch}. Use an isolated non-main branch.`);
+  const resolvedRepoPath = resolveExistingOrLexical(run.root, repoPath ?? '.');
+  const resolvedWorktreePath = resolveExistingOrLexical(run.root, worktreePath);
   if (isInsideOrSame(resolvedRepoPath, resolvedWorktreePath)) {
     throw new DispatchUsageError(`Adapter ${adapter.id} requires an isolated worktree path outside runtime.repoPath.`);
   }
