@@ -293,6 +293,23 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('refuses nonexistent required flag operands outside the scaffold root', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'future-flag-runner.mjs'), "console.log('future flag runner');\n");
+      writeFileSync(join(adapterDir, 'future-flag.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'future-flag', command: ['node', '--hook=../future-preload', '.osc/adapters/future-flag-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'future-flag'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('does not invalidate one adapter when an unrelated adapter file is added', () => {
     const root = tempRepo();
     try {

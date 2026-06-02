@@ -122,6 +122,12 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
   for (const entry of parsed.command) {
     if (typeof entry !== 'string' || !entry.trim()) continue;
     for (const candidate of commandEntryPathCandidates(root, entry)) {
+      if (candidate.required && !existsSync(candidate.path)) {
+        const lexicalRoot = resolve(root);
+        if (!isInsideOrSame(lexicalRoot, candidate.path) && !isInsideOrSame(realRoot, candidate.path)) {
+          throw new AdapterTrustError('Adapter command references a file outside the scaffold root. Move adapter payload files under the repository before trusting.');
+        }
+      }
       let trustedFile: string | null = null;
       try {
         trustedFile = trustedExistingFile(realRoot, candidate.path);
