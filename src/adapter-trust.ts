@@ -55,6 +55,11 @@ function isInsideOrSame(parent: string, child: string): boolean {
 const localModuleExtensions = ['', '.mjs', '.js', '.cjs', '.ts', '.tsx', '.json'];
 const localModuleIndexExtensions = ['index.mjs', 'index.js', 'index.cjs', 'index.ts', 'index.tsx', 'index.json'];
 const localModuleSpecifierPattern = /\b(?:import|export)\s+(?:[^'"()]*?\s+from\s+)?['"]([^'"]+)['"]|\b(?:require|import)\(\s*['"]([^'"]+)['"]\s*\)/g;
+const pathOperandFlags = new Set(['--require', '-r', '--import', '--loader', '--experimental-loader', '--config', '--config-file', '--hook', '--preload']);
+
+function commandFlagTakesPathOperand(entry: string): boolean {
+  return pathOperandFlags.has(entry);
+}
 
 function commandEntryLooksLikePath(entry: string): boolean {
   return isAbsolute(entry) || entry.startsWith('./') || entry.startsWith('../') || entry.startsWith('.\\') || entry.startsWith('..\\') || entry.includes('/') || entry.includes('\\') || /\.(?:mjs|js|cjs|ts|tsx|json|sh|py|rb|pl|php|go|rs)$/i.test(entry);
@@ -131,9 +136,15 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
   }
   if (!Array.isArray(parsed.command)) return [];
   const files = new Set<string>();
-  for (const entry of parsed.command) {
+  for (let index = 0; index < parsed.command.length; index += 1) {
+    const entry = parsed.command[index];
     if (typeof entry !== 'string' || !entry.trim()) continue;
-    for (const candidate of commandEntryPathCandidates(root, entry)) {
+    const candidates = commandEntryPathCandidates(root, entry);
+    const nextEntry = parsed.command[index + 1];
+    if (commandFlagTakesPathOperand(entry) && typeof nextEntry === 'string' && nextEntry.trim() && !nextEntry.startsWith('-')) {
+      candidates.push({ path: isAbsolute(nextEntry) ? resolve(nextEntry) : resolve(root, nextEntry), required: true });
+    }
+    for (const candidate of candidates) {
       if (candidate.required && !existsSync(candidate.path)) {
         const lexicalRoot = resolve(root);
         if (!isInsideOrSame(lexicalRoot, candidate.path) && !isInsideOrSame(realRoot, candidate.path)) {

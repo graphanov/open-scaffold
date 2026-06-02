@@ -231,6 +231,27 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('invalidates trust when split flag operands resolve to extensioned local files', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(root, 'preload.js'), "globalThis.splitPreloadMarker = 'trusted-split-preload';\n");
+      writeFileSync(join(adapterDir, 'split-runner.mjs'), "console.log(process.argv.includes('--hook') ? 'split runner' : 'missing hook');\n");
+      writeAdapterConfig(root, 'split-runner', ['node', '.osc/adapters/split-runner.mjs', '--hook', 'preload']);
+      const before = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'split-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+
+      writeFileSync(join(root, 'preload.js'), "globalThis.splitPreloadMarker = 'changed-split-preload';\n");
+      const after = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'split-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status).toBe(2);
+      expect(after.stderr).toContain('trusted digest no longer matches');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('refuses adapter helper imports that resolve outside the scaffold root', () => {
     const root = tempRepo();
     const externalHelper = join(dirname(root), `${basename(root)}-external-helper.mjs`);
