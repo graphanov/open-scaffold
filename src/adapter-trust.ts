@@ -55,7 +55,6 @@ function isInsideOrSame(parent: string, child: string): boolean {
 const localModuleExtensions = ['', '.mjs', '.js', '.cjs', '.ts', '.tsx', '.json'];
 const localModuleIndexExtensions = ['index.mjs', 'index.js', 'index.cjs', 'index.ts', 'index.tsx', 'index.json'];
 const localModuleSpecifierPattern = /\b(?:import|export)\s+(?:[^'"()]*?\s+from\s+)?['"]([^'"]+)['"]|\b(?:require|import)\(\s*['"]([^'"]+)['"]\s*\)/g;
-const pythonImportSpecifierPattern = /^\s*(?:from\s+([.]?[A-Za-z_][A-Za-z0-9_.]*)\s+import\s+|import\s+([A-Za-z_][A-Za-z0-9_.]*(?:\s*,\s*[A-Za-z_][A-Za-z0-9_.]*)*))/gm;
 const pathOperandFlags = new Set(['--require', '-r', '--import', '--loader', '--experimental-loader', '--config', '--config-file', '--hook', '--preload']);
 
 function commandFlagTakesPathOperand(entry: string): boolean {
@@ -125,15 +124,30 @@ function resolveLocalPythonModule(fromFile: string, specifier: string): string |
   return null;
 }
 
-function localDependencySpecifiers(file: string, content: string): string[] {
-  if (/\.py$/i.test(file)) {
-    const specifiers: string[] = [];
-    for (const match of content.matchAll(pythonImportSpecifierPattern)) {
-      if (match[1]) specifiers.push(match[1]);
-      if (match[2]) specifiers.push(...match[2].split(',').map((value) => value.trim()).filter(Boolean));
+function localPythonDependencySpecifiers(content: string): string[] {
+  const specifiers: string[] = [];
+  for (const line of content.split(/\r?\n/)) {
+    const fromMatch = line.match(/^\s*from\s+([.]?[A-Za-z_][A-Za-z0-9_.]*)\s+import\s+(.+)$/);
+    if (fromMatch) {
+      const moduleName = fromMatch[1]!;
+      specifiers.push(moduleName);
+      for (const importedName of fromMatch[2]!.split(',')) {
+        const name = importedName.trim().split(/\s+as\s+/i)[0]?.trim();
+        if (name && name !== '*' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) specifiers.push(`${moduleName}.${name}`);
+      }
+      continue;
     }
-    return specifiers;
+
+    const importMatch = line.match(/^\s*import\s+(.+)$/);
+    if (importMatch) {
+      specifiers.push(...importMatch[1]!.split(',').map((value) => value.trim().split(/\s+as\s+/i)[0]?.trim() ?? '').filter(Boolean));
+    }
   }
+  return specifiers;
+}
+
+function localDependencySpecifiers(file: string, content: string): string[] {
+  if (/\.py$/i.test(file)) return localPythonDependencySpecifiers(content);
 
   const specifiers: string[] = [];
   for (const match of content.matchAll(localModuleSpecifierPattern)) {
