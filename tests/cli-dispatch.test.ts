@@ -540,6 +540,34 @@ console.log('z'.repeat(70_000));
     }
   });
 
+  it('allows successful adapters to use both stdout and stderr up to the bounded process cap', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'dual-stream-retained.mjs'), `import { dirname, join } from 'node:path';
+import { writeFileSync } from 'node:fs';
+const runDir = dirname(process.argv[2]);
+const receiptPath = join(runDir, 'dual-stream-retained-receipt.json');
+writeFileSync(receiptPath, JSON.stringify({ status: 'ok' }) + '\\n');
+console.log('dual stream adapter receipt written: ' + receiptPath);
+process.stdout.write('o'.repeat(5_400_000));
+process.stderr.write('e'.repeat(5_400_000));
+`);
+      writeAdapterConfig(root, 'dual-stream-retained', ['node', '.osc/adapters/dual-stream-retained.mjs'], { maxStdoutBytes: 6_000_000, maxStderrBytes: 6_000_000 });
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'dual-stream-retained'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Dispatch receipt: .osc/runs/');
+      expect(result.stdout).toContain('Stdout truncated: no');
+      expect(result.stdout).toContain('Stderr truncated: no');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('ignores receipt paths clipped by stdout truncation instead of failing dispatch', () => {
     const root = tempRepo();
     try {

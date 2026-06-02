@@ -70,6 +70,7 @@ const defaultAdapterMaxLogBytes = 2_000_000;
 const maxAdapterTimeoutMs = 30 * 60 * 1000;
 const maxAdapterLogBytes = 10_000_000;
 const maxAdapterLogSlackBytes = 64 * 1024;
+const maxAdapterProcessBufferBytes = maxAdapterLogBytes * 2 + maxAdapterLogSlackBytes;
 const safeEnvNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const envControlCharPattern = /[\u0000-\u001F\u007F]/;
 
@@ -361,7 +362,7 @@ export function runDispatch(runPacketArg: string, options: DispatchOptions, star
     env: adapterEnv.env,
     timeout: adapter.timeoutMs,
     killSignal: 'SIGKILL',
-    maxBuffer: maxAdapterLogBytes + maxAdapterLogSlackBytes,
+    maxBuffer: maxAdapterProcessBufferBytes,
   });
   const rawStdout = String(result.stdout ?? '');
   const stderrParts = [String(result.stderr ?? ''), processErrorDetails(result.error)].filter((part): part is string => Boolean(part));
