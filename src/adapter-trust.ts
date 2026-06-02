@@ -115,9 +115,9 @@ function resolveLocalModule(fromFile: string, specifier: string): string | null 
 
 function resolveLocalPythonModule(fromFile: string, specifier: string): string | null {
   const fromDir = dirname(fromFile);
-  const normalizedSpecifier = specifier.replace(/^\.+/, '').split('.')[0];
+  const normalizedSpecifier = specifier.replace(/^\.+/, '');
   if (!normalizedSpecifier) return null;
-  const base = resolve(fromDir, normalizedSpecifier);
+  const base = resolve(fromDir, ...normalizedSpecifier.split('.'));
   const moduleFile = `${base}.py`;
   if (existsSync(moduleFile) && statSync(moduleFile).isFile()) return moduleFile;
   const packageInit = resolve(base, '__init__.py');
@@ -195,8 +195,7 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
           }
         }
       } catch (error) {
-        if (candidate.required) throw error;
-        continue;
+        throw error;
       }
       if (!trustedFile) continue;
       addAdapterDependencyFiles(realRoot, trustedFile, files);

@@ -232,6 +232,29 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('invalidates trust when Python adapter package submodules change', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      const helpersDir = join(adapterDir, 'helpers');
+      mkdirSync(helpersDir, { recursive: true });
+      writeFileSync(join(helpersDir, 'util.py'), "MARKER = 'trusted-package-helper'\n");
+      writeFileSync(join(adapterDir, 'package-runner.py'), "import helpers.util\nprint(helpers.util.MARKER)\n");
+      writeAdapterConfig(root, 'python-package-runner', ['python3', '.osc/adapters/package-runner.py']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(helpersDir, 'util.py'), "MARKER = 'changed-package-helper'\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('invalidates trust when extension-resolved required preload files change', () => {
     const root = tempRepo();
     try {
@@ -310,6 +333,26 @@ describe('osc dispatch', () => {
       expect(result.stderr).toContain('outside the scaffold root');
     } finally {
       rmSync(externalHook, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses extensionless script operands that resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalRunner = join(dirname(root), `${basename(root)}-external-runner`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalRunner, "console.log('external runner');\n");
+      symlinkSync(externalRunner, join(root, 'runner'));
+      writeFileSync(join(adapterDir, 'extensionless-script.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'extensionless-script', command: ['node', 'runner'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'extensionless-script'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalRunner, { force: true });
       rmSync(root, { recursive: true, force: true });
     }
   });
