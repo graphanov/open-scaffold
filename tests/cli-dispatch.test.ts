@@ -250,6 +250,28 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('refuses extensionless repo-relative flag operands that resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalDir = join(dirname(root), `${basename(root)}-extensionless-hooks`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      mkdirSync(externalDir, { recursive: true });
+      writeFileSync(join(externalDir, 'preload'), "globalThis.extensionlessHookLoaded = true;\n");
+      symlinkSync(externalDir, join(adapterDir, 'payloads'));
+      writeFileSync(join(adapterDir, 'extensionless-flag-runner.mjs'), "console.log('extensionless flag runner');\n");
+      writeFileSync(join(adapterDir, 'extensionless-flag.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'extensionless-flag', command: ['node', '--hook=.osc/adapters/payloads/preload', '.osc/adapters/extensionless-flag-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'extensionless-flag'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalDir, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('does not invalidate one adapter when an unrelated adapter file is added', () => {
     const root = tempRepo();
     try {

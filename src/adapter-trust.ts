@@ -57,7 +57,7 @@ const localModuleIndexExtensions = ['index.mjs', 'index.js', 'index.cjs', 'index
 const localModuleSpecifierPattern = /\b(?:import|export)\s+(?:[^'"()]*?\s+from\s+)?['"]([^'"]+)['"]|\b(?:require|import)\(\s*['"]([^'"]+)['"]\s*\)/g;
 
 function commandEntryLooksLikePath(entry: string): boolean {
-  return isAbsolute(entry) || entry.startsWith('./') || entry.startsWith('../') || entry.startsWith('.\\') || entry.startsWith('..\\') || /\.(?:mjs|js|cjs|ts|tsx|json|sh|py|rb|pl|php|go|rs)$/i.test(entry);
+  return isAbsolute(entry) || entry.startsWith('./') || entry.startsWith('../') || entry.startsWith('.\\') || entry.startsWith('..\\') || entry.includes('/') || entry.includes('\\') || /\.(?:mjs|js|cjs|ts|tsx|json|sh|py|rb|pl|php|go|rs)$/i.test(entry);
 }
 
 function commandEntryPathCandidates(root: string, entry: string): Array<{ path: string; required: boolean }> {
