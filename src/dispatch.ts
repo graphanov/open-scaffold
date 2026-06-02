@@ -329,7 +329,10 @@ function truncateLog(content: string, maxBytes: number): TruncatedLog {
   const data = Buffer.from(content, 'utf8');
   if (data.length <= maxBytes) return { content, truncated: false };
   const marker = `\n[open-scaffold: log truncated to ${maxBytes} bytes from ${data.length} bytes]\n`;
-  return { content: `${data.subarray(0, maxBytes).toString('utf8')}${marker}`, truncated: true };
+  const retained = data.subarray(0, maxBytes).toString('utf8');
+  const lastNewline = retained.lastIndexOf('\n');
+  const completeLinePrefix = lastNewline >= 0 ? retained.slice(0, lastNewline + 1) : '';
+  return { content: `${completeLinePrefix}${marker}`, truncated: true };
 }
 
 function processErrorDetails(error: Error | undefined): string | null {

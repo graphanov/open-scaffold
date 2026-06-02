@@ -540,6 +540,34 @@ console.log('z'.repeat(70_000));
     }
   });
 
+  it('ignores receipt paths clipped by stdout truncation instead of failing dispatch', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'clipped-receipt.mjs'), `import { dirname, join } from 'node:path';
+import { writeFileSync } from 'node:fs';
+const runDir = dirname(process.argv[2]);
+const receiptPath = join(runDir, 'clipped-receipt.json');
+writeFileSync(receiptPath, JSON.stringify({ status: 'ok' }) + '\\n');
+process.stdout.write('clipped adapter receipt written: ' + receiptPath + '-this-line-is-intentionally-too-long');
+`);
+      writeAdapterConfig(root, 'clipped-receipt', ['node', '.osc/adapters/clipped-receipt.mjs'], { maxStdoutBytes: 40, maxStderrBytes: 256 });
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'clipped-receipt'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Dispatch receipt: (none reported)');
+      expect(result.stdout).toContain('Stdout truncated: yes');
+      const stdoutLog = readFileSync(join(dirname(runJson), 'dispatch', 'clipped-receipt-stdout.log'), 'utf8');
+      expect(stdoutLog).not.toContain('receipt written:');
+      expect(stdoutLog).toContain('[open-scaffold: log truncated');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('refuses wildcard env allowlists without the unsafe full-env override', () => {
     const root = tempRepo();
     try {
