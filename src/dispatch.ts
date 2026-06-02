@@ -119,10 +119,13 @@ function isSafeId(value: string): boolean {
   return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value) && !value.includes('..');
 }
 
-function ensureInside(parent: string, child: string, message: string): void {
+function isInsideOrSame(parent: string, child: string): boolean {
   const rel = relative(parent, child);
-  if (rel === '' || rel === '.') return;
-  if (rel.startsWith('..') || isAbsolute(rel)) throw new DispatchUsageError(message);
+  return rel === '' || rel === '.' || (!rel.startsWith('..') && !isAbsolute(rel));
+}
+
+function ensureInside(parent: string, child: string, message: string): void {
+  if (!isInsideOrSame(parent, child)) throw new DispatchUsageError(message);
 }
 
 function toRelative(root: string, path: string | null): string | null {
@@ -367,13 +370,31 @@ function isTimeoutError(error: Error | undefined): boolean {
   return coded?.code === 'ETIMEDOUT';
 }
 
-function assertWorktreeIsolation(adapter: AdapterDefinition, run: { runtime: { worktreePath: string | null; branch: string | null; repoPath: string | null } }): 'not-required' | 'enforced' {
+function resolveExistingOrLexical(path: string): string {
+  const absolute = resolve(path);
+  if (existsSync(absolute)) return realpathSync.native(absolute);
+
+  let existingParent = dirname(absolute);
+  while (!existsSync(existingParent)) {
+    const next = dirname(existingParent);
+    if (next === existingParent) return absolute;
+    existingParent = next;
+  }
+
+  return resolve(realpathSync.native(existingParent), relative(existingParent, absolute));
+}
+
+function assertWorktreeIsolation(adapter: AdapterDefinition, run: { root: string; runtime: { worktreePath: string | null; branch: string | null; repoPath: string | null } }): 'not-required' | 'enforced' {
   if (!adapter.requiresWorktreeIsolation) return 'not-required';
   const { worktreePath, branch, repoPath } = run.runtime;
   if (!worktreePath) throw new DispatchUsageError(`Adapter ${adapter.id} requires runtime.worktreePath in the run packet.`);
   if (!branch) throw new DispatchUsageError(`Adapter ${adapter.id} requires runtime.branch in the run packet.`);
   if (/^(?:main|master|trunk|release)$/i.test(branch)) throw new DispatchUsageError(`Adapter ${adapter.id} refuses protected branch execution: ${branch}. Use an isolated non-main branch.`);
-  if (repoPath && worktreePath === repoPath) throw new DispatchUsageError(`Adapter ${adapter.id} requires an isolated worktree path distinct from runtime.repoPath.`);
+  const resolvedRepoPath = resolveExistingOrLexical(repoPath ?? run.root);
+  const resolvedWorktreePath = resolveExistingOrLexical(worktreePath);
+  if (isInsideOrSame(resolvedRepoPath, resolvedWorktreePath)) {
+    throw new DispatchUsageError(`Adapter ${adapter.id} requires an isolated worktree path outside runtime.repoPath.`);
+  }
   return 'enforced';
 }
 
@@ -395,17 +416,16 @@ export function runDispatch(runPacketArg: string, options: DispatchOptions, star
     killSignal: 'SIGKILL',
     maxBuffer: maxAdapterProcessBufferBytes,
   });
-  const rawStdout = redactSecrets(String(result.stdout ?? ''));
+  const stdoutForDiscovery = truncateLog(String(result.stdout ?? ''), adapter.maxStdoutBytes);
+  const stdout = truncateLog(redactSecrets(String(result.stdout ?? '')), adapter.maxStdoutBytes);
   const stderrParts = [String(result.stderr ?? ''), processErrorDetails(result.error)].filter((part): part is string => Boolean(part));
-  const rawStderr = redactSecrets(stderrParts.join(stderrParts.length > 1 ? '\n' : ''));
-  const stdout = truncateLog(rawStdout, adapter.maxStdoutBytes);
-  const stderr = truncateLog(rawStderr, adapter.maxStderrBytes);
+  const stderr = truncateLog(redactSecrets(stderrParts.join(stderrParts.length > 1 ? '\n' : '')), adapter.maxStderrBytes);
   const finalDispatchDir = prepareDispatchDir(run.runDir);
   const stdoutLogPath = writeLogFile(finalDispatchDir, adapter.id, 'stdout', stdout.content);
   const stderrLogPath = writeLogFile(finalDispatchDir, adapter.id, 'stderr', stderr.content);
 
-  const receiptPath = discoverReceipt(run.root, run.runDir, stdout.content);
-  const evidencePaths = discoverEvidence(run.root, run.runDir, stdout.content);
+  const receiptPath = discoverReceipt(run.root, run.runDir, stdoutForDiscovery.content);
+  const evidencePaths = discoverEvidence(run.root, run.runDir, stdoutForDiscovery.content);
 
   return {
     adapterId: adapter.id,

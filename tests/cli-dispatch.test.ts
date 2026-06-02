@@ -9,8 +9,8 @@ const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const cli = join(repoRoot, 'src/cli.ts');
 
-function tempRepo(): string {
-  const root = mkdtempSync(join(tmpdir(), 'osc-dispatch-'));
+function tempRepo(prefix = join(tmpdir(), 'osc-dispatch-')): string {
+  const root = mkdtempSync(prefix);
   mkdirSync(join(root, '.osc/plans/active'), { recursive: true });
   mkdirSync(join(root, '.osc/plans/backlog'), { recursive: true });
   mkdirSync(join(root, '.osc/releases'), { recursive: true });
@@ -67,6 +67,12 @@ function latestRunJson(root: string): string {
   const runId = readdirSync(runsDir).sort().at(-1);
   expect(runId).toBeTruthy();
   return join(runsDir, runId!, 'run.json');
+}
+
+function createRunPacketWithRuntime(root: string, worktreePath: string, branch = 'feature/health'): string {
+  const result = spawnSync(tsx, [cli, 'run', '.osc/plans/active/123-health-endpoint.md', '--runtime', 'codex', '--repo', root, '--worktree', worktreePath, '--branch', branch], { cwd: root, encoding: 'utf8' });
+  expect(result.status).toBe(0);
+  return latestRunJson(root);
 }
 
 function createRunPacket(root: string): string {
@@ -166,6 +172,61 @@ describe('osc dispatch', () => {
       expect(JSON.parse(readFileSync(receiptPath, 'utf8'))).toMatchObject({ adapter_id: 'fake', status: 'dry_run', spawned: false });
       expect(readFileSync(evidencePath, 'utf8')).toContain('Fake adapter evidence');
       expect(readFileSync(stdoutLog, 'utf8')).toContain('fake adapter receipt written:');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('discovers adapter artifacts before redacting persisted private paths', () => {
+    const root = tempRepo(join(repoRoot, '.tmp-dispatch-redaction-'));
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'private-path.mjs'), `import { dirname, join } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
+const runPath = process.argv[2];
+const packet = JSON.parse(readFileSync(runPath, 'utf8'));
+const runDir = dirname(runPath);
+const receiptPath = join(runDir, 'dispatch-receipt.json');
+const evidencePath = join(runDir, 'private-path-evidence.md');
+writeFileSync(receiptPath, JSON.stringify({ schema_version: 'open-scaffold.dispatch-receipt.v1', adapter_id: 'private-path', run_id: packet.runId, status: 'dry_run', spawned: false }, null, 2));
+writeFileSync(evidencePath, '# Private path evidence\\n');
+console.log('receipt written: ' + receiptPath);
+console.log('evidence written: ' + evidencePath);
+`);
+      writeAdapterConfig(root, 'private-path', ['node', '.osc/adapters/private-path.mjs']);
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'private-path'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Dispatch receipt: .osc/runs/');
+      expect(result.stdout).toContain('Evidence: .osc/runs/');
+      const stdoutLog = readFileSync(join(dirname(runJson), 'dispatch', 'private-path-stdout.log'), 'utf8');
+      expect(stdoutLog).toContain('/[local-path-redacted]');
+      expect(stdoutLog).not.toContain(root);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses worktree isolation inside or equal to the repository path', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'isolated.mjs'), "console.log('isolated adapter should not run');\n");
+      writeAdapterConfig(root, 'isolated', ['node', '.osc/adapters/isolated.mjs'], { requiresWorktreeIsolation: true });
+
+      const nestedRunJson = createRunPacketWithRuntime(root, join(root, 'tmp-worktree'), 'feature/nested');
+      const nested = spawnSync(tsx, [cli, 'dispatch', nestedRunJson, '--adapter', 'isolated'], { cwd: root, encoding: 'utf8' });
+      expect(nested.status).toBe(2);
+      expect(nested.stderr).toContain('requires an isolated worktree path outside runtime.repoPath');
+
+      const sameRunJson = createRunPacketWithRuntime(root, join(root, '.'), 'feature/same');
+      const same = spawnSync(tsx, [cli, 'dispatch', sameRunJson, '--adapter', 'isolated'], { cwd: root, encoding: 'utf8' });
+      expect(same.status).toBe(2);
+      expect(same.stderr).toContain('requires an isolated worktree path outside runtime.repoPath');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
