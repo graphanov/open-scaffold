@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, join, relative } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import { findScaffoldRoot } from './scaffold.js';
 
 export class AdapterTrustError extends Error {}
@@ -47,11 +47,40 @@ export function trustStatePath(root: string): string {
   return join(root, '.osc', 'state', 'trusted-adapters.json');
 }
 
+function isInsideOrSame(parent: string, child: string): boolean {
+  const rel = relative(parent, child);
+  return rel === '' || rel === '.' || (!rel.startsWith('..') && !isAbsolute(rel));
+}
+
+function adapterCommandFiles(root: string, rawConfig: Buffer): string[] {
+  let parsed: { command?: unknown };
+  try {
+    parsed = JSON.parse(rawConfig.toString('utf8')) as { command?: unknown };
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed.command)) return [];
+  const files = new Set<string>();
+  for (const entry of parsed.command) {
+    if (typeof entry !== 'string' || !entry.trim()) continue;
+    const candidate = isAbsolute(entry) ? resolve(entry) : resolve(root, entry);
+    if (!isInsideOrSame(root, candidate)) continue;
+    if (!existsSync(candidate)) continue;
+    if (!statSync(candidate).isFile()) continue;
+    files.add(candidate);
+  }
+  return [...files].sort();
+}
+
 export function adapterConfigDigest(root: string, adapterId: string): { path: string; digest: string } {
   const path = adapterConfigPath(root, adapterId);
   if (!existsSync(path)) throw new AdapterTrustError(`Adapter config not found: .osc/adapters/${adapterId}.json`);
   const raw = readFileSync(path);
-  const digest = `sha256:${createHash('sha256').update(raw).digest('hex')}`;
+  const hash = createHash('sha256').update('open-scaffold.adapter-trust.v2\0').update(raw);
+  for (const commandFile of adapterCommandFiles(root, raw)) {
+    hash.update('\0command-file:').update(relative(root, commandFile).replace(/\\/g, '/')).update('\0').update(readFileSync(commandFile));
+  }
+  const digest = `sha256:${hash.digest('hex')}`;
   return { path, digest };
 }
 

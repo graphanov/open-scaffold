@@ -3,7 +3,6 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -82,18 +81,8 @@ function createRunPacket(root: string): string {
 }
 
 function trustAdapterConfig(root: string, id: string): void {
-  const configPath = join(root, '.osc/adapters', `${id}.json`);
-  const digest = `sha256:${createHash('sha256').update(readFileSync(configPath)).digest('hex')}`;
-  mkdirSync(join(root, '.osc/state'), { recursive: true });
-  const statePath = join(root, '.osc/state/trusted-adapters.json');
-  const current = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : { schemaVersion: 'open-scaffold.trusted_adapters.v1', adapters: {} };
-  current.adapters[id] = {
-    adapterId: id,
-    digest,
-    configPath: `.osc/adapters/${id}.json`,
-    trustedAt: '2026-06-02T00:00:00.000Z'
-  };
-  writeFileSync(statePath, JSON.stringify(current, null, 2) + '\n');
+  const result = spawnSync(tsx, [cli, 'adapter', 'trust', id], { cwd: root, encoding: 'utf8' });
+  expect(result.status, result.stderr).toBe(0);
 }
 
 function writeFakeAdapter(root: string): void {
@@ -172,6 +161,23 @@ describe('osc dispatch', () => {
       expect(JSON.parse(readFileSync(receiptPath, 'utf8'))).toMatchObject({ adapter_id: 'fake', status: 'dry_run', spawned: false });
       expect(readFileSync(evidencePath, 'utf8')).toContain('Fake adapter evidence');
       expect(readFileSync(stdoutLog, 'utf8')).toContain('fake adapter receipt written:');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when a referenced local adapter command file changes', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      writeFakeAdapter(root);
+      const before = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'fake'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+
+      writeFileSync(join(root, '.osc/adapters/fake-adapter.mjs'), "console.log('changed adapter behavior');\n");
+      const after = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'fake'], { cwd: root, encoding: 'utf8' });
+      expect(after.status).toBe(2);
+      expect(after.stderr).toContain('trusted digest no longer matches');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
