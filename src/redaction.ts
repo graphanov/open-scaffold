@@ -19,7 +19,7 @@ const SECRET_PATTERNS: Array<{ kind: SecretFinding['kind']; pattern: RegExp; rep
   { kind: 'token', pattern: /(?<![A-Za-z0-9])sk-(?:proj-)?[A-Za-z0-9_-]{24,}/g, replacement: 'sk-[redacted]', detail: 'API token' },
   { kind: 'token', pattern: /\bBearer\s+[A-Za-z0-9._-]{30,}/gi, replacement: 'Bearer [redacted]', detail: 'Bearer token' },
   { kind: 'token', pattern: /(?<![A-Za-z0-9])AIza[0-9A-Za-z_-]{20,}/g, replacement: 'AIza[redacted]', detail: 'Google API key' },
-  { kind: 'private_path', pattern: /\/(?:Users|home\/(?!node\b))\/[^\s`'"),;]+/g, replacement: '/[local-path-redacted]', detail: 'local private path' },
+  { kind: 'private_path', pattern: /(?:\/Users\/|\/home\/(?!node\b))[^\s`'"),;]+/g, replacement: '/[local-path-redacted]', detail: 'local private path' },
   { kind: 'private_path', pattern: /[A-Za-z]:\\Users\\[^\s`'"),;]+/g, replacement: 'C:\\[local-path-redacted]', detail: 'Windows local private path' },
 ];
 
