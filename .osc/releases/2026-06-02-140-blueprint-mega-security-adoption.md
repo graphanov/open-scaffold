@@ -19,8 +19,8 @@ Implemented scope covers adapter trust, redaction/secret scanning, trust-boundar
 Local PR-candidate verification was run before push. Results:
 
 - `git diff --check` — PASS.
-- `npm test -- tests/blueprint-mega.test.ts tests/cli-dispatch.test.ts tests/cli-lifecycle-help.test.ts tests/section-parser.test.ts tests/github-actions-workflows.test.ts --run` — PASS in focused verification: 5 files, 55 tests.
-- `npm test -- --run` — PASS: 56 test files, 595 tests.
+- `npm test -- tests/blueprint-mega.test.ts tests/cli-dispatch.test.ts tests/cli-lifecycle-help.test.ts tests/section-parser.test.ts tests/github-actions-workflows.test.ts --run` — PASS in focused verification: 5 files, 56 tests.
+- `npm test -- --run` — PASS: 56 test files, 596 tests.
 - `npm run build` — PASS: core TypeScript build and runtime-omx build.
 - `npm run osc -- doctor --check secret-scan` — PASS: `Doctor: no issues found.`
 - `npm run osc -- plan validate .osc/plans/done/138-blueprint-security-adoption-program.md --strict` — PASS: 0 issues.

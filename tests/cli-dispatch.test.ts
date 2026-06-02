@@ -210,6 +210,24 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('does not invalidate one adapter when an unrelated adapter file is added', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'foo.mjs'), "console.log('foo adapter');\n");
+      writeAdapterConfig(root, 'foo', ['node', '.osc/adapters/foo.mjs']);
+
+      writeFileSync(join(adapterDir, 'bar.mjs'), "console.log('bar adapter');\n");
+      writeFileSync(join(adapterDir, 'bar.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'bar', command: ['node', '.osc/adapters/bar.mjs'] }, null, 2) + '\n');
+      const after = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'foo'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('discovers adapter artifacts before redacting persisted private paths', () => {
     const root = tempRepo(join(repoRoot, '.tmp-dispatch-redaction-'));
     try {

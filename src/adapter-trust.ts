@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { findScaffoldRoot } from './scaffold.js';
 
@@ -52,24 +52,38 @@ function isInsideOrSame(parent: string, child: string): boolean {
   return rel === '' || rel === '.' || (!rel.startsWith('..') && !isAbsolute(rel));
 }
 
-function addAdapterLocalFiles(root: string, commandFile: string, files: Set<string>): void {
-  const adaptersRoot = resolve(root, '.osc', 'adapters');
-  const commandDir = dirname(commandFile);
-  if (!isInsideOrSame(adaptersRoot, commandDir)) {
-    files.add(commandFile);
-    return;
-  }
+const localModuleExtensions = ['', '.mjs', '.js', '.cjs', '.ts', '.tsx', '.json'];
+const localModuleIndexExtensions = ['index.mjs', 'index.js', 'index.cjs', 'index.ts', 'index.tsx', 'index.json'];
+const localModuleSpecifierPattern = /\b(?:import|export)\s+(?:[^'"()]*?\s+from\s+)?['"]([^'"]+)['"]|\b(?:require|import)\(\s*['"]([^'"]+)['"]\s*\)/g;
 
-  const visit = (dir: string) => {
-    for (const entry of readdirSync(dir)) {
-      const candidate = resolve(dir, entry);
-      if (!isInsideOrSame(root, candidate)) continue;
-      const stat = statSync(candidate);
-      if (stat.isDirectory()) visit(candidate);
-      else if (stat.isFile()) files.add(candidate);
+function resolveLocalModule(fromFile: string, specifier: string): string | null {
+  if (!specifier.startsWith('./') && !specifier.startsWith('../')) return null;
+  const base = resolve(dirname(fromFile), specifier);
+  for (const extension of localModuleExtensions) {
+    const candidate = `${base}${extension}`;
+    if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
+  }
+  if (existsSync(base) && statSync(base).isDirectory()) {
+    for (const indexFile of localModuleIndexExtensions) {
+      const candidate = resolve(base, indexFile);
+      if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
     }
-  };
-  visit(commandDir);
+  }
+  return null;
+}
+
+function addAdapterDependencyFiles(root: string, file: string, files: Set<string>, seen = new Set<string>()): void {
+  if (seen.has(file) || !isInsideOrSame(root, file)) return;
+  if (!existsSync(file) || !statSync(file).isFile()) return;
+  seen.add(file);
+  files.add(file);
+  const content = readFileSync(file, 'utf8');
+  for (const match of content.matchAll(localModuleSpecifierPattern)) {
+    const specifier = match[1] ?? match[2];
+    if (!specifier) continue;
+    const dependency = resolveLocalModule(file, specifier);
+    if (dependency && isInsideOrSame(root, dependency)) addAdapterDependencyFiles(root, dependency, files, seen);
+  }
 }
 
 function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
@@ -87,7 +101,7 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
     if (!isInsideOrSame(root, candidate)) continue;
     if (!existsSync(candidate)) continue;
     if (!statSync(candidate).isFile()) continue;
-    addAdapterLocalFiles(root, candidate, files);
+    addAdapterDependencyFiles(root, candidate, files);
   }
   return [...files].sort();
 }
