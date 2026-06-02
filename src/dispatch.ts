@@ -358,7 +358,7 @@ export function runDispatch(runPacketArg: string, options: DispatchOptions, star
     env: adapterEnv.env,
     timeout: adapter.timeoutMs,
     killSignal: 'SIGKILL',
-    maxBuffer: Math.max(adapter.maxStdoutBytes, adapter.maxStderrBytes) + maxAdapterLogSlackBytes,
+    maxBuffer: maxAdapterLogBytes + maxAdapterLogSlackBytes,
   });
   const rawStdout = String(result.stdout ?? '');
   const stderrParts = [String(result.stderr ?? ''), processErrorDetails(result.error)].filter((part): part is string => Boolean(part));

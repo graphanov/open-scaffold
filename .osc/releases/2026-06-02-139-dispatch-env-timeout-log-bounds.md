@@ -19,20 +19,20 @@ Implemented the first P0 dispatch hardening slice from the 2026-06-02 blueprint 
 - Meta-plan validation for `138-blueprint-security-adoption-program` — PASS, `0 issues found`.
 - `npm run osc -- plan validate .osc/plans/active/139-dispatch-env-timeout-log-bounds.md --strict` — PASS before close, `0 issues found`.
 - RED: `npm test -- tests/cli-dispatch.test.ts --run` — FAIL as expected before implementation: 5 new dispatch hardening tests failed for missing env summary/restriction, unsafe override support, timeout handling, log truncation, and wildcard env refusal.
-- GREEN focused: `npm test -- tests/cli-dispatch.test.ts --run` — PASS, 18 dispatch tests including SIGTERM-ignoring timeout, CI full-env refusal, env config validation/no-value-leakage, and resource-ceiling regressions.
+- GREEN focused: `npm test -- tests/cli-dispatch.test.ts --run` — PASS, 19 dispatch tests including SIGTERM-ignoring timeout, CI full-env refusal, env config validation/no-value-leakage, resource-ceiling regressions, and successful noisy adapters above retained-log limits but below the process hard cap.
 - `npm run build` — PASS, core and runtime-omx TypeScript builds.
 - `git diff --check` — PASS.
 - `npm run osc -- close 139-dispatch-env-timeout-log-bounds --message "hardened dispatch env timeout and log bounds"` — PASS, moved plan to `done/` and stamped `MISSION.md` changelog.
 - `npm run osc -- plan validate .osc/plans/done/139-dispatch-env-timeout-log-bounds.md --strict` — PASS, `0 issues found`.
 - `./verify.sh --strict` — PASS, `10 pass, 0 fail, 0 warn`.
 - `npm run osc -- verify --evidence-chain --plan 139-dispatch-env-timeout-log-bounds --strict` — PASS, `21 intact, 0 broken, 0 missing, 0 unverifiable`.
-- `npm test` — PASS, 55 files / 578 tests.
+- `npm test` — PASS, 55 files / 579 tests.
 - Independent pre-commit re-review — PASS; no blocking security concerns or logic errors after adding `SIGKILL`, env validation, CI full-env refusal, and policy maxima. Non-blocking follow-up noted: process-tree cleanup and marker-inclusive byte caps can be considered in later hardening.
 - `npm run osc -- verify` — PASS with 7 pre-existing repository warnings unrelated to this slice; no warnings for plan 139 or this evidence note.
 
 ## Outcome
 
-`osc dispatch` now uses a restricted environment by default, reports environment key names without values, supports `--allow-full-env` only as an explicit unsafe local override with a warning and CI guard, validates adapter env names and control characters before spawn, refuses wildcard env allowlists without the unsafe override, enforces adapter timeout with `SIGKILL`, caps adapter-configured timeout/log limits, times out sleeping or SIGTERM-ignoring adapters, and writes bounded stdout/stderr logs with clear truncation markers. Receipt/evidence discovery remains path-contained and uses retained stdout only.
+`osc dispatch` now uses a restricted environment by default, reports environment key names without values, supports `--allow-full-env` only as an explicit unsafe local override with a warning and CI guard, validates adapter env names and control characters before spawn, refuses wildcard env allowlists without the unsafe override, enforces adapter timeout with `SIGKILL`, caps adapter-configured timeout/log limits, lets successful adapters exceed retained-log limits below the process hard cap, times out sleeping or SIGTERM-ignoring adapters, and writes bounded stdout/stderr logs with clear truncation markers. Receipt/evidence discovery remains path-contained and uses retained stdout only.
 
 ## Follow-up
 

@@ -511,6 +511,35 @@ console.error('y'.repeat(400));
     }
   });
 
+  it('does not fail successful adapters that exceed retained-log limits below the process hard cap', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'large-retained.mjs'), `import { dirname, join } from 'node:path';
+import { writeFileSync } from 'node:fs';
+const runDir = dirname(process.argv[2]);
+const receiptPath = join(runDir, 'large-retained-receipt.json');
+writeFileSync(receiptPath, JSON.stringify({ status: 'ok' }) + '\\n');
+console.log('large retained adapter receipt written: ' + receiptPath);
+console.log('z'.repeat(70_000));
+`);
+      writeAdapterConfig(root, 'large-retained', ['node', '.osc/adapters/large-retained.mjs'], { maxStdoutBytes: 256, maxStderrBytes: 256 });
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'large-retained'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Dispatch receipt: .osc/runs/');
+      expect(result.stdout).toContain('Stdout truncated: yes');
+      const stdoutLog = readFileSync(join(dirname(runJson), 'dispatch', 'large-retained-stdout.log'), 'utf8');
+      expect(stdoutLog).toContain('[open-scaffold: log truncated');
+      expect(stdoutLog.length).toBeLessThan(520);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('refuses wildcard env allowlists without the unsafe full-env override', () => {
     const root = tempRepo();
     try {
