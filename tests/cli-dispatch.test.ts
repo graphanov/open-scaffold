@@ -210,6 +210,27 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('invalidates trust when extension-resolved required preload files change', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'preload.js'), "globalThis.preloadMarker = 'trusted-preload';\n");
+      writeFileSync(join(adapterDir, 'preload-runner.mjs'), "console.log(globalThis.preloadMarker || 'missing preload');\n");
+      writeAdapterConfig(root, 'preload-runner', ['node', '--require=./.osc/adapters/preload', '.osc/adapters/preload-runner.mjs']);
+      const before = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'preload-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+
+      writeFileSync(join(adapterDir, 'preload.js'), "globalThis.preloadMarker = 'changed-preload';\n");
+      const after = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'preload-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status).toBe(2);
+      expect(after.stderr).toContain('trusted digest no longer matches');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('refuses adapter helper imports that resolve outside the scaffold root', () => {
     const root = tempRepo();
     const externalHelper = join(dirname(root), `${basename(root)}-external-helper.mjs`);

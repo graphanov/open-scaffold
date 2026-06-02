@@ -69,6 +69,18 @@ function commandEntryPathCandidates(root: string, entry: string): Array<{ path: 
   return candidates;
 }
 
+function localPathResolutionCandidates(file: string): string[] {
+  const candidates: string[] = [];
+  for (const extension of localModuleExtensions) {
+    if (!extension) continue;
+    candidates.push(`${file}${extension}`);
+  }
+  if (existsSync(file) && statSync(file).isDirectory()) {
+    for (const indexFile of localModuleIndexExtensions) candidates.push(resolve(file, indexFile));
+  }
+  return candidates;
+}
+
 function trustedExistingFile(root: string, file: string): string | null {
   if (!existsSync(file)) return null;
   const resolvedFile = realpathSync.native(file);
@@ -131,6 +143,12 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
       let trustedFile: string | null = null;
       try {
         trustedFile = trustedExistingFile(realRoot, candidate.path);
+        if (!trustedFile && candidate.required) {
+          for (const resolvedCandidate of localPathResolutionCandidates(candidate.path)) {
+            trustedFile = trustedExistingFile(realRoot, resolvedCandidate);
+            if (trustedFile) break;
+          }
+        }
       } catch (error) {
         if (candidate.required) throw error;
         continue;
