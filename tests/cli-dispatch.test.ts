@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const repoRoot = resolve(import.meta.dirname, '..');
@@ -224,6 +224,25 @@ describe('osc dispatch', () => {
       const after = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'foo'], { cwd: root, encoding: 'utf8' });
       expect(after.status, after.stderr).toBe(0);
     } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses adapter command payload files outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalScript = join(dirname(root), `${basename(root)}-external-adapter.mjs`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalScript, "console.log('external adapter payload');\n");
+      writeFileSync(join(adapterDir, 'external-payload.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'external-payload', command: ['node', externalScript] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'external-payload'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalScript, { force: true });
       rmSync(root, { recursive: true, force: true });
     }
   });
@@ -713,6 +732,41 @@ console.log('z'.repeat(70_000));
       const stdoutLog = readFileSync(join(dirname(runJson), 'dispatch', 'large-retained-stdout.log'), 'utf8');
       expect(stdoutLog).toContain('[open-scaffold: log truncated');
       expect(stdoutLog.length).toBeLessThan(520);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('discovers artifacts from full stdout even when retained stdout is truncated first', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'noisy-discovery.mjs'), `import { dirname, join } from 'node:path';
+import { writeFileSync } from 'node:fs';
+const runDir = dirname(process.argv[2]);
+const receiptPath = join(runDir, 'noisy-discovery-receipt.json');
+const evidencePath = join(runDir, 'noisy-discovery-evidence.md');
+writeFileSync(receiptPath, JSON.stringify({ status: 'ok' }) + '\\n');
+writeFileSync(evidencePath, '# Noisy discovery evidence\\n');
+console.log('n'.repeat(1_000));
+console.log('noisy discovery adapter receipt written: ' + receiptPath);
+console.log('noisy discovery adapter evidence written: ' + evidencePath);
+`);
+      writeAdapterConfig(root, 'noisy-discovery', ['node', '.osc/adapters/noisy-discovery.mjs'], { maxStdoutBytes: 64, maxStderrBytes: 256 });
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'noisy-discovery'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Dispatch receipt: .osc/runs/');
+      expect(result.stdout).toContain('noisy-discovery-receipt.json');
+      expect(result.stdout).toContain('Evidence: .osc/runs/');
+      expect(result.stdout).toContain('noisy-discovery-evidence.md');
+      expect(result.stdout).toContain('Stdout truncated: yes');
+      const stdoutLog = readFileSync(join(dirname(runJson), 'dispatch', 'noisy-discovery-stdout.log'), 'utf8');
+      expect(stdoutLog).toContain('[open-scaffold: log truncated');
+      expect(stdoutLog).not.toContain('receipt written:');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

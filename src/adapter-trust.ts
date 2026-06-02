@@ -56,6 +56,10 @@ const localModuleExtensions = ['', '.mjs', '.js', '.cjs', '.ts', '.tsx', '.json'
 const localModuleIndexExtensions = ['index.mjs', 'index.js', 'index.cjs', 'index.ts', 'index.tsx', 'index.json'];
 const localModuleSpecifierPattern = /\b(?:import|export)\s+(?:[^'"()]*?\s+from\s+)?['"]([^'"]+)['"]|\b(?:require|import)\(\s*['"]([^'"]+)['"]\s*\)/g;
 
+function commandEntryLooksLikePath(entry: string): boolean {
+  return isAbsolute(entry) || entry.startsWith('./') || entry.startsWith('../') || entry.startsWith('.\\') || entry.startsWith('..\\') || /\.(?:mjs|js|cjs|ts|tsx|json|sh|py|rb|pl|php|go|rs)$/i.test(entry);
+}
+
 function resolveLocalModule(fromFile: string, specifier: string): string | null {
   if (!specifier.startsWith('./') && !specifier.startsWith('../')) return null;
   const base = resolve(dirname(fromFile), specifier);
@@ -98,7 +102,12 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
   for (const entry of parsed.command) {
     if (typeof entry !== 'string' || !entry.trim()) continue;
     const candidate = isAbsolute(entry) ? resolve(entry) : resolve(root, entry);
-    if (!isInsideOrSame(root, candidate)) continue;
+    if (!isInsideOrSame(root, candidate)) {
+      if (commandEntryLooksLikePath(entry) && existsSync(candidate) && statSync(candidate).isFile()) {
+        throw new AdapterTrustError('Adapter command references a file outside the scaffold root. Move adapter payload files under the repository before trusting.');
+      }
+      continue;
+    }
     if (!existsSync(candidate)) continue;
     if (!statSync(candidate).isFile()) continue;
     addAdapterDependencyFiles(root, candidate, files);

@@ -262,7 +262,7 @@ function assertNoSymlinksUnder(path: string, message: string): void {
   }
 }
 
-function assertSafeExistingOutput(root: string, runDir: string, outputPath: string, message: string): string {
+function assertSafeExistingOutput(root: string, runDir: string, outputPath: string, message: string): string | null {
   const candidate = resolve(outputPath);
   ensureInside(runDir, candidate, message);
   ensureInside(root, candidate, 'Adapter output path must stay under the scaffold root.');
@@ -270,7 +270,7 @@ function assertSafeExistingOutput(root: string, runDir: string, outputPath: stri
   try {
     stat = lstatSync(candidate);
   } catch {
-    throw new DispatchUsageError('Adapter-reported output path does not exist.');
+    return null;
   }
   if (stat.isSymbolicLink()) throw new DispatchUsageError('Adapter output path must not be a symlink.');
   const realCandidate = realpathSync.native(candidate);
@@ -279,7 +279,7 @@ function assertSafeExistingOutput(root: string, runDir: string, outputPath: stri
   return realCandidate;
 }
 
-function resolveOutputPath(root: string, runDir: string, value: string): string {
+function resolveOutputPath(root: string, runDir: string, value: string): string | null {
   const candidate = isAbsolute(value) ? resolve(value) : resolve(root, value);
   return assertSafeExistingOutput(root, runDir, candidate, 'Adapter-reported output path must stay under the run directory.');
 }
@@ -299,7 +299,7 @@ function discoverReceipt(root: string, runDir: string, stdout: string): string |
 }
 
 function discoverEvidence(root: string, runDir: string, stdout: string): string[] {
-  return extractReportedPaths(stdout, 'evidence').map((reported) => resolveOutputPath(root, runDir, reported));
+  return extractReportedPaths(stdout, 'evidence').map((reported) => resolveOutputPath(root, runDir, reported)).filter((path): path is string => Boolean(path));
 }
 
 function prepareDispatchDir(runDir: string): string {
@@ -426,16 +426,16 @@ export function runDispatch(runPacketArg: string, options: DispatchOptions, star
     killSignal: 'SIGKILL',
     maxBuffer: maxAdapterProcessBufferBytes,
   });
-  const stdoutForDiscovery = truncateLog(String(result.stdout ?? ''), adapter.maxStdoutBytes);
-  const stdout = truncateLog(redactSecrets(String(result.stdout ?? '')), adapter.maxStdoutBytes);
+  const rawStdout = String(result.stdout ?? '');
+  const stdout = truncateLog(redactSecrets(rawStdout), adapter.maxStdoutBytes);
   const stderrParts = [String(result.stderr ?? ''), processErrorDetails(result.error)].filter((part): part is string => Boolean(part));
   const stderr = truncateLog(redactSecrets(stderrParts.join(stderrParts.length > 1 ? '\n' : '')), adapter.maxStderrBytes);
   const finalDispatchDir = prepareDispatchDir(run.runDir);
   const stdoutLogPath = writeLogFile(finalDispatchDir, adapter.id, 'stdout', stdout.content);
   const stderrLogPath = writeLogFile(finalDispatchDir, adapter.id, 'stderr', stderr.content);
 
-  const receiptPath = discoverReceipt(run.root, run.runDir, stdoutForDiscovery.content);
-  const evidencePaths = discoverEvidence(run.root, run.runDir, stdoutForDiscovery.content);
+  const receiptPath = discoverReceipt(run.root, run.runDir, rawStdout);
+  const evidencePaths = discoverEvidence(run.root, run.runDir, rawStdout);
 
   return {
     adapterId: adapter.id,
