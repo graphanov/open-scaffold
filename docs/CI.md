@@ -11,6 +11,7 @@ These workflows are active in this repository and can also be copied into downst
 | `.github/workflows/ci.yml` | PRs and pushes to `main` | Full build, test, strict verifier, and CLI verifier. |
 | `.github/workflows/plan-validate.yml` | PRs touching staged plan files under `.osc/plans/{active,backlog,blocked,done}/` | Validates changed plan files with `osc plan validate`. Errors fail the PR; warnings remain visible but non-blocking. |
 | `.github/workflows/evidence-validate.yml` | PRs touching `.osc/releases/**/*.md` | Runs `./verify.sh --strict` and checks changed evidence notes for required sections and stale `pending` claims. |
+| `.github/workflows/open-scaffold-pr-check.yml` | PRs and manual dispatch | Fork-safe structural `osc pr check` workflow; optional same-repo comment mirror when `OSC_PR_CHECK_COMMENT=true`. |
 | `.github/workflows/stale-plans.yml` | Weekly Monday 09:00 UTC and manual dispatch | Detects active plans older than the configured threshold and opens or updates a GitHub Issue. |
 | `.github/workflows/publish-npm.yml` | Manual dispatch | The only active npm publish path: builds, tests, verifies, checks the requested version, then publishes with npm trusted publishing and provenance. |
 

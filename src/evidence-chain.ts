@@ -44,6 +44,7 @@ export interface EvidenceChainReport {
 
 export interface EvidenceChainOptions {
   plan?: string;
+  onlineGithub?: boolean;
 }
 
 export interface EvidenceChainFormatOptions {
@@ -55,6 +56,7 @@ const APPROVAL_STATUSES = ['approved', 'weak_approved', 'rejected', 'blocked'];
 const RUN_ID_PATTERN = /\b\d{8}T\d{6}Z-[a-z0-9-]+\b/g;
 const GITHUB_PR_URL_PATTERN = /https:\/\/github\.com\/[^\s)]+\/pull\/\d+/g;
 const PR_REF_PATTERN = /\b(?:PR|Pull Request)\s*:?\s*#\d+\b|(?<![\w/])#\d+\b/g;
+const STRUCTURAL_ONLY_WARNING = 'Structural-only warning: this verifies local work-record links and file shape. It does not prove semantic correctness, compliance, production readiness, approval, or implementation quality.';
 
 type PlanCandidate = {
   slug: string;
@@ -278,16 +280,26 @@ function runPacketLinks(root: string, text: string): EvidenceChainLink[] {
   });
 }
 
-function prReferenceLinks(text: string): EvidenceChainLink[] {
+function onlinePrStatus(ref: string): EvidenceChainLink {
+  return {
+    type: 'pr_reference',
+    reference: ref,
+    status: 'unverifiable',
+    detail: 'online GitHub verification was requested, but core evidence-chain checks stay no-spawn/no-network in this local run; verify the PR externally or through a fork-safe workflow and record the result as evidence',
+  };
+}
+
+function prReferenceLinks(root: string, text: string, onlineGithub = false): EvidenceChainLink[] {
   const refs = Array.from(new Set([
     ...Array.from(text.matchAll(GITHUB_PR_URL_PATTERN), (match) => match[0]),
     ...Array.from(text.matchAll(PR_REF_PATTERN), (match) => match[0]),
   ].map((value) => value.trim().replace(/^['"`(]+|['"`),.;:]+$/g, '')).filter(Boolean))).sort();
+  if (onlineGithub) return refs.map((ref) => onlinePrStatus(ref));
   return refs.map((ref) => ({
     type: 'pr_reference',
     reference: ref,
     status: 'unverifiable',
-    detail: 'PR reference is syntactically recognized but not checked over the network',
+    detail: 'PR reference is syntactically recognized but not checked over the network; rerun with --online-github to attempt an optional GitHub lookup',
   }));
 }
 
@@ -324,7 +336,7 @@ function evidenceNoteLinks(root: string, slug: string, evidencePath: string | nu
   };
 }
 
-function verifyOnePlan(root: string, plan: PlanCandidate): EvidenceChainPlanFinding {
+function verifyOnePlan(root: string, plan: PlanCandidate, onlineGithub = false): EvidenceChainPlanFinding {
   const planPath = join(root, plan.path);
   const text = read(planPath);
   const sections = splitSections(text);
@@ -336,7 +348,7 @@ function verifyOnePlan(root: string, plan: PlanCandidate): EvidenceChainPlanFind
     ...acceptanceCriterionLinks(root, sections.get('Acceptance criteria') ?? ''),
     ...evidence.links,
     ...runPacketLinks(root, combinedText),
-    ...prReferenceLinks(combinedText),
+    ...prReferenceLinks(root, combinedText, onlineGithub),
     closeDecisionLink(evidence.text),
   ];
   return { plan_slug: plan.slug, plan_path: plan.path, stage: plan.stage, links };
@@ -345,7 +357,7 @@ function verifyOnePlan(root: string, plan: PlanCandidate): EvidenceChainPlanFind
 export function verifyEvidenceChain(root = process.cwd(), options: EvidenceChainOptions = {}): EvidenceChainReport {
   const resolvedRoot = resolve(root);
   const plans = options.plan ? [findPlan(resolvedRoot, options.plan)] : listDonePlans(resolvedRoot);
-  const findings = plans.map((plan) => verifyOnePlan(resolvedRoot, plan));
+  const findings = plans.map((plan) => verifyOnePlan(resolvedRoot, plan, Boolean(options.onlineGithub)));
   return { root: resolvedRoot, summary: countSummary(findings), plans: findings };
 }
 
@@ -363,6 +375,7 @@ export function formatEvidenceChainReport(report: EvidenceChainReport, options: 
   const strictResult = evidenceChainExitCode(report, options) === 0 ? 'pass' : 'fail';
   const lines = [
     `Evidence chain: plans checked=${report.summary.plansChecked} links found=${report.summary.linksFound} intact=${report.summary.intact} broken=${report.summary.broken} missing=${report.summary.missing} unverifiable=${report.summary.unverifiable} strict result=${strictResult}`,
+    STRUCTURAL_ONLY_WARNING,
   ];
   for (const plan of report.plans) {
     lines.push(`- ${plan.plan_slug} (${plan.plan_path})`);

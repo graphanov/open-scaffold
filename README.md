@@ -21,7 +21,21 @@ Any agent or operator can **resume bounded work straight from the repo after tot
 
 Use it when AI-assisted work needs **control**, **clarity**, **reviewability**, **handoff**, or **improvement over time**.
 
-It does not replace your agent, IDE, task tracker, CI, or compliance process. Those tools do the work or run the program. Open Scaffold records what was asked, what was handed off, what came back, what was checked, and what humans approved. For the boundary between structural evidence and process assurance, see [`docs/AUDITABILITY.md`](docs/AUDITABILITY.md).
+It does not replace your agent, IDE, task tracker, CI, or compliance process. Those tools do the work or run the program. Open Scaffold records what was asked, what was handed off, what came back, what was checked, and what humans approved. For the boundary between structural evidence and process assurance, see [`docs/AUDITABILITY.md`](docs/AUDITABILITY.md) and [`docs/TRUST_BOUNDARIES.md`](docs/TRUST_BOUNDARIES.md).
+
+**First command for an existing repo:**
+
+```bash
+npx open-scaffold@latest first-run \
+  --non-interactive \
+  --slug first-work-record \
+  --mission "Describe what this repository is trying to accomplish." \
+  --goal "Complete one reviewed local change."
+```
+
+That creates the minimum record: `MISSION.md`, one active plan, one evidence skeleton, and the exact validation/trace/close commands to run next. It does not spawn a runtime, call provider APIs, commit, push, publish, deploy, or prove correctness.
+
+**Use Open Scaffold when:** AI-assisted work needs a durable plan/evidence/approval trail, handoff after context loss, PR review support, or repeated-attempt learning. **Skip it when:** the task is a throwaway one-liner, the repo owner does not want files added, or a compliance/sandbox/runtime guarantee is required without a separate system that actually provides it.
 
 ---
 
@@ -97,6 +111,18 @@ Chat, Discord, terminals, GitHub comments, and agent transcripts can help operat
 ## Quickstart
 
 This is the smallest stable path: add the scaffold, define `MISSION.md`, create one active plan, optionally hand it off with a run packet or amendment, capture evidence, verify, and close the slice.
+
+For a one-command local starting point in an existing repo, use the guided non-interactive flow:
+
+```bash
+npx open-scaffold@latest first-run \
+  --non-interactive \
+  --slug first-work-record \
+  --mission "Describe what this repository is trying to accomplish." \
+  --goal "Complete one reviewed local change."
+```
+
+For the step-by-step path, continue below.
 
 ### 1. Add Open Scaffold to a repo
 
@@ -282,7 +308,7 @@ Open Scaffold is usable, but it is still in active credibility and adoption hard
 Stable enough to rely on today:
 
 - CLI: `osc init`, `osc status`, `osc plan new`, `osc plan validate`, `osc plan move`, `osc amend`, `osc close`, `osc evidence new`, `osc evidence collect`, `osc verify`, `osc trace`, and read-only `osc compare`.
-- Protocol: `MISSION.md`, `ROADMAP.md`, `.osc/plans/`, the 7-section plan schema, folder-as-status workflow, amendments, evidence notes, and run-packet records.
+- Protocol: `MISSION.md`, `ROADMAP.md`, `.osc/plans/`, the Status + seven content-heading plan schema, folder-as-status workflow, amendments, evidence notes, and run-packet records.
 - Verification floor: `verify.sh` plus package tests/builds for this repository.
 
 Still experimental:
@@ -361,6 +387,13 @@ Skip it for:
 - [`docs/WHY_OPEN_SCAFFOLD.md`](docs/WHY_OPEN_SCAFFOLD.md) — visual story and fit.
 - [`docs/index.html`](docs/index.html) — one-page landing page for the 30-second explanation.
 - [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md) — post-v1 Codex-first `osc work` target and staged adapter path.
+- [`docs/FIRST_WORK_RECORD.md`](docs/FIRST_WORK_RECORD.md) — guided `osc first-run` flow for one valid mission-plan-evidence path.
+- [`docs/PR_REVIEW_WITH_OSC.md`](docs/PR_REVIEW_WITH_OSC.md) — `osc pr check` and fork-safe PR workflow template.
+- [`docs/TRUST_BOUNDARIES.md`](docs/TRUST_BOUNDARIES.md) — dispatch, adapter, evidence, webhook, PR-check, and runtime trust boundaries.
+- [`docs/RUNTIME_BETA_LANE.md`](docs/RUNTIME_BETA_LANE.md) — current Codex/OMX beta lane and no-overclaim boundaries.
+- [`docs/COMMAND_MATURITY.md`](docs/COMMAND_MATURITY.md) — stable/lab/advanced command maturity language.
+- [`docs/SCHEMA_REGISTRY.md`](docs/SCHEMA_REGISTRY.md) — emitted artifact schema IDs and owners.
+- [`docs/ADOPTION_PROOF_INDEX.md`](docs/ADOPTION_PROOF_INDEX.md) — honest adoption-proof labels and reproduction requirements.
 - [`docs/MINIMUM_VIABLE_SCAFFOLD.md`](docs/MINIMUM_VIABLE_SCAFFOLD.md) — smallest practical day-one adoption path.
 - [`docs/STABILITY.md`](docs/STABILITY.md) — current package-contract, experimental, and future surfaces.
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — curated release history.

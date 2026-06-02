@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -67,20 +67,19 @@ Turn the accepted blueprint package into staged, reviewable Open Scaffold slices
 
 ## Acceptance criteria
 
-- [ ] Blueprint package is unpacked only in ignored research/temp storage and treated as input, not product docs.
-- [ ] P0/P1/P2 recommendations are mapped to implemented slices or concrete backlog plans.
-- [ ] The first P0 dispatch hardening slice has its own plan, tests, implementation, evidence note, and verification results.
-- [ ] Public-facing changes avoid Korean localization and avoid overclaiming semantic correctness, compliance, runtime support, or release status.
-- [ ] Remaining owner-gated actions are explicit at final handoff.
+- [x] Blueprint package is unpacked only in ignored research/temp storage and treated as input, not product docs. Evidence: `.osc/releases/2026-06-02-138-blueprint-security-adoption-program.md`
+- [x] P0/P1/P2 recommendations are mapped to implemented slices or concrete backlog plans. Evidence: `.osc/releases/2026-06-02-138-blueprint-security-adoption-program.md`
+- [x] The first P0 dispatch hardening slice has its own plan, tests, implementation, evidence note, and verification results. Evidence: `.osc/releases/2026-06-02-138-blueprint-security-adoption-program.md`
+- [x] Public-facing changes avoid Korean localization and avoid overclaiming semantic correctness, compliance, runtime support, or release status. Evidence: `.osc/releases/2026-06-02-138-blueprint-security-adoption-program.md`
+- [x] Remaining owner-gated actions are explicit at final handoff. Evidence: `.osc/releases/2026-06-02-138-blueprint-security-adoption-program.md`
 
 ## Verification steps
 
 1. Run `git status --short --branch --ignored` and verify the blueprint package remains under ignored `.osc/research/` unless explicitly promoted.
-2. Run `npm run osc -- plan validate .osc/plans/active/138-blueprint-security-adoption-program.md --strict`.
+2. Run `npm run osc -- plan validate .osc/plans/done/138-blueprint-security-adoption-program.md --strict`.
 3. Run child-plan validation for every new/touched plan.
 4. For implemented code slices, run `git diff --check`, focused tests, `npm test`, `npm run build`, `./verify.sh --strict`, and relevant `npm run osc -- verify` / evidence-chain checks.
 
 ## Open questions
 
-- Whether the owner wants the later implementation slices opened as individual PRs immediately after local verification or staged locally first.
-- Whether adapter trust (`OSB-005`) should be the next PR after this branch or bundled only if the first P0 dispatch patch stays small.
+- None. The owner-directed execution-style change is captured in amendment 1; merge, npm publish, GitHub Release/latest movement, real runtime execution, deployment, and credential side effects remain owner-gated.

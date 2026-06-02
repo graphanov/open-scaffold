@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -74,6 +75,21 @@ function createRunPacket(root: string): string {
   return latestRunJson(root);
 }
 
+function trustAdapterConfig(root: string, id: string): void {
+  const configPath = join(root, '.osc/adapters', `${id}.json`);
+  const digest = `sha256:${createHash('sha256').update(readFileSync(configPath)).digest('hex')}`;
+  mkdirSync(join(root, '.osc/state'), { recursive: true });
+  const statePath = join(root, '.osc/state/trusted-adapters.json');
+  const current = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : { schemaVersion: 'open-scaffold.trusted_adapters.v1', adapters: {} };
+  current.adapters[id] = {
+    adapterId: id,
+    digest,
+    configPath: `.osc/adapters/${id}.json`,
+    trustedAt: '2026-06-02T00:00:00.000Z'
+  };
+  writeFileSync(statePath, JSON.stringify(current, null, 2) + '\n');
+}
+
 function writeFakeAdapter(root: string): void {
   const adapterDir = join(root, '.osc/adapters');
   mkdirSync(adapterDir, { recursive: true });
@@ -102,12 +118,14 @@ console.log('fake adapter evidence written: ' + evidencePath);
     id: 'fake',
     command: ['node', '.osc/adapters/fake-adapter.mjs']
   }, null, 2) + '\n');
+  trustAdapterConfig(root, 'fake');
 }
 
 function writeAdapterConfig(root: string, id: string, command: string[], extra: Record<string, unknown> = {}): void {
   const adapterDir = join(root, '.osc/adapters');
   mkdirSync(adapterDir, { recursive: true });
   writeFileSync(join(adapterDir, `${id}.json`), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id, command, ...extra }, null, 2) + '\n');
+  trustAdapterConfig(root, id);
 }
 
 function fileSnapshot(root: string): string[] {

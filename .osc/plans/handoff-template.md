@@ -2,7 +2,12 @@
 
 <!--
 Copy this template to `.osc/plans/<slug>.md` for each task or feature slice.
-Fill every section. Keep each section tight — a reader with no prior context
+The required schema is `Status` plus seven content headings: `Context`,
+`Goal`, `Constraints / Out of scope`, `Files to touch`, `Acceptance criteria`,
+`Verification steps`, and `Open questions`. Optional headings such as
+`Execution strategy` and `Implementation Architecture Coverage` may appear
+between required headings when they help the slice.
+Fill every required section. Keep each section tight — a reader with no prior context
 should be able to act on the plan after reading it once.
 
 Plans are IMMUTABLE once committed. If new information changes the plan,

@@ -19,7 +19,7 @@ Do not treat the repository version alone as proof of npm publication or GitHub 
 
 ## Stable vs experimental in the current line
 
-The `v0.20.x` line defines a stable-enough core (the repo-native work-record loop, the 7-section plan schema, lifecycle helpers, and read-only commands such as `osc compare` and `osc trace`) alongside explicitly experimental surfaces (runtime launch, dashboards, cockpit transports, evaluation helpers, MCP interface). See [`docs/STABILITY.md`](STABILITY.md) for the full listing.
+The `v0.20.x` line defines a stable-enough core (the repo-native work-record loop, the Status + seven content-heading plan schema, lifecycle helpers, and read-only commands such as `osc compare` and `osc trace`) alongside explicitly experimental surfaces (runtime launch, dashboards, cockpit transports, evaluation helpers, MCP interface). See [`docs/STABILITY.md`](STABILITY.md) for the full listing.
 
 ## Summary
 

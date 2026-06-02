@@ -494,7 +494,7 @@ Re-read this file before any major action on project structure.
 ## File Conventions
 
 - Plan files: \`NNN-slug.md\` (number is permanent ID, never changes)
-- All plans follow the 7-section schema in \`.osc/plans/handoff-template.md\`
+- All plans follow the Status + seven content-heading schema in \`.osc/plans/handoff-template.md\`
 - This minimum tier intentionally omits advanced amendment/docs helpers; use the standard tier when mechanical amendment workflow is needed.
 
 ## When In Doubt

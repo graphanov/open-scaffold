@@ -1,6 +1,6 @@
 # Security Policy
 
-Open Scaffold is a repo-native workflow record. It helps humans and agents plan, execute, verify, and hand off AI-assisted work, but it is not a security scanner, sandbox, or runtime supervisor by itself.
+Open Scaffold is a repo-native workflow record. It helps humans and agents plan, execute, verify, and hand off AI-assisted work, but it is not a security scanner, sandbox, or runtime supervisor by itself. For the full structural-vs-correctness boundary, adapter trust model, and local-state split, see [`docs/TRUST_BOUNDARIES.md`](docs/TRUST_BOUNDARIES.md).
 
 ## Reporting a vulnerability
 
@@ -49,6 +49,7 @@ Open Scaffold core does not spawn agents by default. Runtime packages and adapte
 For root `osc dispatch` adapter glue:
 
 - adapter subprocesses receive a restricted environment by default, built from adapter `envAllowlist` plus explicit adapter `env` values;
+- project-local adapter configs are untrusted until reviewed and recorded with `osc adapter trust <id>`; dispatch refuses untrusted adapters or digest mismatches by default;
 - adapter env names are validated and adapter-provided env values with unsupported control characters are rejected before subprocess spawn;
 - dispatch summaries report environment key names only, never values;
 - `--allow-full-env` is an unsafe local override and warns before handing the full parent environment to an adapter;

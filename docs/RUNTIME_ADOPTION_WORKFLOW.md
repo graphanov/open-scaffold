@@ -217,6 +217,9 @@ The command:
 
 - requires an existing `open-scaffold.run.v1` packet under `.osc/runs/`;
 - invokes only the explicitly selected local adapter command;
+- refuses untrusted adapter configs until `osc adapter trust <adapter-id>` records the reviewed config digest in gitignored `.osc/state/trusted-adapters.json`;
+- invalidates trust automatically when the adapter config changes;
+- refuses adapter configs that require worktree isolation unless the run packet names a non-main/non-protected branch and a separate worktree path;
 - refuses missing, unknown, unsafe, URL-based, shell-wrapper, platform-shim, network-fetching, auto-installing, or wildcard-env adapter commands by default;
 - passes a restricted adapter environment by default from adapter `envAllowlist` plus explicit adapter `env` values;
 - validates adapter env key names and rejects adapter-provided env values with unsupported control characters before spawning;

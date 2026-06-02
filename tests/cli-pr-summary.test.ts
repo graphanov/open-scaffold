@@ -170,7 +170,7 @@ describe('renderPrSummaryMarkdown', () => {
     expect(markdown).toContain('### Acceptance criteria (1/2 checked)');
     expect(markdown).toContain('- [x] Done one.');
     expect(markdown).toContain('- [ ] Open two.');
-    expect(markdown).toContain('Read-only mirror of `.osc/` artifacts');
+    expect(markdown).toContain('Read-only structural mirror of `.osc/` artifacts');
   });
 
   it('is deterministic across compute times so the mirrored comment is stable', () => {

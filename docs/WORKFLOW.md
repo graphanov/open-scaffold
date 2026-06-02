@@ -24,7 +24,7 @@ Ask structured questions until the goal, constraints, and acceptance criteria ar
 
 ### 2. Plan (when the task is non-trivial)
 
-Write a plan file in `.osc/plans/active/` using the 7-section schema in `.osc/plans/handoff-template.md`. The plan must include acceptance criteria — testable bullets that define success. For risky or multi-file work, get the plan reviewed before executing. See `.osc/plans/WORKFLOW.md` for the stage-folder lifecycle and `.osc/RULES.md` for non-negotiable principles.
+Write a plan file in `.osc/plans/active/` using the Status + seven content-heading schema in `.osc/plans/handoff-template.md`. The plan must include acceptance criteria — testable bullets that define success. For risky or multi-file work, get the plan reviewed before executing. See `.osc/plans/WORKFLOW.md` for the stage-folder lifecycle and `.osc/RULES.md` for non-negotiable principles.
 
 Use the helper when the repo has the `osc` CLI available:
 

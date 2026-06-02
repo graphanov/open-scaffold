@@ -4,7 +4,7 @@
 
 Open Scaffold core defines the portable contract for semi-autonomous work. It does **not** own the local launcher/controller that starts agents. A coordinator or runtime-specific binding — external launch glue — consumes `.osc/runs/<run_id>/run.json` and dispatches the selected harness, meaning the workflow wrapper around the chosen agent.
 
-This page captures a **private deployment example**: an owner-local Command Center used Hermes Kanban -> OMX `$ralplan` to prove the dispatch shape. It translates that private dogfood pattern into the public Open Scaffold model; the private deployment is not required to adopt Open Scaffold. The detailed adapter/binding responsibilities live in [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md), and reference labels live in [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md).
+This page captures a **private deployment example**: an owner-local Command Center used Hermes Kanban -> OMX `$ralplan` to prove the dispatch shape. It translates that private dogfood pattern into the public Open Scaffold model; the private deployment is not required to adopt Open Scaffold. The detailed adapter/binding responsibilities live in [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md), trust/safety boundaries live in [`docs/TRUST_BOUNDARIES.md`](TRUST_BOUNDARIES.md), and reference labels live in [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md).
 
 ## Executive rule
 
