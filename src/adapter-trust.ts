@@ -63,7 +63,7 @@ function commandEntryLooksLikePath(entry: string): boolean {
 function commandEntryPathCandidates(root: string, entry: string): Array<{ path: string; required: boolean }> {
   const candidates = [{ path: isAbsolute(entry) ? resolve(entry) : resolve(root, entry), required: commandEntryLooksLikePath(entry) }];
   const flagValue = entry.match(/^--[^=\s]+=(.+)$/)?.[1];
-  if (flagValue && commandEntryLooksLikePath(flagValue)) {
+  if (flagValue) {
     candidates.push({ path: isAbsolute(flagValue) ? resolve(flagValue) : resolve(root, flagValue), required: true });
   }
   return candidates;

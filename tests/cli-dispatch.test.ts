@@ -272,6 +272,27 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('refuses bare extensionless flag operands that resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalHook = join(dirname(root), `${basename(root)}-bare-hook`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalHook, "globalThis.bareHookLoaded = true;\n");
+      symlinkSync(externalHook, join(root, 'preload'));
+      writeFileSync(join(adapterDir, 'bare-flag-runner.mjs'), "console.log('bare flag runner');\n");
+      writeFileSync(join(adapterDir, 'bare-flag.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'bare-flag', command: ['node', '--hook=preload', '.osc/adapters/bare-flag-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'bare-flag'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalHook, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('does not invalidate one adapter when an unrelated adapter file is added', () => {
     const root = tempRepo();
     try {
