@@ -9,10 +9,16 @@ interface AdapterConfigFile {
   schemaVersion?: unknown;
   id?: unknown;
   command?: unknown;
+  envAllowlist?: unknown;
+  env?: unknown;
+  timeoutMs?: unknown;
+  maxStdoutBytes?: unknown;
+  maxStderrBytes?: unknown;
 }
 
 export interface DispatchOptions {
   adapterId: string;
+  allowFullEnv?: boolean;
 }
 
 export interface DispatchResult {
@@ -25,12 +31,48 @@ export interface DispatchResult {
   stderrLogPath: string;
   exitStatus: number | null;
   signal: string | null;
+  envMode: 'restricted' | 'full-unsafe';
+  envKeys: string[];
+  unsafeEnvWarning: string | null;
+  timeoutMs: number;
+  timedOut: boolean;
+  maxStdoutBytes: number;
+  maxStderrBytes: number;
+  stdoutTruncated: boolean;
+  stderrTruncated: boolean;
 }
 
 interface AdapterDefinition {
   id: string;
   command: string[];
+  envAllowlist: string[];
+  env: Record<string, string>;
+  timeoutMs: number;
+  maxStdoutBytes: number;
+  maxStderrBytes: number;
 }
+
+interface AdapterEnvBuildResult {
+  env: NodeJS.ProcessEnv;
+  mode: 'restricted' | 'full-unsafe';
+  keys: string[];
+  warning: string | null;
+}
+
+interface TruncatedLog {
+  content: string;
+  truncated: boolean;
+}
+
+const defaultAdapterEnvAllowlist = ['PATH'];
+const defaultAdapterTimeoutMs = 10 * 60 * 1000;
+const defaultAdapterMaxLogBytes = 2_000_000;
+const maxAdapterTimeoutMs = 30 * 60 * 1000;
+const maxAdapterLogBytes = 10_000_000;
+const maxAdapterLogSlackBytes = 64 * 1024;
+const maxAdapterProcessBufferBytes = maxAdapterLogBytes * 2 + maxAdapterLogSlackBytes;
+const safeEnvNamePattern = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const envControlCharPattern = /[\u0000-\u001F\u007F]/;
 
 const forbiddenAdapterExecutables = new Set([
   'npx',
@@ -101,6 +143,53 @@ function adapterConfigPath(root: string, adapterId: string): string {
   return join(root, '.osc', 'adapters', `${adapterId}.json`);
 }
 
+function readOptionalStringArray(value: unknown, field: string, adapterId: string): string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string' || !entry.trim())) {
+    throw new DispatchUsageError(`Adapter ${adapterId} ${field} must be an array of non-empty strings.`);
+  }
+  const entries = value.map((entry) => entry.trim());
+  for (const entry of entries) {
+    if (field === 'envAllowlist' && entry === '*') continue;
+    if (field === 'envAllowlist' && !safeEnvNamePattern.test(entry)) {
+      throw new DispatchUsageError(`Adapter ${adapterId} ${field} contains an invalid environment variable name.`);
+    }
+  }
+  return entries;
+}
+
+function readOptionalStringRecord(value: unknown, field: string, adapterId: string): Record<string, string> {
+  if (value === undefined) return {};
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new DispatchUsageError(`Adapter ${adapterId} ${field} must be an object with string values.`);
+  }
+  const result: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (!key.trim() || typeof entry !== 'string') {
+      throw new DispatchUsageError(`Adapter ${adapterId} ${field} must be an object with string values.`);
+    }
+    if (field === 'env' && !safeEnvNamePattern.test(key)) {
+      throw new DispatchUsageError(`Adapter ${adapterId} ${field} contains an invalid environment variable name.`);
+    }
+    if (field === 'env' && envControlCharPattern.test(entry)) {
+      throw new DispatchUsageError(`Adapter ${adapterId} ${field} contains a value with unsupported control characters.`);
+    }
+    result[key] = entry;
+  }
+  return result;
+}
+
+function readOptionalPositiveInteger(value: unknown, field: string, adapterId: string, fallback: number, maximum: number): number {
+  if (value === undefined) return fallback;
+  if (!Number.isInteger(value) || typeof value !== 'number' || value <= 0) {
+    throw new DispatchUsageError(`Adapter ${adapterId} ${field} must be a positive integer.`);
+  }
+  if (value > maximum) {
+    throw new DispatchUsageError(`Adapter ${adapterId} ${field} must be at most ${maximum}.`);
+  }
+  return value;
+}
+
 function loadProjectAdapter(root: string, adapterId: string): AdapterDefinition | null {
   const path = adapterConfigPath(root, adapterId);
   if (!existsSync(path)) return null;
@@ -112,7 +201,15 @@ function loadProjectAdapter(root: string, adapterId: string): AdapterDefinition 
   if (!Array.isArray(parsed.command) || parsed.command.length === 0 || parsed.command.some((part) => typeof part !== 'string' || !part.trim())) {
     throw new DispatchUsageError(`Adapter ${adapterId} command must be a non-empty string array.`);
   }
-  return { id: adapterId, command: parsed.command };
+  return {
+    id: adapterId,
+    command: parsed.command,
+    envAllowlist: readOptionalStringArray(parsed.envAllowlist, 'envAllowlist', adapterId),
+    env: readOptionalStringRecord(parsed.env, 'env', adapterId),
+    timeoutMs: readOptionalPositiveInteger(parsed.timeoutMs, 'timeoutMs', adapterId, defaultAdapterTimeoutMs, maxAdapterTimeoutMs),
+    maxStdoutBytes: readOptionalPositiveInteger(parsed.maxStdoutBytes, 'maxStdoutBytes', adapterId, defaultAdapterMaxLogBytes, maxAdapterLogBytes),
+    maxStderrBytes: readOptionalPositiveInteger(parsed.maxStderrBytes, 'maxStderrBytes', adapterId, defaultAdapterMaxLogBytes, maxAdapterLogBytes),
+  };
 }
 
 function resolveAdapter(root: string, adapterId: string): AdapterDefinition {
@@ -199,26 +296,85 @@ function writeLogFile(dispatchDir: string, adapterId: string, kind: 'stdout' | '
   return path;
 }
 
+function buildAdapterEnv(adapter: AdapterDefinition, parentEnv: NodeJS.ProcessEnv, allowFullEnv = false): AdapterEnvBuildResult {
+  if (allowFullEnv) {
+    if (parentEnv.CI && parentEnv.OPEN_SCAFFOLD_ALLOW_FULL_ENV_IN_CI !== '1') {
+      throw new DispatchUsageError('Refusing --allow-full-env in CI unless OPEN_SCAFFOLD_ALLOW_FULL_ENV_IN_CI=1 is set.');
+    }
+    const env = { ...parentEnv, ...adapter.env };
+    return {
+      env,
+      mode: 'full-unsafe',
+      keys: Object.keys(env).sort(),
+      warning: 'Warning: --allow-full-env passed the full parent environment to the adapter.',
+    };
+  }
+
+  if (adapter.envAllowlist.includes('*')) {
+    throw new DispatchUsageError(`Adapter ${adapter.id} uses wildcard envAllowlist; use --allow-full-env for unsafe local override.`);
+  }
+
+  const env: NodeJS.ProcessEnv = {};
+  const allowlist = new Set([...defaultAdapterEnvAllowlist, ...adapter.envAllowlist]);
+  for (const key of allowlist) {
+    const value = parentEnv[key];
+    if (value !== undefined) env[key] = value;
+  }
+  for (const [key, value] of Object.entries(adapter.env)) {
+    env[key] = value;
+  }
+  return { env, mode: 'restricted', keys: Object.keys(env).sort(), warning: null };
+}
+
+function truncateLog(content: string, maxBytes: number): TruncatedLog {
+  const data = Buffer.from(content, 'utf8');
+  if (data.length <= maxBytes) return { content, truncated: false };
+  const marker = `\n[open-scaffold: log truncated to ${maxBytes} bytes from ${data.length} bytes]\n`;
+  const retained = data.subarray(0, maxBytes).toString('utf8');
+  const lastNewline = retained.lastIndexOf('\n');
+  const completeLinePrefix = lastNewline >= 0 ? retained.slice(0, lastNewline + 1) : '';
+  return { content: `${completeLinePrefix}${marker}`, truncated: true };
+}
+
+function processErrorDetails(error: Error | undefined): string | null {
+  if (!error) return null;
+  const coded = error as Error & { code?: unknown };
+  const code = typeof coded.code === 'string' ? `${coded.code}: ` : '';
+  return `[open-scaffold: adapter process error] ${code}${error.message}`;
+}
+
+function isTimeoutError(error: Error | undefined): boolean {
+  const coded = error as (Error & { code?: unknown }) | undefined;
+  return coded?.code === 'ETIMEDOUT';
+}
+
 export function runDispatch(runPacketArg: string, options: DispatchOptions, start = process.cwd()): DispatchResult {
   if (!runPacketArg) throw new DispatchUsageError('Missing required argument: run-json');
   const run = resolveRunPacket(start, runPacketArg);
   assertNoSymlinksUnder(run.runDir, 'Run directory must not contain symlinks before adapter dispatch.');
   const adapter = resolveAdapter(run.root, options.adapterId);
+  const adapterEnv = buildAdapterEnv(adapter, process.env, options.allowFullEnv);
   prepareDispatchDir(run.runDir);
 
   const result = spawnSync(adapter.command[0]!, [...adapter.command.slice(1), run.runPacketPath], {
     cwd: run.root,
     encoding: 'utf8',
-    env: process.env,
+    env: adapterEnv.env,
+    timeout: adapter.timeoutMs,
+    killSignal: 'SIGKILL',
+    maxBuffer: maxAdapterProcessBufferBytes,
   });
-  const stdout = String(result.stdout ?? '');
-  const stderr = result.error ? String(result.error.message) : String(result.stderr ?? '');
+  const rawStdout = String(result.stdout ?? '');
+  const stderrParts = [String(result.stderr ?? ''), processErrorDetails(result.error)].filter((part): part is string => Boolean(part));
+  const rawStderr = stderrParts.join(stderrParts.length > 1 ? '\n' : '');
+  const stdout = truncateLog(rawStdout, adapter.maxStdoutBytes);
+  const stderr = truncateLog(rawStderr, adapter.maxStderrBytes);
   const finalDispatchDir = prepareDispatchDir(run.runDir);
-  const stdoutLogPath = writeLogFile(finalDispatchDir, adapter.id, 'stdout', stdout);
-  const stderrLogPath = writeLogFile(finalDispatchDir, adapter.id, 'stderr', stderr);
+  const stdoutLogPath = writeLogFile(finalDispatchDir, adapter.id, 'stdout', stdout.content);
+  const stderrLogPath = writeLogFile(finalDispatchDir, adapter.id, 'stderr', stderr.content);
 
-  const receiptPath = discoverReceipt(run.root, run.runDir, stdout);
-  const evidencePaths = discoverEvidence(run.root, run.runDir, stdout);
+  const receiptPath = discoverReceipt(run.root, run.runDir, stdout.content);
+  const evidencePaths = discoverEvidence(run.root, run.runDir, stdout.content);
 
   return {
     adapterId: adapter.id,
@@ -230,16 +386,35 @@ export function runDispatch(runPacketArg: string, options: DispatchOptions, star
     stderrLogPath,
     exitStatus: result.status,
     signal: result.signal,
+    envMode: adapterEnv.mode,
+    envKeys: adapterEnv.keys,
+    unsafeEnvWarning: adapterEnv.warning,
+    timeoutMs: adapter.timeoutMs,
+    timedOut: isTimeoutError(result.error),
+    maxStdoutBytes: adapter.maxStdoutBytes,
+    maxStderrBytes: adapter.maxStderrBytes,
+    stdoutTruncated: stdout.truncated,
+    stderrTruncated: stderr.truncated,
   };
 }
 
 export function formatDispatchSummary(result: DispatchResult, root: string): string {
   const evidence = result.evidencePaths.length ? result.evidencePaths.map((path) => `Evidence: ${toRelative(root, path)}`).join('\n') : 'Evidence: (none reported)';
+  const envLabel = result.envMode === 'full-unsafe' ? 'full (unsafe override)' : 'restricted';
   return [
     'Open Scaffold dispatch complete',
     `Adapter: ${result.adapterId}`,
     `Run ID: ${result.runId}`,
     `Run packet: ${toRelative(root, result.runPacketPath)}`,
+    `Environment: ${envLabel}`,
+    `Environment keys: ${result.envKeys.length ? result.envKeys.join(', ') : '(none)'}`,
+    result.unsafeEnvWarning,
+    `Timeout: ${result.timeoutMs} ms`,
+    `Timed out: ${result.timedOut ? 'yes' : 'no'}`,
+    `Stdout limit: ${result.maxStdoutBytes} bytes`,
+    `Stderr limit: ${result.maxStderrBytes} bytes`,
+    `Stdout truncated: ${result.stdoutTruncated ? 'yes' : 'no'}`,
+    `Stderr truncated: ${result.stderrTruncated ? 'yes' : 'no'}`,
     `Dispatch receipt: ${toRelative(root, result.receiptPath) ?? '(none reported)'}`,
     evidence,
     `Stdout log: ${toRelative(root, result.stdoutLogPath)}`,

@@ -1472,9 +1472,13 @@ function startCommand(args: string[]): void {
 }
 
 function printDispatchUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc dispatch <run-json> --adapter <adapter-id>
+  printUsage(`Usage: osc dispatch <run-json> --adapter <adapter-id> [--allow-full-env]
 
-Invokes an explicit trusted adapter for an existing run packet, captures adapter stdout/stderr logs, and prints receipt/evidence paths. Open Scaffold core does not auto-install adapters or grant commit/push/merge/publish authority.`, stream);
+Invokes an explicit trusted adapter for an existing run packet, captures bounded adapter stdout/stderr logs, and prints receipt/evidence paths. Open Scaffold core restricts adapter environment variables by default, does not auto-install adapters, and does not grant commit/push/merge/publish authority.
+
+Options:
+  --adapter <adapter-id>  Project-local adapter config to invoke
+  --allow-full-env       UNSAFE local override: pass the full parent environment to the adapter`, stream);
 }
 
 function takeDispatchValue(args: string[], index: number, flag: string): string {
@@ -1494,6 +1498,7 @@ function dispatchCommand(args: string[]): void {
   }
   const runJson = requireArg(args, 'run-json');
   let adapterId: string | undefined;
+  let allowFullEnv = false;
   const rest = args.slice(1);
   for (let i = 0; i < rest.length; i += 1) {
     const flag = rest[i];
@@ -1501,6 +1506,9 @@ function dispatchCommand(args: string[]): void {
       case '--adapter':
         adapterId = takeDispatchValue(rest, i, flag);
         i += 1;
+        break;
+      case '--allow-full-env':
+        allowFullEnv = true;
         break;
       default:
         console.error(`Unknown option for dispatch: ${flag}`);
@@ -1514,7 +1522,7 @@ function dispatchCommand(args: string[]): void {
     process.exit(2);
   }
   try {
-    const result = runDispatch(runJson, { adapterId }, process.cwd());
+    const result = runDispatch(runJson, { adapterId, allowFullEnv }, process.cwd());
     const root = findScaffoldRoot(dirname(result.runPacketPath)) ?? process.cwd();
     process.stdout.write(formatDispatchSummary(result, root));
     if (result.exitStatus !== 0) process.exit(1);
