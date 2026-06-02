@@ -230,6 +230,26 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('refuses path operands embedded in adapter command flags when they resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalHook = join(dirname(root), `${basename(root)}-external-hook.mjs`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalHook, "globalThis.externalHookLoaded = true;\n");
+      writeFileSync(join(adapterDir, 'flag-runner.mjs'), "console.log('flag runner');\n");
+      writeFileSync(join(adapterDir, 'flag-path.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'flag-path', command: ['node', `--import=${externalHook}`, '.osc/adapters/flag-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'flag-path'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalHook, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('does not invalidate one adapter when an unrelated adapter file is added', () => {
     const root = tempRepo();
     try {

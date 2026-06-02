@@ -60,6 +60,15 @@ function commandEntryLooksLikePath(entry: string): boolean {
   return isAbsolute(entry) || entry.startsWith('./') || entry.startsWith('../') || entry.startsWith('.\\') || entry.startsWith('..\\') || /\.(?:mjs|js|cjs|ts|tsx|json|sh|py|rb|pl|php|go|rs)$/i.test(entry);
 }
 
+function commandEntryPathCandidates(root: string, entry: string): Array<{ path: string; required: boolean }> {
+  const candidates = [{ path: isAbsolute(entry) ? resolve(entry) : resolve(root, entry), required: commandEntryLooksLikePath(entry) }];
+  const flagValue = entry.match(/^--[^=\s]+=(.+)$/)?.[1];
+  if (flagValue && commandEntryLooksLikePath(flagValue)) {
+    candidates.push({ path: isAbsolute(flagValue) ? resolve(flagValue) : resolve(root, flagValue), required: true });
+  }
+  return candidates;
+}
+
 function trustedExistingFile(root: string, file: string): string | null {
   if (!existsSync(file)) return null;
   const resolvedFile = realpathSync.native(file);
@@ -112,16 +121,17 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
   const files = new Set<string>();
   for (const entry of parsed.command) {
     if (typeof entry !== 'string' || !entry.trim()) continue;
-    const candidate = isAbsolute(entry) ? resolve(entry) : resolve(root, entry);
-    let trustedFile: string | null = null;
-    try {
-      trustedFile = trustedExistingFile(realRoot, candidate);
-    } catch (error) {
-      if (commandEntryLooksLikePath(entry)) throw error;
-      continue;
+    for (const candidate of commandEntryPathCandidates(root, entry)) {
+      let trustedFile: string | null = null;
+      try {
+        trustedFile = trustedExistingFile(realRoot, candidate.path);
+      } catch (error) {
+        if (candidate.required) throw error;
+        continue;
+      }
+      if (!trustedFile) continue;
+      addAdapterDependencyFiles(realRoot, trustedFile, files);
     }
-    if (!trustedFile) continue;
-    addAdapterDependencyFiles(realRoot, trustedFile, files);
   }
   return [...files].sort();
 }
