@@ -202,7 +202,14 @@ osc dispatch .osc/runs/RUN_ID/run.json --adapter omx
 {
   "schemaVersion": "open-scaffold.adapter.v1",
   "id": "omx",
-  "command": ["open-scaffold-runtime-omx"]
+  "command": ["open-scaffold-runtime-omx"],
+  "envAllowlist": ["PATH"],
+  "env": {
+    "OPEN_SCAFFOLD_ADAPTER": "omx"
+  },
+  "timeoutMs": 600000,
+  "maxStdoutBytes": 2000000,
+  "maxStderrBytes": 2000000
 }
 ```
 
@@ -210,12 +217,17 @@ The command:
 
 - requires an existing `open-scaffold.run.v1` packet under `.osc/runs/`;
 - invokes only the explicitly selected local adapter command;
-- refuses missing, unknown, unsafe, URL-based, shell-wrapper, platform-shim, network-fetching, or auto-installing adapter commands by default;
-- captures adapter stdout/stderr logs under `.osc/runs/RUN_ID/dispatch/`;
-- reads adapter-reported receipt/evidence paths only when they remain under the run directory;
-- prints the next verification and human-approval step.
+- refuses missing, unknown, unsafe, URL-based, shell-wrapper, platform-shim, network-fetching, auto-installing, or wildcard-env adapter commands by default;
+- passes a restricted adapter environment by default from adapter `envAllowlist` plus explicit adapter `env` values;
+- validates adapter env key names and rejects adapter-provided env values with unsupported control characters before spawning;
+- supports `--allow-full-env` only as an unsafe local override and reports a warning without printing environment values;
+- refuses `--allow-full-env` in CI unless `OPEN_SCAFFOLD_ALLOW_FULL_ENV_IN_CI=1` is set;
+- enforces adapter timeout with a hard kill plus bounded stdout/stderr logs under `.osc/runs/RUN_ID/dispatch/` with truncation markers;
+- caps adapter-configured timeouts at 30 minutes and stdout/stderr byte limits at 10 MB each;
+- reads adapter-reported receipt/evidence paths only when they remain under the run directory and appear in retained output;
+- prints environment key names, timeout/log-bound facts, and the next verification and human-approval step.
 
-`osc dispatch` is adapter invocation glue, not a hidden provider runtime. Core does not import provider SDKs, auto-install adapters, own credentials, supervise tmux/processes, or grant commit/push/PR/merge/publish authority. Adapter packages own their launch policy and must return receipts/evidence that the operator can inspect.
+`osc dispatch` is adapter invocation glue, not a hidden provider runtime. Core does not import provider SDKs, auto-install adapters, own credentials, supervise tmux/processes, or grant commit/push/PR/merge/publish authority. Adapter packages own their launch policy and must return receipts/evidence that the operator can inspect. Dispatch hardening is structural safety posture; it does not prove runtime correctness or compliance.
 
 ### Stage 4 — `osc work --dry-run`
 

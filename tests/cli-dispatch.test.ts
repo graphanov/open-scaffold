@@ -104,10 +104,10 @@ console.log('fake adapter evidence written: ' + evidencePath);
   }, null, 2) + '\n');
 }
 
-function writeAdapterConfig(root: string, id: string, command: string[]): void {
+function writeAdapterConfig(root: string, id: string, command: string[], extra: Record<string, unknown> = {}): void {
   const adapterDir = join(root, '.osc/adapters');
   mkdirSync(adapterDir, { recursive: true });
-  writeFileSync(join(adapterDir, `${id}.json`), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id, command }, null, 2) + '\n');
+  writeFileSync(join(adapterDir, `${id}.json`), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id, command, ...extra }, null, 2) + '\n');
 }
 
 function fileSnapshot(root: string): string[] {
@@ -276,6 +276,253 @@ console.log('multi adapter evidence written: ' + second);
       expect(result.stdout).toContain('Evidence: .osc/runs/');
       expect(result.stdout).toContain('first-evidence.md');
       expect(result.stdout).toContain('second-evidence.md');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('passes a restricted adapter environment by default and reports env key names only', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'env-check.mjs'), `import { dirname, join } from 'node:path';
+import { writeFileSync } from 'node:fs';
+const runDir = dirname(process.argv[2]);
+const evidencePath = join(runDir, 'env-evidence.json');
+writeFileSync(evidencePath, JSON.stringify({
+  secret: process.env.SECRET_TOKEN ?? null,
+  allowed: process.env.ALLOWED_FROM_PARENT ?? null,
+  explicit: process.env.OPEN_SCAFFOLD_ADAPTER ?? null,
+  pathPresent: Boolean(process.env.PATH)
+}, null, 2) + '\\n');
+console.log('env adapter evidence written: ' + evidencePath);
+`);
+      writeAdapterConfig(root, 'env-check', ['node', '.osc/adapters/env-check.mjs'], {
+        envAllowlist: ['ALLOWED_FROM_PARENT'],
+        env: { OPEN_SCAFFOLD_ADAPTER: 'env-check' }
+      });
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'env-check'], {
+        cwd: root,
+        encoding: 'utf8',
+        env: { ...process.env, SECRET_TOKEN: 'test-secret-token', ALLOWED_FROM_PARENT: 'allowed-value' }
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toContain('Environment: restricted');
+      expect(result.stdout).toContain('Environment keys: ALLOWED_FROM_PARENT, OPEN_SCAFFOLD_ADAPTER, PATH');
+      expect(result.stdout).not.toContain('test-secret-token');
+      expect(result.stdout).not.toContain('allowed-value');
+      const evidence = JSON.parse(readFileSync(join(dirname(runJson), 'env-evidence.json'), 'utf8'));
+      expect(evidence).toMatchObject({ secret: null, allowed: 'allowed-value', explicit: 'env-check', pathPresent: true });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('allows explicit unsafe full environment only with a warning', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'full-env.mjs'), `import { dirname, join } from 'node:path';
+import { writeFileSync } from 'node:fs';
+const evidencePath = join(dirname(process.argv[2]), 'full-env-evidence.json');
+writeFileSync(evidencePath, JSON.stringify({ secret: process.env.SECRET_TOKEN ?? null }) + '\\n');
+console.log('full env adapter evidence written: ' + evidencePath);
+`);
+      writeAdapterConfig(root, 'full-env', ['node', '.osc/adapters/full-env.mjs']);
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'full-env', '--allow-full-env'], {
+        cwd: root,
+        encoding: 'utf8',
+        env: { ...process.env, SECRET_TOKEN: 'test-secret-token', CI: '' }
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Environment: full (unsafe override)');
+      expect(result.stdout).toContain('Warning: --allow-full-env passed the full parent environment to the adapter.');
+      expect(result.stdout).not.toContain('test-secret-token');
+      const evidence = JSON.parse(readFileSync(join(dirname(runJson), 'full-env-evidence.json'), 'utf8'));
+      expect(evidence).toMatchObject({ secret: 'test-secret-token' });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('times out a sleeping adapter and writes bounded failure logs', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'sleepy.mjs'), "setTimeout(() => {}, 300);\n");
+      writeAdapterConfig(root, 'sleepy', ['node', '.osc/adapters/sleepy.mjs'], { timeoutMs: 50 });
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'sleepy'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toContain('Timeout: 50 ms');
+      expect(result.stdout).toContain('Timed out: yes');
+      expect(result.stdout).toContain('Exit status: (none)');
+      const stderrLog = readFileSync(join(dirname(runJson), 'dispatch', 'sleepy-stderr.log'), 'utf8');
+      expect(stderrLog).toContain('ETIMEDOUT');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('kills SIGTERM-ignoring adapters when the timeout expires', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'ignore-term.mjs'), "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);\n");
+      writeAdapterConfig(root, 'ignore-term', ['node', '.osc/adapters/ignore-term.mjs'], { timeoutMs: 50 });
+
+      const started = Date.now();
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'ignore-term'], {
+        cwd: root,
+        encoding: 'utf8',
+        timeout: 2000
+      });
+
+      expect(Date.now() - started).toBeLessThan(1500);
+      expect(result.status).toBe(1);
+      expect(result.error).toBeUndefined();
+      expect(result.stdout).toContain('Timed out: yes');
+      expect(result.stdout).toContain('Signal: SIGKILL');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses unsafe full-env override in CI unless separately acknowledged', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'ci-env.mjs'), "console.log('should not run');\n");
+      writeAdapterConfig(root, 'ci-env', ['node', '.osc/adapters/ci-env.mjs']);
+      const before = fileSnapshot(root);
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'ci-env', '--allow-full-env'], {
+        cwd: root,
+        encoding: 'utf8',
+        env: { ...process.env, CI: '1' }
+      });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('Refusing --allow-full-env in CI unless OPEN_SCAFFOLD_ALLOW_FULL_ENV_IN_CI=1 is set.');
+      expect(fileSnapshot(root)).toEqual(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects unsafe adapter env config without leaking configured values', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'env-invalid.mjs'), "console.log('should not run');\n");
+      writeAdapterConfig(root, 'bad-env-name', ['node', '.osc/adapters/env-invalid.mjs'], { env: { 'BAD-KEY': 'do-not-leak-name' } });
+      writeAdapterConfig(root, 'bad-env-value', ['node', '.osc/adapters/env-invalid.mjs'], { env: { BAD_VALUE: 'do-not-leak-value\u0000secret' } });
+      writeAdapterConfig(root, 'bad-env-allowlist', ['node', '.osc/adapters/env-invalid.mjs'], { envAllowlist: ['BAD-KEY'] });
+      const before = fileSnapshot(root);
+
+      const badName = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'bad-env-name'], { cwd: root, encoding: 'utf8' });
+      const badValue = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'bad-env-value'], { cwd: root, encoding: 'utf8' });
+      const badAllowlist = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'bad-env-allowlist'], { cwd: root, encoding: 'utf8' });
+
+      expect(badName.status).toBe(2);
+      expect(badName.stderr).toContain('Adapter bad-env-name env contains an invalid environment variable name.');
+      expect(badName.stderr).not.toContain('do-not-leak-name');
+      expect(badValue.status).toBe(2);
+      expect(badValue.stderr).toContain('Adapter bad-env-value env contains a value with unsupported control characters.');
+      expect(badValue.stderr).not.toContain('do-not-leak-value');
+      expect(badAllowlist.status).toBe(2);
+      expect(badAllowlist.stderr).toContain('Adapter bad-env-allowlist envAllowlist contains an invalid environment variable name.');
+      expect(fileSnapshot(root)).toEqual(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses adapter timeout and log limits above policy maxima', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'limits.mjs'), "console.log('should not run');\n");
+      writeAdapterConfig(root, 'huge-timeout', ['node', '.osc/adapters/limits.mjs'], { timeoutMs: 1_800_001 });
+      writeAdapterConfig(root, 'huge-stdout', ['node', '.osc/adapters/limits.mjs'], { maxStdoutBytes: 10_000_001 });
+      writeAdapterConfig(root, 'huge-stderr', ['node', '.osc/adapters/limits.mjs'], { maxStderrBytes: 10_000_001 });
+      const before = fileSnapshot(root);
+
+      const hugeTimeout = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'huge-timeout'], { cwd: root, encoding: 'utf8' });
+      const hugeStdout = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'huge-stdout'], { cwd: root, encoding: 'utf8' });
+      const hugeStderr = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'huge-stderr'], { cwd: root, encoding: 'utf8' });
+
+      expect(hugeTimeout.status).toBe(2);
+      expect(hugeTimeout.stderr).toContain('Adapter huge-timeout timeoutMs must be at most 1800000.');
+      expect(hugeStdout.status).toBe(2);
+      expect(hugeStdout.stderr).toContain('Adapter huge-stdout maxStdoutBytes must be at most 10000000.');
+      expect(hugeStderr.status).toBe(2);
+      expect(hugeStderr.stderr).toContain('Adapter huge-stderr maxStderrBytes must be at most 10000000.');
+      expect(fileSnapshot(root)).toEqual(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('bounds noisy adapter stdout and stderr with truncation markers', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'noisy.mjs'), `console.log('x'.repeat(400));
+console.error('y'.repeat(400));
+`);
+      writeAdapterConfig(root, 'noisy', ['node', '.osc/adapters/noisy.mjs'], { maxStdoutBytes: 64, maxStderrBytes: 64 });
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'noisy'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Stdout truncated: yes');
+      expect(result.stdout).toContain('Stderr truncated: yes');
+      const stdoutLog = readFileSync(join(dirname(runJson), 'dispatch', 'noisy-stdout.log'), 'utf8');
+      const stderrLog = readFileSync(join(dirname(runJson), 'dispatch', 'noisy-stderr.log'), 'utf8');
+      expect(stdoutLog.length).toBeLessThan(220);
+      expect(stderrLog.length).toBeLessThan(220);
+      expect(stdoutLog).toContain('[open-scaffold: log truncated');
+      expect(stderrLog).toContain('[open-scaffold: log truncated');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses wildcard env allowlists without the unsafe full-env override', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      writeAdapterConfig(root, 'wildcard-env', ['node', '-e', 'console.log("should not run")'], { envAllowlist: ['*'] });
+      const before = fileSnapshot(root);
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'wildcard-env'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('Adapter wildcard-env uses wildcard envAllowlist; use --allow-full-env for unsafe local override.');
+      expect(fileSnapshot(root)).toEqual(before);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

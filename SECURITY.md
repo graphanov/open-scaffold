@@ -46,6 +46,17 @@ When the optional dependency is unavailable, Open Scaffold should fail only the 
 
 Open Scaffold core does not spawn agents by default. Runtime packages and adapters must keep launch authority explicit and auditable.
 
+For root `osc dispatch` adapter glue:
+
+- adapter subprocesses receive a restricted environment by default, built from adapter `envAllowlist` plus explicit adapter `env` values;
+- adapter env names are validated and adapter-provided env values with unsupported control characters are rejected before subprocess spawn;
+- dispatch summaries report environment key names only, never values;
+- `--allow-full-env` is an unsafe local override and warns before handing the full parent environment to an adapter;
+- CI refuses `--allow-full-env` unless `OPEN_SCAFFOLD_ALLOW_FULL_ENV_IN_CI=1` is set;
+- adapter runs have timeout and bounded stdout/stderr log capture, with a hard kill at timeout and truncation markers written under `.osc/runs/<run_id>/dispatch/`;
+- adapter-configured timeouts and log limits are capped by policy so project-local configs cannot make them unbounded;
+- receipt/evidence discovery remains path-contained and should be treated as structural handoff proof, not task correctness or compliance proof.
+
 For `@open-scaffold/runtime-omx`:
 
 - default behavior validates a run packet and writes receipt/evidence artifacts;
