@@ -55,6 +55,7 @@ function isInsideOrSame(parent: string, child: string): boolean {
 const localModuleExtensions = ['', '.mjs', '.js', '.cjs', '.ts', '.tsx', '.json'];
 const localModuleIndexExtensions = ['index.mjs', 'index.js', 'index.cjs', 'index.ts', 'index.tsx', 'index.json'];
 const localModuleSpecifierPattern = /\b(?:import|export)\s+(?:[^'"()]*?\s+from\s+)?['"]([^'"]+)['"]|\b(?:require|import)\(\s*['"]([^'"]+)['"]\s*\)/g;
+const pythonImportSpecifierPattern = /^\s*(?:from\s+([.]?[A-Za-z_][A-Za-z0-9_.]*)\s+import\s+|import\s+([A-Za-z_][A-Za-z0-9_.]*(?:\s*,\s*[A-Za-z_][A-Za-z0-9_.]*)*))/gm;
 const pathOperandFlags = new Set(['--require', '-r', '--import', '--loader', '--experimental-loader', '--config', '--config-file', '--hook', '--preload']);
 
 function commandFlagTakesPathOperand(entry: string): boolean {
@@ -112,16 +113,49 @@ function resolveLocalModule(fromFile: string, specifier: string): string | null 
   return null;
 }
 
+function resolveLocalPythonModule(fromFile: string, specifier: string): string | null {
+  const fromDir = dirname(fromFile);
+  const normalizedSpecifier = specifier.replace(/^\.+/, '').split('.')[0];
+  if (!normalizedSpecifier) return null;
+  const base = resolve(fromDir, normalizedSpecifier);
+  const moduleFile = `${base}.py`;
+  if (existsSync(moduleFile) && statSync(moduleFile).isFile()) return moduleFile;
+  const packageInit = resolve(base, '__init__.py');
+  if (existsSync(packageInit) && statSync(packageInit).isFile()) return packageInit;
+  return null;
+}
+
+function localDependencySpecifiers(file: string, content: string): string[] {
+  if (/\.py$/i.test(file)) {
+    const specifiers: string[] = [];
+    for (const match of content.matchAll(pythonImportSpecifierPattern)) {
+      if (match[1]) specifiers.push(match[1]);
+      if (match[2]) specifiers.push(...match[2].split(',').map((value) => value.trim()).filter(Boolean));
+    }
+    return specifiers;
+  }
+
+  const specifiers: string[] = [];
+  for (const match of content.matchAll(localModuleSpecifierPattern)) {
+    const specifier = match[1] ?? match[2];
+    if (specifier) specifiers.push(specifier);
+  }
+  return specifiers;
+}
+
+function resolveLocalDependency(fromFile: string, specifier: string): string | null {
+  if (/\.py$/i.test(fromFile)) return resolveLocalPythonModule(fromFile, specifier);
+  return resolveLocalModule(fromFile, specifier);
+}
+
 function addAdapterDependencyFiles(root: string, file: string, files: Set<string>, seen = new Set<string>()): void {
   const trustedFile = trustedExistingFile(root, file);
   if (!trustedFile || seen.has(trustedFile)) return;
   seen.add(trustedFile);
   files.add(trustedFile);
   const content = readFileSync(trustedFile, 'utf8');
-  for (const match of content.matchAll(localModuleSpecifierPattern)) {
-    const specifier = match[1] ?? match[2];
-    if (!specifier) continue;
-    const dependency = resolveLocalModule(trustedFile, specifier);
+  for (const specifier of localDependencySpecifiers(trustedFile, content)) {
+    const dependency = resolveLocalDependency(trustedFile, specifier);
     if (dependency) addAdapterDependencyFiles(root, dependency, files, seen);
   }
 }

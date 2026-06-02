@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -69,7 +69,7 @@ function createRunPacket(root: string): string {
   const result = runOsc(root, ['run', '.osc/plans/active/123-health-endpoint.md', '--runtime', 'codex', '--repo', root, '--worktree', join(root, '..', 'worktree-copy'), '--branch', 'feature/health']);
   expect(result.status, result.stderr).toBe(0);
   const runs = join(root, '.osc/runs');
-  const runId = require('node:fs').readdirSync(runs).sort().at(-1);
+  const runId = readdirSync(runs).sort().at(-1);
   return join(runs, runId, 'run.json');
 }
 

@@ -210,6 +210,28 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('invalidates trust when Python adapter helper files change', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'helper.py'), "MARKER = 'trusted-helper'\n");
+      writeFileSync(join(adapterDir, 'runner.py'), "import helper\nprint(helper.MARKER)\n");
+      writeAdapterConfig(root, 'python-runner', ['python3', '.osc/adapters/runner.py']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(adapterDir, 'helper.py'), "MARKER = 'changed-helper'\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('invalidates trust when extension-resolved required preload files change', () => {
     const root = tempRepo();
     try {
