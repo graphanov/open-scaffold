@@ -247,6 +247,26 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('refuses symlinked adapter command payloads that resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalScript = join(dirname(root), `${basename(root)}-symlink-target.mjs`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalScript, "console.log('external symlink adapter payload');\n");
+      symlinkSync(externalScript, join(adapterDir, 'symlink-runner.mjs'));
+      writeFileSync(join(adapterDir, 'symlink-payload.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'symlink-payload', command: ['node', '.osc/adapters/symlink-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'symlink-payload'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalScript, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('discovers adapter artifacts before redacting persisted private paths', () => {
     const root = tempRepo(join(repoRoot, '.tmp-dispatch-redaction-'));
     try {

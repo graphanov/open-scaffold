@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { findScaffoldRoot } from './scaffold.js';
 
@@ -60,6 +60,17 @@ function commandEntryLooksLikePath(entry: string): boolean {
   return isAbsolute(entry) || entry.startsWith('./') || entry.startsWith('../') || entry.startsWith('.\\') || entry.startsWith('..\\') || /\.(?:mjs|js|cjs|ts|tsx|json|sh|py|rb|pl|php|go|rs)$/i.test(entry);
 }
 
+function trustedExistingFile(root: string, file: string): string | null {
+  if (!existsSync(file)) return null;
+  const lexicalStat = lstatSync(file);
+  const resolvedFile = lexicalStat.isSymbolicLink() ? realpathSync.native(file) : file;
+  if (!isInsideOrSame(root, resolvedFile)) {
+    throw new AdapterTrustError('Adapter command references a file outside the scaffold root. Move adapter payload files under the repository before trusting.');
+  }
+  if (!statSync(resolvedFile).isFile()) return null;
+  return resolvedFile;
+}
+
 function resolveLocalModule(fromFile: string, specifier: string): string | null {
   if (!specifier.startsWith('./') && !specifier.startsWith('../')) return null;
   const base = resolve(dirname(fromFile), specifier);
@@ -77,15 +88,16 @@ function resolveLocalModule(fromFile: string, specifier: string): string | null 
 }
 
 function addAdapterDependencyFiles(root: string, file: string, files: Set<string>, seen = new Set<string>()): void {
-  if (seen.has(file) || !isInsideOrSame(root, file)) return;
-  if (!existsSync(file) || !statSync(file).isFile()) return;
-  seen.add(file);
-  files.add(file);
-  const content = readFileSync(file, 'utf8');
+  if (!isInsideOrSame(root, file)) return;
+  const trustedFile = trustedExistingFile(root, file);
+  if (!trustedFile || seen.has(trustedFile)) return;
+  seen.add(trustedFile);
+  files.add(trustedFile);
+  const content = readFileSync(trustedFile, 'utf8');
   for (const match of content.matchAll(localModuleSpecifierPattern)) {
     const specifier = match[1] ?? match[2];
     if (!specifier) continue;
-    const dependency = resolveLocalModule(file, specifier);
+    const dependency = resolveLocalModule(trustedFile, specifier);
     if (dependency && isInsideOrSame(root, dependency)) addAdapterDependencyFiles(root, dependency, files, seen);
   }
 }
@@ -108,9 +120,9 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
       }
       continue;
     }
-    if (!existsSync(candidate)) continue;
-    if (!statSync(candidate).isFile()) continue;
-    addAdapterDependencyFiles(root, candidate, files);
+    const trustedFile = trustedExistingFile(root, candidate);
+    if (!trustedFile) continue;
+    addAdapterDependencyFiles(root, trustedFile, files);
   }
   return [...files].sort();
 }
