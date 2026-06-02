@@ -288,6 +288,26 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('trusts legitimate in-repo adapter payloads when the workspace is reached through a symlinked root', () => {
+    const root = tempRepo();
+    const linkRoot = join(dirname(root), `${basename(root)}-link`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'linked-root-runner.mjs'), "console.log('linked root adapter payload');\n");
+      writeFileSync(join(adapterDir, 'linked-root.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'linked-root', command: ['node', '.osc/adapters/linked-root-runner.mjs'] }, null, 2) + '\n');
+      symlinkSync(root, linkRoot, 'dir');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'linked-root'], { cwd: linkRoot, encoding: 'utf8' });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Trusted adapter: linked-root');
+    } finally {
+      rmSync(linkRoot, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('discovers adapter artifacts before redacting persisted private paths', () => {
     const root = tempRepo(join(repoRoot, '.tmp-dispatch-redaction-'));
     try {

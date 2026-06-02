@@ -102,6 +102,7 @@ function addAdapterDependencyFiles(root: string, file: string, files: Set<string
 }
 
 function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
+  const realRoot = realpathSync.native(root);
   let parsed: { command?: unknown };
   try {
     parsed = JSON.parse(rawConfig.toString('utf8')) as { command?: unknown };
@@ -113,15 +114,15 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
   for (const entry of parsed.command) {
     if (typeof entry !== 'string' || !entry.trim()) continue;
     const candidate = isAbsolute(entry) ? resolve(entry) : resolve(root, entry);
-    if (!isInsideOrSame(root, candidate)) {
-      if (commandEntryLooksLikePath(entry) && existsSync(candidate) && statSync(candidate).isFile()) {
-        throw new AdapterTrustError('Adapter command references a file outside the scaffold root. Move adapter payload files under the repository before trusting.');
-      }
+    let trustedFile: string | null = null;
+    try {
+      trustedFile = trustedExistingFile(realRoot, candidate);
+    } catch (error) {
+      if (commandEntryLooksLikePath(entry)) throw error;
       continue;
     }
-    const trustedFile = trustedExistingFile(root, candidate);
     if (!trustedFile) continue;
-    addAdapterDependencyFiles(root, trustedFile, files);
+    addAdapterDependencyFiles(realRoot, trustedFile, files);
   }
   return [...files].sort();
 }
@@ -130,9 +131,10 @@ export function adapterConfigDigest(root: string, adapterId: string): { path: st
   const path = adapterConfigPath(root, adapterId);
   if (!existsSync(path)) throw new AdapterTrustError(`Adapter config not found: .osc/adapters/${adapterId}.json`);
   const raw = readFileSync(path);
+  const realRoot = realpathSync.native(root);
   const hash = createHash('sha256').update('open-scaffold.adapter-trust.v2\0').update(raw);
   for (const digestFile of adapterDigestFiles(root, raw)) {
-    hash.update('\0adapter-file:').update(relative(root, digestFile).replace(/\\/g, '/')).update('\0').update(readFileSync(digestFile));
+    hash.update('\0adapter-file:').update(relative(realRoot, digestFile).replace(/\\/g, '/')).update('\0').update(readFileSync(digestFile));
   }
   const digest = `sha256:${hash.digest('hex')}`;
   return { path, digest };
