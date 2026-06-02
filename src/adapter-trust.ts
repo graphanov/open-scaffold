@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { findScaffoldRoot } from './scaffold.js';
 
@@ -62,8 +62,7 @@ function commandEntryLooksLikePath(entry: string): boolean {
 
 function trustedExistingFile(root: string, file: string): string | null {
   if (!existsSync(file)) return null;
-  const lexicalStat = lstatSync(file);
-  const resolvedFile = lexicalStat.isSymbolicLink() ? realpathSync.native(file) : file;
+  const resolvedFile = realpathSync.native(file);
   if (!isInsideOrSame(root, resolvedFile)) {
     throw new AdapterTrustError('Adapter command references a file outside the scaffold root. Move adapter payload files under the repository before trusting.');
   }

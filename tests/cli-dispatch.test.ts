@@ -267,6 +267,27 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('refuses adapter command payloads reached through symlinked directories outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalDir = join(dirname(root), `${basename(root)}-external-payloads`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      mkdirSync(externalDir, { recursive: true });
+      writeFileSync(join(externalDir, 'runner.mjs'), "console.log('external symlink directory adapter payload');\n");
+      symlinkSync(externalDir, join(adapterDir, 'payloads'));
+      writeFileSync(join(adapterDir, 'symlink-dir-payload.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'symlink-dir-payload', command: ['node', '.osc/adapters/payloads/runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'symlink-dir-payload'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalDir, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('discovers adapter artifacts before redacting persisted private paths', () => {
     const root = tempRepo(join(repoRoot, '.tmp-dispatch-redaction-'));
     try {
