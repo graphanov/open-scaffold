@@ -303,11 +303,11 @@ For the one-screen version, see [`docs/examples/evolution-loop-compare.md`](docs
 
 ## Current pre-1.0 hardening line
 
-Open Scaffold is usable, but it is still in active credibility and adoption hardening. The forward-moving package line is `v0.20.x`: stable enough to try on real repos, honest enough not to pretend every workflow, runtime boundary, and public surface is final.
+Open Scaffold is usable, but it is still in active credibility and adoption hardening. The forward-moving package line is `v0.30.x` after the blueprint security/adoption package sync: stable enough to try on real repos, honest enough not to pretend every workflow, runtime boundary, and public surface is final.
 
 Stable enough to rely on today:
 
-- CLI: `osc init`, `osc status`, `osc plan new`, `osc plan validate`, `osc plan move`, `osc amend`, `osc close`, `osc evidence new`, `osc evidence collect`, `osc verify`, `osc trace`, and read-only `osc compare`.
+- CLI: `osc init`, `osc first-run`, `osc status`, `osc plan new`, `osc plan validate`, `osc plan move`, `osc amend`, `osc close`, `osc evidence new`, `osc evidence collect`, `osc verify`, `osc trace`, `osc pr check`, adapter trust inspection, schema registry inspection, and read-only `osc compare`.
 - Protocol: `MISSION.md`, `ROADMAP.md`, `.osc/plans/`, the Status + seven content-heading plan schema, folder-as-status workflow, amendments, evidence notes, and run-packet records.
 - Verification floor: `verify.sh` plus package tests/builds for this repository.
 
@@ -328,7 +328,7 @@ Use cases the current contract supports today:
 - teams that want PRs to carry intent, evidence, and approval state;
 - consulting or audit-sensitive delivery where later readers need to reconstruct what happened.
 
-Publication truth lives outside git, and the two public surfaces move separately. Check `npm view open-scaffold version dist-tags --json` to see which package `npx open-scaffold@latest` installs. Check the GitHub Release marked **Latest** to see which release note GitHub highlights. The historical `v1.0.5` / `v1.0.x` tags remain published history; the current forward-moving line is `v0.20.x` until the protocol and product surface earn a real 1.0 again. See [`docs/VERSION_TRUTH.md`](docs/VERSION_TRUTH.md), [`docs/STABILITY.md`](docs/STABILITY.md), [`docs/CHANGELOG.md`](docs/CHANGELOG.md), and the landing page [`docs/index.html`](docs/index.html).
+Publication truth lives outside git, and the two public surfaces move separately. Check `npm view open-scaffold version dist-tags --json` to see which package `npx open-scaffold@latest` installs. Check the GitHub Release marked **Latest** to see which release note GitHub highlights. The historical `v1.0.5` / `v1.0.x` tags remain published history; the current forward-moving line is `v0.30.x` after the blueprint security/adoption package sync and remains pre-1.0 until the protocol and product surface earn a real 1.0 again. See [`docs/VERSION_TRUTH.md`](docs/VERSION_TRUTH.md), [`docs/STABILITY.md`](docs/STABILITY.md), [`docs/CHANGELOG.md`](docs/CHANGELOG.md), and the landing page [`docs/index.html`](docs/index.html).
 
 ---
 

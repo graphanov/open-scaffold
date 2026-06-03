@@ -117,21 +117,21 @@ describe('resume docs self-checks (AC-6 through AC-10)', () => {
       expect(exists('docs/VERSION_TRUTH.md')).toBe(true);
     });
 
-    it('README contains both v0.20.x current and v1.0.5 historical version tokens', () => {
+    it('README contains both v0.30.x current and v1.0.5 historical version tokens', () => {
       const readme = read('README.md');
-      expect(readme).toMatch(/v0\.20\.x|v0\.20\.\d/);
+      expect(readme).toMatch(/v0\.30\.x|v0\.30\.\d/);
       expect(readme).toMatch(/v1\.0\.5/);
     });
 
-    it('STABILITY.md contains v0.20.x current line and v1.0.x historical reference', () => {
+    it('STABILITY.md contains v0.30.x current line and v1.0.x historical reference', () => {
       const stability = read('docs/STABILITY.md');
-      expect(stability).toMatch(/v0\.20\.x/);
+      expect(stability).toMatch(/v0\.30\.x/);
       expect(stability).toMatch(/v1\.0\.[x5]/);
     });
 
-    it('CHANGELOG.md contains v0.20.x entries and v1.0.5 historical entry', () => {
+    it('CHANGELOG.md contains v0.30.x entries and v1.0.5 historical entry', () => {
       const changelog = read('docs/CHANGELOG.md');
-      expect(changelog).toMatch(/v0\.20\.\d/);
+      expect(changelog).toMatch(/v0\.30\.\d/);
       expect(changelog).toMatch(/v1\.0\.5/);
     });
   });
