@@ -142,6 +142,17 @@ function resolvePythonModuleFromRoot(root: string, specifier: string): string | 
   return resolveLocalPythonModuleBase(resolve(root, ...normalizedSpecifier.split('.')));
 }
 
+function resolvePythonModuleEntrypointFromRoot(root: string, specifier: string): string | null {
+  const normalizedSpecifier = specifier.replace(/^\.+/, '');
+  if (!normalizedSpecifier) return null;
+  const base = resolve(root, ...normalizedSpecifier.split('.'));
+  const moduleFile = `${base}.py`;
+  if (existsSync(moduleFile) && statSync(moduleFile).isFile()) return moduleFile;
+  const packageMain = resolve(base, '__main__.py');
+  if (existsSync(packageMain) && statSync(packageMain).isFile()) return packageMain;
+  return null;
+}
+
 function resolveLocalPythonModule(root: string, fromFile: string, specifier: string): string | null {
   const normalizedSpecifier = specifier.replace(/^\.+/, '');
   if (!normalizedSpecifier) return null;
@@ -226,7 +237,7 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
       candidates.push({ path: isAbsolute(nextEntry) ? resolve(nextEntry) : resolve(root, nextEntry), required: true });
     }
     if (commandEntryIsPythonModuleMode(parsed.command, index) && typeof nextEntry === 'string' && nextEntry.trim() && !nextEntry.startsWith('-')) {
-      const moduleEntrypoint = resolvePythonModuleFromRoot(realRoot, nextEntry);
+      const moduleEntrypoint = resolvePythonModuleEntrypointFromRoot(realRoot, nextEntry);
       if (!moduleEntrypoint) {
         throw new AdapterTrustError('Adapter command references a Python module entrypoint that is not a repo-local file under the scaffold root. Use a repo-local script/module before trusting.');
       }

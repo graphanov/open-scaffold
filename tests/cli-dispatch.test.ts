@@ -302,6 +302,28 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('invalidates trust when Python package module-mode __main__ entrypoints change', () => {
+    const root = tempRepo();
+    try {
+      const moduleDir = join(root, 'adapter_pkg');
+      mkdirSync(moduleDir, { recursive: true });
+      writeFileSync(join(moduleDir, 'helper.py'), "MARKER = 'trusted-main-helper'\n");
+      writeFileSync(join(moduleDir, '__main__.py'), "from . import helper\nprint(helper.MARKER)\n");
+      writeAdapterConfig(root, 'python-package-main', ['python3', '-m', 'adapter_pkg']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-main'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(moduleDir, '__main__.py'), "from . import helper\nprint('changed package main')\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-main'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('invalidates trust when extension-resolved required preload files change', () => {
     const root = tempRepo();
     try {
