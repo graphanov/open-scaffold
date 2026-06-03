@@ -15,7 +15,7 @@ This release keeps `osc compare` local and read-only. It does not add runtime sp
 - Repair merge commit: `2c8c81f973c500f43a7796645a92d7f790c7194e`.
 - Trusted publishing workflow: https://github.com/graphanov/open-scaffold/actions/runs/26689646203.
 - npm package: `open-scaffold@0.20.4` with dist-tag `latest`.
-- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v0.20.4.
+- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v0.20.4; this release was Latest until superseded by `v0.30.0`.
 - Run ID / run packet: N/A for this scoped package repair.
 
 ## Verification
@@ -49,12 +49,12 @@ Post-merge/publication gates after owner-approved follow-through:
 - [x] `npm view open-scaffold version dist-tags --json --prefer-online` reports `0.20.4` and `latest: 0.20.4`.
 - [x] Fresh isolated-cache `npx --yes open-scaffold@latest --version` reports `0.20.4`.
 - [x] Fresh isolated-cache `npx --yes open-scaffold@latest compare examples/attempt-compare/attempt-a examples/attempt-compare/attempt-b` succeeds from a fresh external directory.
-- [x] GitHub Release `v0.20.4` exists and is marked Latest.
+- [x] GitHub Release `v0.20.4` exists and was marked Latest at publication time; it is now superseded by `v0.30.0`.
 - [x] Source plan 129 is closed to `done/` with final public proof in this closeout branch.
 
 ## Outcome
 
-Completed. PR #155 merged the package-path repair, trusted publishing succeeded, npm `open-scaffold@latest` resolves to `0.20.4`, fresh isolated-cache `npx` proves the zero-context compare demo from an external directory, GitHub Release `v0.20.4` is Latest, and plan 129 is closed to `done/` by the closeout branch.
+Completed. PR #155 merged the package-path repair, trusted publishing succeeded, npm `open-scaffold@latest` resolved to `0.20.4` at publication time, fresh isolated-cache `npx` proved the zero-context compare demo from an external directory, GitHub Release `v0.20.4` was Latest until superseded by `v0.30.0`, and plan 129 is closed to `done/`.
 
 ## Follow-up
 

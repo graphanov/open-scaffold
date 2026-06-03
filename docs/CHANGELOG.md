@@ -6,7 +6,7 @@ For live package truth, check npm. For live release truth, check GitHub Releases
 
 ## v0.30.0 — Blueprint security and adoption release
 
-Status: release-sync candidate in this branch. It is not published to npm and not GitHub Latest until the release PR merges, trusted publishing succeeds, fresh `npx` proof passes, and GitHub Release `v0.30.0` is created/marked Latest.
+Status: published to npm as `open-scaffold@0.30.0`; GitHub Release `v0.30.0` is Latest after owner-approved trusted publishing and release follow-through.
 
 Highlights:
 
@@ -17,13 +17,14 @@ Highlights:
 
 Evidence:
 
-- Release-sync plan: `.osc/plans/active/141-0300-npx-release-sync.md` until final public proof exists; expected closeout path is `.osc/plans/done/141-0300-npx-release-sync.md`.
+- Release-sync plan: `.osc/plans/done/141-0300-npx-release-sync.md`
 - Source PR: https://github.com/graphanov/open-scaffold/pull/168
+- Release-sync PR: https://github.com/graphanov/open-scaffold/pull/171
 - Release-sync evidence note: `.osc/releases/2026-06-03-141-0300-npx-release-sync.md`
 
 ## v0.20.4 — Fresh npx compare demo repair
 
-Status: published to npm as `open-scaffold@0.20.4`; GitHub Release `v0.20.4` is Latest after owner-approved trusted publishing and release follow-through.
+Status: published to npm as `open-scaffold@0.20.4`; GitHub Release `v0.20.4` was Latest after owner-approved trusted publishing and release follow-through, then was superseded by `v0.30.0`.
 
 Highlights:
 
