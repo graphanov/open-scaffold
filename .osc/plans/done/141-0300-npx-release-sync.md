@@ -2,11 +2,11 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
-`main` contains the blueprint security/adoption work from PR #168 plus the follow-up Dependabot maintenance merges from PRs #169 and #170. The package-visible CLI/help/docs surface is still public only through the repository because npm `open-scaffold@latest` and the GitHub Latest Release remain at `0.20.4`.
+At plan creation, `main` contained the blueprint security/adoption work from PR #168 plus the follow-up Dependabot maintenance merges from PRs #169 and #170, while npm `open-scaffold@latest` and the GitHub Latest Release still pointed at `0.20.4`. This closeout published the package-visible CLI/help/docs surface as `open-scaffold@0.30.0` and marked GitHub Release `v0.30.0` Latest.
 
 ## Goal
 
@@ -24,24 +24,24 @@ Publish `open-scaffold@0.30.0` on the npm `latest` dist-tag, create GitHub Relea
 
 ## Files to touch
 
-- `package.json` — bump the package candidate version to `0.30.0`.
+- `package.json` — bump the package version to `0.30.0`.
 - `package-lock.json` — keep the lockfile root package version aligned with `package.json`.
-- `docs/CHANGELOG.md` — add release-facing `v0.30.0` candidate/published notes.
+- `docs/CHANGELOG.md` — add release-facing `v0.30.0` published notes.
 - `docs/VERSION_TRUTH.md` — reconcile repository, npm, and GitHub Release truth for the `0.30.0` release flow.
 - `README.md` and `docs/STABILITY.md` — align package-line language when the release target moves from `v0.20.x` to `v0.30.x`.
 - `.osc/releases/2026-06-03-141-0300-npx-release-sync.md` — record candidate gates, public publish proof, GitHub Release proof, and final closeout evidence.
-- `.osc/plans/active/141-0300-npx-release-sync.md` / `.osc/plans/done/141-0300-npx-release-sync.md` — keep this plan active until public npm/GitHub Release/fresh `npx` proof exists, then close it through the normal closeout protocol.
+- `.osc/plans/done/141-0300-npx-release-sync.md` — final closed plan path after public npm/GitHub Release/fresh `npx` proof exists.
 
 ## Acceptance criteria
 
-- [ ] `package.json`, `package-lock.json`, changelog/version-truth docs, and release evidence prepare target version `0.30.0` without claiming npm/GitHub publication before it happens.
-- [ ] `npm pack --dry-run --json` and an extracted-tarball smoke prove the package payload includes the built CLI, README/help/docs, and package-visible surfaces from the OSB security/adoption work.
-- [ ] Pre-publish gates pass from the candidate branch: `npm ci`, `git diff --check`, focused package/help tests, `npm test -- --run`, `npm run build`, `npm run osc -- doctor --check secret-scan`, `./verify.sh --strict`, `npm run osc -- verify`, `npm pack --dry-run --json`, and extracted-package smoke from a temp directory outside the repository.
-- [ ] Release candidate PR is merged only after CI is green, latest-head Codex review is clean if triggered, and unresolved current-head review threads are zero.
-- [ ] Trusted publishing publishes `open-scaffold@0.30.0` with dist-tag `latest`, and `npm view open-scaffold version dist-tags --json --prefer-online` confirms `0.30.0` / `latest`.
-- [ ] Fresh isolated-cache `npx --yes open-scaffold@latest` proof from outside the repository verifies top-level help plus the package-visible command/help surfaces: `first-run`, `pr check`, adapter trust commands, schemas, and `--online-github` verification language.
-- [ ] GitHub Release `v0.30.0 — Blueprint security and adoption release` exists, targets the merged `main` commit, is marked Latest, and uses concise public-safe boundary language.
-- [ ] Final evidence records npm URL, trusted-publishing run, GitHub Release URL, fresh `npx` commands/results, PR/merge commits, and remaining risks; this plan is moved to `done/` only after those public surfaces are verified.
+- [x] `package.json`, `package-lock.json`, changelog/version-truth docs, and release evidence prepare target version `0.30.0` without claiming npm/GitHub publication before it happens.
+- [x] `npm pack --dry-run --json` and an extracted-tarball smoke prove the package payload includes the built CLI, README/help/docs, and package-visible surfaces from the OSB security/adoption work.
+- [x] Pre-publish gates pass from the candidate branch: `npm ci`, `git diff --check`, focused package/help tests, `npm test -- --run`, `npm run build`, `npm run osc -- doctor --check secret-scan`, `./verify.sh --strict`, `npm run osc -- verify`, `npm pack --dry-run --json`, and extracted-package smoke from a temp directory outside the repository.
+- [x] Release candidate PR is merged only after CI is green, latest-head Codex review is clean if triggered, and unresolved current-head review threads are zero.
+- [x] Trusted publishing publishes `open-scaffold@0.30.0` with dist-tag `latest`, and `npm view open-scaffold version dist-tags --json --prefer-online` confirms `0.30.0` / `latest`.
+- [x] Fresh isolated-cache `npx --yes open-scaffold@latest` proof from outside the repository verifies top-level help plus the package-visible command/help surfaces: `first-run`, `pr check`, adapter trust commands, schemas, and `--online-github` verification language.
+- [x] GitHub Release `v0.30.0 — Blueprint security and adoption release` exists, targets the merged `main` commit, is marked Latest, and uses concise public-safe boundary language.
+- [x] Final evidence records npm URL, trusted-publishing run, GitHub Release URL, fresh `npx` commands/results, PR/merge commits, and remaining risks; this plan is moved to `done/` only after those public surfaces are verified.
 
 ## Verification steps
 
