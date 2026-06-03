@@ -64,11 +64,9 @@ function commandEntryLooksLikePythonExecutable(entry: string): boolean {
 
 function commandEntryIsPythonModuleMode(command: unknown[], index: number): boolean {
   if (command[index] !== '-m') return false;
-  for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
+  for (let previousIndex = 0; previousIndex < index; previousIndex += 1) {
     const previousEntry = command[previousIndex];
-    if (typeof previousEntry !== 'string' || !previousEntry.trim()) continue;
-    if (previousEntry.startsWith('-')) continue;
-    return commandEntryLooksLikePythonExecutable(previousEntry);
+    if (typeof previousEntry === 'string' && commandEntryLooksLikePythonExecutable(previousEntry)) return true;
   }
   return false;
 }
@@ -154,7 +152,16 @@ function resolvePythonModuleEntrypointFromRoot(root: string, specifier: string):
 }
 
 function resolveLocalPythonModule(root: string, fromFile: string, specifier: string): string | null {
-  const normalizedSpecifier = specifier.replace(/^\.+/, '');
+  const leadingDots = specifier.match(/^\.+/)?.[0]?.length ?? 0;
+  if (leadingDots > 0) {
+    let baseDir = dirname(fromFile);
+    for (let level = 1; level < leadingDots; level += 1) baseDir = dirname(baseDir);
+    const remainingSpecifier = specifier.slice(leadingDots);
+    if (!remainingSpecifier) return resolveLocalPythonModuleBase(baseDir);
+    return resolveLocalPythonModuleBase(resolve(baseDir, ...remainingSpecifier.split('.')));
+  }
+
+  const normalizedSpecifier = specifier;
   if (!normalizedSpecifier) return null;
   const fromDir = dirname(fromFile);
   for (const base of [resolve(fromDir, ...normalizedSpecifier.split('.')), resolve(root, ...normalizedSpecifier.split('.'))]) {

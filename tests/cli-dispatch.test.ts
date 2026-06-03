@@ -324,6 +324,50 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('invalidates trust when Python module mode follows options with operands', () => {
+    const root = tempRepo();
+    try {
+      const moduleDir = join(root, 'adapter_pkg');
+      mkdirSync(moduleDir, { recursive: true });
+      writeFileSync(join(moduleDir, '__main__.py'), "print('trusted package main')\n");
+      writeAdapterConfig(root, 'python-option-module', ['python3', '-W', 'ignore', '-m', 'adapter_pkg']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-option-module'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(moduleDir, '__main__.py'), "print('changed option package main')\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-option-module'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when nested Python module adapters use parent-relative imports', () => {
+    const root = tempRepo();
+    try {
+      const packageDir = join(root, 'adapter_pkg');
+      const subpackageDir = join(packageDir, 'sub');
+      mkdirSync(subpackageDir, { recursive: true });
+      writeFileSync(join(packageDir, 'helper.py'), "MARKER = 'trusted-parent-helper'\n");
+      writeFileSync(join(subpackageDir, '__main__.py'), "from .. import helper\nprint(helper.MARKER)\n");
+      writeAdapterConfig(root, 'python-parent-relative', ['python3', '-m', 'adapter_pkg.sub']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-parent-relative'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(packageDir, 'helper.py'), "MARKER = 'changed-parent-helper'\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-parent-relative'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('invalidates trust when extension-resolved required preload files change', () => {
     const root = tempRepo();
     try {
