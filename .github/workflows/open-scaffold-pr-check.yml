@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       plan:
-        description: "Plan slug to check (e.g. 123-my-slice)"
+        description: "Plan slug to check (e.g. 123-my-slice or first-work-record)"
         required: false
         type: string
 
@@ -87,7 +87,7 @@ jobs:
           plan="${INPUT_PLAN:-${VAR_PLAN:-}}"
           if [[ -z "$plan" ]]; then
             plan="$(git diff --name-only "${{ github.event.pull_request.base.sha || github.sha }}"...HEAD 2>/dev/null \
-              | grep -E '^\.osc/plans/(active|backlog|blocked|done)/[0-9]+-[^/]+\.md$' \
+              | grep -E '^\.osc/plans/(active|backlog|blocked|done)/[A-Za-z0-9][A-Za-z0-9._-]*\.md$' \
               | grep -v -- '-amendment-' \
               | head -1 \
               | sed -E 's|.*/||; s|\.md$||' || true)"
