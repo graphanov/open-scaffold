@@ -75,6 +75,8 @@ export interface RecordEvolutionAttemptOptions {
   decision: EvolutionDecision;
   score?: number;
   rationale: string;
+  repairHypothesis?: EvolutionRepairHypothesis;
+  usage?: EvolutionUsageSummary;
   now?: Date;
 }
 
@@ -83,6 +85,34 @@ export interface RecordEvolutionAttemptResult {
   frontierUpdated: boolean;
   attemptsPath: string;
   frontierPath: string;
+}
+
+export interface EvolutionRepairHypothesis {
+  hypothesis: string;
+  targetMetric?: string | null;
+  expectedGain?: number | null;
+  actualDelta?: number | null;
+}
+
+export interface EvolutionUsageSummary {
+  totalTokens?: number | null;
+  estimatedUsd?: number | null;
+  source?: string | null;
+  unavailableReason?: string | null;
+}
+
+export interface EvolutionAttemptRepairHypothesis {
+  hypothesis: string;
+  targetMetric: string | null;
+  expectedGain: number | null;
+  actualDelta: number | null;
+}
+
+export interface EvolutionAttemptUsageSummary {
+  totalTokens: number | null;
+  estimatedUsd: number | null;
+  source: string | null;
+  unavailableReason: string | null;
 }
 
 function issue(level: 'fail' | 'warn', code: string, message: string, path?: string): ValidationIssue {
@@ -111,6 +141,28 @@ function asBoolean(value: unknown): boolean | null {
 
 function meaningfulString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && !/^(todo|tbd|n\/a|none)$/i.test(value.trim());
+}
+
+function optionalFiniteNumber(value: unknown, label: string): number | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`${label} must be a finite number.`);
+  }
+  return value;
+}
+
+function optionalNonNegativeInteger(value: unknown, label: string): number | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    throw new Error(`${label} must be a non-negative integer.`);
+  }
+  return value;
+}
+
+function optionalNonNegativeNumber(value: unknown, label: string): number | null {
+  const parsed = optionalFiniteNumber(value, label);
+  if (parsed !== null && parsed < 0) throw new Error(`${label} must be non-negative.`);
+  return parsed;
 }
 
 function toPosix(value: string): string {
@@ -419,6 +471,8 @@ export interface EvolutionCompareAttempt {
   evaluation: string | null;
   evaluationId: string | null;
   evaluationDecision: string | null;
+  repairHypothesis: EvolutionAttemptRepairHypothesis | null;
+  usage: EvolutionAttemptUsageSummary | null;
   boundary: Record<string, unknown>;
 }
 
@@ -466,7 +520,33 @@ function normalizeCompareAttempt(attempt: Record<string, unknown>): EvolutionCom
     evaluation: asString(attempt.evaluation),
     evaluationId: asString(attempt.evaluation_id),
     evaluationDecision: asString(attempt.evaluation_decision),
+    repairHypothesis: readAttemptRepairHypothesis(attempt),
+    usage: readAttemptUsage(attempt),
     boundary: boundaryValue,
+  };
+}
+
+function readAttemptRepairHypothesis(attempt: Record<string, unknown>): EvolutionAttemptRepairHypothesis | null {
+  const value = isRecord(attempt.repair_hypothesis) ? attempt.repair_hypothesis : null;
+  if (!value) return null;
+  const hypothesis = asString(value.hypothesis);
+  if (!hypothesis) return null;
+  return {
+    hypothesis,
+    targetMetric: asString(value.target_metric),
+    expectedGain: asNumber(value.expected_gain),
+    actualDelta: asNumber(value.actual_delta),
+  };
+}
+
+function readAttemptUsage(attempt: Record<string, unknown>): EvolutionAttemptUsageSummary | null {
+  const value = isRecord(attempt.usage) ? attempt.usage : null;
+  if (!value) return null;
+  return {
+    totalTokens: asNumber(value.total_tokens),
+    estimatedUsd: asNumber(value.estimated_usd),
+    source: asString(value.source),
+    unavailableReason: asString(value.unavailable_reason),
   };
 }
 
@@ -479,6 +559,33 @@ function formatDelta(delta: number | null): string {
   const rounded = Number(delta.toFixed(6));
   if (rounded === 0) return '0';
   return `${rounded > 0 ? '+' : ''}${rounded} ${rounded > 0 ? '▲' : '▼'}`;
+}
+
+function formatInteger(value: number | null): string {
+  return value === null ? '—' : value.toLocaleString('en-US');
+}
+
+function formatTokenDelta(a: number | null, b: number | null): string {
+  if (a === null || b === null) return '—';
+  const delta = b - a;
+  if (delta === 0) return '0';
+  return `${delta > 0 ? '+' : ''}${delta.toLocaleString('en-US')} ${delta > 0 ? '▲' : '▼'}`;
+}
+
+function formatUsd(value: number | null): string {
+  return value === null ? '—' : `$${value.toFixed(4)}`;
+}
+
+function attemptHasControlFields(attempt: EvolutionCompareAttempt): boolean {
+  return Boolean(attempt.repairHypothesis || attempt.usage);
+}
+
+function attemptHypothesisLabel(attempt: EvolutionCompareAttempt): string {
+  return attempt.repairHypothesis?.hypothesis ?? '—';
+}
+
+function attemptTargetMetric(attempt: EvolutionCompareAttempt): string {
+  return attempt.repairHypothesis?.targetMetric ?? '—';
 }
 
 function formatCriterionStatus(status: string | null): string {
@@ -717,6 +824,7 @@ function renderTerminalComparison(comparison: Extract<EvolutionCompareResult, { 
   const currentAttemptId = currentFrontierAttemptId(comparison);
   const evidenceDeltaLabel = comparison.evidence.onlyInB.length - comparison.evidence.onlyInA.length;
   const evidenceDeltaText = evidenceDeltaLabel === 0 ? '0' : `${evidenceDeltaLabel > 0 ? '+' : ''}${evidenceDeltaLabel}`;
+  const hasControlFields = attemptHasControlFields(comparison.a) || attemptHasControlFields(comparison.b);
   const lines = [
     `Evolution Loop: ${comparison.loop.loopDir}`,
     `Objective: ${comparison.loop.objective ?? '—'}`,
@@ -731,12 +839,25 @@ function renderTerminalComparison(comparison: Extract<EvolutionCompareResult, { 
     `  Score: A=${formatScore(comparison.a.score)} | B=${formatScore(comparison.b.score)} | Δ=${formatDelta(comparison.scoreDelta)}`,
     `  Run ID: A=${comparison.a.runId ?? '—'} | B=${comparison.b.runId ?? '—'}`,
     `  Evidence files: A=${comparison.a.evidenceRefs.length} | B=${comparison.b.evidenceRefs.length} | Δ=${evidenceDeltaText}`,
+    ...(hasControlFields ? [
+      `  Target metric: A=${attemptTargetMetric(comparison.a)} | B=${attemptTargetMetric(comparison.b)}`,
+      `  Expected gain: A=${formatScore(comparison.a.repairHypothesis?.expectedGain ?? null)} | B=${formatScore(comparison.b.repairHypothesis?.expectedGain ?? null)}`,
+      `  Actual delta: A=${formatScore(comparison.a.repairHypothesis?.actualDelta ?? null)} | B=${formatScore(comparison.b.repairHypothesis?.actualDelta ?? null)}`,
+      `  Token cost: A=${formatInteger(comparison.a.usage?.totalTokens ?? null)} | B=${formatInteger(comparison.b.usage?.totalTokens ?? null)} | Δ=${formatTokenDelta(comparison.a.usage?.totalTokens ?? null, comparison.b.usage?.totalTokens ?? null)}`,
+      `  Estimated USD: A=${formatUsd(comparison.a.usage?.estimatedUsd ?? null)} | B=${formatUsd(comparison.b.usage?.estimatedUsd ?? null)}`,
+    ] : []),
     `  Evaluation present?: A=${comparison.evaluation.a.present ? 'yes' : 'no'} | B=${comparison.evaluation.b.present ? 'yes' : 'no'}`,
     `  Receipt present?: A=${comparison.a.adapterReceipts.length > 0 ? 'yes' : 'no'} | B=${comparison.b.adapterReceipts.length > 0 ? 'yes' : 'no'}`,
     '',
     'Rationale',
     `  A (${comparison.a.decision ?? 'unknown'}): ${comparison.a.rationale || '—'}`,
     `  B (${comparison.b.decision ?? 'unknown'}): ${comparison.b.rationale || '—'}`,
+    ...(hasControlFields ? [
+      '',
+      'Repair hypotheses',
+      `  A: ${attemptHypothesisLabel(comparison.a)}`,
+      `  B: ${attemptHypothesisLabel(comparison.b)}`,
+    ] : []),
     '',
     ...(comparison.acceptanceCriteria.rows.length > 0 ? [
       'Acceptance criteria delta',
@@ -770,6 +891,7 @@ function renderMarkdownComparison(comparison: Extract<EvolutionCompareResult, { 
   const currentAttemptId = currentFrontierAttemptId(comparison);
   const evidenceDeltaLabel = comparison.evidence.onlyInB.length - comparison.evidence.onlyInA.length;
   const evidenceDeltaText = evidenceDeltaLabel === 0 ? '0' : `${evidenceDeltaLabel > 0 ? '+' : ''}${evidenceDeltaLabel}`;
+  const hasControlFields = attemptHasControlFields(comparison.a) || attemptHasControlFields(comparison.b);
   const lines = [
     `# Evolution loop: ${comparison.loop.loopDir} — A vs B`,
     '',
@@ -782,6 +904,14 @@ function renderMarkdownComparison(comparison: Extract<EvolutionCompareResult, { 
     `| Run ID | ${comparison.a.runId ?? '—'} | ${comparison.b.runId ?? '—'} | ${comparison.a.runId === comparison.b.runId ? '—' : 'changed'} |`,
     `| Evidence files | ${comparison.a.evidenceRefs.length} | ${comparison.b.evidenceRefs.length} | ${evidenceDeltaText} |`,
     `| Evaluation envelope | ${comparison.evaluation.a.present ? '✓' : '—'} | ${comparison.evaluation.b.present ? '✓' : '—'} | ${comparison.evaluation.a.present === comparison.evaluation.b.present ? '—' : 'changed'} |`,
+    ...(hasControlFields ? [
+      `| Repair hypothesis | ${escapeMarkdownTableCell(attemptHypothesisLabel(comparison.a))} | ${escapeMarkdownTableCell(attemptHypothesisLabel(comparison.b))} | ${attemptHypothesisLabel(comparison.a) === attemptHypothesisLabel(comparison.b) ? '—' : 'changed'} |`,
+      `| Target metric | ${attemptTargetMetric(comparison.a)} | ${attemptTargetMetric(comparison.b)} | ${attemptTargetMetric(comparison.a) === attemptTargetMetric(comparison.b) ? '—' : 'changed'} |`,
+      `| Expected gain | ${formatScore(comparison.a.repairHypothesis?.expectedGain ?? null)} | ${formatScore(comparison.b.repairHypothesis?.expectedGain ?? null)} | — |`,
+      `| Actual delta | ${formatScore(comparison.a.repairHypothesis?.actualDelta ?? null)} | ${formatScore(comparison.b.repairHypothesis?.actualDelta ?? null)} | — |`,
+      `| Token cost | ${formatInteger(comparison.a.usage?.totalTokens ?? null)} | ${formatInteger(comparison.b.usage?.totalTokens ?? null)} | ${formatTokenDelta(comparison.a.usage?.totalTokens ?? null, comparison.b.usage?.totalTokens ?? null)} |`,
+      `| Estimated USD | ${formatUsd(comparison.a.usage?.estimatedUsd ?? null)} | ${formatUsd(comparison.b.usage?.estimatedUsd ?? null)} | — |`,
+    ] : []),
     '',
     '## Rationale',
     '',
@@ -864,9 +994,9 @@ export interface EvolutionAnalysisResult {
   kind: 'analysis';
   loop: { loopDir: string; loopId: string | null; objective: string | null; strategy: string | null; attemptCount: number };
   plateau: { status: EvolutionPlateauStatus; threshold: number; noImprovementCount: number; currentScore: number | null; bestScore: number | null; bestAttemptId: string | null };
-  currentAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null };
-  previousAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null };
-  frontierAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null };
+  currentAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null; repairHypothesis: EvolutionAttemptRepairHypothesis | null; usage: EvolutionAttemptUsageSummary | null };
+  previousAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null; repairHypothesis: EvolutionAttemptRepairHypothesis | null; usage: EvolutionAttemptUsageSummary | null };
+  frontierAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null; repairHypothesis: EvolutionAttemptRepairHypothesis | null; usage: EvolutionAttemptUsageSummary | null };
   acceptanceSummary: { currentPass: number; currentTotal: number; frontierPass: number; frontierTotal: number; remainingFailures: string[] };
   criteria: EvolutionAnalysisCriterion[];
   currentVsPrevious: { present: boolean; previousAttemptId: string | null; currentAttemptId: string | null; rows: EvolutionAnalysisDeltaRow[] };
@@ -1098,6 +1228,8 @@ function attemptSummary(attempt: EvolutionCompareAttempt | null) {
     decision: attempt?.decision ?? null,
     score: attempt?.score ?? null,
     evaluation: attempt?.evaluation ?? null,
+    repairHypothesis: attempt?.repairHypothesis ?? null,
+    usage: attempt?.usage ?? null,
   };
 }
 
@@ -1247,6 +1379,8 @@ function impossibleLabel(criterion: EvolutionAnalysisCriterion): string {
 }
 
 function renderAnalysisTerminal(analysis: EvolutionAnalysisResult): string {
+  const currentHypothesis = analysis.currentAttempt.repairHypothesis;
+  const currentUsage = analysis.currentAttempt.usage;
   const lines = [
     `Evolution Analysis: ${analysis.loop.loopDir}`,
     `Objective: ${analysis.loop.objective ?? '—'}`,
@@ -1255,6 +1389,14 @@ function renderAnalysisTerminal(analysis: EvolutionAnalysisResult): string {
     '',
     `Plateau: ${analysis.plateau.status} — ${analysis.plateau.noImprovementCount} attempt(s) since last score improvement (current=${formatScore(analysis.plateau.currentScore)}, best=${formatScore(analysis.plateau.bestScore)})`,
     `Acceptance: current=${analysis.acceptanceSummary.currentPass}/${analysis.acceptanceSummary.currentTotal} pass | frontier=${analysis.acceptanceSummary.frontierPass}/${analysis.acceptanceSummary.frontierTotal} pass`,
+    '',
+    'Current attempt control',
+    `  Hypothesis: ${currentHypothesis?.hypothesis ?? '—'}`,
+    `  Target metric: ${currentHypothesis?.targetMetric ?? '—'}`,
+    `  Expected gain: ${formatScore(currentHypothesis?.expectedGain ?? null)}`,
+    `  Actual delta: ${formatScore(currentHypothesis?.actualDelta ?? null)}`,
+    `  Token cost: ${formatInteger(currentUsage?.totalTokens ?? null)}`,
+    `  Estimated USD: ${formatUsd(currentUsage?.estimatedUsd ?? null)}`,
     '',
     'Score sensitivity',
     ...(analysis.criteria.length > 0 ? analysis.criteria.map((criterion) => {
@@ -1280,6 +1422,8 @@ function renderAnalysisTerminal(analysis: EvolutionAnalysisResult): string {
 }
 
 function renderAnalysisMarkdown(analysis: EvolutionAnalysisResult): string {
+  const currentHypothesis = analysis.currentAttempt.repairHypothesis;
+  const currentUsage = analysis.currentAttempt.usage;
   const lines = [
     `# Evolution analysis: ${analysis.loop.loopDir}`,
     '',
@@ -1293,6 +1437,15 @@ function renderAnalysisMarkdown(analysis: EvolutionAnalysisResult): string {
     `- Attempts since last score improvement: ${analysis.plateau.noImprovementCount}`,
     `- Current score: ${formatScore(analysis.plateau.currentScore)}`,
     `- Best score: ${formatScore(analysis.plateau.bestScore)}${analysis.plateau.bestAttemptId ? ` (\`${analysis.plateau.bestAttemptId}\`)` : ''}`,
+    '',
+    '## Current attempt control',
+    '',
+    `- Hypothesis: ${currentHypothesis?.hypothesis ?? '—'}`,
+    `- Target metric: ${currentHypothesis?.targetMetric ?? '—'}`,
+    `- Expected gain: ${formatScore(currentHypothesis?.expectedGain ?? null)}`,
+    `- Actual delta: ${formatScore(currentHypothesis?.actualDelta ?? null)}`,
+    `- Token cost: ${formatInteger(currentUsage?.totalTokens ?? null)}`,
+    `- Estimated USD: ${formatUsd(currentUsage?.estimatedUsd ?? null)}`,
     '',
     '## Score sensitivity and impossible criteria',
     '',
@@ -1339,6 +1492,43 @@ export function renderEvolutionAnalysis(analysis: EvolutionAnalysisResult, forma
   return renderAnalysisTerminal(analysis);
 }
 
+function normalizeAttemptRepairHypothesis(input: EvolutionRepairHypothesis | undefined, decision: EvolutionDecision): Record<string, unknown> | null {
+  if (!input) {
+    if (decision === 'retry') throw new Error('Retry decisions require a repair hypothesis before continuing.');
+    return null;
+  }
+  if (!meaningfulString(input.hypothesis)) {
+    throw new Error('Repair hypothesis must be a non-empty concrete hypothesis.');
+  }
+  const targetMetric = input.targetMetric === undefined || input.targetMetric === null ? null : input.targetMetric.trim();
+  if (targetMetric !== null && !meaningfulString(targetMetric)) {
+    throw new Error('Repair hypothesis target metric must be meaningful when provided.');
+  }
+  return {
+    hypothesis: input.hypothesis.trim(),
+    target_metric: targetMetric,
+    expected_gain: optionalFiniteNumber(input.expectedGain, 'Repair hypothesis expected gain'),
+    actual_delta: optionalFiniteNumber(input.actualDelta, 'Repair hypothesis actual delta'),
+  };
+}
+
+function normalizeAttemptUsage(input: EvolutionUsageSummary | undefined): Record<string, unknown> | null {
+  if (!input) return null;
+  const totalTokens = optionalNonNegativeInteger(input.totalTokens, 'Usage total tokens');
+  const estimatedUsd = optionalNonNegativeNumber(input.estimatedUsd, 'Usage estimated USD');
+  const source = input.source === undefined || input.source === null ? null : input.source.trim();
+  const unavailableReason = input.unavailableReason === undefined || input.unavailableReason === null ? null : input.unavailableReason.trim();
+  if (source !== null && !meaningfulString(source)) throw new Error('Usage source must be meaningful when provided.');
+  if (unavailableReason !== null && !meaningfulString(unavailableReason)) throw new Error('Usage unavailable reason must be meaningful when provided.');
+  if (totalTokens === null && estimatedUsd === null && source === null && unavailableReason === null) return null;
+  return {
+    total_tokens: totalTokens,
+    estimated_usd: estimatedUsd,
+    source,
+    unavailable_reason: unavailableReason,
+  };
+}
+
 export function recordEvolutionAttempt(loopDir: string, options: RecordEvolutionAttemptOptions, root = process.cwd()): RecordEvolutionAttemptResult {
   if (!EVOLUTION_DECISIONS.includes(options.decision)) {
     throw new Error(`Unsupported evolution decision: ${options.decision}`);
@@ -1349,6 +1539,8 @@ export function recordEvolutionAttempt(loopDir: string, options: RecordEvolution
   if (options.score !== undefined && (!Number.isFinite(options.score) || options.score < 0 || options.score > 1)) {
     throw new Error('Evolution score must be a finite number between 0 and 1.');
   }
+  const repairHypothesis = normalizeAttemptRepairHypothesis(options.repairHypothesis, options.decision);
+  const usage = normalizeAttemptUsage(options.usage);
   const absoluteLoopDir = isAbsolute(loopDir) ? loopDir : resolve(root, loopDir);
   const loopPath = join(absoluteLoopDir, 'loop.json');
   const attemptsPath = join(absoluteLoopDir, 'attempts.jsonl');
@@ -1395,6 +1587,8 @@ export function recordEvolutionAttempt(loopDir: string, options: RecordEvolution
     rationale: options.rationale,
     evidence_refs: evidenceRefs,
     adapter_receipts: adapterReceiptRefs,
+    ...(repairHypothesis ? { repair_hypothesis: repairHypothesis } : {}),
+    ...(usage ? { usage } : {}),
     boundary: boundary(),
   };
   let frontier: Record<string, unknown> | null = null;
@@ -1457,6 +1651,49 @@ function validateRef(ref: unknown, failures: ValidationIssue[], warnings: Valida
   }
 }
 
+function validateRepairHypothesis(value: unknown, decision: string | null, failures: ValidationIssue[], path: string, attemptLabel: string): void {
+  if (!isRecord(value)) {
+    if (decision === 'retry') {
+      failures.push(issue('fail', 'evolution.attempt.missing_repair_hypothesis', `Retry attempt ${attemptLabel} must record a repair hypothesis before continuing.`, path));
+    }
+    return;
+  }
+  if (!meaningfulString(value.hypothesis)) {
+    failures.push(issue('fail', 'evolution.attempt.invalid_repair_hypothesis', `Attempt ${attemptLabel} repair_hypothesis.hypothesis must be meaningful.`, path));
+  }
+  if (value.target_metric !== undefined && value.target_metric !== null && !meaningfulString(value.target_metric)) {
+    failures.push(issue('fail', 'evolution.attempt.invalid_repair_hypothesis', `Attempt ${attemptLabel} repair_hypothesis.target_metric must be meaningful when present.`, path));
+  }
+  for (const field of ['expected_gain', 'actual_delta']) {
+    const current = value[field];
+    if (current !== undefined && current !== null && (typeof current !== 'number' || !Number.isFinite(current))) {
+      failures.push(issue('fail', 'evolution.attempt.invalid_repair_hypothesis', `Attempt ${attemptLabel} repair_hypothesis.${field} must be a finite number or null.`, path));
+    }
+  }
+}
+
+function validateAttemptUsage(value: unknown, failures: ValidationIssue[], path: string, attemptLabel: string): void {
+  if (value === undefined) return;
+  if (!isRecord(value)) {
+    failures.push(issue('fail', 'evolution.attempt.invalid_usage', `Attempt ${attemptLabel} usage must be an object when present.`, path));
+    return;
+  }
+  const totalTokens = value.total_tokens;
+  if (totalTokens !== undefined && totalTokens !== null && (typeof totalTokens !== 'number' || !Number.isInteger(totalTokens) || totalTokens < 0)) {
+    failures.push(issue('fail', 'evolution.attempt.invalid_usage', `Attempt ${attemptLabel} usage.total_tokens must be a non-negative integer or null.`, path));
+  }
+  const estimatedUsd = value.estimated_usd;
+  if (estimatedUsd !== undefined && estimatedUsd !== null && (typeof estimatedUsd !== 'number' || !Number.isFinite(estimatedUsd) || estimatedUsd < 0)) {
+    failures.push(issue('fail', 'evolution.attempt.invalid_usage', `Attempt ${attemptLabel} usage.estimated_usd must be a non-negative number or null.`, path));
+  }
+  for (const field of ['source', 'unavailable_reason']) {
+    const current = value[field];
+    if (current !== undefined && current !== null && !meaningfulString(current)) {
+      failures.push(issue('fail', 'evolution.attempt.invalid_usage', `Attempt ${attemptLabel} usage.${field} must be meaningful when present.`, path));
+    }
+  }
+}
+
 export function validateEvolutionLoopDir(loopDir: string, root = process.cwd()): ValidationResult {
   const failures: ValidationIssue[] = [];
   const warnings: ValidationIssue[] = [];
@@ -1513,6 +1750,8 @@ export function validateEvolutionLoopDir(loopDir: string, root = process.cwd()):
       const decision = asString(attempt.decision);
       if (!decision || !(EVOLUTION_DECISIONS as readonly string[]).includes(decision)) failures.push(issue('fail', 'evolution.attempt.invalid_decision', `Attempt ${attemptId ?? index + 1} has invalid decision.`, attemptsPath));
       if (!meaningfulString(attempt.rationale)) failures.push(issue('fail', 'evolution.attempt.missing_rationale', `Attempt ${attemptId ?? index + 1} must record a rationale.`, attemptsPath));
+      validateRepairHypothesis(attempt.repair_hypothesis, decision, failures, attemptsPath, attemptId ?? String(index + 1));
+      validateAttemptUsage(attempt.usage, failures, attemptsPath, attemptId ?? String(index + 1));
       validateBoundary(attempt.boundary, failures, attemptsPath, 'evolution.attempt');
       validateRef(attempt.run_packet, failures, warnings, root, attemptsPath, 'evolution.attempt.run_packet');
       if (attempt.evaluation) validateRef(attempt.evaluation, failures, warnings, root, attemptsPath, 'evolution.attempt.evaluation');

@@ -165,7 +165,24 @@ function writePlateauCliLoop() {
   for (const attempt of attempts) {
     const runPath = writeRunPacket(root, attempt.runId);
     const evalPath = writePlateauCliEvaluation(root, attempt.runId, attempt.ac2Status);
-    execFileSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runPath, '--evaluation', evalPath, '--decision', attempt.decision, '--score', attempt.score, '--rationale', attempt.rationale], { cwd: root, encoding: 'utf8' });
+    const args = [cli, 'evolve', 'record', outDir, '--run', runPath, '--evaluation', evalPath, '--decision', attempt.decision, '--score', attempt.score, '--rationale', attempt.rationale];
+    if (attempt.decision === 'retry') {
+      args.push(
+        '--repair-hypothesis',
+        `Repair the remaining failing criterion for ${attempt.runId}.`,
+        '--target-metric',
+        'accepted_ac_count',
+        '--expected-gain',
+        '1',
+        '--actual-delta',
+        '0',
+        '--tokens-total',
+        '1000',
+        '--usage-source',
+        'test fixture',
+      );
+    }
+    execFileSync(tsx, args, { cwd: root, encoding: 'utf8' });
   }
   return { root, outDir };
 }
@@ -292,6 +309,14 @@ describe('osc evolve CLI', () => {
       '../.osc/runs/demo-run/runtime-omx.log',
       '--decision',
       'retry',
+      '--repair-hypothesis',
+      'Record adapter output refs before the next measurable repair.',
+      '--target-metric',
+      'accepted_ac_count',
+      '--expected-gain',
+      '1',
+      '--actual-delta',
+      '0',
       '--rationale',
       'Record runtime OMX adapter output refs.',
     ], { cwd: subdir, encoding: 'utf8' });
@@ -318,6 +343,18 @@ describe('osc evolve CLI', () => {
     expect(result.stderr).toContain('Promotion, rejection, retry, and block decisions require a rationale');
     const frontier = JSON.parse(readFileSync(join(outDir, 'frontier.json'), 'utf8'));
     expect(frontier.current).toBeNull();
+  });
+
+  it('rejects retry without a repair hypothesis instead of appending attempt state', () => {
+    const { root, planPath, runPath } = tempRepo();
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    execFileSync(tsx, [cli, 'evolve', 'init', planPath, '--out', outDir], { cwd: root, encoding: 'utf8' });
+
+    const result = spawnSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runPath, '--decision', 'retry', '--rationale', 'Try again without a measurable repair.'], { cwd: root, encoding: 'utf8' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Retry decisions require a repair hypothesis');
+    expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe('');
   });
 
   it('compares evolution attempts and writes markdown output with acceptance criteria delta', () => {

@@ -115,6 +115,21 @@ function writeEvaluation(root: string, runId = 'demo-run', statuses: Record<stri
   return evalPath;
 }
 
+function retryControl(runId = 'attempt', index = 0) {
+  return {
+    repairHypothesis: {
+      hypothesis: `Repair the remaining failing criterion for ${runId}.`,
+      targetMetric: 'accepted_ac_count',
+      expectedGain: 1,
+      actualDelta: 0,
+    },
+    usage: {
+      totalTokens: 1000 + index,
+      source: 'test fixture',
+    },
+  };
+}
+
 function writeDispatchReceipt(root: string, runId = 'demo-run') {
   const runDir = join(root, `.osc/runs/${runId}`);
   mkdirSync(runDir, { recursive: true });
@@ -207,6 +222,7 @@ function writePlateauLoop() {
       decision: attempt.decision,
       score: attempt.score,
       rationale: attempt.rationale,
+      ...(attempt.decision === 'retry' ? retryControl(attempt.runId, index) : {}),
       now: new Date(`2026-05-31T08:${String(10 + index).padStart(2, '0')}:00.000Z`),
     }, root);
   }
@@ -272,6 +288,7 @@ function writeStaleBlockerLoop() {
       decision: attempt.decision,
       score: 0.7,
       rationale: index === 0 ? 'Initial frontier with old scorer metadata.' : 'Retry plateaued after scorer metadata changed.',
+      ...(attempt.decision === 'retry' ? retryControl(attempt.runId, index) : {}),
       now: new Date(`2026-05-31T10:${String(10 + index).padStart(2, '0')}:00.000Z`),
     }, root);
   }
@@ -297,6 +314,7 @@ function writeMissingCurrentBlockerLoop() {
       decision: attempt.decision,
       score: 0.7,
       rationale: index === 0 ? 'Initial frontier with old scorer metadata.' : 'Retry plateaued after current scorer omitted AC3.',
+      ...(attempt.decision === 'retry' ? retryControl(attempt.runId, index) : {}),
       now: new Date(`2026-05-31T11:${String(10 + index).padStart(2, '0')}:00.000Z`),
     }, root);
   }
@@ -353,6 +371,7 @@ function writeOrdinaryFailureLoop(privateRefs = false) {
       decision: index === 0 ? 'promote' : 'retry',
       score: 0.7,
       rationale: index === 0 ? 'Initial score frontier.' : 'Retry did not move score, but remaining failure is reachable.',
+      ...(index === 0 ? {} : retryControl(runId, index)),
       now: new Date(`2026-05-31T09:${String(10 + index).padStart(2, '0')}:00.000Z`),
     }, root);
   }
@@ -527,6 +546,23 @@ describe('evolution attempt recording and validation', () => {
     expect(frontier.current).toBeNull();
   });
 
+  it('rejects retry attempts without a repair hypothesis before appending attempt state', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root, 'demo-run');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+
+    expect(() => recordEvolutionAttempt(outDir, {
+      runPath,
+      decision: 'retry',
+      rationale: 'Try again with no measurable repair.',
+    }, root)).toThrow(/Retry decisions require a repair hypothesis/);
+    expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe('');
+    const frontier = JSON.parse(readFileSync(join(outDir, 'frontier.json'), 'utf8'));
+    expect(frontier.current).toBeNull();
+  });
+
   it('records adapter receipt and evidence refs on attempts and promoted frontier', () => {
     const root = tempRepo();
     const planPath = writePlan(root);
@@ -579,6 +615,7 @@ describe('evolution attempt recording and validation', () => {
       receiptPaths: [receiptPath],
       decision: 'retry' as const,
       rationale: 'Mismatched adapter receipt should not persist.',
+      ...retryControl('demo-run'),
     };
     expect(() => recordEvolutionAttempt(outDir, options, root)).toThrow(/Dispatch receipt run_id other-run does not match run packet demo-run/);
     expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe('');
@@ -601,6 +638,7 @@ describe('evolution attempt recording and validation', () => {
       evidencePaths: [privateRef],
       decision: 'retry' as const,
       rationale: 'Private adapter refs should not persist.',
+      ...retryControl('demo-run'),
     };
     expect(() => recordEvolutionAttempt(outDir, options, root)).toThrow(/private\/internal workspace state/);
     expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe('');
@@ -626,6 +664,40 @@ describe('evolution attempt recording and validation', () => {
     expect(result.failures.map((failure) => failure.code)).toContain('evolution.source_ref.private_path');
     expect(result.failures.map((failure) => failure.code)).toContain('evolution.attempt.duplicate_id');
   });
+
+  it('validates retry repair-hypothesis and usage fields in hand-written attempt journals', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root);
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+    const relRunPath = runPath.replace(`${root}/`, '');
+    writeFileSync(join(outDir, 'attempts.jsonl'), `${JSON.stringify({
+      schema: 'open-scaffold.evolution-attempt.v1',
+      attempt_id: 'demo-run',
+      recorded_at: '2026-05-21T08:10:00.000Z',
+      run_id: 'demo-run',
+      task_id: 'task-123',
+      run_packet: relRunPath,
+      decision: 'retry',
+      score: 0.4,
+      rationale: 'Manual retry record.',
+      usage: { total_tokens: -1, estimated_usd: -0.01, source: '' },
+      boundary: {
+        runtime_spawning: false,
+        model_benchmarking: false,
+        compliance_certification: false,
+        approval_or_release_decision: false,
+        external_anchoring: false,
+      },
+    })}\n`);
+
+    const result = validateEvolutionLoopDir(outDir, root);
+
+    expect(result.ok).toBe(false);
+    expect(result.failures.map((failure) => failure.code)).toContain('evolution.attempt.missing_repair_hypothesis');
+    expect(result.failures.map((failure) => failure.code)).toContain('evolution.attempt.invalid_usage');
+  });
 });
 
 describe('evolution analysis', () => {
@@ -642,6 +714,8 @@ describe('evolution analysis', () => {
 
     expect(analysis.loop).toMatchObject({ loopDir: 'plateau-loop', attemptCount: 4 });
     expect(analysis.plateau).toMatchObject({ status: 'plateau', noImprovementCount: 2, currentScore: 0.944893 });
+    expect(analysis.currentAttempt.repairHypothesis).toMatchObject({ targetMetric: 'accepted_ac_count', expectedGain: 1, actualDelta: 0 });
+    expect(analysis.currentAttempt.usage).toMatchObject({ totalTokens: 1003, source: 'test fixture' });
     expect(analysis.acceptanceSummary).toMatchObject({ currentPass: 2, currentTotal: 3, frontierPass: 2, frontierTotal: 3 });
     expect(analysis.currentVsPrevious.rows.find((row) => row.id === 'AC3')).toMatchObject({ previousStatus: 'fail', currentStatus: 'fail' });
     expect(analysis.currentVsFrontier.rows.find((row) => row.id === 'AC2')).toMatchObject({ frontierStatus: 'pass', currentStatus: 'pass' });
@@ -661,11 +735,15 @@ describe('evolution analysis', () => {
 
     const terminal = renderEvolutionAnalysis(analysis, 'terminal');
     expect(terminal).toContain('Plateau: plateau — 2 attempt(s) since last score improvement');
+    expect(terminal).toContain('Current attempt control');
+    expect(terminal).toContain('Token cost: 1,003');
     expect(terminal).toContain('AC3: fail | sensitivity=none | impossible=probe_only');
     expect(terminal).toContain('Recommendation: redesign');
 
     const markdown = renderEvolutionAnalysis(analysis, 'markdown');
     expect(markdown).toContain('# Evolution analysis: plateau-loop');
+    expect(markdown).toContain('## Current attempt control');
+    expect(markdown).toContain('- Target metric: accepted_ac_count');
     expect(markdown).toContain('## Current vs frontier AC delta');
     expect(markdown).toContain('| AC3 — Third criterion is probe-only for the current artifact shape. | ✗ fail | ✗ fail |');
     expect(markdown).toContain('## Recommendation');
@@ -852,6 +930,43 @@ describe('evolution comparison rendering', () => {
     expect(markdown).toContain('| AC2 — Frontier promotion is explicit. | ✗ fail | ✓ pass ▲ |');
     expect(terminal).toContain('Acceptance criteria delta');
     expect(terminal).toContain('AC2: A=fail | B=pass ▲ — Frontier promotion is explicit.');
+  });
+
+  it('renders repair hypothesis and usage when comparing controlled attempts', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runA = writeRunPacket(root, 'attempt-a');
+    const runB = writeRunPacket(root, 'attempt-b');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z'), strategy: 'greedy' });
+    recordEvolutionAttempt(outDir, {
+      runPath: runA,
+      decision: 'promote',
+      score: 0.62,
+      rationale: 'Initial frontier.',
+      usage: { totalTokens: 500, source: 'test fixture' },
+      now: new Date('2026-05-21T08:10:00.000Z'),
+    }, root);
+    recordEvolutionAttempt(outDir, {
+      runPath: runB,
+      decision: 'retry',
+      score: 0.62,
+      rationale: 'Retry with an explicit parser hypothesis.',
+      ...retryControl('attempt-b', 7),
+      now: new Date('2026-05-21T08:20:00.000Z'),
+    }, root);
+
+    const comparison = compareEvolutionLoop(outDir, { a: 'attempt-a', b: 'attempt-b' }, root);
+    const terminal = renderEvolutionComparison(comparison, 'terminal');
+    const markdown = renderEvolutionComparison(comparison, 'markdown');
+    const json = JSON.parse(renderEvolutionComparison(comparison, 'json'));
+
+    expect(terminal).toContain('Target metric: A=— | B=accepted_ac_count');
+    expect(terminal).toContain('Token cost: A=500 | B=1,007 | Δ=+507 ▲');
+    expect(markdown).toContain('| Token cost | 500 | 1,007 | +507 ▲ |');
+    expect(markdown).toContain('| Target metric | — | accepted_ac_count | changed |');
+    expect(json.b.repairHypothesis).toMatchObject({ targetMetric: 'accepted_ac_count', expectedGain: 1 });
+    expect(json.b.usage).toMatchObject({ totalTokens: 1007, source: 'test fixture' });
   });
 
   it('resolves compare evaluation refs from the loop scaffold root instead of caller cwd', () => {
@@ -1059,7 +1174,7 @@ describe('evolution comparison rendering', () => {
     const outDir = join(root, '.osc/evolution/demo-loop');
     writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
     recordEvolutionAttempt(outDir, { runPath: runA, decision: 'reject', score: 0.25, rationale: 'Rejected first.', now: new Date('2026-05-21T08:10:00.000Z') }, root);
-    recordEvolutionAttempt(outDir, { runPath: runB, decision: 'retry', score: 0.4, rationale: 'Needs another attempt.', now: new Date('2026-05-21T08:20:00.000Z') }, root);
+    recordEvolutionAttempt(outDir, { runPath: runB, decision: 'retry', score: 0.4, rationale: 'Needs another attempt.', ...retryControl('attempt-b'), now: new Date('2026-05-21T08:20:00.000Z') }, root);
 
     const comparison = compareEvolutionLoop(outDir, {}, root);
 

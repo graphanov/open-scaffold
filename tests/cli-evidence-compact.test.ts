@@ -104,6 +104,18 @@ function writeLoop(root: string, runPath: string, evalPath: string) {
     adapter_receipts: [],
     decision: 'retry',
     score: 0.5,
+    repair_hypothesis: {
+      hypothesis: 'Repair AC2 before another attempt.',
+      target_metric: 'accepted_ac_count',
+      expected_gain: 1,
+      actual_delta: 0,
+    },
+    usage: {
+      total_tokens: 1000,
+      estimated_usd: null,
+      source: 'test fixture',
+      unavailable_reason: null,
+    },
     rationale: 'AC2 remains failed.',
   })}\n${JSON.stringify({
     schema: 'open-scaffold.evolution-attempt.v1',
@@ -335,6 +347,12 @@ describe('osc evidence compact', () => {
       adapter_receipts: [],
       decision: 'retry',
       score: 0.5,
+      repair_hypothesis: {
+        hypothesis: 'Repair AC2 before another attempt.',
+        target_metric: 'accepted_ac_count',
+        expected_gain: 1,
+        actual_delta: 0,
+      },
       rationale: 'AC2 remains failed.',
     })}\n`);
 
@@ -374,6 +392,12 @@ describe('osc evidence compact', () => {
         adapter_receipts: [],
         decision: 'retry',
         score: 0.5,
+        repair_hypothesis: {
+          hypothesis: 'Repair AC2 before another attempt.',
+          target_metric: 'accepted_ac_count',
+          expected_gain: 1,
+          actual_delta: 0,
+        },
         rationale: 'AC2 remains failed.',
       })}\n`);
 

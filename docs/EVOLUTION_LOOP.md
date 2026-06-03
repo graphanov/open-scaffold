@@ -57,12 +57,20 @@ osc evolve record .osc/evolution/demo-loop \
   --receipt .osc/runs/demo-run/dispatch-receipt.json \
   --evidence .osc/runs/demo-run/runtime-omx-evidence.md \
   --evidence .osc/runs/demo-run/runtime-omx.log \
-  --decision promote \
+  --decision retry \
   --score 0.93 \
-  --rationale "Best evidence so far."
+  --repair-hypothesis "Replace brittle parser branch with tokenized row scan so malformed rows report row and column." \
+  --target-metric "accepted_ac_count" \
+  --expected-gain 1 \
+  --actual-delta 0 \
+  --tokens-total 89542 \
+  --usage-source "runtime stderr" \
+  --rationale "Retry because AC2 still fails and the next attempt has a measurable parser hypothesis."
 ```
 
 `--receipt` is specialized for `open-scaffold.dispatch-receipt.v1` dispatch receipts and must match the run packet `run_id`. `--evidence` is repeatable for curated repo-local adapter evidence or logs. Missing refs, outside-repo refs, and private/internal refs are rejected before the attempt journal or frontier is mutated.
+
+`retry` is a continue decision, so it must record a concrete `--repair-hypothesis` before the next attempt. `--target-metric`, `--expected-gain`, `--actual-delta`, and usage fields are optional but should be filled when known. Usage numbers are receipts, not score. If only total tokens are reliable, record only `--tokens-total`; do not invent input/output/cache/reasoning splits or dollar cost.
 
 Check loop structure:
 
@@ -78,7 +86,7 @@ osc evolve analyze .osc/evolution/demo-loop --format json
 osc evolve analyze .osc/evolution/demo-loop --format markdown --out docs/evidence/evolution-analysis.md
 ```
 
-`osc evolve analyze` reads `loop.json`, `attempts.jsonl`, `frontier.json`, and linked evaluation envelopes. It reports plateau/stagnation, current-vs-previous and current-vs-frontier acceptance-criteria deltas, observed score sensitivity, criteria flagged as probe-only / hardcoded non-pass / skipped / stale / impossible, and a next-action recommendation: `continue`, `stop`, `redesign`, or `inspect_scorer`. Criterion-level hints can come from evaluation/scorer metadata such as `analysis.score_sensitivity`, `analysis.impossible`, `analysis.reason`, and `analysis.source`, or from explicit evidence/rationale wording.
+`osc evolve analyze` reads `loop.json`, `attempts.jsonl`, `frontier.json`, and linked evaluation envelopes. It reports plateau/stagnation, current-vs-previous and current-vs-frontier acceptance-criteria deltas, observed score sensitivity, criteria flagged as probe-only / hardcoded non-pass / skipped / stale / impossible, the current attempt's repair hypothesis and usage, and a next-action recommendation: `continue`, `stop`, `redesign`, or `inspect_scorer`. Criterion-level hints can come from evaluation/scorer metadata such as `analysis.score_sensitivity`, `analysis.impossible`, `analysis.reason`, and `analysis.source`, or from explicit evidence/rationale wording.
 
 The analysis command is a decision aid. It does not mutate loop files unless `--out` is supplied for a rendered report, and even then it writes only the requested report path. It does not spawn runtimes, rerun benchmarks, rank models, certify compliance, promote a frontier, or approve work.
 
@@ -105,7 +113,7 @@ osc evidence compact .osc/runs/demo-run/run.json \
 
 `osc evidence compact` writes `compact-evidence.md` and `compact-evidence.json` when `--out` is supplied. The summary keeps objective, run/attempt ids, evaluation status counts, failed criteria, verification commands, decision, and next recommendation visible. Raw logs, JSONL transcripts, private runtime state, and local absolute paths are not embedded; local files are represented as safe repo-relative labels plus SHA-256 digests when available. `--candidate-note` refs are marked `canonical=false` and do not rewrite `attempts.jsonl` or `frontier.json`.
 
-`osc evolve` does not create a run, launch a runtime, call an LLM, publish benchmark rankings, certify compliance, approve a merge, or decide product taste. It only records and analyzes curated loop state.
+`osc evolve` does not create a run, launch a runtime, call an LLM, publish benchmark rankings, certify compliance, approve a merge, or decide product taste. It does not make a model smarter. It only records and analyzes curated loop state so recoverability, control, handoff, governance, and efficiency can be inspected instead of assumed.
 
 ## See it in one screen
 
