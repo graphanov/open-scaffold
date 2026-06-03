@@ -57,6 +57,22 @@ const localModuleIndexExtensions = ['index.mjs', 'index.js', 'index.cjs', 'index
 const localModuleSpecifierPattern = /\b(?:import|export)\s+(?:[^'"()]*?\s+from\s+)?['"]([^'"]+)['"]|\b(?:require|import)\(\s*['"]([^'"]+)['"]\s*\)/g;
 const pathOperandFlags = new Set(['--require', '-r', '--import', '--loader', '--experimental-loader', '--config', '--config-file', '--hook', '--preload']);
 
+function commandEntryLooksLikePythonExecutable(entry: string): boolean {
+  const command = basename(entry).toLowerCase().replace(/\.exe$/, '');
+  return command === 'py' || command === 'python' || /^python\d+(?:\.\d+)?$/.test(command);
+}
+
+function commandEntryIsPythonModuleMode(command: unknown[], index: number): boolean {
+  if (command[index] !== '-m') return false;
+  for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
+    const previousEntry = command[previousIndex];
+    if (typeof previousEntry !== 'string' || !previousEntry.trim()) continue;
+    if (previousEntry.startsWith('-')) continue;
+    return commandEntryLooksLikePythonExecutable(previousEntry);
+  }
+  return false;
+}
+
 function commandFlagTakesPathOperand(entry: string): boolean {
   return pathOperandFlags.has(entry);
 }
@@ -112,11 +128,7 @@ function resolveLocalModule(fromFile: string, specifier: string): string | null 
   return null;
 }
 
-function resolveLocalPythonModule(fromFile: string, specifier: string): string | null {
-  const fromDir = dirname(fromFile);
-  const normalizedSpecifier = specifier.replace(/^\.+/, '');
-  if (!normalizedSpecifier) return null;
-  const base = resolve(fromDir, ...normalizedSpecifier.split('.'));
+function resolveLocalPythonModuleBase(base: string): string | null {
   const moduleFile = `${base}.py`;
   if (existsSync(moduleFile) && statSync(moduleFile).isFile()) return moduleFile;
   const packageInit = resolve(base, '__init__.py');
@@ -124,16 +136,37 @@ function resolveLocalPythonModule(fromFile: string, specifier: string): string |
   return null;
 }
 
+function resolvePythonModuleFromRoot(root: string, specifier: string): string | null {
+  const normalizedSpecifier = specifier.replace(/^\.+/, '');
+  if (!normalizedSpecifier) return null;
+  return resolveLocalPythonModuleBase(resolve(root, ...normalizedSpecifier.split('.')));
+}
+
+function resolveLocalPythonModule(root: string, fromFile: string, specifier: string): string | null {
+  const normalizedSpecifier = specifier.replace(/^\.+/, '');
+  if (!normalizedSpecifier) return null;
+  const fromDir = dirname(fromFile);
+  for (const base of [resolve(fromDir, ...normalizedSpecifier.split('.')), resolve(root, ...normalizedSpecifier.split('.'))]) {
+    const resolvedModule = resolveLocalPythonModuleBase(base);
+    if (resolvedModule) return resolvedModule;
+  }
+  return null;
+}
+
+function pythonImportedModuleSpecifier(moduleName: string, importedName: string): string {
+  return `${moduleName}${moduleName.endsWith('.') ? '' : '.'}${importedName}`;
+}
+
 function localPythonDependencySpecifiers(content: string): string[] {
   const specifiers: string[] = [];
   for (const line of content.split(/\r?\n/)) {
-    const fromMatch = line.match(/^\s*from\s+([.]?[A-Za-z_][A-Za-z0-9_.]*)\s+import\s+(.+)$/);
+    const fromMatch = line.match(/^\s*from\s+([A-Za-z_.][A-Za-z0-9_.]*)\s+import\s+(.+)$/);
     if (fromMatch) {
       const moduleName = fromMatch[1]!;
       specifiers.push(moduleName);
       for (const importedName of fromMatch[2]!.split(',')) {
         const name = importedName.trim().split(/\s+as\s+/i)[0]?.trim();
-        if (name && name !== '*' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) specifiers.push(`${moduleName}.${name}`);
+        if (name && name !== '*' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) specifiers.push(pythonImportedModuleSpecifier(moduleName, name));
       }
       continue;
     }
@@ -157,8 +190,8 @@ function localDependencySpecifiers(file: string, content: string): string[] {
   return specifiers;
 }
 
-function resolveLocalDependency(fromFile: string, specifier: string): string | null {
-  if (/\.py$/i.test(fromFile)) return resolveLocalPythonModule(fromFile, specifier);
+function resolveLocalDependency(root: string, fromFile: string, specifier: string): string | null {
+  if (/\.py$/i.test(fromFile)) return resolveLocalPythonModule(root, fromFile, specifier);
   return resolveLocalModule(fromFile, specifier);
 }
 
@@ -169,7 +202,7 @@ function addAdapterDependencyFiles(root: string, file: string, files: Set<string
   files.add(trustedFile);
   const content = readFileSync(trustedFile, 'utf8');
   for (const specifier of localDependencySpecifiers(trustedFile, content)) {
-    const dependency = resolveLocalDependency(trustedFile, specifier);
+    const dependency = resolveLocalDependency(root, trustedFile, specifier);
     if (dependency) addAdapterDependencyFiles(root, dependency, files, seen);
   }
 }
@@ -191,6 +224,13 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
     const nextEntry = parsed.command[index + 1];
     if (commandFlagTakesPathOperand(entry) && typeof nextEntry === 'string' && nextEntry.trim() && !nextEntry.startsWith('-')) {
       candidates.push({ path: isAbsolute(nextEntry) ? resolve(nextEntry) : resolve(root, nextEntry), required: true });
+    }
+    if (commandEntryIsPythonModuleMode(parsed.command, index) && typeof nextEntry === 'string' && nextEntry.trim() && !nextEntry.startsWith('-')) {
+      const moduleEntrypoint = resolvePythonModuleFromRoot(realRoot, nextEntry);
+      if (!moduleEntrypoint) {
+        throw new AdapterTrustError('Adapter command references a Python module entrypoint that is not a repo-local file under the scaffold root. Use a repo-local script/module before trusting.');
+      }
+      candidates.push({ path: moduleEntrypoint, required: true });
     }
     for (const candidate of candidates) {
       if (candidate.required && !existsSync(candidate.path)) {

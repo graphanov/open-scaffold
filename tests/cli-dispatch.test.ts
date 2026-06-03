@@ -279,6 +279,29 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('invalidates trust when Python module-mode adapter entrypoints change', () => {
+    const root = tempRepo();
+    try {
+      const moduleDir = join(root, 'adapter_pkg');
+      mkdirSync(moduleDir, { recursive: true });
+      writeFileSync(join(moduleDir, '__init__.py'), "# adapter package\n");
+      writeFileSync(join(moduleDir, 'helper.py'), "MARKER = 'trusted-module-helper'\n");
+      writeFileSync(join(moduleDir, 'runner.py'), "import helper\nprint(helper.MARKER)\n");
+      writeAdapterConfig(root, 'python-module-runner', ['python3', '-m', 'adapter_pkg.runner']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-module-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(moduleDir, 'runner.py'), "import helper\nprint('changed module entrypoint')\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-module-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('invalidates trust when extension-resolved required preload files change', () => {
     const root = tempRepo();
     try {
