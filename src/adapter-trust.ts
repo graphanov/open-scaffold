@@ -123,6 +123,20 @@ function commandEntryIsRepoLocalPath(root: string, realRoot: string, entry: stri
   return isInsideOrSame(realRoot, resolvedCandidate);
 }
 
+function adapterEnvPathCommandCandidates(root: string, realRoot: string, env: unknown, entry: string): Array<{ path: string; required: boolean }> {
+  if (commandEntryLooksLikePath(entry) || !env || typeof env !== 'object') return [];
+  const pathValue = (env as { PATH?: unknown }).PATH;
+  if (typeof pathValue !== 'string' || !pathValue.trim()) return [];
+  const candidates: Array<{ path: string; required: boolean }> = [];
+  for (const segment of pathValue.split(/[:;]/)) {
+    if (!segment.trim()) continue;
+    const directory = isAbsolute(segment) ? resolve(segment) : resolve(root, segment);
+    const candidate = resolve(directory, entry);
+    if (existsSync(candidate) && commandEntryIsRepoLocalPath(root, realRoot, candidate)) candidates.push({ path: candidate, required: true });
+  }
+  return candidates;
+}
+
 function localPathResolutionCandidates(file: string): string[] {
   const candidates: string[] = [];
   for (const extension of localModuleExtensions) {
@@ -308,9 +322,9 @@ function addAdapterDependencyFiles(root: string, file: string, files: Set<string
 
 function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
   const realRoot = realpathSync.native(root);
-  let parsed: { command?: unknown };
+  let parsed: { command?: unknown; env?: unknown };
   try {
-    parsed = JSON.parse(rawConfig.toString('utf8')) as { command?: unknown };
+    parsed = JSON.parse(rawConfig.toString('utf8')) as { command?: unknown; env?: unknown };
   } catch {
     return [];
   }
@@ -320,7 +334,7 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
     const entry = parsed.command[index];
     if (typeof entry !== 'string' || !entry.trim()) continue;
     const skipTrustedExternalInterpreter = index === 0 && commandEntryLooksLikeTrustedInterpreterExecutable(entry) && !commandEntryIsRepoLocalPath(root, realRoot, entry);
-    const candidates = skipTrustedExternalInterpreter ? [] : commandEntryPathCandidates(root, entry);
+    const candidates = skipTrustedExternalInterpreter ? adapterEnvPathCommandCandidates(root, realRoot, parsed.env, entry) : commandEntryPathCandidates(root, entry);
     const nextEntry = parsed.command[index + 1];
     if (commandFlagTakesPathOperand(entry) && typeof nextEntry === 'string' && nextEntry.trim() && !nextEntry.startsWith('-')) {
       candidates.push({ path: isAbsolute(nextEntry) ? resolve(nextEntry) : resolve(root, nextEntry), required: true });
