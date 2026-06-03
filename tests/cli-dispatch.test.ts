@@ -275,6 +275,12 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('uses the platform PATH delimiter when inspecting adapter-provided PATH values', () => {
+    const source = readFileSync(join(repoRoot, 'src/adapter-trust.ts'), 'utf8');
+    expect(source).toContain("pathValue.split(delimiter)");
+    expect(source).not.toContain("pathValue.split(/[:;]/)");
+  });
+
   it('invalidates trust when Python adapter helper files change', () => {
     const root = tempRepo();
     try {

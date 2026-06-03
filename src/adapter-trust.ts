@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
-import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { basename, delimiter, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { findScaffoldRoot } from './scaffold.js';
 
 export class AdapterTrustError extends Error {}
@@ -128,7 +128,7 @@ function adapterEnvPathCommandCandidates(root: string, realRoot: string, env: un
   const pathValue = (env as { PATH?: unknown }).PATH;
   if (typeof pathValue !== 'string' || !pathValue.trim()) return [];
   const candidates: Array<{ path: string; required: boolean }> = [];
-  for (const segment of pathValue.split(/[:;]/)) {
+  for (const segment of pathValue.split(delimiter)) {
     if (!segment.trim()) continue;
     const directory = isAbsolute(segment) ? resolve(segment) : resolve(root, segment);
     const candidate = resolve(directory, entry);
