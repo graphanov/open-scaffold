@@ -7,6 +7,7 @@ import type { ValidationIssue, ValidationResult } from './validation.js';
 export const EVOLUTION_LOOP_SCHEMA = 'open-scaffold.evolution-loop.v1';
 export const EVOLUTION_ATTEMPT_SCHEMA = 'open-scaffold.evolution-attempt.v1';
 export const EVOLUTION_FRONTIER_SCHEMA = 'open-scaffold.evolution-frontier.v1';
+export const EVOLUTION_NEXT_ACTION_PACKET_SCHEMA = 'open-scaffold.evolution-next-action-packet.v1';
 const RUN_SCHEMA = 'open-scaffold.run.v1';
 const EVALUATION_SCHEMA = 'open-scaffold.evaluation.v1';
 const DISPATCH_RECEIPT_SCHEMA = 'open-scaffold.dispatch-receipt.v1';
@@ -990,6 +991,49 @@ export interface EvolutionAnalysisCriterion {
   evidence: string[];
 }
 
+export interface EvolutionNextActionPacket {
+  schema: typeof EVOLUTION_NEXT_ACTION_PACKET_SCHEMA;
+  loop: { loopDir: string; loopId: string | null; objective: string | null };
+  recommendedAction: EvolutionAnalysisRecommendationAction;
+  summary: string;
+  reasons: string[];
+  resumeFrom: {
+    currentAttemptId: string | null;
+    currentRunId: string | null;
+    currentEvaluation: string | null;
+    frontierAttemptId: string | null;
+    frontierRunId: string | null;
+  };
+  plateau: {
+    status: EvolutionPlateauStatus;
+    noImprovementCount: number;
+    currentScore: number | null;
+    bestScore: number | null;
+  };
+  acceptance: {
+    currentPass: number;
+    currentTotal: number;
+    remainingFailures: Array<{
+      id: string;
+      text: string;
+      status: string | null;
+      sensitivity: EvolutionCriterionSensitivity;
+      impossible: boolean;
+      reasons: string[];
+      evidence: string[];
+    }>;
+  };
+  currentAttemptControl: {
+    repairHypothesis: EvolutionAttemptRepairHypothesis | null;
+    usage: EvolutionAttemptUsageSummary | null;
+    budgetWarning: string | null;
+  };
+  requiredNextFields: string[];
+  handoffChecklist: string[];
+  evidenceRefs: string[];
+  boundaryNotes: string[];
+}
+
 export interface EvolutionAnalysisResult {
   kind: 'analysis';
   loop: { loopDir: string; loopId: string | null; objective: string | null; strategy: string | null; attemptCount: number };
@@ -1002,6 +1046,7 @@ export interface EvolutionAnalysisResult {
   currentVsPrevious: { present: boolean; previousAttemptId: string | null; currentAttemptId: string | null; rows: EvolutionAnalysisDeltaRow[] };
   currentVsFrontier: { present: boolean; frontierAttemptId: string | null; currentAttemptId: string | null; rows: EvolutionAnalysisDeltaRow[] };
   recommendation: { action: EvolutionAnalysisRecommendationAction; summary: string; reasons: string[] };
+  nextActionPacket: EvolutionNextActionPacket;
   notes: string[];
 }
 
@@ -1064,6 +1109,37 @@ function collectEvidenceRefsFromCriterion(criterion: Record<string, unknown>, an
   return uniqueRefs(refs.filter((ref): ref is string => Boolean(ref && ref.trim() && isAnalysisRefSafe(ref))));
 }
 
+function localAnalysisRef(root: string, ref: string): { path: string; ref: string } | null {
+  if (/^[a-z]+:\/\//i.test(ref)) return null;
+  if (ref.startsWith('~')) return null;
+  const realRoot = rootRealpath(root);
+  if (isAbsolute(ref) || win32.isAbsolute(ref)) {
+    const absolute = resolve(ref);
+    const comparablePath = existsSync(absolute) ? realpathSync(absolute) : absolute;
+    if (!isInsideRoot(realRoot, comparablePath)) return null;
+    const rel = toPosix(relative(realRoot, comparablePath));
+    if (isPrivatePath(rel)) return null;
+    return { path: comparablePath, ref: rel };
+  }
+  if (!isAnalysisRefSafe(ref)) return null;
+  const safeRef = toPosix(ref).replace(/^\.\//, '');
+  const absolute = resolve(realRoot, safeRef);
+  const comparablePath = existsSync(absolute) ? realpathSync(absolute) : absolute;
+  if (!isInsideRoot(realRoot, comparablePath)) return null;
+  const rel = existsSync(absolute) ? toPosix(relative(realRoot, comparablePath)) : safeRef;
+  if (isPrivatePath(rel)) return null;
+  return { path: comparablePath, ref: rel };
+}
+
+function analysisEvaluationPath(root: string, evaluationRef: string): string | null {
+  return localAnalysisRef(root, evaluationRef)?.path ?? null;
+}
+
+function safeAnalysisOutputRef(root: string, ref: string): string | null {
+  if (/^https?:\/\//i.test(ref)) return ref;
+  return localAnalysisRef(root, ref)?.ref ?? null;
+}
+
 function metadataForCriterion(criterion: Record<string, unknown>): { impossible: boolean; reasons: string[]; evidence: string[]; sensitivityOverride: EvolutionCriterionSensitivity | null } {
   const analysis = isRecord(criterion.analysis) ? criterion.analysis : {};
   const reasons = new Set<string>();
@@ -1104,7 +1180,8 @@ function metadataForCriterion(criterion: Record<string, unknown>): { impossible:
 
 function readEvaluationCriteriaForAnalysis(root: string, evaluationRef: string | null): EvolutionAnalysisCriterionSnapshot[] {
   if (!evaluationRef) return [];
-  const evaluationPath = isAbsolute(evaluationRef) || win32.isAbsolute(evaluationRef) ? evaluationRef : resolve(root, evaluationRef);
+  const evaluationPath = analysisEvaluationPath(root, evaluationRef);
+  if (!evaluationPath) return [];
   try {
     const parsed = readJson(evaluationPath);
     if (!isRecord(parsed) || parsed.schema !== EVALUATION_SCHEMA) return [];
@@ -1221,13 +1298,13 @@ function inferObservedSensitivity(id: string, attempts: EvolutionCompareAttempt[
   return null;
 }
 
-function attemptSummary(attempt: EvolutionCompareAttempt | null) {
+function attemptSummary(root: string, attempt: EvolutionCompareAttempt | null) {
   return {
     attemptId: attempt?.attemptId ?? null,
     runId: attempt?.runId ?? null,
     decision: attempt?.decision ?? null,
     score: attempt?.score ?? null,
-    evaluation: attempt?.evaluation ?? null,
+    evaluation: attempt?.evaluation ? safeAnalysisOutputRef(root, attempt.evaluation) : null,
     repairHypothesis: attempt?.repairHypothesis ?? null,
     usage: attempt?.usage ?? null,
   };
@@ -1261,6 +1338,153 @@ function recommendAnalysis(plateau: EvolutionAnalysisResult['plateau'], criteria
     return { action: 'inspect_scorer', summary: 'Latest score is below the best recorded score; inspect scorer/evidence before continuing.', reasons: ['score_regressed'] };
   }
   return { action: 'continue', summary: 'Score or acceptance-criteria evidence is still moving; one more bounded attempt may be useful.', reasons: ['still_moving'] };
+}
+
+function requiredNextFieldsForAction(action: EvolutionAnalysisRecommendationAction): string[] {
+  switch (action) {
+    case 'stop':
+      return [
+        'human_approval_or_closeout_decision',
+        'closeout_verification_evidence',
+        'next_slice_or_done_routing',
+      ];
+    case 'redesign':
+      return [
+        'redesigned_criterion_scorer_or_artifact_shape',
+        'measurable_repair_hypothesis_before_retry',
+        'target_metric',
+        'expected_gain',
+        'usage_receipt_or_unavailable_reason',
+      ];
+    case 'inspect_scorer':
+      return [
+        'current_evaluation_or_scorer_inspection',
+        'score_sensitivity_or_impossibility_metadata',
+        'measurable_repair_hypothesis_before_retry',
+        'usage_receipt_or_unavailable_reason',
+      ];
+    case 'continue':
+      return [
+        'measurable_repair_hypothesis',
+        'target_metric',
+        'expected_gain',
+        'next_evaluation_envelope',
+        'usage_receipt_or_unavailable_reason',
+      ];
+  }
+}
+
+function budgetWarningForAttempt(attempt: EvolutionAnalysisResult['currentAttempt'], action: EvolutionAnalysisRecommendationAction): string | null {
+  const tokens = attempt.usage?.totalTokens ?? null;
+  if (tokens === null) return null;
+  const actualDelta = attempt.repairHypothesis?.actualDelta ?? null;
+  if ((action === 'redesign' || action === 'inspect_scorer') && actualDelta === 0) {
+    return `Last recorded attempt spent ${formatInteger(tokens)} token(s) for actual delta 0; do not spend another retry without new measurable control evidence.`;
+  }
+  if (action === 'continue') return `Record whether the next attempt beats the current ${formatInteger(tokens)} token cost for the target metric.`;
+  return null;
+}
+
+function handoffChecklistForAction(action: EvolutionAnalysisRecommendationAction, remainingFailures: EvolutionNextActionPacket['acceptance']['remainingFailures']): string[] {
+  const remaining = remainingFailures.length > 0 ? `Carry forward remaining failing criteria: ${remainingFailures.map((criterion) => criterion.id).join(', ')}.` : 'No current failing criteria are recorded.';
+  switch (action) {
+    case 'stop':
+      return [
+        'Stop retrying this loop unless a human rejects closeout evidence.',
+        'Route to human approval/closeout; frontier score is not acceptance approval.',
+        remaining,
+      ];
+    case 'redesign':
+      return [
+        'Do not record another blind retry against the same criterion/scorer/artifact shape.',
+        'Create or amend the next slice around the redesign before spending another attempt.',
+        remaining,
+      ];
+    case 'inspect_scorer':
+      return [
+        'Inspect scorer/evaluation coverage before recording another attempt.',
+        'Add explicit score-sensitivity, stale, skipped, probe-only, or impossible metadata where evidence supports it.',
+        remaining,
+      ];
+    case 'continue':
+      return [
+        'Run at most one bounded next attempt unless fresh evidence changes the stop condition.',
+        'Record repair hypothesis, target metric, expected gain, actual delta, and usage receipt.',
+        remaining,
+      ];
+  }
+}
+
+function buildNextActionPacket(
+  root: string,
+  loop: EvolutionAnalysisResult['loop'],
+  plateau: EvolutionAnalysisResult['plateau'],
+  currentAttempt: EvolutionAnalysisResult['currentAttempt'],
+  frontierAttempt: EvolutionAnalysisResult['frontierAttempt'],
+  acceptanceSummary: EvolutionAnalysisResult['acceptanceSummary'],
+  criteria: EvolutionAnalysisCriterion[],
+  recommendation: EvolutionAnalysisResult['recommendation'],
+): EvolutionNextActionPacket {
+  const remainingFailures = criteria
+    .filter((criterion) => criterion.currentStatus !== 'pass')
+    .map((criterion) => ({
+      id: criterion.id,
+      text: criterion.text,
+      status: criterion.currentStatus ?? 'missing_current',
+      sensitivity: criterion.sensitivity,
+      impossible: criterion.impossible,
+      reasons: criterion.reasons,
+      evidence: criterion.evidence,
+    }));
+  const evidenceRefs = uniqueRefs([
+    currentAttempt.evaluation,
+    ...remainingFailures.flatMap((criterion) => criterion.evidence),
+  ].flatMap((ref) => {
+    if (!ref || !ref.trim()) return [];
+    const safe = safeAnalysisOutputRef(root, ref);
+    return safe ? [safe] : [];
+  }));
+  return {
+    schema: EVOLUTION_NEXT_ACTION_PACKET_SCHEMA,
+    loop: {
+      loopDir: loop.loopDir,
+      loopId: loop.loopId,
+      objective: loop.objective,
+    },
+    recommendedAction: recommendation.action,
+    summary: recommendation.summary,
+    reasons: recommendation.reasons,
+    resumeFrom: {
+      currentAttemptId: currentAttempt.attemptId,
+      currentRunId: currentAttempt.runId,
+      currentEvaluation: currentAttempt.evaluation,
+      frontierAttemptId: frontierAttempt.attemptId,
+      frontierRunId: frontierAttempt.runId,
+    },
+    plateau: {
+      status: plateau.status,
+      noImprovementCount: plateau.noImprovementCount,
+      currentScore: plateau.currentScore,
+      bestScore: plateau.bestScore,
+    },
+    acceptance: {
+      currentPass: acceptanceSummary.currentPass,
+      currentTotal: acceptanceSummary.currentTotal,
+      remainingFailures,
+    },
+    currentAttemptControl: {
+      repairHypothesis: currentAttempt.repairHypothesis,
+      usage: currentAttempt.usage,
+      budgetWarning: budgetWarningForAttempt(currentAttempt, recommendation.action),
+    },
+    requiredNextFields: requiredNextFieldsForAction(recommendation.action),
+    handoffChecklist: handoffChecklistForAction(recommendation.action, remainingFailures),
+    evidenceRefs,
+    boundaryNotes: [
+      'This packet is handoff/decision support only; it does not spawn runtimes or execute the next attempt.',
+      'It is not benchmark support, model ranking, correctness certification, or acceptance approval.',
+    ],
+  };
 }
 
 export function analyzeEvolutionLoop(loopDir: string, options: EvolutionAnalyzeOptions = {}, root = process.cwd()): EvolutionAnalysisResult {
@@ -1338,13 +1562,17 @@ export function analyzeEvolutionLoop(loopDir: string, options: EvolutionAnalyzeO
     remainingFailures: currentCounts.remainingFailures,
   };
   const recommendation = recommendAnalysis(plateau, criteria, currentCounts.total);
+  const currentAttemptResult = attemptSummary(analysisRoot, currentAttempt);
+  const previousAttemptResult = attemptSummary(analysisRoot, previousAttempt);
+  const frontierAttemptResult = attemptSummary(analysisRoot, frontierAttempt);
+  const nextActionPacket = buildNextActionPacket(analysisRoot, loopInfo, plateau, currentAttemptResult, frontierAttemptResult, acceptanceSummary, criteria, recommendation);
   return {
     kind: 'analysis',
     loop: loopInfo,
     plateau,
-    currentAttempt: attemptSummary(currentAttempt),
-    previousAttempt: attemptSummary(previousAttempt),
-    frontierAttempt: attemptSummary(frontierAttempt),
+    currentAttempt: currentAttemptResult,
+    previousAttempt: previousAttemptResult,
+    frontierAttempt: frontierAttemptResult,
     acceptanceSummary,
     criteria,
     currentVsPrevious: {
@@ -1360,6 +1588,7 @@ export function analyzeEvolutionLoop(loopDir: string, options: EvolutionAnalyzeO
       rows: buildCurrentFrontierRows(ids, textById, frontierMap, currentMap),
     },
     recommendation,
+    nextActionPacket,
     notes: [
       'This analysis is read-only and does not spawn runtimes, rerun benchmarks, mutate loop state, rank models, or approve work.',
       'Score-frontier promotion is not acceptance approval; use human/maintainer review for closeout decisions.',
@@ -1381,6 +1610,7 @@ function impossibleLabel(criterion: EvolutionAnalysisCriterion): string {
 function renderAnalysisTerminal(analysis: EvolutionAnalysisResult): string {
   const currentHypothesis = analysis.currentAttempt.repairHypothesis;
   const currentUsage = analysis.currentAttempt.usage;
+  const packet = analysis.nextActionPacket;
   const lines = [
     `Evolution Analysis: ${analysis.loop.loopDir}`,
     `Objective: ${analysis.loop.objective ?? '—'}`,
@@ -1413,6 +1643,15 @@ function renderAnalysisTerminal(analysis: EvolutionAnalysisResult): string {
     `Recommendation: ${analysis.recommendation.action}`,
     `  ${analysis.recommendation.summary}`,
     '',
+    'Next action packet',
+    `  Action: ${packet.recommendedAction}`,
+    `  Resume: current=${packet.resumeFrom.currentAttemptId ?? '—'} | frontier=${packet.resumeFrom.frontierAttemptId ?? '—'}`,
+    `  Acceptance: ${packet.acceptance.currentPass}/${packet.acceptance.currentTotal} pass | remaining=${packet.acceptance.remainingFailures.map((criterion) => criterion.id).join(', ') || '—'}`,
+    `  Required next fields: ${packet.requiredNextFields.join(', ')}`,
+    ...(packet.currentAttemptControl.budgetWarning ? [`  Budget: ${packet.currentAttemptControl.budgetWarning}`] : []),
+    ...(packet.evidenceRefs.length > 0 ? [`  Evidence refs: ${packet.evidenceRefs.join(', ')}`] : []),
+    `  Boundary: ${packet.boundaryNotes.join(' ')}`,
+    '',
     'Notes',
     ...analysis.notes.map((note) => `  ${note}`),
     '',
@@ -1424,6 +1663,7 @@ function renderAnalysisTerminal(analysis: EvolutionAnalysisResult): string {
 function renderAnalysisMarkdown(analysis: EvolutionAnalysisResult): string {
   const currentHypothesis = analysis.currentAttempt.repairHypothesis;
   const currentUsage = analysis.currentAttempt.usage;
+  const packet = analysis.nextActionPacket;
   const lines = [
     `# Evolution analysis: ${analysis.loop.loopDir}`,
     '',
@@ -1478,6 +1718,27 @@ function renderAnalysisMarkdown(analysis: EvolutionAnalysisResult): string {
     '## Recommendation',
     '',
     `\`${analysis.recommendation.action}\` — ${analysis.recommendation.summary}`,
+    '',
+    '## Next action packet',
+    '',
+    `- Schema: \`${packet.schema}\``,
+    `- Action: \`${packet.recommendedAction}\``,
+    `- Resume: current \`${packet.resumeFrom.currentAttemptId ?? '—'}\`; frontier \`${packet.resumeFrom.frontierAttemptId ?? '—'}\``,
+    `- Acceptance: ${packet.acceptance.currentPass}/${packet.acceptance.currentTotal} pass; remaining ${packet.acceptance.remainingFailures.map((criterion) => `\`${criterion.id}\``).join(', ') || '—'}`,
+    `- Required next fields: ${packet.requiredNextFields.map((field) => `\`${field}\``).join(', ')}`,
+    ...(packet.currentAttemptControl.budgetWarning ? [`- Budget warning: ${packet.currentAttemptControl.budgetWarning}`] : []),
+    '',
+    '### Handoff checklist',
+    '',
+    ...packet.handoffChecklist.map((item) => `- ${item}`),
+    '',
+    '### Packet evidence refs',
+    '',
+    ...(packet.evidenceRefs.length > 0 ? packet.evidenceRefs.map((ref) => `- \`${ref}\``) : ['- —']),
+    '',
+    '### Packet boundaries',
+    '',
+    ...packet.boundaryNotes.map((note) => `- ${note}`),
     '',
     '## Boundaries',
     '',

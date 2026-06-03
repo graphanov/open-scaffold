@@ -88,6 +88,8 @@ osc evolve analyze .osc/evolution/demo-loop --format markdown --out docs/evidenc
 
 `osc evolve analyze` reads `loop.json`, `attempts.jsonl`, `frontier.json`, and linked evaluation envelopes. It reports plateau/stagnation, current-vs-previous and current-vs-frontier acceptance-criteria deltas, observed score sensitivity, criteria flagged as probe-only / hardcoded non-pass / skipped / stale / impossible, the current attempt's repair hypothesis and usage, and a next-action recommendation: `continue`, `stop`, `redesign`, or `inspect_scorer`. Criterion-level hints can come from evaluation/scorer metadata such as `analysis.score_sensitivity`, `analysis.impossible`, `analysis.reason`, and `analysis.source`, or from explicit evidence/rationale wording.
 
+The JSON, terminal, and markdown analysis outputs also include a compact next-action packet. It is a context-wipe handoff summary: recommended action, reasons, current/frontier resume point, plateau state, current pass/fail counts, remaining failing criteria, required next fields, safe evidence refs, and boundary notes. Use it to hand a loop to a fresh human, agent, or coordinator without copying bulky logs into prompt context. The packet is not an executor, benchmark result, approval, model ranking, or proof that Open Scaffold improved output quality.
+
 The analysis command is a decision aid. It does not mutate loop files unless `--out` is supplied for a rendered report, and even then it writes only the requested report path. It does not spawn runtimes, rerun benchmarks, rank models, certify compliance, promote a frontier, or approve work.
 
 Import structured external scorer output into an evaluation envelope when a domain tool already did the judging:
