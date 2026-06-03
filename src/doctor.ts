@@ -9,9 +9,10 @@ import {
 } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 import { OSC_NAMESPACE, PLAN_STAGES, splitSections, type PlanStage } from './scaffold.js';
+import { scanPublicFilesForSecrets } from './redaction.js';
 
 export type DoctorSeverity = 'info' | 'warn' | 'error';
-export type DoctorCheckName = 'status-alignment' | 'changelog-gap' | 'paired-view' | 'stale-plan' | 'release-readme';
+export type DoctorCheckName = 'status-alignment' | 'changelog-gap' | 'paired-view' | 'stale-plan' | 'release-readme' | 'secret-scan';
 
 export interface DoctorOptions {
   fix?: boolean;
@@ -373,6 +374,16 @@ function releaseReadmeDiagnoses(root: string): DoctorDiagnosis[] {
   ];
 }
 
+function secretScanDiagnoses(root: string): DoctorDiagnosis[] {
+  return scanPublicFilesForSecrets(root).map((finding) => ({
+    check: 'secret-scan',
+    severity: finding.kind === 'private_path' ? 'warn' : 'error',
+    path: finding.path,
+    message: `${finding.detail} pattern found on line ${finding.line}; redact or move it to ignored local state before committing.`,
+    fixable: false,
+  } satisfies DoctorDiagnosis));
+}
+
 function allDiagnoses(root: string, options: DoctorOptions): DoctorDiagnosis[] {
   const now = options.now ?? new Date();
   const staleDays = options.staleDays ?? loadConfiguredStaleDays(root);
@@ -382,6 +393,7 @@ function allDiagnoses(root: string, options: DoctorOptions): DoctorDiagnosis[] {
     'paired-view': () => pairedViewDiagnoses(root),
     'stale-plan': () => stalePlanDiagnoses(root, now, staleDays),
     'release-readme': () => releaseReadmeDiagnoses(root),
+    'secret-scan': () => secretScanDiagnoses(root),
   };
   const selected = options.check ? [options.check] : (Object.keys(groups) as DoctorCheckName[]);
   const severity = options.severity ?? 'info';
@@ -450,6 +462,8 @@ export function parseDoctorCheckName(value: string): DoctorCheckName | null {
     stale: 'stale-plan',
     'release-readme': 'release-readme',
     releases: 'release-readme',
+    'secret-scan': 'secret-scan',
+    secrets: 'secret-scan',
   };
   return aliases[value] ?? null;
 }

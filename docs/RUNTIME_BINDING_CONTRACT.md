@@ -206,7 +206,7 @@ For the OMX/Codex track, [`packages/runtime-omx/`](https://github.com/graphanov/
 
 ## Binding responsibilities
 
-For the detailed spawning/adapter boundary, dispatch receipt shape (handoff proof), authority vocabulary (permission words), and OMX v0.17.0 Hermes MCP bridge evidence, see [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md). This contract remains the lifecycle-level agreement; the boundary document defines the safer next-step vocabulary before any real `osc spawn` implementation.
+For the detailed spawning/adapter boundary, dispatch receipt shape (handoff proof), authority vocabulary (permission words), and OMX v0.17.0 Hermes MCP bridge evidence, see [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md). For adapter trust, restricted environment defaults, bounded logs, redaction, webhook config, and structural-vs-correctness warnings, see [`docs/TRUST_BOUNDARIES.md`](TRUST_BOUNDARIES.md). This contract remains the lifecycle-level agreement; the boundary documents define the safer next-step vocabulary before any real `osc spawn` implementation.
 
 A binding should:
 

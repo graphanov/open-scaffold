@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const cli = join(repoRoot, 'src/cli.ts');
 
-function tempRepo(): string {
-  const root = mkdtempSync(join(tmpdir(), 'osc-dispatch-'));
+function tempRepo(prefix = join(tmpdir(), 'osc-dispatch-')): string {
+  const root = mkdtempSync(prefix);
   mkdirSync(join(root, '.osc/plans/active'), { recursive: true });
   mkdirSync(join(root, '.osc/plans/backlog'), { recursive: true });
   mkdirSync(join(root, '.osc/releases'), { recursive: true });
@@ -68,10 +68,27 @@ function latestRunJson(root: string): string {
   return join(runsDir, runId!, 'run.json');
 }
 
+function createRunPacketWithRuntime(root: string, worktreePath: string, branch = 'feature/health'): string {
+  const result = spawnSync(tsx, [cli, 'run', '.osc/plans/active/123-health-endpoint.md', '--runtime', 'codex', '--repo', root, '--worktree', worktreePath, '--branch', branch], { cwd: root, encoding: 'utf8' });
+  expect(result.status).toBe(0);
+  return latestRunJson(root);
+}
+
 function createRunPacket(root: string): string {
   const result = spawnSync(tsx, [cli, 'run', '.osc/plans/active/123-health-endpoint.md', '--runtime', 'codex', '--repo', root], { cwd: root, encoding: 'utf8' });
   expect(result.status).toBe(0);
   return latestRunJson(root);
+}
+
+function updateRunRuntime(runJson: string, runtime: Record<string, unknown>): void {
+  const packet = JSON.parse(readFileSync(runJson, 'utf8')) as { runtime?: Record<string, unknown> };
+  packet.runtime = { ...(packet.runtime ?? {}), ...runtime };
+  writeFileSync(runJson, JSON.stringify(packet, null, 2) + '\n');
+}
+
+function trustAdapterConfig(root: string, id: string): void {
+  const result = spawnSync(tsx, [cli, 'adapter', 'trust', id], { cwd: root, encoding: 'utf8' });
+  expect(result.status, result.stderr).toBe(0);
 }
 
 function writeFakeAdapter(root: string): void {
@@ -102,12 +119,14 @@ console.log('fake adapter evidence written: ' + evidencePath);
     id: 'fake',
     command: ['node', '.osc/adapters/fake-adapter.mjs']
   }, null, 2) + '\n');
+  trustAdapterConfig(root, 'fake');
 }
 
 function writeAdapterConfig(root: string, id: string, command: string[], extra: Record<string, unknown> = {}): void {
   const adapterDir = join(root, '.osc/adapters');
   mkdirSync(adapterDir, { recursive: true });
   writeFileSync(join(adapterDir, `${id}.json`), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id, command, ...extra }, null, 2) + '\n');
+  trustAdapterConfig(root, id);
 }
 
 function fileSnapshot(root: string): string[] {
@@ -148,6 +167,697 @@ describe('osc dispatch', () => {
       expect(JSON.parse(readFileSync(receiptPath, 'utf8'))).toMatchObject({ adapter_id: 'fake', status: 'dry_run', spawned: false });
       expect(readFileSync(evidencePath, 'utf8')).toContain('Fake adapter evidence');
       expect(readFileSync(stdoutLog, 'utf8')).toContain('fake adapter receipt written:');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when a referenced local adapter command file changes', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      writeFakeAdapter(root);
+      const before = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'fake'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+
+      writeFileSync(join(root, '.osc/adapters/fake-adapter.mjs'), "console.log('changed adapter behavior');\n");
+      const after = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'fake'], { cwd: root, encoding: 'utf8' });
+      expect(after.status).toBe(2);
+      expect(after.stderr).toContain('trusted digest no longer matches');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when adapter-local helper files change', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'helper.mjs'), "export const marker = 'trusted-helper';\n");
+      writeFileSync(join(adapterDir, 'runner.mjs'), "import { marker } from './helper.mjs';\nconsole.log(marker);\n");
+      writeAdapterConfig(root, 'helper-runner', ['node', '.osc/adapters/runner.mjs']);
+      const before = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'helper-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+
+      writeFileSync(join(adapterDir, 'helper.mjs'), "export const marker = 'changed-helper';\n");
+      const after = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'helper-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status).toBe(2);
+      expect(after.stderr).toContain('trusted digest no longer matches');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('allows absolute trusted interpreter commands while hashing in-repo adapter payloads', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'absolute-node.mjs'), "console.log('trusted absolute node adapter');\n");
+      writeAdapterConfig(root, 'absolute-node-runner', [process.execPath, '.osc/adapters/absolute-node.mjs']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'absolute-node-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(adapterDir, 'absolute-node.mjs'), "console.log('changed absolute node adapter');\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'absolute-node-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('hashes repo-local argv0 payloads whose basename looks like an interpreter', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      const localNode = join(adapterDir, 'node');
+      writeFileSync(localNode, "#!/usr/bin/env node\nconsole.log('trusted local node payload');\n");
+      writeAdapterConfig(root, 'local-node-payload', ['.osc/adapters/node']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'local-node-payload'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(localNode, "#!/usr/bin/env node\nconsole.log('changed local node payload');\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'local-node-payload'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('hashes bare argv0 payloads resolved through adapter-provided PATH', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      const localNode = join(adapterDir, 'node');
+      writeFileSync(localNode, "#!/usr/bin/env node\nconsole.log('trusted PATH node payload');\n");
+      writeAdapterConfig(root, 'path-node-payload', ['node'], { env: { PATH: '.osc/adapters' } });
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'path-node-payload'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(localNode, "#!/usr/bin/env node\nconsole.log('changed PATH node payload');\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'path-node-payload'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('uses the platform PATH delimiter when inspecting adapter-provided PATH values', () => {
+    const source = readFileSync(join(repoRoot, 'src/adapter-trust.ts'), 'utf8');
+    expect(source).toContain("pathValue.split(delimiter)");
+    expect(source).not.toContain("pathValue.split(/[:;]/)");
+  });
+
+  it('invalidates trust when Python adapter helper files change', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'helper.py'), "MARKER = 'trusted-helper'\n");
+      writeFileSync(join(adapterDir, 'runner.py'), "import helper\nprint(helper.MARKER)\n");
+      writeAdapterConfig(root, 'python-runner', ['python3', '.osc/adapters/runner.py']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(adapterDir, 'helper.py'), "MARKER = 'changed-helper'\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when Python adapter package submodules change', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      const helpersDir = join(adapterDir, 'helpers');
+      mkdirSync(helpersDir, { recursive: true });
+      writeFileSync(join(helpersDir, 'util.py'), "MARKER = 'trusted-package-helper'\n");
+      writeFileSync(join(adapterDir, 'package-runner.py'), "import helpers.util\nprint(helpers.util.MARKER)\n");
+      writeAdapterConfig(root, 'python-package-runner', ['python3', '.osc/adapters/package-runner.py']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(helpersDir, 'util.py'), "MARKER = 'changed-package-helper'\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when Python adapter package initializers change', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      const helpersDir = join(adapterDir, 'helpers');
+      mkdirSync(helpersDir, { recursive: true });
+      writeFileSync(join(helpersDir, '__init__.py'), "MARKER = 'trusted-package-initializer'\n");
+      writeFileSync(join(helpersDir, 'util.py'), "from helpers import MARKER\n");
+      writeFileSync(join(adapterDir, 'package-init-runner.py'), "import helpers.util\nprint(helpers.util.MARKER)\n");
+      writeAdapterConfig(root, 'python-package-init-runner', ['python3', '.osc/adapters/package-init-runner.py']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-init-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(helpersDir, '__init__.py'), "MARKER = 'changed-package-initializer'\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-init-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when Python from-import package submodules change', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      const helpersDir = join(adapterDir, 'helpers');
+      mkdirSync(helpersDir, { recursive: true });
+      writeFileSync(join(helpersDir, '__init__.py'), "# helpers package\n");
+      writeFileSync(join(helpersDir, 'util.py'), "MARKER = 'trusted-from-helper'\n");
+      writeFileSync(join(adapterDir, 'from-runner.py'), "from helpers import util\nprint(util.MARKER)\n");
+      writeAdapterConfig(root, 'python-from-runner', ['python3', '.osc/adapters/from-runner.py']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-from-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(helpersDir, 'util.py'), "MARKER = 'changed-from-helper'\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-from-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when Python module-mode adapter entrypoints change', () => {
+    const root = tempRepo();
+    try {
+      const moduleDir = join(root, 'adapter_pkg');
+      mkdirSync(moduleDir, { recursive: true });
+      writeFileSync(join(moduleDir, '__init__.py'), "# adapter package\n");
+      writeFileSync(join(moduleDir, 'helper.py'), "MARKER = 'trusted-module-helper'\n");
+      writeFileSync(join(moduleDir, 'runner.py'), "import helper\nprint(helper.MARKER)\n");
+      writeAdapterConfig(root, 'python-module-runner', ['python3', '-m', 'adapter_pkg.runner']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-module-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(moduleDir, 'runner.py'), "import helper\nprint('changed module entrypoint')\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-module-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when Python package module-mode __main__ entrypoints change', () => {
+    const root = tempRepo();
+    try {
+      const moduleDir = join(root, 'adapter_pkg');
+      mkdirSync(moduleDir, { recursive: true });
+      writeFileSync(join(moduleDir, 'helper.py'), "MARKER = 'trusted-main-helper'\n");
+      writeFileSync(join(moduleDir, '__main__.py'), "from . import helper\nprint(helper.MARKER)\n");
+      writeAdapterConfig(root, 'python-package-main', ['python3', '-m', 'adapter_pkg']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-main'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(moduleDir, '__main__.py'), "from . import helper\nprint('changed package main')\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-main'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when Python package module-mode initializers change', () => {
+    const root = tempRepo();
+    try {
+      const moduleDir = join(root, 'adapter_pkg');
+      mkdirSync(moduleDir, { recursive: true });
+      writeFileSync(join(moduleDir, '__init__.py'), "MARKER = 'trusted-initializer'\n");
+      writeFileSync(join(moduleDir, '__main__.py'), "import adapter_pkg\nprint(adapter_pkg.MARKER)\n");
+      writeAdapterConfig(root, 'python-package-initializer', ['python3', '-m', 'adapter_pkg']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-initializer'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(moduleDir, '__init__.py'), "MARKER = 'changed-initializer'\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-initializer'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when Python module mode follows options with operands', () => {
+    const root = tempRepo();
+    try {
+      const moduleDir = join(root, 'adapter_pkg');
+      mkdirSync(moduleDir, { recursive: true });
+      writeFileSync(join(moduleDir, '__main__.py'), "print('trusted package main')\n");
+      writeAdapterConfig(root, 'python-option-module', ['python3', '-W', 'ignore', '-m', 'adapter_pkg']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-option-module'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(moduleDir, '__main__.py'), "print('changed option package main')\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-option-module'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not treat Python script arguments named -m as module mode', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'script-arg-runner.py'), "import sys\nprint(sys.argv)\n");
+      writeAdapterConfig(root, 'python-script-arg', ['python3', '.osc/adapters/script-arg-runner.py', '-m', 'remote-model']);
+      const result = spawnSync(tsx, [cli, 'adapter', 'check', 'python-script-arg'], { cwd: root, encoding: 'utf8' });
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Trusted: yes');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when nested Python module adapters use parent-relative imports', () => {
+    const root = tempRepo();
+    try {
+      const packageDir = join(root, 'adapter_pkg');
+      const subpackageDir = join(packageDir, 'sub');
+      mkdirSync(subpackageDir, { recursive: true });
+      writeFileSync(join(packageDir, 'helper.py'), "MARKER = 'trusted-parent-helper'\n");
+      writeFileSync(join(subpackageDir, '__main__.py'), "from .. import helper\nprint(helper.MARKER)\n");
+      writeAdapterConfig(root, 'python-parent-relative', ['python3', '-m', 'adapter_pkg.sub']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-parent-relative'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(packageDir, 'helper.py'), "MARKER = 'changed-parent-helper'\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-parent-relative'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when extension-resolved required preload files change', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'preload.js'), "globalThis.preloadMarker = 'trusted-preload';\n");
+      writeFileSync(join(adapterDir, 'preload-runner.mjs'), "console.log(globalThis.preloadMarker || 'missing preload');\n");
+      writeAdapterConfig(root, 'preload-runner', ['node', '--require=./.osc/adapters/preload', '.osc/adapters/preload-runner.mjs']);
+      const before = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'preload-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+
+      writeFileSync(join(adapterDir, 'preload.js'), "globalThis.preloadMarker = 'changed-preload';\n");
+      const after = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'preload-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status).toBe(2);
+      expect(after.stderr).toContain('trusted digest no longer matches');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('invalidates trust when split flag operands resolve to extensioned local files', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(root, 'preload.js'), "globalThis.splitPreloadMarker = 'trusted-split-preload';\n");
+      writeFileSync(join(adapterDir, 'split-runner.mjs'), "console.log(process.argv.includes('--hook') ? 'split runner' : 'missing hook');\n");
+      writeAdapterConfig(root, 'split-runner', ['node', '.osc/adapters/split-runner.mjs', '--hook', 'preload']);
+      const before = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'split-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+
+      writeFileSync(join(root, 'preload.js'), "globalThis.splitPreloadMarker = 'changed-split-preload';\n");
+      const after = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'split-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status).toBe(2);
+      expect(after.stderr).toContain('trusted digest no longer matches');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses adapter helper imports that resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalHelper = join(dirname(root), `${basename(root)}-external-helper.mjs`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalHelper, "export const marker = 'external-helper';\n");
+      writeFileSync(join(adapterDir, 'escape-helper-runner.mjs'), `import { marker } from '../../../${basename(externalHelper)}';\nconsole.log(marker);\n`);
+      writeFileSync(join(adapterDir, 'escape-helper.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'escape-helper', command: ['node', '.osc/adapters/escape-helper-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'escape-helper'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalHelper, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses path operands embedded in adapter command flags when they resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalHook = join(dirname(root), `${basename(root)}-external-hook.mjs`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalHook, "globalThis.externalHookLoaded = true;\n");
+      writeFileSync(join(adapterDir, 'flag-runner.mjs'), "console.log('flag runner');\n");
+      writeFileSync(join(adapterDir, 'flag-path.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'flag-path', command: ['node', `--import=${externalHook}`, '.osc/adapters/flag-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'flag-path'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalHook, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses extensionless script operands that resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalRunner = join(dirname(root), `${basename(root)}-external-runner`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalRunner, "console.log('external runner');\n");
+      symlinkSync(externalRunner, join(root, 'runner'));
+      writeFileSync(join(adapterDir, 'extensionless-script.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'extensionless-script', command: ['node', 'runner'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'extensionless-script'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalRunner, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses extensionless repo-relative flag operands that resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalDir = join(dirname(root), `${basename(root)}-extensionless-hooks`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      mkdirSync(externalDir, { recursive: true });
+      writeFileSync(join(externalDir, 'preload'), "globalThis.extensionlessHookLoaded = true;\n");
+      symlinkSync(externalDir, join(adapterDir, 'payloads'));
+      writeFileSync(join(adapterDir, 'extensionless-flag-runner.mjs'), "console.log('extensionless flag runner');\n");
+      writeFileSync(join(adapterDir, 'extensionless-flag.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'extensionless-flag', command: ['node', '--hook=.osc/adapters/payloads/preload', '.osc/adapters/extensionless-flag-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'extensionless-flag'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalDir, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses bare extensionless flag operands that resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalHook = join(dirname(root), `${basename(root)}-bare-hook`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalHook, "globalThis.bareHookLoaded = true;\n");
+      symlinkSync(externalHook, join(root, 'preload'));
+      writeFileSync(join(adapterDir, 'bare-flag-runner.mjs'), "console.log('bare flag runner');\n");
+      writeFileSync(join(adapterDir, 'bare-flag.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'bare-flag', command: ['node', '--hook=preload', '.osc/adapters/bare-flag-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'bare-flag'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalHook, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses nonexistent required flag operands outside the scaffold root', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'future-flag-runner.mjs'), "console.log('future flag runner');\n");
+      writeFileSync(join(adapterDir, 'future-flag.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'future-flag', command: ['node', '--hook=../future-preload', '.osc/adapters/future-flag-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'future-flag'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not invalidate one adapter when an unrelated adapter file is added', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'foo.mjs'), "console.log('foo adapter');\n");
+      writeAdapterConfig(root, 'foo', ['node', '.osc/adapters/foo.mjs']);
+
+      writeFileSync(join(adapterDir, 'bar.mjs'), "console.log('bar adapter');\n");
+      writeFileSync(join(adapterDir, 'bar.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'bar', command: ['node', '.osc/adapters/bar.mjs'] }, null, 2) + '\n');
+      const after = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'foo'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses adapter command payload files outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalScript = join(dirname(root), `${basename(root)}-external-adapter.mjs`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalScript, "console.log('external adapter payload');\n");
+      writeFileSync(join(adapterDir, 'external-payload.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'external-payload', command: ['node', externalScript] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'external-payload'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalScript, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses symlinked adapter command payloads that resolve outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalScript = join(dirname(root), `${basename(root)}-symlink-target.mjs`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(externalScript, "console.log('external symlink adapter payload');\n");
+      symlinkSync(externalScript, join(adapterDir, 'symlink-runner.mjs'));
+      writeFileSync(join(adapterDir, 'symlink-payload.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'symlink-payload', command: ['node', '.osc/adapters/symlink-runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'symlink-payload'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalScript, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses adapter command payloads reached through symlinked directories outside the scaffold root', () => {
+    const root = tempRepo();
+    const externalDir = join(dirname(root), `${basename(root)}-external-payloads`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      mkdirSync(externalDir, { recursive: true });
+      writeFileSync(join(externalDir, 'runner.mjs'), "console.log('external symlink directory adapter payload');\n");
+      symlinkSync(externalDir, join(adapterDir, 'payloads'));
+      writeFileSync(join(adapterDir, 'symlink-dir-payload.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'symlink-dir-payload', command: ['node', '.osc/adapters/payloads/runner.mjs'] }, null, 2) + '\n');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'symlink-dir-payload'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('outside the scaffold root');
+    } finally {
+      rmSync(externalDir, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('trusts legitimate in-repo adapter payloads when the workspace is reached through a symlinked root', () => {
+    const root = tempRepo();
+    const linkRoot = join(dirname(root), `${basename(root)}-link`);
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'linked-root-runner.mjs'), "console.log('linked root adapter payload');\n");
+      writeFileSync(join(adapterDir, 'linked-root.json'), JSON.stringify({ schemaVersion: 'open-scaffold.adapter.v1', id: 'linked-root', command: ['node', '.osc/adapters/linked-root-runner.mjs'] }, null, 2) + '\n');
+      symlinkSync(root, linkRoot, 'dir');
+
+      const result = spawnSync(tsx, [cli, 'adapter', 'trust', 'linked-root'], { cwd: linkRoot, encoding: 'utf8' });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Trusted adapter: linked-root');
+    } finally {
+      rmSync(linkRoot, { force: true });
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('discovers adapter artifacts before redacting persisted private paths', () => {
+    const root = tempRepo(join(repoRoot, '.tmp-dispatch-redaction-'));
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'private-path.mjs'), `import { dirname, join } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
+const runPath = process.argv[2];
+const packet = JSON.parse(readFileSync(runPath, 'utf8'));
+const runDir = dirname(runPath);
+const receiptPath = join(runDir, 'dispatch-receipt.json');
+const evidencePath = join(runDir, 'private-path-evidence.md');
+writeFileSync(receiptPath, JSON.stringify({ schema_version: 'open-scaffold.dispatch-receipt.v1', adapter_id: 'private-path', run_id: packet.runId, status: 'dry_run', spawned: false }, null, 2));
+writeFileSync(evidencePath, '# Private path evidence\\n');
+console.log('receipt written: ' + receiptPath);
+console.log('evidence written: ' + evidencePath);
+`);
+      writeAdapterConfig(root, 'private-path', ['node', '.osc/adapters/private-path.mjs']);
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'private-path'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Dispatch receipt: .osc/runs/');
+      expect(result.stdout).toContain('Evidence: .osc/runs/');
+      const stdoutLog = readFileSync(join(dirname(runJson), 'dispatch', 'private-path-stdout.log'), 'utf8');
+      expect(stdoutLog).toContain('/[local-path-redacted]');
+      expect(stdoutLog).not.toContain(root);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses worktree isolation inside or equal to the repository path', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'isolated.mjs'), "console.log('isolated adapter should not run');\n");
+      writeAdapterConfig(root, 'isolated', ['node', '.osc/adapters/isolated.mjs'], { requiresWorktreeIsolation: true });
+
+      const nestedRunJson = createRunPacketWithRuntime(root, join(root, 'tmp-worktree'), 'feature/nested');
+      const nested = spawnSync(tsx, [cli, 'dispatch', nestedRunJson, '--adapter', 'isolated'], { cwd: root, encoding: 'utf8' });
+      expect(nested.status).toBe(2);
+      expect(nested.stderr).toContain('requires an isolated worktree path outside runtime.repoPath');
+
+      const sameRunJson = createRunPacketWithRuntime(root, join(root, '.'), 'feature/same');
+      const same = spawnSync(tsx, [cli, 'dispatch', sameRunJson, '--adapter', 'isolated'], { cwd: root, encoding: 'utf8' });
+      expect(same.status).toBe(2);
+      expect(same.stderr).toContain('requires an isolated worktree path outside runtime.repoPath');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves relative runtime isolation paths from the run root rather than caller cwd', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'isolated.mjs'), "console.log('isolated adapter ran');\n");
+      writeAdapterConfig(root, 'isolated', ['node', '.osc/adapters/isolated.mjs'], { requiresWorktreeIsolation: true });
+      const runJson = createRunPacket(root);
+      updateRunRuntime(runJson, { repoPath: '.', worktreePath: '../isolated-worktree', branch: 'feature/relative-isolation' });
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'isolated'], { cwd: join(root, '.osc'), encoding: 'utf8' });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Worktree isolation: enforced');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses protected branch refs in runtime isolation packets', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'isolated.mjs'), "console.log('isolated adapter should not run');\n");
+      writeAdapterConfig(root, 'isolated', ['node', '.osc/adapters/isolated.mjs'], { requiresWorktreeIsolation: true });
+
+      const localRefRunJson = createRunPacket(root);
+      updateRunRuntime(localRefRunJson, { repoPath: '.', worktreePath: '../protected-ref-worktree', branch: 'refs/heads/main' });
+      const localRef = spawnSync(tsx, [cli, 'dispatch', localRefRunJson, '--adapter', 'isolated'], { cwd: root, encoding: 'utf8' });
+      expect(localRef.status).toBe(2);
+      expect(localRef.stderr).toContain('refuses protected branch execution: refs/heads/main');
+
+      const remoteRefRunJson = createRunPacket(root);
+      updateRunRuntime(remoteRefRunJson, { repoPath: '.', worktreePath: '../protected-remote-worktree', branch: 'origin/master' });
+      const remoteRef = spawnSync(tsx, [cli, 'dispatch', remoteRefRunJson, '--adapter', 'isolated'], { cwd: root, encoding: 'utf8' });
+      expect(remoteRef.status).toBe(2);
+      expect(remoteRef.stderr).toContain('refuses protected branch execution: origin/master');
+
+      const featureContainingMainRunJson = createRunPacket(root);
+      updateRunRuntime(featureContainingMainRunJson, { repoPath: '.', worktreePath: '../feature-main-worktree', branch: 'feature/main-fix' });
+      const featureContainingMain = spawnSync(tsx, [cli, 'dispatch', featureContainingMainRunJson, '--adapter', 'isolated'], { cwd: root, encoding: 'utf8' });
+      expect(featureContainingMain.status, featureContainingMain.stderr).toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -535,6 +1245,41 @@ console.log('z'.repeat(70_000));
       const stdoutLog = readFileSync(join(dirname(runJson), 'dispatch', 'large-retained-stdout.log'), 'utf8');
       expect(stdoutLog).toContain('[open-scaffold: log truncated');
       expect(stdoutLog.length).toBeLessThan(520);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('discovers artifacts from full stdout even when retained stdout is truncated first', () => {
+    const root = tempRepo();
+    try {
+      const runJson = createRunPacket(root);
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'noisy-discovery.mjs'), `import { dirname, join } from 'node:path';
+import { writeFileSync } from 'node:fs';
+const runDir = dirname(process.argv[2]);
+const receiptPath = join(runDir, 'noisy-discovery-receipt.json');
+const evidencePath = join(runDir, 'noisy-discovery-evidence.md');
+writeFileSync(receiptPath, JSON.stringify({ status: 'ok' }) + '\\n');
+writeFileSync(evidencePath, '# Noisy discovery evidence\\n');
+console.log('n'.repeat(1_000));
+console.log('noisy discovery adapter receipt written: ' + receiptPath);
+console.log('noisy discovery adapter evidence written: ' + evidencePath);
+`);
+      writeAdapterConfig(root, 'noisy-discovery', ['node', '.osc/adapters/noisy-discovery.mjs'], { maxStdoutBytes: 64, maxStderrBytes: 256 });
+
+      const result = spawnSync(tsx, [cli, 'dispatch', runJson, '--adapter', 'noisy-discovery'], { cwd: root, encoding: 'utf8' });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Dispatch receipt: .osc/runs/');
+      expect(result.stdout).toContain('noisy-discovery-receipt.json');
+      expect(result.stdout).toContain('Evidence: .osc/runs/');
+      expect(result.stdout).toContain('noisy-discovery-evidence.md');
+      expect(result.stdout).toContain('Stdout truncated: yes');
+      const stdoutLog = readFileSync(join(dirname(runJson), 'dispatch', 'noisy-discovery-stdout.log'), 'utf8');
+      expect(stdoutLog).toContain('[open-scaffold: log truncated');
+      expect(stdoutLog).not.toContain('receipt written:');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

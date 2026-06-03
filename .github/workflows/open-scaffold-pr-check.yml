@@ -1,0 +1,158 @@
+name: Open Scaffold PR check
+
+# Fork-safe structural work-record check. The check job runs PR code with read-only
+# permissions. Optional comment mutation happens only for same-repo, non-Dependabot
+# PRs when OSC_PR_CHECK_COMMENT=true.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      plan:
+        description: "Plan slug to check (e.g. 123-my-slice or first-work-record)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  pr-check:
+    name: Structural Open Scaffold PR check
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.plan.outputs.skip }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository with public fallback
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init .
+          server_url="${GITHUB_SERVER_URL:-https://github.com}"
+          server_url="${server_url%/}"
+          git remote add origin "${server_url}/${GITHUB_REPOSITORY}.git"
+          fetch_refs() {
+            local mode="$1"
+            shift
+            if [[ "$mode" == "auth" && -n "${GITHUB_TOKEN:-}" ]]; then
+              local auth_header
+              auth_header="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\n')"
+              GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c "http.${server_url}/.extraheader=AUTHORIZATION: basic ${auth_header}" fetch "$@"
+            else
+              GIT_TERMINAL_PROMPT=0 git -c credential.helper= fetch "$@"
+            fi
+          }
+          fetch_with_fallback() {
+            local description="$1"
+            shift
+            if ! fetch_refs auth "$@"; then
+              echo "Authenticated ${description} fetch failed; falling back to public unauthenticated fetch."
+              fetch_refs public "$@"
+            fi
+          }
+          fetch_with_fallback repository --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            fetch_with_fallback pull-request-merge --no-tags origin "refs/pull/${{ github.event.pull_request.number }}/merge:refs/remotes/pull/${{ github.event.pull_request.number }}/merge"
+            git checkout --force "refs/remotes/pull/${{ github.event.pull_request.number }}/merge"
+          else
+            git checkout --force "$GITHUB_SHA"
+          fi
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.12.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build CLI
+        run: npm run build
+
+      - name: Detect plan slug
+        id: plan
+        shell: bash
+        env:
+          INPUT_PLAN: ${{ inputs.plan }}
+          VAR_PLAN: ${{ vars.OSC_PR_CHECK_PLAN }}
+        run: |
+          set -euo pipefail
+          plan="${INPUT_PLAN:-${VAR_PLAN:-}}"
+          if [[ -z "$plan" ]]; then
+            plan="$(git diff --name-only "${{ github.event.pull_request.base.sha || github.sha }}"...HEAD 2>/dev/null \
+              | grep -E '^\.osc/plans/(active|backlog|blocked|done)/[A-Za-z0-9][A-Za-z0-9._-]*\.md$' \
+              | grep -v -- '-amendment-' \
+              | head -1 \
+              | sed -E 's|.*/||; s|\.md$||' || true)"
+          fi
+          if [[ -z "$plan" ]]; then
+            echo "No plan slug supplied or detected. Skipping structural PR check."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "plan=$plan" >> "$GITHUB_OUTPUT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run structural PR check
+        if: steps.plan.outputs.skip == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node dist/cli.js pr check "${{ steps.plan.outputs.plan }}" --format markdown > open-scaffold-pr-check.md
+          node dist/cli.js pr check "${{ steps.plan.outputs.plan }}" --format json > open-scaffold-pr-check.json
+          cat open-scaffold-pr-check.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload structural check artifacts
+        if: steps.plan.outputs.skip == 'false'
+        uses: actions/upload-artifact@v6
+        with:
+          name: open-scaffold-pr-check
+          path: |
+            open-scaffold-pr-check.md
+            open-scaffold-pr-check.json
+
+  comment:
+    name: Optional PR comment mirror
+    needs: pr-check
+    if: >-
+      github.event_name == 'pull_request' &&
+      vars.OSC_PR_CHECK_COMMENT == 'true' &&
+      needs.pr-check.outputs.skip == 'false' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Download structural check artifacts
+        uses: actions/download-artifact@v6
+        with:
+          name: open-scaffold-pr-check
+          path: .
+
+      - name: Upsert single PR check comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- osc-pr-check -->';
+            if (!fs.existsSync('open-scaffold-pr-check.md')) return;
+            const body = `${marker}\n${fs.readFileSync('open-scaffold-pr-check.md', 'utf8')}`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const existing = comments.find((comment) => typeof comment.body === 'string' && comment.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

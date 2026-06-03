@@ -8,7 +8,9 @@ import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockp
 import { compareBareAttempts, renderAttemptComparisonJson, renderAttemptComparisonMarkdown } from './compare.js';
 import { runDashboard, type DashboardRunOptions } from './dashboard.js';
 import { DispatchUsageError, formatDispatchSummary, runDispatch } from './dispatch.js';
+import { AdapterTrustError, checkAdapterTrust, formatAdapterTrustStatus, formatTrustedAdapterList, listTrustedAdapters, trustAdapter } from './adapter-trust.js';
 import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
+import { askInteractiveFirstRun, formatFirstRunResult, runFirstRun } from './first-run.js';
 import { openDashboardUrl, serveDashboard, writeWebDashboard } from './dashboard-web.js';
 import { buildCompactEvidence, renderCompactEvidenceMarkdown, writeCompactEvidence } from './compact-evidence.js';
 import { collectEvidence } from './evidence.js';
@@ -19,6 +21,7 @@ import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js'
 import { computeMetrics, formatMetrics, parseSinceDate } from './metrics.js';
 import { computeStudy, renderStudyMarkdown, validateStudyReport, writeStudyOutput } from './study.js';
 import { computePrSummary, renderPrSummaryMarkdown } from './pr-summary.js';
+import { computePrCheck, renderPrCheckMarkdown } from './pr-check.js';
 import { checkAbPacket, formatAbCheckReport } from './ab.js';
 import { runMcpCommand } from './mcp-server.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
@@ -31,98 +34,11 @@ import { computePlanStats, formatPlanStats } from './plan-stats.js';
 import { askInteractiveAnswers, assertWizardReady, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
 import { buildWorkDryRunPreview, formatWorkDryRunPreview } from './work.js';
 import { buildTrace, formatTraceReport, TraceUsageError } from './trace.js';
+import { renderCommandHelp } from './command-maturity.js';
+import { renderSchemaDetail, renderSchemaList, schemaById, SCHEMA_REGISTRY } from './schema-registry.js';
 
 function printHelp(): void {
-  console.log(`osc — Open Scaffold CLI
-
-Repo-native work record: MISSION.md → plan → run packet/amendment → evidence → verification → close.
-
-Usage:
-First-read demo:
-  osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]
-
-Stable core protocol:
-  osc init --tier <min|standard|max> --target <dir> [--force]
-  osc init --from-existing --tier min --target <dir> [--force]
-  osc init --min|--standard|--max --target <dir> [--force]
-  osc status [--json|--dashboard]
-  osc plan <plan-path>
-  osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]
-  osc plan new --from-template list
-  osc plan validate <slug-or-path> [--json] [--strict]
-  osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
-  osc plan move <slug> --to <active|backlog|blocked>
-  osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]
-  osc plan stats [--json]
-  osc amend <plan-slug> [--message <text>]
-  osc evidence new <slug>
-  osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
-  osc evidence compact <run-or-loop> [--evaluation <evaluation-json>] [--candidate-note <path>]... [--out <dir>] [--json]
-  osc close <plan-slug> [--message <text>]
-  osc trace <plan-slug> [--json] [--include-unverified]
-  osc verify [--evidence-chain [--plan <slug>] [--json] [--strict]]
-
-Handoff and run packages:
-  osc start <plan-slug-or-path> --runtime <codex|omx|plain|human|custom>
-  osc delegate <plan-path> [run binding options]
-  osc run <plan-path> [--dry-run] [--json] [run binding options]
-  osc dispatch <run-json> --adapter <adapter-id>
-  osc review <plan-path> [run binding options]
-  osc ultrareview <plan-path> [run binding options]
-
-Lab and experimental:
-  osc work <task-description> --runtime <preset> --dry-run [--json] [--adapter <adapter-id>]
-  osc task new <title> [--priority <high|medium|low>] [--plan <slug>]
-  osc task list [--status <status>] [--priority <priority>] [--plan <slug>] [--json]
-  osc task show <task-id>
-  osc task claim|start|complete|cancel <task-id>
-  osc task block <task-id> --reason <text>
-  osc task comment <task-id> <comment>
-  osc task link <task-id> --plan <slug>
-  osc eval init <run-or-plan> [--out <path>]
-  osc eval import <run-or-plan> --adapter generic-ac-json-v1 --scorer <scorer-json> [--out <path>]
-  osc eval check <evaluation-path>
-  osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]
-  osc audit check <audit-manifest-path>
-  osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>]
-  osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text>
-  osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>]
-  osc evolve analyze <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>]
-  osc evolve check <loop-dir>
-  osc cockpit config
-  osc cockpit test [--dry-run]
-  osc cockpit post --event <event> [--message <text>] [--run-id <id>] [--plan <slug>] [--task-id <id>] [--pr <url>] [--evidence-path <path>] [--dry-run]
-  osc dashboard [--watch] [--interval <seconds>]
-  osc dashboard --web [--out <path>]
-  osc dashboard --serve [--port <port>] [--open]
-
-Diagnostics and advanced:
-  osc mcp serve [--repo <path>] [--allow-write] [--validate]
-  osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
-  osc study [--json] [--since <date>] [--out <path>]
-  osc pr-summary <plan-slug> [--format <markdown|json>]
-  osc ab check <path>
-  osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]
-  osc runtimes list [--json]
-  osc runtimes show <id>
-
-Run binding options:
-  --task-id <id>              Canonical task/card/issue id for this work item
-  --source-ref <ref>          Additional source ref; repeatable
-  --runtime <preset>          omc | codex | omx | plain | human | custom
-  --workflow <workflow>       interview | plan | team | loop | execute | goal | custom
-  --executor <lane>           omc-claude | omx-codex | plain-agent | human | custom
-  --harness-skill <skill>     e.g. /ralplan, $ralplan, /ralph, $ultrawork
-  --repo <path>               Repository path for execution
-  --worktree <path>           Worktree path for isolated execution
-  --branch <name>             Branch expected for the run
-  --operator-surface <name>   discord | slack | telegram | github | cli | none | custom
-  --operator-thread <id>      Optional chat/thread/comment binding id
-  --issue <id-or-url>         Optional GitHub issue binding
-  --pr <id-or-url>            Optional PR binding
-  --commit-policy <text>      Commit/push approval rule
-
-Generic open-scaffold generates prompts/artifacts only. External coordinators, agents, and runtime harnesses perform any execution outside core.`);
+  console.log(renderCommandHelp());
 }
 
 function packageVersion(): string {
@@ -1062,7 +978,7 @@ function traceCommand(args: string[]): void {
 }
 
 function printVerifyUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc verify [--evidence-chain [--plan <slug>] [--json] [--strict]]', stream);
+  printUsage('Usage: osc verify [--evidence-chain [--plan <slug>] [--json] [--strict] [--online-github]]', stream);
 }
 
 interface VerifyCommandOptions {
@@ -1070,10 +986,11 @@ interface VerifyCommandOptions {
   plan?: string;
   json: boolean;
   strict: boolean;
+  onlineGithub: boolean;
 }
 
 function parseVerifyOptions(args: string[]): VerifyCommandOptions {
-  const options: VerifyCommandOptions = { evidenceChain: false, json: false, strict: false };
+  const options: VerifyCommandOptions = { evidenceChain: false, json: false, strict: false, onlineGithub: false };
   for (let i = 0; i < args.length; i += 1) {
     const flag = args[i];
     switch (flag) {
@@ -1096,6 +1013,10 @@ function parseVerifyOptions(args: string[]): VerifyCommandOptions {
         break;
       case '--strict':
         options.strict = true;
+        break;
+      case '--online-github':
+      case '--github-online':
+        options.onlineGithub = true;
         break;
       default:
         console.error(`Unknown option for verify: ${flag}`);
@@ -1124,7 +1045,7 @@ function verifyCommand(args: string[]): void {
   const options = parseVerifyOptions(args);
   if (options.evidenceChain) {
     try {
-      const report = verifyEvidenceChain(process.cwd(), { plan: options.plan });
+      const report = verifyEvidenceChain(process.cwd(), { plan: options.plan, onlineGithub: options.onlineGithub });
       if (options.json) {
         console.log(JSON.stringify(report.plans, null, 2));
       } else {
@@ -1154,7 +1075,7 @@ function verifyCommand(args: string[]): void {
 
 function printDoctorUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage(
-    'Usage: osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <status-alignment|changelog-gap|paired-view|stale-plan|release-readme>]',
+    'Usage: osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <status-alignment|changelog-gap|paired-view|stale-plan|release-readme|secret-scan>]',
     stream,
   );
 }
@@ -1471,6 +1392,48 @@ function startCommand(args: string[]): void {
   }
 }
 
+
+function printAdapterUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage(`Usage: osc adapter check <adapter-id>
+  osc adapter trust <adapter-id>
+  osc adapter list --trusted
+
+Project-local adapter configs are untrusted by default. Trust is local gitignored state keyed by adapter config digest.`, stream);
+}
+
+function adapterCommand(args: string[]): void {
+  const [subcommand, ...rest] = args;
+  if (subcommand === undefined || isHelpArg(subcommand)) {
+    printAdapterUsage('stdout');
+    return;
+  }
+  try {
+    if (subcommand === 'check') {
+      const id = requireArg(rest, 'adapter-id');
+      if (rest.length > 1) throw new AdapterTrustError(`Unknown option for adapter check: ${rest[1]}`);
+      process.stdout.write(formatAdapterTrustStatus(checkAdapterTrust(id, process.cwd())));
+      return;
+    }
+    if (subcommand === 'trust') {
+      const id = requireArg(rest, 'adapter-id');
+      if (rest.length > 1) throw new AdapterTrustError(`Unknown option for adapter trust: ${rest[1]}`);
+      const status = trustAdapter(id, process.cwd());
+      process.stdout.write(`Trusted adapter: ${status.adapterId}\nDigest: ${status.digest}\nConfig: ${status.configPath}\nState: .osc/state/trusted-adapters.json\n`);
+      return;
+    }
+    if (subcommand === 'list') {
+      if (rest.length !== 1 || rest[0] !== '--trusted') throw new AdapterTrustError('Usage: osc adapter list --trusted');
+      process.stdout.write(formatTrustedAdapterList(listTrustedAdapters(process.cwd())));
+      return;
+    }
+    throw new AdapterTrustError(`Unknown adapter subcommand: ${subcommand}`);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    printAdapterUsage();
+    process.exit(error instanceof AdapterTrustError ? 2 : 1);
+  }
+}
+
 function printDispatchUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
   printUsage(`Usage: osc dispatch <run-json> --adapter <adapter-id> [--allow-full-env]
 
@@ -1528,7 +1491,7 @@ function dispatchCommand(args: string[]): void {
     if (result.exitStatus !== 0) process.exit(1);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
-    if (error instanceof DispatchUsageError) process.exit(2);
+    if (error instanceof DispatchUsageError || error instanceof AdapterTrustError) process.exit(2);
     process.exit(1);
   }
 }
@@ -3071,6 +3034,159 @@ async function cockpitCommand(args: string[]): Promise<void> {
   process.exit(2);
 }
 
+
+function takeNamedValue(args: string[], index: number, flag: string, usage: () => void): string {
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`Missing value for ${flag}`);
+    usage();
+    process.exit(2);
+  }
+  return value;
+}
+
+function printFirstRunUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc first-run [--non-interactive --slug <slug> --mission <text> --goal <text>]', stream);
+}
+
+async function firstRunCommand(args: string[]): Promise<void> {
+  if (isHelpArg(args[0])) {
+    printFirstRunUsage('stdout');
+    return;
+  }
+  let nonInteractive = false;
+  let slug: string | undefined;
+  let mission: string | undefined;
+  let goal: string | undefined;
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i];
+    switch (flag) {
+      case '--non-interactive':
+        nonInteractive = true;
+        break;
+      case '--slug':
+        slug = takeNamedValue(args, i, flag, printFirstRunUsage);
+        i += 1;
+        break;
+      case '--mission':
+        mission = takeNamedValue(args, i, flag, printFirstRunUsage);
+        i += 1;
+        break;
+      case '--goal':
+        goal = takeNamedValue(args, i, flag, printFirstRunUsage);
+        i += 1;
+        break;
+      default:
+        console.error(`Unknown option for first-run: ${flag}`);
+        printFirstRunUsage();
+        process.exit(2);
+    }
+  }
+  if (nonInteractive && (!slug || !mission || !goal)) {
+    console.error('first-run --non-interactive requires --slug, --mission, and --goal.');
+    printFirstRunUsage();
+    process.exit(2);
+  }
+  try {
+    const options = nonInteractive
+      ? { slug: slug!, mission: mission!, goal: goal!, nonInteractive: true }
+      : await askInteractiveFirstRun();
+    process.stdout.write(formatFirstRunResult(runFirstRun(options, process.cwd())));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
+function printPrUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc pr check <plan-slug> [--format <markdown|json>] [--online-github]', stream);
+}
+
+function prCommand(args: string[]): void {
+  const [subcommand, ...rest] = args;
+  if (subcommand === undefined || isHelpArg(subcommand)) {
+    printPrUsage('stdout');
+    return;
+  }
+  if (subcommand !== 'check') {
+    console.error(`Unknown pr subcommand: ${subcommand}`);
+    printPrUsage();
+    process.exit(2);
+  }
+  const slug = requireArg(rest, 'plan-slug');
+  let format: 'markdown' | 'json' = 'markdown';
+  let onlineGithub = false;
+  for (let i = 1; i < rest.length; i += 1) {
+    const flag = rest[i];
+    switch (flag) {
+      case '--format':
+        format = parseChoice(takeNamedValue(rest, i, flag, printPrUsage), ['markdown', 'json'] as const, '--format');
+        i += 1;
+        break;
+      case '--online-github':
+      case '--github-online':
+        onlineGithub = true;
+        break;
+      default:
+        console.error(`Unknown option for pr check: ${flag}`);
+        printPrUsage();
+        process.exit(2);
+    }
+  }
+  try {
+    const report = computePrCheck(slug, { root: process.cwd(), onlineGithub });
+    if (format === 'json') console.log(JSON.stringify(report, null, 2));
+    else console.log(renderPrCheckMarkdown(report));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
+function printSchemasUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
+  printUsage('Usage: osc schemas list [--json] | osc schemas show <schema-id>', stream);
+}
+
+function schemasCommand(args: string[]): void {
+  const [subcommand, ...rest] = args;
+  if (subcommand === undefined || isHelpArg(subcommand)) {
+    printSchemasUsage('stdout');
+    return;
+  }
+  if (subcommand === 'list') {
+    let json = false;
+    for (const flag of rest) {
+      if (flag === '--json') json = true;
+      else {
+        console.error(`Unknown option for schemas list: ${flag}`);
+        printSchemasUsage();
+        process.exit(2);
+      }
+    }
+    if (json) console.log(JSON.stringify(SCHEMA_REGISTRY, null, 2));
+    else process.stdout.write(renderSchemaList());
+    return;
+  }
+  if (subcommand === 'show') {
+    const id = requireArg(rest, 'schema-id');
+    if (rest.length > 1) {
+      console.error(`Unknown option for schemas show: ${rest[1]}`);
+      printSchemasUsage();
+      process.exit(2);
+    }
+    const schema = schemaById(id);
+    if (!schema) {
+      console.error(`Unknown schema id: ${id}`);
+      process.exit(2);
+    }
+    process.stdout.write(renderSchemaDetail(schema));
+    return;
+  }
+  console.error(`Unknown schemas subcommand: ${subcommand}`);
+  printSchemasUsage();
+  process.exit(2);
+}
+
 async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
   switch (command) {
@@ -3087,6 +3203,9 @@ async function main(): Promise<void> {
       return;
     case 'init':
       init(args);
+      return;
+    case 'first-run':
+      await firstRunCommand(args);
       return;
     case 'status':
       await status(args);
@@ -3110,6 +3229,9 @@ async function main(): Promise<void> {
     case 'delegate':
     case 'run':
       createArtifacts(args, command);
+      return;
+    case 'adapter':
+      adapterCommand(args);
       return;
     case 'dispatch':
       dispatchCommand(args);
@@ -3150,6 +3272,9 @@ async function main(): Promise<void> {
     case 'pr-summary':
       prSummaryCommand(args);
       return;
+    case 'pr':
+      prCommand(args);
+      return;
     case 'ab':
       abCommand(args);
       return;
@@ -3170,6 +3295,9 @@ async function main(): Promise<void> {
       return;
     case 'doctor':
       doctorCommand(args);
+      return;
+    case 'schemas':
+      schemasCommand(args);
       return;
     case 'runtimes':
       runtimes(args);

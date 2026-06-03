@@ -575,6 +575,7 @@ export function renderCompactEvidenceMarkdown(manifest: CompactEvidenceManifest)
     `# Compact evidence: ${manifest.subject.plan_slug ?? manifest.subject.run_id ?? manifest.subject.loop_id ?? manifest.subject.source}`,
     '',
     '> Compact evidence is a repo-hygiene summary. It omits raw payloads by default, preserves failed criteria, and is not external tamper-proof anchoring.',
+    '> Structural-only warning: compact evidence preserves local references and digests; it does not prove semantic correctness, compliance, production readiness, approval, or implementation quality.',
     '',
     '## Subject',
     '',

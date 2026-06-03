@@ -25,7 +25,7 @@ These surfaces are intended to remain usable across the current pre-1.0 hardenin
 - `MISSION.md` as mission/goals/non-goals/changelog source of truth.
 - `ROADMAP.md` as direction and product-history source of truth.
 - `.osc/plans/{active,backlog,blocked,done}/` as the folder state machine.
-- The 7-section plan schema in `.osc/plans/handoff-template.md`.
+- The Status + seven content-heading plan schema in `.osc/plans/handoff-template.md` (`Status`, then the seven required content headings from `Context` through `Open questions`).
 - Mechanical amendments and closures through `osc amend`, `osc close`, `./amend.sh`, and `./close.sh`.
 - `.osc/releases/` as curated release/evidence notes.
 - `.osc/runs/<run_id>/run.json` as a repo-native handoff package record. Core commands can create the package; external agents or adapters do the work and return receipts/evidence.
@@ -130,7 +130,7 @@ A future real 1.0 or later major release should be reserved for a deliberate mat
 
 Examples:
 
-- Changing the 7-section plan schema in a way that invalidates existing plans.
+- Changing the Status + seven content-heading plan schema in a way that invalidates existing plans.
 - Renaming stable `.osc/` folders or changing folder-as-status semantics.
 - Removing stable CLI commands or changing required arguments incompatibly.
 - Changing `verify.sh --standard` or `--strict` so a previously valid stable scaffold becomes invalid without a migration path.

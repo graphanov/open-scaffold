@@ -29,6 +29,9 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-02: closed 138-blueprint-security-adoption-program — Closed blueprint program through child plans 139 and 140; remaining owner gates are PR review, merge, publish/release decisions, and real runtime side effects.
+- 2026-06-02: closed 140-blueprint-mega-security-adoption — Completed remaining blueprint security, adoption, runtime-boundary, proof, help, and schema surfaces in the mega Ralph-loop branch.
+- 2026-06-02: Owner requested one Ralph-loop mega PR for the remaining blueprint items; child plan 140 supersedes the original small-PR sequencing while preserving no-publish/no-release/no-spawn gates. — see .osc/plans/active/138-blueprint-security-adoption-program-amendment-1.md
 - 2026-06-02: closed 139-dispatch-env-timeout-log-bounds — hardened dispatch env timeout and log bounds
 - 2026-06-01: closed 137-decouple-2000m-benchmark-boundary — Close decoupling repair plan after PR #165 merge
 - 2026-06-01: closed 136-compact-evidence-mode — Add compact evidence mode for run and evolution-loop summaries

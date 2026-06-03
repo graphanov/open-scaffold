@@ -382,6 +382,7 @@ export function buildTrace(start: string, slug: string, options: TraceOptions = 
 export function formatTraceReport(report: TraceReport): string {
   const lines = [
     `Open Scaffold trace: ${safeText(report.plan.slug)}`,
+    'Structural-only warning: this replays local plan/evidence/run links only. It does not prove semantic correctness, compliance, production readiness, approval, or implementation quality.',
     `Status: ${safeText(report.plan.status)}`,
     `Stage: ${safeText(report.plan.stage)}`,
     `Path: ${safeText(report.plan.path)}`,

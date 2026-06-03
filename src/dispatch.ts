@@ -2,6 +2,8 @@ import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSy
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { findScaffoldRoot } from './scaffold.js';
+import { assertAdapterTrusted, type AdapterTrustStatus } from './adapter-trust.js';
+import { redactSecrets } from './redaction.js';
 
 export class DispatchUsageError extends Error {}
 
@@ -14,6 +16,7 @@ interface AdapterConfigFile {
   timeoutMs?: unknown;
   maxStdoutBytes?: unknown;
   maxStderrBytes?: unknown;
+  requiresWorktreeIsolation?: unknown;
 }
 
 export interface DispatchOptions {
@@ -40,6 +43,9 @@ export interface DispatchResult {
   maxStderrBytes: number;
   stdoutTruncated: boolean;
   stderrTruncated: boolean;
+  adapterTrusted: boolean;
+  adapterDigest: string;
+  worktreeIsolation: 'not-required' | 'enforced';
 }
 
 interface AdapterDefinition {
@@ -50,6 +56,7 @@ interface AdapterDefinition {
   timeoutMs: number;
   maxStdoutBytes: number;
   maxStderrBytes: number;
+  requiresWorktreeIsolation: boolean;
 }
 
 interface AdapterEnvBuildResult {
@@ -112,10 +119,13 @@ function isSafeId(value: string): boolean {
   return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value) && !value.includes('..');
 }
 
-function ensureInside(parent: string, child: string, message: string): void {
+function isInsideOrSame(parent: string, child: string): boolean {
   const rel = relative(parent, child);
-  if (rel === '' || rel === '.') return;
-  if (rel.startsWith('..') || isAbsolute(rel)) throw new DispatchUsageError(message);
+  return rel === '' || rel === '.' || (!rel.startsWith('..') && !isAbsolute(rel));
+}
+
+function ensureInside(parent: string, child: string, message: string): void {
+  if (!isInsideOrSame(parent, child)) throw new DispatchUsageError(message);
 }
 
 function toRelative(root: string, path: string | null): string | null {
@@ -123,7 +133,7 @@ function toRelative(root: string, path: string | null): string | null {
   return relative(root, path).split('\\').join('/');
 }
 
-function resolveRunPacket(start: string, runPacketArg: string): { root: string; runPacketPath: string; runDir: string; runId: string } {
+function resolveRunPacket(start: string, runPacketArg: string): { root: string; runPacketPath: string; runDir: string; runId: string; runtime: { worktreePath: string | null; branch: string | null; repoPath: string | null } } {
   const candidate = isAbsolute(runPacketArg) ? resolve(runPacketArg) : resolve(start, runPacketArg);
   if (!existsSync(candidate)) throw new DispatchUsageError(`Run packet does not exist: ${runPacketArg}`);
   const runPacketPath = realpathSync.native(candidate);
@@ -133,10 +143,21 @@ function resolveRunPacket(start: string, runPacketArg: string): { root: string; 
   const realRoot = realpathSync.native(root);
   ensureInside(join(realRoot, '.osc', 'runs'), runPacketPath, 'Run packet must live under .osc/runs.');
   const runDir = dirname(runPacketPath);
-  const raw = JSON.parse(readFileSync(runPacketPath, 'utf8')) as { runId?: unknown; schemaVersion?: unknown };
+  const raw = JSON.parse(readFileSync(runPacketPath, 'utf8')) as { runId?: unknown; schemaVersion?: unknown; runtime?: { worktreePath?: unknown; branch?: unknown; repoPath?: unknown } };
   if (raw.schemaVersion !== 'open-scaffold.run.v1') throw new DispatchUsageError('Dispatch input must use schemaVersion open-scaffold.run.v1.');
   if (typeof raw.runId !== 'string' || !raw.runId.trim()) throw new DispatchUsageError('Dispatch input is missing runId.');
-  return { root: realRoot, runPacketPath, runDir, runId: raw.runId };
+  const runtime = raw.runtime && typeof raw.runtime === 'object' ? raw.runtime : {};
+  return {
+    root: realRoot,
+    runPacketPath,
+    runDir,
+    runId: raw.runId,
+    runtime: {
+      worktreePath: typeof runtime.worktreePath === 'string' && runtime.worktreePath.trim() ? runtime.worktreePath : null,
+      branch: typeof runtime.branch === 'string' && runtime.branch.trim() ? runtime.branch : null,
+      repoPath: typeof runtime.repoPath === 'string' && runtime.repoPath.trim() ? runtime.repoPath : null,
+    },
+  };
 }
 
 function adapterConfigPath(root: string, adapterId: string): string {
@@ -209,6 +230,7 @@ function loadProjectAdapter(root: string, adapterId: string): AdapterDefinition 
     timeoutMs: readOptionalPositiveInteger(parsed.timeoutMs, 'timeoutMs', adapterId, defaultAdapterTimeoutMs, maxAdapterTimeoutMs),
     maxStdoutBytes: readOptionalPositiveInteger(parsed.maxStdoutBytes, 'maxStdoutBytes', adapterId, defaultAdapterMaxLogBytes, maxAdapterLogBytes),
     maxStderrBytes: readOptionalPositiveInteger(parsed.maxStderrBytes, 'maxStderrBytes', adapterId, defaultAdapterMaxLogBytes, maxAdapterLogBytes),
+    requiresWorktreeIsolation: parsed.requiresWorktreeIsolation === true,
   };
 }
 
@@ -240,7 +262,7 @@ function assertNoSymlinksUnder(path: string, message: string): void {
   }
 }
 
-function assertSafeExistingOutput(root: string, runDir: string, outputPath: string, message: string): string {
+function assertSafeExistingOutput(root: string, runDir: string, outputPath: string, message: string): string | null {
   const candidate = resolve(outputPath);
   ensureInside(runDir, candidate, message);
   ensureInside(root, candidate, 'Adapter output path must stay under the scaffold root.');
@@ -248,7 +270,7 @@ function assertSafeExistingOutput(root: string, runDir: string, outputPath: stri
   try {
     stat = lstatSync(candidate);
   } catch {
-    throw new DispatchUsageError('Adapter-reported output path does not exist.');
+    return null;
   }
   if (stat.isSymbolicLink()) throw new DispatchUsageError('Adapter output path must not be a symlink.');
   const realCandidate = realpathSync.native(candidate);
@@ -257,7 +279,7 @@ function assertSafeExistingOutput(root: string, runDir: string, outputPath: stri
   return realCandidate;
 }
 
-function resolveOutputPath(root: string, runDir: string, value: string): string {
+function resolveOutputPath(root: string, runDir: string, value: string): string | null {
   const candidate = isAbsolute(value) ? resolve(value) : resolve(root, value);
   return assertSafeExistingOutput(root, runDir, candidate, 'Adapter-reported output path must stay under the run directory.');
 }
@@ -277,7 +299,7 @@ function discoverReceipt(root: string, runDir: string, stdout: string): string |
 }
 
 function discoverEvidence(root: string, runDir: string, stdout: string): string[] {
-  return extractReportedPaths(stdout, 'evidence').map((reported) => resolveOutputPath(root, runDir, reported));
+  return extractReportedPaths(stdout, 'evidence').map((reported) => resolveOutputPath(root, runDir, reported)).filter((path): path is string => Boolean(path));
 }
 
 function prepareDispatchDir(runDir: string): string {
@@ -348,11 +370,51 @@ function isTimeoutError(error: Error | undefined): boolean {
   return coded?.code === 'ETIMEDOUT';
 }
 
+function resolveExistingOrLexical(base: string, path: string): string {
+  const absolute = isAbsolute(path) ? resolve(path) : resolve(base, path);
+  if (existsSync(absolute)) return realpathSync.native(absolute);
+
+  let existingParent = dirname(absolute);
+  while (!existsSync(existingParent)) {
+    const next = dirname(existingParent);
+    if (next === existingParent) return absolute;
+    existingParent = next;
+  }
+
+  return resolve(realpathSync.native(existingParent), relative(existingParent, absolute));
+}
+
+function isProtectedBranchRef(branch: string): boolean {
+  const normalized = branch.trim().replace(/\\/g, '/');
+  const protectedName = /^(?:main|master|trunk|release)$/i;
+  if (protectedName.test(normalized)) return true;
+  const localRef = normalized.match(/^refs\/heads\/(.+)$/i);
+  if (localRef) return protectedName.test(localRef[1]!);
+  const remoteRef = normalized.match(/^(?:refs\/remotes\/[^/]+|remotes\/[^/]+|origin|upstream)\/(.+)$/i);
+  return Boolean(remoteRef && protectedName.test(remoteRef[1]!));
+}
+
+function assertWorktreeIsolation(adapter: AdapterDefinition, run: { root: string; runtime: { worktreePath: string | null; branch: string | null; repoPath: string | null } }): 'not-required' | 'enforced' {
+  if (!adapter.requiresWorktreeIsolation) return 'not-required';
+  const { worktreePath, branch, repoPath } = run.runtime;
+  if (!worktreePath) throw new DispatchUsageError(`Adapter ${adapter.id} requires runtime.worktreePath in the run packet.`);
+  if (!branch) throw new DispatchUsageError(`Adapter ${adapter.id} requires runtime.branch in the run packet.`);
+  if (isProtectedBranchRef(branch)) throw new DispatchUsageError(`Adapter ${adapter.id} refuses protected branch execution: ${branch}. Use an isolated non-main branch.`);
+  const resolvedRepoPath = resolveExistingOrLexical(run.root, repoPath ?? '.');
+  const resolvedWorktreePath = resolveExistingOrLexical(run.root, worktreePath);
+  if (isInsideOrSame(resolvedRepoPath, resolvedWorktreePath)) {
+    throw new DispatchUsageError(`Adapter ${adapter.id} requires an isolated worktree path outside runtime.repoPath.`);
+  }
+  return 'enforced';
+}
+
 export function runDispatch(runPacketArg: string, options: DispatchOptions, start = process.cwd()): DispatchResult {
   if (!runPacketArg) throw new DispatchUsageError('Missing required argument: run-json');
   const run = resolveRunPacket(start, runPacketArg);
   assertNoSymlinksUnder(run.runDir, 'Run directory must not contain symlinks before adapter dispatch.');
   const adapter = resolveAdapter(run.root, options.adapterId);
+  const trust = assertAdapterTrusted(adapter.id, run.root);
+  const worktreeIsolation = assertWorktreeIsolation(adapter, run);
   const adapterEnv = buildAdapterEnv(adapter, process.env, options.allowFullEnv);
   prepareDispatchDir(run.runDir);
 
@@ -365,16 +427,15 @@ export function runDispatch(runPacketArg: string, options: DispatchOptions, star
     maxBuffer: maxAdapterProcessBufferBytes,
   });
   const rawStdout = String(result.stdout ?? '');
+  const stdout = truncateLog(redactSecrets(rawStdout), adapter.maxStdoutBytes);
   const stderrParts = [String(result.stderr ?? ''), processErrorDetails(result.error)].filter((part): part is string => Boolean(part));
-  const rawStderr = stderrParts.join(stderrParts.length > 1 ? '\n' : '');
-  const stdout = truncateLog(rawStdout, adapter.maxStdoutBytes);
-  const stderr = truncateLog(rawStderr, adapter.maxStderrBytes);
+  const stderr = truncateLog(redactSecrets(stderrParts.join(stderrParts.length > 1 ? '\n' : '')), adapter.maxStderrBytes);
   const finalDispatchDir = prepareDispatchDir(run.runDir);
   const stdoutLogPath = writeLogFile(finalDispatchDir, adapter.id, 'stdout', stdout.content);
   const stderrLogPath = writeLogFile(finalDispatchDir, adapter.id, 'stderr', stderr.content);
 
-  const receiptPath = discoverReceipt(run.root, run.runDir, stdout.content);
-  const evidencePaths = discoverEvidence(run.root, run.runDir, stdout.content);
+  const receiptPath = discoverReceipt(run.root, run.runDir, rawStdout);
+  const evidencePaths = discoverEvidence(run.root, run.runDir, rawStdout);
 
   return {
     adapterId: adapter.id,
@@ -395,6 +456,9 @@ export function runDispatch(runPacketArg: string, options: DispatchOptions, star
     maxStderrBytes: adapter.maxStderrBytes,
     stdoutTruncated: stdout.truncated,
     stderrTruncated: stderr.truncated,
+    adapterTrusted: trust.trusted,
+    adapterDigest: trust.digest,
+    worktreeIsolation,
   };
 }
 
@@ -408,6 +472,8 @@ export function formatDispatchSummary(result: DispatchResult, root: string): str
     `Run packet: ${toRelative(root, result.runPacketPath)}`,
     `Environment: ${envLabel}`,
     `Environment keys: ${result.envKeys.length ? result.envKeys.join(', ') : '(none)'}`,
+    `Adapter trusted: ${result.adapterTrusted ? 'yes' : 'no'} (${result.adapterDigest})`,
+    `Worktree isolation: ${result.worktreeIsolation}`,
     result.unsafeEnvWarning,
     `Timeout: ${result.timeoutMs} ms`,
     `Timed out: ${result.timedOut ? 'yes' : 'no'}`,
