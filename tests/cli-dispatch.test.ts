@@ -210,6 +210,27 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('allows absolute trusted interpreter commands while hashing in-repo adapter payloads', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'absolute-node.mjs'), "console.log('trusted absolute node adapter');\n");
+      writeAdapterConfig(root, 'absolute-node-runner', [process.execPath, '.osc/adapters/absolute-node.mjs']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'absolute-node-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(adapterDir, 'absolute-node.mjs'), "console.log('changed absolute node adapter');\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'absolute-node-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('invalidates trust when Python adapter helper files change', () => {
     const root = tempRepo();
     try {

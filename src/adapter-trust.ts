@@ -58,8 +58,13 @@ const localModuleSpecifierPattern = /\b(?:import|export)\s+(?:[^'"()]*?\s+from\s
 const pathOperandFlags = new Set(['--require', '-r', '--import', '--loader', '--experimental-loader', '--config', '--config-file', '--hook', '--preload']);
 
 function commandEntryLooksLikePythonExecutable(entry: string): boolean {
-  const command = basename(entry).toLowerCase().replace(/\.exe$/, '');
+  const command = basename(entry.replace(/\\/g, '/')).toLowerCase().replace(/\.exe$/, '');
   return command === 'py' || command === 'python' || /^python\d+(?:\.\d+)?$/.test(command);
+}
+
+function commandEntryLooksLikeTrustedInterpreterExecutable(entry: string): boolean {
+  const command = basename(entry.replace(/\\/g, '/')).toLowerCase().replace(/\.(?:cmd|exe|bat|com)$/, '');
+  return commandEntryLooksLikePythonExecutable(entry) || ['node', 'tsx', 'deno', 'ruby', 'perl', 'php'].includes(command);
 }
 
 const pythonOptionsWithSeparateOperands = new Set(['-W', '-X', '--check-hash-based-pycs']);
@@ -304,7 +309,7 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
   for (let index = 0; index < parsed.command.length; index += 1) {
     const entry = parsed.command[index];
     if (typeof entry !== 'string' || !entry.trim()) continue;
-    const candidates = commandEntryPathCandidates(root, entry);
+    const candidates = index === 0 && commandEntryLooksLikeTrustedInterpreterExecutable(entry) ? [] : commandEntryPathCandidates(root, entry);
     const nextEntry = parsed.command[index + 1];
     if (commandFlagTakesPathOperand(entry) && typeof nextEntry === 'string' && nextEntry.trim() && !nextEntry.startsWith('-')) {
       candidates.push({ path: isAbsolute(nextEntry) ? resolve(nextEntry) : resolve(root, nextEntry), required: true });
