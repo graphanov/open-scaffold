@@ -62,13 +62,33 @@ function commandEntryLooksLikePythonExecutable(entry: string): boolean {
   return command === 'py' || command === 'python' || /^python\d+(?:\.\d+)?$/.test(command);
 }
 
+const pythonOptionsWithSeparateOperands = new Set(['-W', '-X', '--check-hash-based-pycs']);
+
 function commandEntryIsPythonModuleMode(command: unknown[], index: number): boolean {
   if (command[index] !== '-m') return false;
-  for (let previousIndex = 0; previousIndex < index; previousIndex += 1) {
-    const previousEntry = command[previousIndex];
-    if (typeof previousEntry === 'string' && commandEntryLooksLikePythonExecutable(previousEntry)) return true;
+  let pythonIndex = -1;
+  for (let candidateIndex = index - 1; candidateIndex >= 0; candidateIndex -= 1) {
+    const candidate = command[candidateIndex];
+    if (typeof candidate === 'string' && commandEntryLooksLikePythonExecutable(candidate)) {
+      pythonIndex = candidateIndex;
+      break;
+    }
   }
-  return false;
+  if (pythonIndex < 0) return false;
+
+  for (let optionIndex = pythonIndex + 1; optionIndex < index; optionIndex += 1) {
+    const entry = command[optionIndex];
+    if (typeof entry !== 'string' || !entry.trim()) continue;
+    if (entry === '--' || entry === '-') return false;
+    if (entry === '-c' || entry === '-m') return false;
+    if (pythonOptionsWithSeparateOperands.has(entry)) {
+      optionIndex += 1;
+      continue;
+    }
+    if (entry.startsWith('-')) continue;
+    return false;
+  }
+  return true;
 }
 
 function commandFlagTakesPathOperand(entry: string): boolean {

@@ -345,6 +345,21 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('does not treat Python script arguments named -m as module mode', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      writeFileSync(join(adapterDir, 'script-arg-runner.py'), "import sys\nprint(sys.argv)\n");
+      writeAdapterConfig(root, 'python-script-arg', ['python3', '.osc/adapters/script-arg-runner.py', '-m', 'remote-model']);
+      const result = spawnSync(tsx, [cli, 'adapter', 'check', 'python-script-arg'], { cwd: root, encoding: 'utf8' });
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Trusted: yes');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('invalidates trust when nested Python module adapters use parent-relative imports', () => {
     const root = tempRepo();
     try {
