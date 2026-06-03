@@ -493,6 +493,26 @@ describe('osc evolve CLI', () => {
     expect(json.nextActionPacket.requiredNextFields).toContain('redesigned_criterion_scorer_or_artifact_shape');
     expect(json.criteria.find((criterion: { id: string }) => criterion.id === 'AC3')).toMatchObject({ impossible: true, sensitivity: 'none' });
 
+    const compact = execFileSync(tsx, [cli, 'evolve', 'analyze', outDir, '--compact'], { cwd: root, encoding: 'utf8' });
+    expect(compact).toContain('Evolution Control: plateau-loop');
+    expect(compact).toContain('Action: redesign');
+    expect(compact).toContain('AC3:fail:impossible:none');
+    expect(compact.length).toBeLessThan(terminal.length);
+
+    const efficiency = JSON.parse(execFileSync(tsx, [cli, 'evolve', 'analyze', outDir, '--efficiency', '--format', 'json'], { cwd: root, encoding: 'utf8' }));
+    expect(efficiency.schema).toBe('open-scaffold.evolution-efficiency-report.v1');
+    expect(efficiency.scope).toBe('diagnostic');
+    expect(efficiency.stability).toBe('experimental');
+    expect(efficiency.improvement.outputByteReductionRatio).toBeGreaterThanOrEqual(1.5);
+    expect(efficiency.improvement.achievedAtLeastOnePointFiveX).toBe(true);
+    expect(efficiency.improvement.renderedCompactControlFieldsPreserved).toBe(true);
+    expect(efficiency.additionalTargetsAtLeastOnePointFiveX).toBeGreaterThanOrEqual(10);
+    expect(efficiency.publicSummaryTargetsAtLeastOnePointFiveX).toBeGreaterThanOrEqual(10);
+    expect(efficiency.publicSummaryTargetsAtLeastOnePointFiveX).toBeLessThan(efficiency.additionalTargetsAtLeastOnePointFiveX);
+    expect(efficiency.marginalTargets).toContain('target.terminal.packet_to_action_block');
+    expect(efficiency.targets).toHaveLength(12);
+    expect(efficiency.caveats.join('\n')).toContain('not model intelligence');
+
     const output = execFileSync(tsx, [cli, 'evolve', 'analyze', outDir, '--format', 'markdown', '--out', reportPath], { cwd: root, encoding: 'utf8' });
     expect(output).toContain('Wrote evolution analysis:');
     const report = readFileSync(reportPath, 'utf8');

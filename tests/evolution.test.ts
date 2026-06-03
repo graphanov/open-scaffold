@@ -15,6 +15,7 @@ import {
   validateEvolutionLoopDir,
   writeEvolutionLoop,
 } from '../src/evolution.js';
+import { measureEvolutionAnalysisEfficiency, renderEvolutionEfficiencyReport } from '../src/evolution-efficiency.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const evolutionDemoRoot = join(repoRoot, 'examples/evolution-ledger-demo');
@@ -374,6 +375,27 @@ function writeOrdinaryFailureLoop(privateRefs = false) {
       rationale: index === 0 ? 'Initial score frontier.' : 'Retry did not move score, but remaining failure is reachable.',
       ...(index === 0 ? {} : retryControl(runId, index)),
       now: new Date(`2026-05-31T09:${String(10 + index).padStart(2, '0')}:00.000Z`),
+    }, root);
+  }
+  return { root, outDir };
+}
+
+function writeNoOpRetryLoop() {
+  const root = tempRepo();
+  const planPath = writePlan(root);
+  const outDir = join(root, '.osc/evolution/no-op-retry-loop');
+  writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-06-03T12:00:00.000Z'), strategy: 'greedy' });
+  for (const [index, runId] of ['attempt-a', 'attempt-b'].entries()) {
+    const runPath = writeRunPacket(root, runId);
+    const evalPath = writeOrdinaryFailureEvaluation(root, runId);
+    recordEvolutionAttempt(outDir, {
+      runPath,
+      evaluationPath: evalPath,
+      decision: index === 0 ? 'promote' : 'retry',
+      score: index === 0 ? 0.7 : 0.71,
+      rationale: index === 0 ? 'Initial score frontier.' : 'Retry nudged score but produced actual delta 0 on the target metric.',
+      ...(index === 0 ? {} : retryControl(runId, index)),
+      now: new Date(`2026-06-03T12:${String(10 + index).padStart(2, '0')}:00.000Z`),
     }, root);
   }
   return { root, outDir };
@@ -789,6 +811,58 @@ describe('evolution analysis', () => {
     expect(readFileSync(join(root, 'docs/evidence/attempt-d-evaluation.json'), 'utf8')).toBe(before.evaluation);
   });
 
+  it('renders a compact controller signal and computes efficiency ratios without hiding required fields', () => {
+    const { root, outDir } = writePlateauLoop();
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+
+    const full = renderEvolutionAnalysis(analysis, 'terminal');
+    const compact = renderEvolutionAnalysis(analysis, 'terminal', { compact: true });
+    const compactJson = JSON.parse(renderEvolutionAnalysis(analysis, 'json', { compact: true }));
+    const report = measureEvolutionAnalysisEfficiency(analysis);
+    const renderedReport = renderEvolutionEfficiencyReport(report, 'terminal');
+
+    expect(compact.length).toBeLessThan(full.length);
+    expect(report.compact.outputBytes).toBeLessThanOrEqual(report.baseline.outputBytes * (2 / 3));
+    expect(report.improvement.outputByteReductionRatio).toBeGreaterThanOrEqual(1.5);
+    expect(report.improvement.achievedAtLeastOnePointFiveX).toBe(true);
+    expect(report.improvement.renderedCompactControlFieldsPreserved).toBe(true);
+    expect(report.scope).toBe('diagnostic');
+    expect(report.stability).toBe('experimental');
+    expect(report.additionalTargetsAtLeastOnePointFiveX).toBeGreaterThanOrEqual(10);
+    expect(report.publicSummaryTargetsAtLeastOnePointFiveX).toBeGreaterThanOrEqual(10);
+    expect(report.publicSummaryTargetsAtLeastOnePointFiveX).toBeLessThan(report.additionalTargetsAtLeastOnePointFiveX);
+    expect(report.targets).toHaveLength(12);
+    expect(report.targets.every((target) => target.requiredFieldsPreserved)).toBe(true);
+    expect(report.targets.find((target) => target.id === 'target.markdown.control_to_compact_bullets')?.requiredFields).not.toContain('summary');
+    expect(report.targets.find((target) => target.id === 'target.terminal.packet_to_action_block')).toMatchObject({ classification: 'marginal', publicSummaryCounted: false });
+    expect(report.marginalTargets).toContain('target.terminal.packet_to_action_block');
+    expect(report.baseline.requiredControlFieldsPresent).toBe(report.compact.requiredControlFieldsPresent);
+    expect(report.compact.requiredControlFieldRatio).toBe(1);
+    expect(report.telemetry).toMatchObject({ present: 2, total: 3, missing: ['estimated_usd'] });
+    expect(report.analyzeToRecommendation.stepCount).toBe(4);
+
+    expect(compact).toContain('Action: redesign');
+    expect(compact).toContain('Required: redesigned_criterion_scorer_or_artifact_shape');
+    expect(compact).toContain('AC3:fail:impossible:none');
+    expect(compact).toContain('Usage: tokens=1,003');
+    expect(compact).toContain('Boundary:');
+    expect(compactJson).toMatchObject({
+      schema: 'open-scaffold.evolution-controller-signal.v1',
+      action: 'redesign',
+      acceptance: {
+        remainingFailureIds: ['AC3'],
+      },
+    });
+    expect(compactJson.requiredNextFields).toContain('usage_receipt_or_unavailable_reason');
+    expect(renderedReport).toContain('Evolution Efficiency: plateau-loop');
+    expect(renderedReport).toContain('Scope: diagnostic/experimental');
+    expect(renderedReport).toContain('Rendered compact required fields preserved: yes');
+    expect(renderedReport).toContain('Public-summary strong targets:');
+    expect(renderedReport).toContain('Marginal targets');
+    expect(renderedReport).toContain('Achieved >=1.5x measured output efficiency: yes');
+    expect(renderedReport).toContain('Efficiency here is controller-output overhead');
+  });
+
   it('builds a stop packet that routes all-pass loops to human closeout instead of approval by score', () => {
     const root = tempRepo();
     const planPath = writePlan(root);
@@ -820,6 +894,26 @@ describe('evolution analysis', () => {
     ]);
     expect(analysis.nextActionPacket.handoffChecklist.join('\n')).toContain('frontier score is not acceptance approval');
     expect(analysis.nextActionPacket.boundaryNotes.join('\n')).toContain('does not spawn runtimes');
+  });
+
+  it('routes no-op retry attempts away from blind continuation even when score still moved', () => {
+    const { root, outDir } = writeNoOpRetryLoop();
+
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+    const report = measureEvolutionAnalysisEfficiency(analysis);
+
+    expect(analysis.plateau.status).toBe('improving');
+    expect(analysis.currentAttempt).toMatchObject({
+      decision: 'retry',
+      repairHypothesis: { actualDelta: 0, targetMetric: 'accepted_ac_count' },
+    });
+    expect(analysis.recommendation).toMatchObject({
+      action: 'inspect_scorer',
+      reasons: expect.arrayContaining(['no_op_retry']),
+    });
+    expect(analysis.recommendation.summary).toContain('actual delta 0');
+    expect(analysis.nextActionPacket.handoffChecklist.join('\n')).toContain('Inspect scorer/evaluation coverage');
+    expect(report.blindRetriesPrevented).toBe(1);
   });
 
   it('uses current-attempt blocker metadata for recommendation instead of stale frontier metadata', () => {
@@ -908,6 +1002,10 @@ describe('evolution analysis', () => {
       },
     });
     expect(analysis.nextActionPacket.handoffChecklist.join('\n')).toContain('AC3');
+
+    const compact = renderEvolutionAnalysis(analysis, 'terminal', { compact: true });
+    expect(compact).toContain('AC3:missing_current:unknown');
+    expect(compact).toContain('Action: inspect_scorer');
   });
 
   it('does not classify ordinary reachable failure reasons as impossible redesign-only blockers', () => {
@@ -935,6 +1033,8 @@ describe('evolution analysis', () => {
     const ac2 = analysis.criteria.find((criterion) => criterion.id === 'AC2');
     const terminal = renderEvolutionAnalysis(analysis, 'terminal');
     const markdown = renderEvolutionAnalysis(analysis, 'markdown');
+    const compact = renderEvolutionAnalysis(analysis, 'terminal', { compact: true });
+    const efficiency = renderEvolutionEfficiencyReport(measureEvolutionAnalysisEfficiency(analysis), 'json');
 
     expect(ac2?.evidence).toEqual([]);
     expect(terminal).not.toContain('/private/scorer.md');
@@ -947,6 +1047,16 @@ describe('evolution analysis', () => {
     expect(markdown).not.toContain('.osc/research/private-scorer.md');
     expect(markdown).not.toContain('../raw-scorer.log');
     expect(markdown).not.toContain('docs/../../.osc-dev/notes.md');
+    expect(compact).not.toContain('/private/scorer.md');
+    expect(compact).not.toContain('file:///private/scorer.md');
+    expect(compact).not.toContain('.osc/research/private-scorer.md');
+    expect(compact).not.toContain('../raw-scorer.log');
+    expect(compact).not.toContain('docs/../../.osc-dev/notes.md');
+    expect(efficiency).not.toContain('/private/scorer.md');
+    expect(efficiency).not.toContain('file:///private/scorer.md');
+    expect(efficiency).not.toContain('.osc/research/private-scorer.md');
+    expect(efficiency).not.toContain('../raw-scorer.log');
+    expect(efficiency).not.toContain('docs/../../.osc-dev/notes.md');
   });
 
   it('does not read or render unsafe evaluation refs from hand-written attempt journals', () => {
@@ -976,10 +1086,11 @@ describe('evolution analysis', () => {
     const terminal = renderEvolutionAnalysis(analysis, 'terminal');
     const markdown = renderEvolutionAnalysis(analysis, 'markdown');
     const json = renderEvolutionAnalysis(analysis, 'json');
+    const compact = renderEvolutionAnalysis(analysis, 'json', { compact: true });
 
     expect(analysis.currentAttempt.evaluation).toBeNull();
     expect(analysis.nextActionPacket.evidenceRefs).not.toContain('.osc-dev/private-evaluation.json');
-    for (const output of [terminal, markdown, json]) {
+    for (const output of [terminal, markdown, json, compact]) {
       expect(output).not.toContain('.osc-dev/private-evaluation.json');
       expect(output).not.toContain('Private criterion');
       expect(output).not.toContain('Private rationale');
@@ -1019,10 +1130,11 @@ describe('evolution analysis', () => {
     const terminal = renderEvolutionAnalysis(analysis, 'terminal');
     const markdown = renderEvolutionAnalysis(analysis, 'markdown');
     const json = renderEvolutionAnalysis(analysis, 'json');
+    const compact = renderEvolutionAnalysis(analysis, 'json', { compact: true });
 
     expect(analysis.currentAttempt.evaluation).toBeNull();
     expect(analysis.nextActionPacket.evidenceRefs).not.toContain('docs/evidence/private-evaluation-link.json');
-    for (const output of [terminal, markdown, json]) {
+    for (const output of [terminal, markdown, json, compact]) {
       expect(output).not.toContain('private-evaluation-link.json');
       expect(output).not.toContain('Private symlinked criterion');
       expect(output).not.toContain('Private symlink rationale');

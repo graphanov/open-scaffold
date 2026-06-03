@@ -133,6 +133,24 @@ describe('public work-record positioning', () => {
     expect(trace).not.toMatch(/trust score|compliance-grade|tamper-proof|certif(y|ies|ied)/i);
   });
 
+  it('keeps efficiency positioning benchmark-neutral and artifact-measured', () => {
+    const readme = read('README.md');
+    const evolution = read('docs/EVOLUTION_LOOP.md');
+    const methodology = read('docs/EVIDENCE_METHODOLOGY.md');
+    const faq = read('docs/FAQ.md');
+    const combined = [readme, evolution, methodology, faq].join('\n');
+
+    expect(combined).toContain('does not make models smarter');
+    expect(combined).toContain('is not benchmark proof');
+    expect(combined).toContain('workflow control');
+    expect(combined).toContain('before/after artifact');
+    expect(combined).toContain('diagnostic');
+    expect(combined).toContain('experimental');
+    expect(evolution).toContain('osc evolve analyze .osc/evolution/demo-loop --efficiency');
+    expect(methodology).toContain('output bytes per useful decision field');
+    expect(faq).toContain('token/cost savings require receipts');
+  });
+
   it('positions comparison tools as adjacent layers rather than enemies', () => {
     const comparison = read('docs/COMPARISON.md');
 

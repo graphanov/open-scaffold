@@ -23,6 +23,8 @@ Use it when AI-assisted work needs **control**, **clarity**, **reviewability**, 
 
 It does not replace your agent, IDE, task tracker, CI, or compliance process. Those tools do the work or run the program. Open Scaffold records what was asked, what was handed off, what came back, what was checked, and what humans approved. For the boundary between structural evidence and process assurance, see [`docs/AUDITABILITY.md`](docs/AUDITABILITY.md) and [`docs/TRUST_BOUNDARIES.md`](docs/TRUST_BOUNDARIES.md).
 
+Open Scaffold does not make models smarter and is not benchmark proof. The current value claim under test is narrower: workflow control, handoff recovery, governance, and measured controller-output efficiency. Any efficiency claim needs a diagnostic/experimental before/after artifact such as `osc evolve analyze --efficiency`; do not promote token, cost, or quality wins from prose alone.
+
 **First command for an existing repo:**
 
 ```bash
@@ -295,7 +297,7 @@ npx open-scaffold evolve compare .osc/evolution/my-task \
   --out .osc/releases/evolution-compare.md
 ```
 
-`osc evolve` records attempt/frontier state only. It is a record, not an execution, compliance, model-evaluation, or approval system.
+`osc evolve` records attempt/frontier state only. It is a record, not an execution, compliance, model-evaluation, benchmark-proof, or approval system. `osc evolve analyze --compact` prints a pasteable controller signal, and `osc evolve analyze --efficiency` computes before/after output-overhead metrics for that signal.
 
 For the one-screen version, see [`docs/examples/evolution-loop-compare.md`](docs/examples/evolution-loop-compare.md). For a small fixture you can run locally, see [`examples/evolution-ledger-demo/`](examples/evolution-ledger-demo/).
 

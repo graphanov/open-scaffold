@@ -84,11 +84,28 @@ Analyze a stopped or in-flight loop without recording a new attempt:
 osc evolve analyze .osc/evolution/demo-loop
 osc evolve analyze .osc/evolution/demo-loop --format json
 osc evolve analyze .osc/evolution/demo-loop --format markdown --out docs/evidence/evolution-analysis.md
+osc evolve analyze .osc/evolution/demo-loop --compact
+osc evolve analyze .osc/evolution/demo-loop --efficiency
 ```
 
 `osc evolve analyze` reads `loop.json`, `attempts.jsonl`, `frontier.json`, and linked evaluation envelopes. It reports plateau/stagnation, current-vs-previous and current-vs-frontier acceptance-criteria deltas, observed score sensitivity, criteria flagged as probe-only / hardcoded non-pass / skipped / stale / impossible, the current attempt's repair hypothesis and usage, and a next-action recommendation: `continue`, `stop`, `redesign`, or `inspect_scorer`. Criterion-level hints can come from evaluation/scorer metadata such as `analysis.score_sensitivity`, `analysis.impossible`, `analysis.reason`, and `analysis.source`, or from explicit evidence/rationale wording.
 
-The JSON, terminal, and markdown analysis outputs also include a compact next-action packet. It is a context-wipe handoff summary: recommended action, reasons, current/frontier resume point, plateau state, current pass/fail counts, remaining failing criteria, required next fields, safe evidence refs, and boundary notes. Use it to hand a loop to a fresh human, agent, or coordinator without copying bulky logs into prompt context. The packet is not an executor, benchmark result, approval, model ranking, or proof that Open Scaffold improved output quality.
+The JSON, terminal, and markdown analysis outputs also include a next-action packet. `--compact` renders only the controller signal: recommended action, reasons, current/frontier resume point, plateau state, current pass/fail counts, remaining failing criteria, required next fields, usage receipt completeness, safe evidence refs, and boundary notes. Use it to hand a loop to a fresh human, agent, or coordinator without copying bulky logs into prompt context. The packet is not an executor, benchmark result, approval, model ranking, or proof that Open Scaffold improved output quality.
+
+`--efficiency` is the diagnostic/experimental local measurement harness for controller-output overhead. It compares baseline full terminal analysis against compact controller output and reports:
+
+- output bytes per useful decision field;
+- evidence reference bytes per action recommendation;
+- token/cost telemetry completeness;
+- blind retries prevented in the analyzed fixture;
+- next-action packet byte size;
+- analyze-input-to-recommendation step count;
+- required control fields present versus total report size.
+- an additional measured target matrix for section-level full-to-compact controller surfaces.
+
+The primary efficiency definition is: preserve the same required workflow-control decision fields while compact output uses no more than 66.7% of baseline output bytes. The secondary definition is: at least 1.5x fewer output bytes per useful decision field. The report computes those ratios from rendered artifacts. It does not score evidence volume, infer missing token/cost receipts, claim a benchmark win, or claim Open Scaffold made a model smarter.
+
+The additional target matrix is deliberately narrow and diagnostic. It measures report overhead surfaces such as full markdown to compact markdown, full JSON to controller-signal JSON, verbose score-sensitivity tables to compact acceptance lines, AC delta tables to remaining-failure summaries, and full criteria JSON to remaining-failure JSON. A target counts diagnostically when required controller fields are preserved and the compact surface is at least 1.5x smaller. Public-summary language should prefer strong targets and label marginal rows instead of headlining a raw `N/N` count. This is still not a product-wide efficiency proof.
 
 The analysis command is a decision aid. It does not mutate loop files unless `--out` is supplied for a rendered report, and even then it writes only the requested report path. It does not spawn runtimes, rerun benchmarks, rank models, certify compliance, promote a frontier, or approve work.
 

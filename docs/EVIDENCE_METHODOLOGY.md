@@ -30,6 +30,23 @@ These are enforced by `osc study` and by `tests/study.test.ts`, not just stated 
 
 Moving from "scaffolded work *correlates* with X" to "the scaffold *caused* X" is the job of `docs/AB_COMPARISON_PROTOCOL.md`, which is **out of scope for this study and is not run here.**
 
+## Workflow-control efficiency
+
+Open Scaffold does not make models smarter, and `osc study` is not benchmark proof. The narrower efficiency thesis is that the repo record may reduce workflow-control overhead by producing smaller, sharper stop / inspect / redesign / continue signals while preserving decision quality.
+
+For evolution loops, measure that thesis with the diagnostic/experimental `osc evolve analyze <loop-dir> --efficiency` report. A valid efficiency report must include:
+
+- output bytes per useful decision field;
+- evidence reference bytes per action recommendation;
+- token/cost telemetry completeness, with missing receipts reported rather than imputed;
+- blind retries prevented in the fixture;
+- next-action packet compactness;
+- time/steps from analyze input to actionable recommendation;
+- required control fields present versus total report size.
+- a matrix of additional full-to-compact controller surfaces, each counted diagnostically only when required fields are preserved and the byte reduction is at least 1.5x, with marginal targets labeled instead of folded into a public headline.
+
+The primary threshold is compact controller output with the same required control fields and no more than 66.7% of baseline full-analysis bytes. The secondary threshold is at least 1.5x fewer output bytes per useful decision field. These are workflow-control metrics only. They do not prove task quality, productivity, benchmark performance, model intelligence, or token/cost savings unless the before/after artifacts directly measure those things.
+
 ## The scaffolded-vs-unscaffolded control model
 
 The FAQ claims are implicitly comparative — they say scaffolded work goes better *than winging it*. Honest evaluation therefore needs two arms:
