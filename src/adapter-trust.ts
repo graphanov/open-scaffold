@@ -171,18 +171,23 @@ function resolvePythonModuleEntrypointFromRoot(root: string, specifier: string):
   return null;
 }
 
-function resolvePythonPackageInitializersFromRoot(root: string, specifier: string): string[] {
-  const normalizedSpecifier = specifier.replace(/^\.+/, '');
-  if (!normalizedSpecifier) return [];
+function resolvePythonPackageInitializersFromBase(baseRoot: string, specifier: string): string[] {
+  if (!specifier) return [];
   const initializers: string[] = [];
-  let packageDir = root;
-  for (const part of normalizedSpecifier.split('.')) {
+  let packageDir = baseRoot;
+  for (const part of specifier.split('.')) {
     packageDir = resolve(packageDir, part);
     if (!existsSync(packageDir) || !statSync(packageDir).isDirectory()) break;
     const initializer = resolve(packageDir, '__init__.py');
     if (existsSync(initializer) && statSync(initializer).isFile()) initializers.push(initializer);
   }
   return initializers;
+}
+
+function resolvePythonPackageInitializersFromRoot(root: string, specifier: string): string[] {
+  const normalizedSpecifier = specifier.replace(/^\.+/, '');
+  if (!normalizedSpecifier) return [];
+  return resolvePythonPackageInitializersFromBase(root, normalizedSpecifier);
 }
 
 function resolveLocalPythonModule(root: string, fromFile: string, specifier: string): string | null {
@@ -203,6 +208,28 @@ function resolveLocalPythonModule(root: string, fromFile: string, specifier: str
     if (resolvedModule) return resolvedModule;
   }
   return null;
+}
+
+function resolveLocalPythonPackageInitializers(root: string, fromFile: string, specifier: string): string[] {
+  const leadingDots = specifier.match(/^\.+/)?.[0]?.length ?? 0;
+  if (leadingDots > 0) {
+    let baseDir = dirname(fromFile);
+    for (let level = 1; level < leadingDots; level += 1) baseDir = dirname(baseDir);
+    const remainingSpecifier = specifier.slice(leadingDots);
+    if (!remainingSpecifier) {
+      const initializer = resolve(baseDir, '__init__.py');
+      return existsSync(initializer) && statSync(initializer).isFile() ? [initializer] : [];
+    }
+    return resolvePythonPackageInitializersFromBase(baseDir, remainingSpecifier);
+  }
+
+  if (!specifier) return [];
+  const fromDir = dirname(fromFile);
+  for (const baseRoot of [fromDir, root]) {
+    const base = resolve(baseRoot, ...specifier.split('.'));
+    if (resolveLocalPythonModuleBase(base)) return resolvePythonPackageInitializersFromBase(baseRoot, specifier);
+  }
+  return [];
 }
 
 function pythonImportedModuleSpecifier(moduleName: string, importedName: string): string {
@@ -254,6 +281,11 @@ function addAdapterDependencyFiles(root: string, file: string, files: Set<string
   files.add(trustedFile);
   const content = readFileSync(trustedFile, 'utf8');
   for (const specifier of localDependencySpecifiers(trustedFile, content)) {
+    if (/\.py$/i.test(trustedFile)) {
+      for (const initializer of resolveLocalPythonPackageInitializers(root, trustedFile, specifier)) {
+        addAdapterDependencyFiles(root, initializer, files, seen);
+      }
+    }
     const dependency = resolveLocalDependency(root, trustedFile, specifier);
     if (dependency) addAdapterDependencyFiles(root, dependency, files, seen);
   }

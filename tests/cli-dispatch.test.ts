@@ -255,6 +255,30 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('invalidates trust when Python adapter package initializers change', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      const helpersDir = join(adapterDir, 'helpers');
+      mkdirSync(helpersDir, { recursive: true });
+      writeFileSync(join(helpersDir, '__init__.py'), "MARKER = 'trusted-package-initializer'\n");
+      writeFileSync(join(helpersDir, 'util.py'), "from helpers import MARKER\n");
+      writeFileSync(join(adapterDir, 'package-init-runner.py'), "import helpers.util\nprint(helpers.util.MARKER)\n");
+      writeAdapterConfig(root, 'python-package-init-runner', ['python3', '.osc/adapters/package-init-runner.py']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-init-runner'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(helpersDir, '__init__.py'), "MARKER = 'changed-package-initializer'\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-init-runner'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('invalidates trust when Python from-import package submodules change', () => {
     const root = tempRepo();
     try {
