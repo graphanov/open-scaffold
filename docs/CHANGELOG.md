@@ -4,6 +4,23 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v0.30.0 — Blueprint security and adoption release
+
+Status: release-sync candidate in this branch. It is not published to npm and not GitHub Latest until the release PR merges, trusted publishing succeeds, fresh `npx` proof passes, and GitHub Release `v0.30.0` is created/marked Latest.
+
+Highlights:
+
+- Publishes the OSB blueprint security/adoption work from PR #168 to the public `npx open-scaffold@latest` package surface.
+- Makes guided first-run onboarding, PR-native structural checks, adapter trust commands, command/schema registries, redaction/secret-scan support, and optional GitHub-online verification labels available in the package.
+- Documents the trust boundary more explicitly: Open Scaffold remains repo-native and no-spawn by default; it supports reviewability and traceability, not semantic correctness, compliance certification, production readiness, or runtime correctness.
+- Includes the maintenance tail from PRs #169 and #170 before the release-sync cut.
+
+Evidence:
+
+- Release-sync plan: `.osc/plans/active/141-0300-npx-release-sync.md` until final public proof exists; expected closeout path is `.osc/plans/done/141-0300-npx-release-sync.md`.
+- Source PR: https://github.com/graphanov/open-scaffold/pull/168
+- Release-sync evidence note: `.osc/releases/2026-06-03-141-0300-npx-release-sync.md`
+
 ## v0.20.4 — Fresh npx compare demo repair
 
 Status: published to npm as `open-scaffold@0.20.4`; GitHub Release `v0.20.4` is Latest after owner-approved trusted publishing and release follow-through.

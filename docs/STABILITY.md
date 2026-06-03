@@ -2,13 +2,13 @@
 
 This page defines Open Scaffold's current package contract and maturity boundary.
 
-The short version: Open Scaffold is back on a pre-1.0 hardening line (`v0.20.x`) because the protocol is useful but the public product surface, runtime boundary, and adoption story are still moving quickly. The stable-enough core is the repo-native work-record loop — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus read-only work-record commands such as `osc compare` and `osc trace` that help humans inspect recorded work without launching runtimes. Runtime launch, provider-specific automation, evaluation helpers, dashboards, and external cockpit transports remain opt-in lab/experimental surfaces unless a later release explicitly promotes them.
+The short version: Open Scaffold is on a pre-1.0 hardening line (`v0.30.x` after the blueprint security/adoption package sync) because the protocol is useful but the public product surface, runtime boundary, and adoption story are still moving quickly. The stable-enough core is the repo-native work-record loop — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus adoption/review/trust helpers such as `osc first-run`, `osc pr check`, adapter trust inspection, schema registry inspection, and read-only work-record commands such as `osc compare` and `osc trace` that help humans inspect recorded work without launching runtimes. Runtime launch, provider-specific automation, evaluation helpers, dashboards, and external cockpit transports remain opt-in lab/experimental surfaces unless a later release explicitly promotes them.
 
 The historical `v1.0.x` packages and GitHub Releases remain available for provenance. They are not erased, but they should not set the current expectation that Open Scaffold has fully earned a mature 1.0 contract.
 
 ## Release status
 
-- Current cadence: pre-1.0 hardening on the `v0.20.x` line.
+- Current cadence: pre-1.0 hardening on the `v0.30.x` line.
 - Historical note: `v1.0.x` exists as a previously published launch line (most recent tag: `v1.0.5`) and remains immutable package/release history.
 - Current repository package version: check `package.json`.
 - Live npm package truth: check `npm view open-scaffold version dist-tags --json`.
@@ -44,6 +44,10 @@ The stable day-two CLI surface is:
 - `osc evidence new`
 - `osc evidence collect`
 - `osc verify`
+- `osc first-run` as guided repo initialization for the minimum work record
+- `osc pr check` as a PR-native structural check surface
+- `osc adapter check`, `osc adapter trust`, and trusted adapter listing for adapter trust inspection
+- `osc schemas list` and `osc schemas show` for package-visible schema discovery
 - `osc compare` as a read-only first-read demo for comparing two recorded attempts
 - `osc trace` as a read-only replay of one plan's local work-record chain
 
@@ -98,7 +102,7 @@ Future work can explore those areas only through explicit plans, evidence, safet
 
 ## Versioning policy
 
-Open Scaffold uses npm package versions as public distribution coordinates. The current `v0.20.x` line is intentionally pre-1.0: it communicates that the core work-record pattern is usable, but the product is still earning its long-term stable contract.
+Open Scaffold uses npm package versions as public distribution coordinates. The current `v0.30.x` line is intentionally pre-1.0: it communicates that the core work-record pattern is usable and the security/adoption package surface has hardened, but the product is still earning its long-term stable contract.
 
 The previously published `v1.0.x` packages remain immutable historical artifacts. They should be treated as an over-eager launch line, not as a reason to force every future change through mature-1.0 pressure. A future real 1.0 should be cut only after the adoption path, public package surfaces, runtime boundaries, and evidence/tracing primitives feel durable enough to sustain that promise.
 
