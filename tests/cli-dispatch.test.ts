@@ -231,6 +231,28 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('hashes repo-local argv0 payloads whose basename looks like an interpreter', () => {
+    const root = tempRepo();
+    try {
+      const adapterDir = join(root, '.osc/adapters');
+      mkdirSync(adapterDir, { recursive: true });
+      const localNode = join(adapterDir, 'node');
+      writeFileSync(localNode, "#!/usr/bin/env node\nconsole.log('trusted local node payload');\n");
+      writeAdapterConfig(root, 'local-node-payload', ['.osc/adapters/node']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'local-node-payload'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(localNode, "#!/usr/bin/env node\nconsole.log('changed local node payload');\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'local-node-payload'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('invalidates trust when Python adapter helper files change', () => {
     const root = tempRepo();
     try {

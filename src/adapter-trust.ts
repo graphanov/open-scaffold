@@ -113,6 +113,16 @@ function commandEntryPathCandidates(root: string, entry: string): Array<{ path: 
   return candidates;
 }
 
+function commandEntryIsRepoLocalPath(root: string, realRoot: string, entry: string): boolean {
+  if (!commandEntryLooksLikePath(entry)) return false;
+  const candidate = isAbsolute(entry) ? resolve(entry) : resolve(root, entry);
+  const lexicalRoot = resolve(root);
+  if (isInsideOrSame(lexicalRoot, candidate) || isInsideOrSame(realRoot, candidate)) return true;
+  if (!existsSync(candidate)) return false;
+  const resolvedCandidate = realpathSync.native(candidate);
+  return isInsideOrSame(realRoot, resolvedCandidate);
+}
+
 function localPathResolutionCandidates(file: string): string[] {
   const candidates: string[] = [];
   for (const extension of localModuleExtensions) {
@@ -309,7 +319,8 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
   for (let index = 0; index < parsed.command.length; index += 1) {
     const entry = parsed.command[index];
     if (typeof entry !== 'string' || !entry.trim()) continue;
-    const candidates = index === 0 && commandEntryLooksLikeTrustedInterpreterExecutable(entry) ? [] : commandEntryPathCandidates(root, entry);
+    const skipTrustedExternalInterpreter = index === 0 && commandEntryLooksLikeTrustedInterpreterExecutable(entry) && !commandEntryIsRepoLocalPath(root, realRoot, entry);
+    const candidates = skipTrustedExternalInterpreter ? [] : commandEntryPathCandidates(root, entry);
     const nextEntry = parsed.command[index + 1];
     if (commandFlagTakesPathOperand(entry) && typeof nextEntry === 'string' && nextEntry.trim() && !nextEntry.startsWith('-')) {
       candidates.push({ path: isAbsolute(nextEntry) ? resolve(nextEntry) : resolve(root, nextEntry), required: true });
