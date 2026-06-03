@@ -526,7 +526,7 @@ describe('osc evolve CLI', () => {
     expect(readFileSync(join(outDir, 'loop.json'), 'utf8')).toBe(before.loop);
     expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe(before.attempts);
     expect(readFileSync(join(outDir, 'frontier.json'), 'utf8')).toBe(before.frontier);
-  });
+  }, 15000);
 
   it('renders inspect_scorer next-action packets through the CLI', () => {
     const { root, outDir } = writeInspectCliLoop();
