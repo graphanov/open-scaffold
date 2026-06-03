@@ -6,7 +6,7 @@ For live package truth, check npm. For live release truth, check GitHub Releases
 
 ## v0.30.1 — Evolution handoff packet release
 
-Status: release candidate prepared for `open-scaffold@0.30.1`; publication proof is tracked in `.osc/releases/2026-06-03-144-next-action-packet-npx-release-sync.md` and must be verified against npm/GitHub live truth.
+Status: published to npm as `open-scaffold@0.30.1`; GitHub Release `v0.30.1` is Latest after owner-approved trusted publishing and release follow-through.
 
 Highlights:
 
@@ -19,7 +19,7 @@ Evidence:
 - Source plan: `.osc/plans/done/143-framework-value-next-action-packet.md`
 - Source PR: https://github.com/graphanov/open-scaffold/pull/175
 - Closeout PR: https://github.com/graphanov/open-scaffold/pull/176
-- Release-sync plan: `.osc/plans/active/144-next-action-packet-npx-release-sync.md`
+- Release-sync plan: `.osc/plans/done/144-next-action-packet-npx-release-sync.md`
 - Release-sync evidence note: `.osc/releases/2026-06-03-144-next-action-packet-npx-release-sync.md`
 
 ## v0.30.0 — Blueprint security and adoption release
