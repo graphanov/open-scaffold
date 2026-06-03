@@ -324,6 +324,28 @@ describe('osc dispatch', () => {
     }
   });
 
+  it('invalidates trust when Python package module-mode initializers change', () => {
+    const root = tempRepo();
+    try {
+      const moduleDir = join(root, 'adapter_pkg');
+      mkdirSync(moduleDir, { recursive: true });
+      writeFileSync(join(moduleDir, '__init__.py'), "MARKER = 'trusted-initializer'\n");
+      writeFileSync(join(moduleDir, '__main__.py'), "import adapter_pkg\nprint(adapter_pkg.MARKER)\n");
+      writeAdapterConfig(root, 'python-package-initializer', ['python3', '-m', 'adapter_pkg']);
+      const before = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-initializer'], { cwd: root, encoding: 'utf8' });
+      expect(before.status, before.stderr).toBe(0);
+      expect(before.stdout).toContain('Trusted: yes');
+
+      writeFileSync(join(moduleDir, '__init__.py'), "MARKER = 'changed-initializer'\n");
+      const after = spawnSync(tsx, [cli, 'adapter', 'check', 'python-package-initializer'], { cwd: root, encoding: 'utf8' });
+      expect(after.status, after.stderr).toBe(0);
+      expect(after.stdout).toContain('Trusted: no');
+      expect(after.stdout).toContain('Reason: trusted digest no longer matches current config');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('invalidates trust when Python module mode follows options with operands', () => {
     const root = tempRepo();
     try {

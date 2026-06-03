@@ -171,6 +171,20 @@ function resolvePythonModuleEntrypointFromRoot(root: string, specifier: string):
   return null;
 }
 
+function resolvePythonPackageInitializersFromRoot(root: string, specifier: string): string[] {
+  const normalizedSpecifier = specifier.replace(/^\.+/, '');
+  if (!normalizedSpecifier) return [];
+  const initializers: string[] = [];
+  let packageDir = root;
+  for (const part of normalizedSpecifier.split('.')) {
+    packageDir = resolve(packageDir, part);
+    if (!existsSync(packageDir) || !statSync(packageDir).isDirectory()) break;
+    const initializer = resolve(packageDir, '__init__.py');
+    if (existsSync(initializer) && statSync(initializer).isFile()) initializers.push(initializer);
+  }
+  return initializers;
+}
+
 function resolveLocalPythonModule(root: string, fromFile: string, specifier: string): string | null {
   const leadingDots = specifier.match(/^\.+/)?.[0]?.length ?? 0;
   if (leadingDots > 0) {
@@ -268,6 +282,7 @@ function adapterDigestFiles(root: string, rawConfig: Buffer): string[] {
       if (!moduleEntrypoint) {
         throw new AdapterTrustError('Adapter command references a Python module entrypoint that is not a repo-local file under the scaffold root. Use a repo-local script/module before trusting.');
       }
+      for (const initializer of resolvePythonPackageInitializersFromRoot(realRoot, nextEntry)) candidates.push({ path: initializer, required: true });
       candidates.push({ path: moduleEntrypoint, required: true });
     }
     for (const candidate of candidates) {
