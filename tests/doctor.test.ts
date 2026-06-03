@@ -122,10 +122,11 @@ describe('osc doctor auto-fix', () => {
     const root = tempRepo();
     const planPath = join(root, '.osc/plans/active/001-sample.md');
     writeFileSync(planPath, samplePlan);
-    const old = (Date.now() - 45 * 86_400_000) / 1000;
+    const now = new Date('2026-05-20T12:00:00');
+    const old = (now.getTime() - 45 * 86_400_000) / 1000;
     utimesSync(planPath, old, old);
 
-    const result = runDoctor(root, { fix: true, check: 'stale-plan', now: new Date('2026-05-20T12:00:00'), staleDays: 30 });
+    const result = runDoctor(root, { fix: true, check: 'stale-plan', now, staleDays: 30 });
     const blockedPath = join(root, '.osc/plans/blocked/001-sample.md');
 
     expect(result.applied.map((item) => item.check)).toContain('stale-plan');
@@ -150,10 +151,11 @@ describe('osc doctor auto-fix', () => {
     const root = tempRepo();
     const planPath = join(root, '.osc/plans/active/001-sample.md');
     writeFileSync(planPath, samplePlan.replace(/## Status\n\nactive\n\n/, ''));
-    const old = (Date.now() - 45 * 86_400_000) / 1000;
+    const now = new Date('2026-05-20T12:00:00');
+    const old = (now.getTime() - 45 * 86_400_000) / 1000;
     utimesSync(planPath, old, old);
 
-    const result = runDoctor(root, { fix: true, check: 'stale-plan', now: new Date('2026-05-20T12:00:00'), staleDays: 30 });
+    const result = runDoctor(root, { fix: true, check: 'stale-plan', now, staleDays: 30 });
 
     expect(result.applied).toEqual([]);
     expect(result.diagnoses).toEqual([

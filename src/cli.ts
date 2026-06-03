@@ -1985,7 +1985,7 @@ function evalCommand(args: string[]): void {
 }
 
 function printEvolutionUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> | osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>] | osc evolve analyze <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>] | osc evolve check <loop-dir>', stream);
+  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> [--repair-hypothesis <text>] [--target-metric <name>] [--expected-gain <number>] [--actual-delta <number>] [--tokens-total <integer>] [--estimated-usd <number>] [--usage-source <source>] [--usage-unavailable-reason <text>] | osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>] | osc evolve analyze <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>] | osc evolve check <loop-dir>', stream);
 }
 
 function takeEvolutionValue(args: string[], index: number, flag: string): string {
@@ -2020,6 +2020,33 @@ function parseEvolutionCompareFormat(value: string): EvolutionCompareFormat {
 
 function parseEvolutionAnalysisFormat(value: string): EvolutionAnalysisFormat {
   return parseEvolutionCompareFormat(value);
+}
+
+function parseEvolutionFiniteNumber(raw: string, flag: string): number {
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) {
+    console.error(`Invalid value for ${flag}: ${raw}. Expected a finite number.`);
+    process.exit(2);
+  }
+  return parsed;
+}
+
+function parseEvolutionNonNegativeInteger(raw: string, flag: string): number {
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    console.error(`Invalid value for ${flag}: ${raw}. Expected a non-negative integer.`);
+    process.exit(2);
+  }
+  return parsed;
+}
+
+function parseEvolutionNonNegativeNumber(raw: string, flag: string): number {
+  const parsed = parseEvolutionFiniteNumber(raw, flag);
+  if (parsed < 0) {
+    console.error(`Invalid value for ${flag}: ${raw}. Expected a non-negative number.`);
+    process.exit(2);
+  }
+  return parsed;
 }
 
 function evolutionRootFor(path: string): string {
@@ -2087,6 +2114,14 @@ function evolutionCommand(args: string[]): void {
     let decision: EvolutionDecision | null = null;
     let score: number | undefined;
     let rationale = '';
+    let repairHypothesis: string | undefined;
+    let targetMetric: string | undefined;
+    let expectedGain: number | undefined;
+    let actualDelta: number | undefined;
+    let tokensTotal: number | undefined;
+    let estimatedUsd: number | undefined;
+    let usageSource: string | undefined;
+    let usageUnavailableReason: string | undefined;
     for (let i = 0; i < rest.length; i += 1) {
       const flag = rest[i];
       switch (flag) {
@@ -2124,6 +2159,38 @@ function evolutionCommand(args: string[]): void {
           rationale = takeEvolutionValue(rest, i, flag);
           i += 1;
           break;
+        case '--repair-hypothesis':
+          repairHypothesis = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--target-metric':
+          targetMetric = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--expected-gain':
+          expectedGain = parseEvolutionFiniteNumber(takeEvolutionValue(rest, i, flag), flag);
+          i += 1;
+          break;
+        case '--actual-delta':
+          actualDelta = parseEvolutionFiniteNumber(takeEvolutionValue(rest, i, flag), flag);
+          i += 1;
+          break;
+        case '--tokens-total':
+          tokensTotal = parseEvolutionNonNegativeInteger(takeEvolutionValue(rest, i, flag), flag);
+          i += 1;
+          break;
+        case '--estimated-usd':
+          estimatedUsd = parseEvolutionNonNegativeNumber(takeEvolutionValue(rest, i, flag), flag);
+          i += 1;
+          break;
+        case '--usage-source':
+          usageSource = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
+        case '--usage-unavailable-reason':
+          usageUnavailableReason = takeEvolutionValue(rest, i, flag);
+          i += 1;
+          break;
         default:
           console.error(`Unknown option for evolve record: ${flag}`);
           printEvolutionUsage();
@@ -2153,6 +2220,18 @@ function evolutionCommand(args: string[]): void {
         decision,
         score,
         rationale,
+        repairHypothesis: repairHypothesis !== undefined || targetMetric !== undefined || expectedGain !== undefined || actualDelta !== undefined ? {
+          hypothesis: repairHypothesis ?? '',
+          targetMetric: targetMetric ?? null,
+          expectedGain: expectedGain ?? null,
+          actualDelta: actualDelta ?? null,
+        } : undefined,
+        usage: tokensTotal !== undefined || estimatedUsd !== undefined || usageSource !== undefined || usageUnavailableReason !== undefined ? {
+          totalTokens: tokensTotal ?? null,
+          estimatedUsd: estimatedUsd ?? null,
+          source: usageSource ?? null,
+          unavailableReason: usageUnavailableReason ?? null,
+        } : undefined,
       }, root);
       console.log(`Recorded evolution attempt: ${String(result.attempt.attempt_id)}`);
       if (result.frontierUpdated) console.log(`Updated frontier: ${String(result.attempt.attempt_id)}`);

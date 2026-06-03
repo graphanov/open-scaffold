@@ -108,10 +108,11 @@ For multi-attempt improvement loops, create a lab evolution ledger after the fir
 ```bash
 osc evolve init .osc/plans/active/<plan>.md --out .osc/evolution/<loop-id> --strategy manual
 osc evolve record .osc/evolution/<loop-id> --run .osc/runs/<run-id>/run.json --evaluation docs/evidence/<eval>.json --receipt .osc/runs/<run-id>/dispatch-receipt.json --evidence .osc/runs/<run-id>/runtime-omx-evidence.md --decision promote --score 0.93 --rationale "Best evidence so far."
+osc evolve record .osc/evolution/<loop-id> --run .osc/runs/<next-run-id>/run.json --evaluation docs/evidence/<next-eval>.json --decision retry --repair-hypothesis "Target one still-failing criterion with a measurable repair." --target-metric accepted_ac_count --expected-gain 1 --actual-delta 0 --rationale "Continue only because the next repair hypothesis is explicit."
 osc evolve check .osc/evolution/<loop-id>
 ```
 
-The evolution ledger records attempts and frontier state only. External coordinators or OMX-based runtime packages execute attempts; Open Scaffold core does not spawn runtimes or choose a winner.
+The evolution ledger records attempts and frontier state only. Retry records must include a repair hypothesis before continuing. External coordinators or OMX-based runtime packages execute attempts; Open Scaffold core does not spawn runtimes or choose a winner.
 
 > **With OMC harness:** `/ralph` for Claude Code completion loops; `/team` or `/ultrawork` for parallel fan-out across multiple Claude Code-oriented agents.
 >

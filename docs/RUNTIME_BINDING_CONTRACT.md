@@ -191,10 +191,14 @@ osc evolve record .osc/evolution/<loop_id> \
   --receipt .osc/runs/<run_id>/dispatch-receipt.json \
   --evidence .osc/runs/<run_id>/runtime-omx-evidence.md \
   --decision retry \
+  --repair-hypothesis "Use the adapter evidence to target the next measurable failing criterion." \
+  --target-metric "accepted_ac_count" \
+  --expected-gain 1 \
+  --actual-delta 0 \
   --rationale "Adapter output recorded for the next attempt."
 ```
 
-The core recorder validates the dispatch receipt schema, receipt/run `run_id` consistency, and repo-local/private-path boundaries before appending attempt or frontier state. Runtime packages should not mutate `.osc/evolution/` as a default side effect.
+The core recorder validates the dispatch receipt schema, receipt/run `run_id` consistency, retry repair-hypothesis presence, and repo-local/private-path boundaries before appending attempt or frontier state. Runtime packages should not mutate `.osc/evolution/` as a default side effect.
 
 The receipt records which adapter consumed which packet, the selected lane/workflow/profile, what authority was used, whether a real runtime was spawned, and where evidence/logs/artifacts live. The evidence artifact records factual handoff/result proof. Neither artifact proves that the task acceptance criteria passed; postflight/evaluation still decides correctness, approval, merge, and release.
 
