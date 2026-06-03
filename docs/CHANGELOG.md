@@ -4,6 +4,24 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v0.30.1 — Evolution handoff packet release
+
+Status: release candidate prepared for `open-scaffold@0.30.1`; publication proof is tracked in `.osc/releases/2026-06-03-144-next-action-packet-npx-release-sync.md` and must be verified against npm/GitHub live truth.
+
+Highlights:
+
+- Publishes the `osc evolve analyze` next-action packet work from PR #175 plus plan closeout from PR #176 to the public `npx open-scaffold@latest` package surface.
+- Adds workflow-neutral handoff guidance for repeated-attempt/evolution loops: recommended action, reasons, resume/frontier context, remaining criteria, required next fields, safe evidence refs, and boundary notes.
+- Keeps the packet as decision support only: no runtime spawning, no model selection, no benchmark-support claim, no score-improvement claim, and no approval authority.
+
+Evidence:
+
+- Source plan: `.osc/plans/done/143-framework-value-next-action-packet.md`
+- Source PR: https://github.com/graphanov/open-scaffold/pull/175
+- Closeout PR: https://github.com/graphanov/open-scaffold/pull/176
+- Release-sync plan: `.osc/plans/active/144-next-action-packet-npx-release-sync.md`
+- Release-sync evidence note: `.osc/releases/2026-06-03-144-next-action-packet-npx-release-sync.md`
+
 ## v0.30.0 — Blueprint security and adoption release
 
 Status: published to npm as `open-scaffold@0.30.0`; GitHub Release `v0.30.0` is Latest after owner-approved trusted publishing and release follow-through.
