@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -31,13 +31,13 @@ Publish `open-scaffold@0.30.1` on the npm `latest` dist-tag, create GitHub Relea
 
 ## Acceptance criteria
 
-- [ ] `package.json`, `package-lock.json`, changelog/version-truth docs, and release evidence prepare target version `0.30.1` without claiming npm/GitHub publication before it happens.
-- [ ] Candidate gates pass: `npm ci`, `git diff --check`, focused evolution/package tests, `npm test -- --run`, `npm run build`, `npm run osc -- doctor --check secret-scan`, `./verify.sh --strict`, `npm pack --dry-run --json`, and `npm publish --dry-run --tag latest`.
-- [ ] Release candidate PR is merged only after CI is green, latest-head Codex review is clean if triggered, and unresolved current-head review threads are zero.
-- [ ] Trusted publishing publishes `open-scaffold@0.30.1` with dist-tag `latest`, and `npm view open-scaffold version dist-tags --json --prefer-online` confirms `0.30.1` / `latest`.
-- [ ] Fresh isolated-cache `npx --yes open-scaffold@latest` proof from outside the repository verifies top-level help and the `osc evolve analyze` next-action packet JSON/markdown surface.
-- [ ] GitHub Release `v0.30.1` exists, targets the merged `main` commit, is marked Latest, and uses concise public-safe boundary language.
-- [ ] Final evidence records npm URL, trusted-publishing run, GitHub Release URL, fresh `npx` commands/results, PR/merge commits, and remaining risks; this plan is moved to `done/` only after those public surfaces are verified.
+- [x] `package.json`, `package-lock.json`, changelog/version-truth docs, and release evidence prepare target version `0.30.1` without claiming npm/GitHub publication before it happens.
+- [x] Candidate gates pass: `npm ci`, `git diff --check`, focused evolution/package tests, `npm test -- --run`, `npm run build`, `npm run osc -- doctor --check secret-scan`, `./verify.sh --strict`, `npm pack --dry-run --json`, and `npm publish --dry-run --tag latest`.
+- [x] Release candidate PR is merged only after CI is green, latest-head Codex review is clean if triggered, and unresolved current-head review threads are zero.
+- [x] Trusted publishing publishes `open-scaffold@0.30.1` with dist-tag `latest`, and `npm view open-scaffold version dist-tags --json --prefer-online` confirms `0.30.1` / `latest`.
+- [x] Fresh isolated-cache `npx --yes open-scaffold@latest` proof from outside the repository verifies top-level help and the `osc evolve analyze` next-action packet JSON/markdown surface.
+- [x] GitHub Release `v0.30.1` exists, targets the merged `main` commit, is marked Latest, and uses concise public-safe boundary language.
+- [x] Final evidence records npm URL, trusted-publishing run, GitHub Release URL, fresh `npx` commands/results, PR/merge commits, and remaining risks; this plan is moved to `done/` only after those public surfaces are verified.
 
 ## Verification steps
 
