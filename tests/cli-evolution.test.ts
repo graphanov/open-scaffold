@@ -187,6 +187,71 @@ function writePlateauCliLoop() {
   return { root, outDir };
 }
 
+function writeInspectCliEvaluation(root: string, runId: string) {
+  const evalPath = join(root, `docs/evidence/${runId}-inspect-evaluation.json`);
+  writeFileSync(evalPath, JSON.stringify({
+    schema: 'open-scaffold.evaluation.v1',
+    evaluation_id: `eval-${runId}`,
+    subject: { source: 'run', plan: '.osc/plans/active/087-demo.md', plan_slug: '087-demo', task_id: 'task-123', run_id: runId, run_packet: `.osc/runs/${runId}/run.json` },
+    acceptance_criteria: [
+      {
+        id: 'AC1',
+        text: 'Loop state is created.',
+        status: 'pass',
+        evaluator: { kind: 'human', name: 'reviewer', ref: null },
+        evidence: [{ kind: 'path', ref: `docs/evidence/${runId}-proof.md`, summary: 'Synthetic CLI evidence.' }],
+        rationale: 'Loop state exists.',
+      },
+      {
+        id: 'AC2',
+        text: 'Frontier promotion is explicit.',
+        status: 'fail',
+        evaluator: { kind: 'human', name: 'reviewer', ref: null },
+        evidence: [{ kind: 'path', ref: `docs/evidence/${runId}-proof.md`, summary: 'Reachable work remains incomplete.' }],
+        rationale: 'Reachable criterion remains failed; scorer sensitivity needs inspection before another retry.',
+        analysis: { reason: 'missing_tests', source: `docs/evidence/${runId}-proof.md` },
+      },
+    ],
+    decision: { status: 'rejected', approver: 'human', rationale: 'Reachable failure remains.' },
+    improvement: { route: 'retry_run', target: null, carried_forward: ['AC2 remains reachable.'], do_not_assume: ['No model benchmark claim.'] },
+  }, null, 2));
+  return evalPath;
+}
+
+function writeInspectCliLoop() {
+  const { root, planPath } = tempRepo();
+  const outDir = join(root, '.osc/evolution/inspect-loop');
+  execFileSync(tsx, [cli, 'evolve', 'init', planPath, '--out', outDir, '--strategy', 'greedy'], { cwd: root, encoding: 'utf8' });
+  const attempts = [
+    { runId: 'attempt-a', decision: 'promote', rationale: 'Initial score frontier.' },
+    { runId: 'attempt-b', decision: 'retry', rationale: 'Retry plateaued with reachable failure.' },
+    { runId: 'attempt-c', decision: 'retry', rationale: 'Another retry plateaued with reachable failure.' },
+  ];
+  for (const attempt of attempts) {
+    const runPath = writeRunPacket(root, attempt.runId);
+    const evalPath = writeInspectCliEvaluation(root, attempt.runId);
+    const args = [cli, 'evolve', 'record', outDir, '--run', runPath, '--evaluation', evalPath, '--decision', attempt.decision, '--score', '0.7', '--rationale', attempt.rationale];
+    if (attempt.decision === 'retry') {
+      args.push(
+        '--repair-hypothesis',
+        `Repair reachable failure for ${attempt.runId}.`,
+        '--target-metric',
+        'accepted_ac_count',
+        '--expected-gain',
+        '1',
+        '--actual-delta',
+        '0',
+        '--tokens-total',
+        '1200',
+        '--usage-source',
+        'test fixture',
+      );
+    }
+    execFileSync(tsx, args, { cwd: root, encoding: 'utf8' });
+  }
+  return { root, outDir };
+}
+
 describe('checked-in evolution ledger demo fixture through the CLI', () => {
   it('checks the committed fixture and renders the expected markdown exactly', () => {
     const check = execFileSync(tsx, [cli, 'evolve', 'check', evolutionDemoLoop], { cwd: repoRoot, encoding: 'utf8' });
@@ -420,6 +485,12 @@ describe('osc evolve CLI', () => {
 
     const json = JSON.parse(execFileSync(tsx, [cli, 'evolve', 'analyze', outDir, '--format', 'json'], { cwd: root, encoding: 'utf8' }));
     expect(json.recommendation.action).toBe('redesign');
+    expect(json.nextActionPacket).toMatchObject({
+      schema: 'open-scaffold.evolution-next-action-packet.v1',
+      recommendedAction: 'redesign',
+      acceptance: { currentPass: 2, currentTotal: 3 },
+    });
+    expect(json.nextActionPacket.requiredNextFields).toContain('redesigned_criterion_scorer_or_artifact_shape');
     expect(json.criteria.find((criterion: { id: string }) => criterion.id === 'AC3')).toMatchObject({ impossible: true, sensitivity: 'none' });
 
     const output = execFileSync(tsx, [cli, 'evolve', 'analyze', outDir, '--format', 'markdown', '--out', reportPath], { cwd: root, encoding: 'utf8' });
@@ -428,10 +499,30 @@ describe('osc evolve CLI', () => {
     expect(report).toContain('# Evolution analysis: plateau-loop');
     expect(report).toContain('## Current vs frontier AC delta');
     expect(report).toContain('`redesign`');
+    expect(report).toContain('## Next action packet');
+    expect(report).toContain('Do not record another blind retry');
+    expect(report).toContain('`redesigned_criterion_scorer_or_artifact_shape`');
 
     expect(readFileSync(join(outDir, 'loop.json'), 'utf8')).toBe(before.loop);
     expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe(before.attempts);
     expect(readFileSync(join(outDir, 'frontier.json'), 'utf8')).toBe(before.frontier);
+  });
+
+  it('renders inspect_scorer next-action packets through the CLI', () => {
+    const { root, outDir } = writeInspectCliLoop();
+
+    const json = JSON.parse(execFileSync(tsx, [cli, 'evolve', 'analyze', outDir, '--format', 'json'], { cwd: root, encoding: 'utf8' }));
+    expect(json.recommendation.action).toBe('inspect_scorer');
+    expect(json.nextActionPacket).toMatchObject({
+      recommendedAction: 'inspect_scorer',
+      acceptance: { currentPass: 1, currentTotal: 2 },
+    });
+    expect(json.nextActionPacket.requiredNextFields).toContain('current_evaluation_or_scorer_inspection');
+
+    const markdown = execFileSync(tsx, [cli, 'evolve', 'analyze', outDir, '--format', 'markdown'], { cwd: root, encoding: 'utf8' });
+    expect(markdown).toContain('## Next action packet');
+    expect(markdown).toContain('`inspect_scorer`');
+    expect(markdown).toContain('Inspect scorer/evaluation coverage before recording another attempt.');
   });
 
   it('rejects unknown strategies and prints evolve usage', () => {

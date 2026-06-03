@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
   EVOLUTION_LOOP_SCHEMA,
+  EVOLUTION_NEXT_ACTION_PACKET_SCHEMA,
   analyzeEvolutionLoop,
   compareEvolutionLoop,
   loadEvolutionSource,
@@ -731,6 +732,30 @@ describe('evolution analysis', () => {
     });
     expect(analysis.recommendation).toMatchObject({ action: 'redesign' });
     expect(analysis.recommendation.summary).toContain('remaining failing criteria');
+    expect(analysis.nextActionPacket).toMatchObject({
+      schema: EVOLUTION_NEXT_ACTION_PACKET_SCHEMA,
+      recommendedAction: 'redesign',
+      resumeFrom: { currentAttemptId: 'attempt-d', frontierAttemptId: 'attempt-b' },
+      acceptance: { currentPass: 2, currentTotal: 3 },
+      currentAttemptControl: {
+        budgetWarning: 'Last recorded attempt spent 1,003 token(s) for actual delta 0; do not spend another retry without new measurable control evidence.',
+      },
+    });
+    expect(analysis.nextActionPacket.acceptance.remainingFailures).toEqual([
+      expect.objectContaining({
+        id: 'AC3',
+        sensitivity: 'none',
+        impossible: true,
+        evidence: expect.arrayContaining(['docs/evidence/scorer.md#AC3']),
+      }),
+    ]);
+    expect(analysis.nextActionPacket.requiredNextFields).toEqual(expect.arrayContaining([
+      'redesigned_criterion_scorer_or_artifact_shape',
+      'measurable_repair_hypothesis_before_retry',
+      'usage_receipt_or_unavailable_reason',
+    ]));
+    expect(analysis.nextActionPacket.handoffChecklist.join('\n')).toContain('Do not record another blind retry');
+    expect(analysis.nextActionPacket.evidenceRefs).toEqual(expect.arrayContaining(['docs/evidence/attempt-d-evaluation.json', 'docs/evidence/scorer.md#AC3']));
     expect(analysis.notes.join('\n')).toContain('Score-frontier promotion is not acceptance approval');
 
     const terminal = renderEvolutionAnalysis(analysis, 'terminal');
@@ -739,6 +764,8 @@ describe('evolution analysis', () => {
     expect(terminal).toContain('Token cost: 1,003');
     expect(terminal).toContain('AC3: fail | sensitivity=none | impossible=probe_only');
     expect(terminal).toContain('Recommendation: redesign');
+    expect(terminal).toContain('Next action packet');
+    expect(terminal).toContain('Required next fields: redesigned_criterion_scorer_or_artifact_shape');
 
     const markdown = renderEvolutionAnalysis(analysis, 'markdown');
     expect(markdown).toContain('# Evolution analysis: plateau-loop');
@@ -748,15 +775,51 @@ describe('evolution analysis', () => {
     expect(markdown).toContain('| AC3 — Third criterion is probe-only for the current artifact shape. | ✗ fail | ✗ fail |');
     expect(markdown).toContain('## Recommendation');
     expect(markdown).toContain('`redesign`');
+    expect(markdown).toContain('## Next action packet');
+    expect(markdown).toContain('Do not record another blind retry');
 
     const json = JSON.parse(renderEvolutionAnalysis(analysis, 'json'));
     expect(json.recommendation.action).toBe('redesign');
+    expect(json.nextActionPacket.recommendedAction).toBe('redesign');
     expect(json.criteria.find((criterion: { id: string }) => criterion.id === 'AC3').impossible).toBe(true);
 
     expect(readFileSync(join(outDir, 'loop.json'), 'utf8')).toBe(before.loop);
     expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe(before.attempts);
     expect(readFileSync(join(outDir, 'frontier.json'), 'utf8')).toBe(before.frontier);
     expect(readFileSync(join(root, 'docs/evidence/attempt-d-evaluation.json'), 'utf8')).toBe(before.evaluation);
+  });
+
+  it('builds a stop packet that routes all-pass loops to human closeout instead of approval by score', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root, 'attempt-a');
+    const evalPath = writeEvaluation(root, 'attempt-a');
+    const outDir = join(root, '.osc/evolution/stop-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-06-03T08:00:00.000Z'), strategy: 'greedy' });
+    recordEvolutionAttempt(outDir, {
+      runPath,
+      evaluationPath: evalPath,
+      decision: 'promote',
+      score: 1,
+      rationale: 'All acceptance criteria pass; route to human closeout.',
+      now: new Date('2026-06-03T08:10:00.000Z'),
+    }, root);
+
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+
+    expect(analysis.recommendation).toMatchObject({ action: 'stop' });
+    expect(analysis.nextActionPacket).toMatchObject({
+      recommendedAction: 'stop',
+      acceptance: { currentPass: 2, currentTotal: 2, remainingFailures: [] },
+      resumeFrom: { currentAttemptId: 'attempt-a', frontierAttemptId: 'attempt-a' },
+    });
+    expect(analysis.nextActionPacket.requiredNextFields).toEqual([
+      'human_approval_or_closeout_decision',
+      'closeout_verification_evidence',
+      'next_slice_or_done_routing',
+    ]);
+    expect(analysis.nextActionPacket.handoffChecklist.join('\n')).toContain('frontier score is not acceptance approval');
+    expect(analysis.nextActionPacket.boundaryNotes.join('\n')).toContain('does not spawn runtimes');
   });
 
   it('uses current-attempt blocker metadata for recommendation instead of stale frontier metadata', () => {
@@ -774,6 +837,40 @@ describe('evolution analysis', () => {
     });
     expect(ac28?.reasons).not.toContain('probe_only');
     expect(analysis.recommendation.action).toBe('inspect_scorer');
+    expect(analysis.nextActionPacket).toMatchObject({
+      recommendedAction: 'inspect_scorer',
+      acceptance: { currentPass: 1, currentTotal: 2 },
+    });
+    expect(analysis.nextActionPacket.requiredNextFields).toEqual(expect.arrayContaining([
+      'current_evaluation_or_scorer_inspection',
+      'score_sensitivity_or_impossibility_metadata',
+      'usage_receipt_or_unavailable_reason',
+    ]));
+    expect(analysis.nextActionPacket.handoffChecklist.join('\n')).toContain('Inspect scorer/evaluation coverage');
+    expect(analysis.nextActionPacket.boundaryNotes.join('\n')).toContain('not benchmark support');
+  });
+
+  it('reads absolute local evaluation refs while rendering safe packet evidence refs', () => {
+    const { outDir, root } = writeOrdinaryFailureLoop();
+    const attemptsPath = join(outDir, 'attempts.jsonl');
+    const attempts = readFileSync(attemptsPath, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    attempts[attempts.length - 1].evaluation = join(root, 'docs/evidence/attempt-c-ordinary-evaluation.json');
+    writeFileSync(attemptsPath, `${attempts.map((attempt) => JSON.stringify(attempt)).join('\n')}\n`);
+
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+
+    expect(analysis.acceptanceSummary).toMatchObject({ currentPass: 1, currentTotal: 2 });
+    expect(analysis.criteria.find((criterion) => criterion.id === 'AC2')).toMatchObject({
+      currentStatus: 'fail',
+      sensitivity: 'unknown',
+    });
+    expect(analysis.nextActionPacket.evidenceRefs).toEqual(expect.arrayContaining([
+      'docs/evidence/skipped-rows-report.md',
+    ]));
+    expect(analysis.nextActionPacket.evidenceRefs.join('\n')).not.toContain(root);
   });
 
   it('treats missing current criterion metadata as scorer-inspection instead of stale blocker evidence', () => {
@@ -795,6 +892,22 @@ describe('evolution analysis', () => {
       action: 'inspect_scorer',
       reasons: expect.arrayContaining(['missing_current_acceptance_criteria']),
     });
+    expect(analysis.nextActionPacket).toMatchObject({
+      recommendedAction: 'inspect_scorer',
+      acceptance: {
+        currentPass: 1,
+        currentTotal: 1,
+        remainingFailures: [
+          expect.objectContaining({
+            id: 'AC3',
+            status: 'missing_current',
+            sensitivity: 'unknown',
+            impossible: false,
+          }),
+        ],
+      },
+    });
+    expect(analysis.nextActionPacket.handoffChecklist.join('\n')).toContain('AC3');
   });
 
   it('does not classify ordinary reachable failure reasons as impossible redesign-only blockers', () => {
@@ -834,6 +947,87 @@ describe('evolution analysis', () => {
     expect(markdown).not.toContain('.osc/research/private-scorer.md');
     expect(markdown).not.toContain('../raw-scorer.log');
     expect(markdown).not.toContain('docs/../../.osc-dev/notes.md');
+  });
+
+  it('does not read or render unsafe evaluation refs from hand-written attempt journals', () => {
+    const { outDir, root } = writeOrdinaryFailureLoop();
+    mkdirSync(join(root, '.osc-dev'), { recursive: true });
+    writeFileSync(join(root, '.osc-dev/private-evaluation.json'), JSON.stringify({
+      schema: 'open-scaffold.evaluation.v1',
+      acceptance_criteria: [
+        {
+          id: 'SECRET',
+          text: 'Private criterion must not leak.',
+          status: 'fail',
+          evidence: [{ kind: 'path', ref: '.osc-dev/private-note.md', summary: 'Private details.' }],
+          rationale: 'Private rationale.',
+        },
+      ],
+    }, null, 2));
+    const attemptsPath = join(outDir, 'attempts.jsonl');
+    const attempts = readFileSync(attemptsPath, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    attempts[attempts.length - 1].evaluation = '.osc-dev/private-evaluation.json';
+    writeFileSync(attemptsPath, `${attempts.map((attempt) => JSON.stringify(attempt)).join('\n')}\n`);
+
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+    const terminal = renderEvolutionAnalysis(analysis, 'terminal');
+    const markdown = renderEvolutionAnalysis(analysis, 'markdown');
+    const json = renderEvolutionAnalysis(analysis, 'json');
+
+    expect(analysis.currentAttempt.evaluation).toBeNull();
+    expect(analysis.nextActionPacket.evidenceRefs).not.toContain('.osc-dev/private-evaluation.json');
+    for (const output of [terminal, markdown, json]) {
+      expect(output).not.toContain('.osc-dev/private-evaluation.json');
+      expect(output).not.toContain('Private criterion');
+      expect(output).not.toContain('Private rationale');
+      expect(output).not.toContain('.osc-dev/private-note.md');
+    }
+  });
+
+  it('does not follow relative evaluation symlinks into private workspace state', () => {
+    const { outDir, root } = writeOrdinaryFailureLoop();
+    mkdirSync(join(root, '.osc-dev'), { recursive: true });
+    writeFileSync(join(root, '.osc-dev/private-evaluation.json'), JSON.stringify({
+      schema: 'open-scaffold.evaluation.v1',
+      acceptance_criteria: [
+        {
+          id: 'SECRET',
+          text: 'Private symlinked criterion must not leak.',
+          status: 'fail',
+          evidence: [{ kind: 'path', ref: '.osc-dev/private-note.md', summary: 'Private details.' }],
+          rationale: 'Private symlink rationale.',
+        },
+      ],
+    }, null, 2));
+    try {
+      symlinkSync(join(root, '.osc-dev/private-evaluation.json'), join(root, 'docs/evidence/private-evaluation-link.json'));
+    } catch {
+      return;
+    }
+    const attemptsPath = join(outDir, 'attempts.jsonl');
+    const attempts = readFileSync(attemptsPath, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    attempts[attempts.length - 1].evaluation = 'docs/evidence/private-evaluation-link.json';
+    writeFileSync(attemptsPath, `${attempts.map((attempt) => JSON.stringify(attempt)).join('\n')}\n`);
+
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+    const terminal = renderEvolutionAnalysis(analysis, 'terminal');
+    const markdown = renderEvolutionAnalysis(analysis, 'markdown');
+    const json = renderEvolutionAnalysis(analysis, 'json');
+
+    expect(analysis.currentAttempt.evaluation).toBeNull();
+    expect(analysis.nextActionPacket.evidenceRefs).not.toContain('docs/evidence/private-evaluation-link.json');
+    for (const output of [terminal, markdown, json]) {
+      expect(output).not.toContain('private-evaluation-link.json');
+      expect(output).not.toContain('Private symlinked criterion');
+      expect(output).not.toContain('Private symlink rationale');
+      expect(output).not.toContain('.osc-dev/private-note.md');
+    }
   });
 });
 
