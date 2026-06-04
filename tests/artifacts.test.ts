@@ -231,6 +231,20 @@ describe('run artifact generation', () => {
     expect(preview.manifest.packageQuality.blockers).toContain('missing executable verification command');
   });
 
+  it('allows a runnable in-run verification step to reject later external proof', () => {
+    const root = tempRepo();
+    const runnablePolicyPlan = {
+      ...plan,
+      slug: '010-run-and-reject-external-proof',
+      verificationSteps: ['Run `npm test`; do not count tests an external runner runs after your turn as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, runnablePolicyPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(true);
+    expect(preview.manifest.packageQuality.blockers).toEqual([]);
+  });
+
   it('allows non-blocking open questions while only blocking explicit BLOCKING questions', () => {
     const root = tempRepo();
     const planWithFutureQuestion = {

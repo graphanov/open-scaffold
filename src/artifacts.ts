@@ -145,8 +145,11 @@ const EXTERNAL_RUNNER_WILL_RUN_RE = /\b(?:external runner|later operator|operato
 const FORBIDS_IN_RUN_VERIFICATION_RE = /\b(?:do not|don't|must not|never)\s+run\b/i;
 const REJECTS_DEFERRED_VERIFICATION_RE = /\b(?:do not|don't|does not|doesn't|must not|cannot|can't|never)\s+(?:count|treat|accept|use)\b.{0,120}\b(?:external runner|run externally|runs externally|after (?:the )?(?:model )?turn|after your turn|later operator|operator will run|someone else will run)\b.{0,120}\b(?:verification|proof)\b|\b(?:external runner|run externally|runs externally|after (?:the )?(?:model )?turn|after your turn|later operator|operator will run|someone else will run)\b.{0,120}\b(?:does not|doesn't|do not|don't|must not|cannot|can't|never)\s+count\b.{0,120}\b(?:verification|proof)?\b|\b(?:external runner|later operator)\b.{0,120}\b(?:not verification|is not verification|not proof|is not proof)\b/i;
 
+const IN_RUN_VERIFICATION_ACTION_RE = /^(?:run|execute|verify|validate|check|test)\b/i;
+
 function defersVerificationOutsideRun(step: string): boolean {
   if (!DEFERRED_VERIFICATION_RE.test(step)) return false;
+  if (REJECTS_DEFERRED_VERIFICATION_RE.test(step) && IN_RUN_VERIFICATION_ACTION_RE.test(step.trim())) return false;
   if (EXTERNAL_RUNNER_WILL_RUN_RE.test(step)) return true;
   if (FORBIDS_IN_RUN_VERIFICATION_RE.test(step)) return true;
   return !REJECTS_DEFERRED_VERIFICATION_RE.test(step);
@@ -154,10 +157,10 @@ function defersVerificationOutsideRun(step: string): boolean {
 
 function looksLikeExecutableVerification(step: string): boolean {
   const trimmed = step.trim();
-  if (REJECTS_DEFERRED_VERIFICATION_RE.test(trimmed) && !/^(?:run|execute|verify|validate|check|test)\b/i.test(trimmed)) {
+  if (REJECTS_DEFERRED_VERIFICATION_RE.test(trimmed) && !IN_RUN_VERIFICATION_ACTION_RE.test(trimmed)) {
     return false;
   }
-  return /^(?:run|execute|verify|validate|check|test)\b/i.test(trimmed)
+  return IN_RUN_VERIFICATION_ACTION_RE.test(trimmed)
     || /(?:^|[`\s])(?:npm|pnpm|yarn|npx|node|tsx|python3?|pytest|cargo|make|bash|sh|git|gh|osc|\.\/)[^`\s]*/i.test(trimmed);
 }
 
