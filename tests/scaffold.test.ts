@@ -104,6 +104,18 @@ describe('open-scaffold parser', () => {
     expect(plan.executionStrategy?.groups.map((g) => g.name)).toEqual(['Group A', 'Group B']);
   });
 
+  it('accepts the common Verification heading alias and bullet verification checks', () => {
+    const root = tempRepo();
+    const path = join(root, '.osc/plans/active/002-verification-alias.md');
+    writeFileSync(path, samplePlan
+      .replace('# Plan: sample', '# Plan: 002-verification-alias')
+      .replace('## Verification steps\n\n1. Run `npm test`.\n2. Expected: pass.', '## Verification\n\n- Run `npm test`.\n- Run `./verify.sh --standard`.'));
+
+    const plan = parsePlanFile(path);
+
+    expect(plan.verificationSteps).toEqual(['Run `npm test`.', 'Run `./verify.sh --standard`.']);
+  });
+
   it('uses the local scaffold date for evidence note filenames', () => {
     const previousTz = process.env.TZ;
     process.env.TZ = 'Pacific/Kiritimati';

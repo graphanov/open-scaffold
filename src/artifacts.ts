@@ -140,6 +140,28 @@ function blockingOpenQuestions(plan: ParsedPlan): string[] {
   return plan.openQuestions.filter(isBlockingOpenQuestion);
 }
 
+function defersVerificationOutsideRun(step: string): boolean {
+  return /\b(external runner|run externally|runs externally|will be run externally|after (?:the )?(?:model )?turn|after your turn|later by|operator will run|someone else will run)\b/i.test(step);
+}
+
+function looksLikeExecutableVerification(step: string): boolean {
+  const trimmed = step.trim();
+  return /^(?:run|execute|verify|validate|check|test)\b/i.test(trimmed)
+    || /(?:^|[`\s])(?:npm|pnpm|yarn|npx|node|tsx|python3?|pytest|cargo|make|bash|sh|git|gh|\.\/)[^`\s]*/i.test(trimmed);
+}
+
+function verificationBlockers(plan: ParsedPlan): string[] {
+  if (plan.verificationSteps.length === 0) return ['missing verification steps'];
+  const blockers: string[] = [];
+  if (plan.verificationSteps.some(defersVerificationOutsideRun)) {
+    blockers.push('verification steps defer execution outside the run packet');
+  }
+  if (!plan.verificationSteps.some(looksLikeExecutableVerification)) {
+    blockers.push('missing executable verification command');
+  }
+  return blockers;
+}
+
 function missionBlocker(root: string): string | null {
   const missionPath = join(root, 'MISSION.md');
   if (!existsSync(missionPath)) return 'undefined mission';
@@ -154,7 +176,7 @@ function contextQuality(root: string, plan: ParsedPlan): PackageQuality {
   if (mission) blockers.push(mission);
   if (!plan.goal.trim()) blockers.push('missing goal');
   if (plan.acceptanceCriteria.length === 0) blockers.push('missing acceptance criteria');
-  if (plan.verificationSteps.length === 0) blockers.push('missing verification steps');
+  blockers.push(...verificationBlockers(plan));
   const openQuestions = blockingOpenQuestions(plan);
   if (openQuestions.length) blockers.push('blocking open questions present');
   return {
@@ -189,6 +211,7 @@ function promptForGroup(plan: ParsedPlan, groupName: string, tasks: string, runI
     '- Follow the plan and its amendments; do not silently expand scope.',
     '- If scope changes, propose an amendment instead of editing the original plan.',
     '- Produce evidence tied to acceptance criteria, not vibes.',
+    '- Run the verification steps before final handoff. If a step cannot run, record the exact command, exit status, and stderr; do not treat an external runner or later operator step as verification.',
     '- This generic prompt does not spawn agents; paste it into your selected runtime.',
     '- Treat chat threads as operator-surface bindings, not canonical task/run identity.',
     '- If blocking open questions exist, stop and clarify before implementation.',
@@ -328,6 +351,9 @@ export function previewRunArtifacts(root: string, plan: ParsedPlan, mode: Artifa
 
 export function createRunArtifacts(root: string, plan: ParsedPlan, mode: ArtifactMode = 'run', options: RunArtifactOptions = {}): RunArtifacts {
   const preview = buildRunArtifacts(root, plan, mode, options);
+  if (!preview.manifest.packageQuality.executable) {
+    throw new Error(`Run package is not executable: ${preview.manifest.packageQuality.blockers.join('; ')}`);
+  }
   mkdirSync(join(preview.runDir, 'prompts'), { recursive: true });
 
   const promptPaths: string[] = [];

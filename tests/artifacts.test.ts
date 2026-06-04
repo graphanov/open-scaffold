@@ -108,18 +108,40 @@ describe('run artifact generation', () => {
     expect(prompt).toContain('- Executor: omx-codex');
   });
 
-  it('marks packages with missing executable context as requiring clarification before dispatch', () => {
+  it('previews packages with missing executable context as requiring clarification before dispatch', () => {
     const root = tempRepo();
 
-    const run = createRunArtifacts(root, ambiguousPlan as any, 'run', { executor: 'omc-claude', harnessSkill: '/deep-interview' });
-    const manifest = JSON.parse(readFileSync(run.manifestPath, 'utf8'));
+    const preview = previewRunArtifacts(root, ambiguousPlan as any, 'run', { executor: 'omc-claude', harnessSkill: '/deep-interview' });
 
-    expect(manifest.packageQuality.executable).toBe(false);
-    expect(manifest.packageQuality.requiredAction).toBe('clarify-or-deep-interview-before-dispatch');
-    expect(manifest.packageQuality.blockers).toContain('missing goal');
-    expect(manifest.packageQuality.blockers).toContain('missing acceptance criteria');
-    expect(manifest.packageQuality.blockers).toContain('missing verification steps');
-    expect(manifest.packageQuality.blockers).toContain('blocking open questions present');
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.requiredAction).toBe('clarify-or-deep-interview-before-dispatch');
+    expect(preview.manifest.packageQuality.blockers).toContain('missing goal');
+    expect(preview.manifest.packageQuality.blockers).toContain('missing acceptance criteria');
+    expect(preview.manifest.packageQuality.blockers).toContain('missing verification steps');
+    expect(preview.manifest.packageQuality.blockers).toContain('blocking open questions present');
+  });
+
+  it('refuses to write non-executable run artifacts', () => {
+    const root = tempRepo();
+
+    expect(() => createRunArtifacts(root, ambiguousPlan as any, 'run', { executor: 'omc-claude', harnessSkill: '/deep-interview' }))
+      .toThrow(/Run package is not executable/);
+    expect(existsSync(join(root, '.osc/runs'))).toBe(false);
+  });
+
+  it('blocks verification steps that defer proof to an external runner', () => {
+    const root = tempRepo();
+    const deferringPlan = {
+      ...plan,
+      slug: '003-defers-proof',
+      verificationSteps: ['External runner executes the scorer after the model turn.'],
+    };
+
+    const preview = previewRunArtifacts(root, deferringPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
+    expect(() => createRunArtifacts(root, deferringPlan as any, 'run')).toThrow(/verification steps defer execution outside the run packet/);
   });
 
   it('allows non-blocking open questions while only blocking explicit BLOCKING questions', () => {

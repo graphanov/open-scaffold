@@ -26,6 +26,7 @@ function filesUnder(root: string): string[] {
 }
 
 function writeRuntimeSelectionPlan(target: string, goal = 'Demo runtime selection.') {
+  writeFileSync(join(target, 'MISSION.md'), '# Mission\n\nRuntime selection packet test.\n');
   const planPath = join(target, '.osc/plans/active/001-demo.md');
   writeFileSync(planPath, `# Plan: 001-demo
 
@@ -55,7 +56,7 @@ ${goal}
 
 ## Verification steps
 
-1. Inspect run packet.
+1. Check run packet.
 
 ## Open questions
 

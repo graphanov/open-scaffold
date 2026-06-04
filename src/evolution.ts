@@ -507,7 +507,7 @@ export type EvolutionCompareResult =
 
 function normalizeCompareAttempt(attempt: Record<string, unknown>): EvolutionCompareAttempt {
   const attemptId = asString(attempt.attempt_id);
-  if (!attemptId) throw new Error('Evolution attempt is missing attempt_id.');
+  if (!attemptId) throw new Error('missing attempt_id');
   const boundaryValue = isRecord(attempt.boundary) ? attempt.boundary : {};
   return {
     attemptId,
@@ -527,6 +527,17 @@ function normalizeCompareAttempt(attempt: Record<string, unknown>): EvolutionCom
     usage: readAttemptUsage(attempt),
     boundary: boundaryValue,
   };
+}
+
+function normalizeCompareAttempts(attemptsPath: string): EvolutionCompareAttempt[] {
+  return readAttempts(attemptsPath).map((attempt, index) => {
+    try {
+      return normalizeCompareAttempt(attempt);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`invalid-evolution-ledger: attempts.jsonl line ${index + 1} is ${message}. Use osc evolve record to write attempt records.`);
+    }
+  });
 }
 
 function readAttemptRepairHypothesis(attempt: Record<string, unknown>): EvolutionAttemptRepairHypothesis | null {
@@ -740,7 +751,7 @@ export function compareEvolutionLoop(loopDir: string, options: EvolutionCompareO
   if (!isRecord(frontier) || frontier.schema !== EVOLUTION_FRONTIER_SCHEMA) {
     throw new Error(`Evolution frontier must declare schema: ${EVOLUTION_FRONTIER_SCHEMA}`);
   }
-  const attempts = readAttempts(attemptsPath).map(normalizeCompareAttempt);
+  const attempts = normalizeCompareAttempts(attemptsPath);
   const strategy = isRecord(loop.strategy) ? asString(loop.strategy.name) : null;
   const loopInfo = {
     loopDir: basename(absoluteLoopDir),
@@ -1553,7 +1564,7 @@ export function analyzeEvolutionLoop(loopDir: string, options: EvolutionAnalyzeO
   if (!isRecord(frontier) || frontier.schema !== EVOLUTION_FRONTIER_SCHEMA) {
     throw new Error(`Evolution frontier must declare schema: ${EVOLUTION_FRONTIER_SCHEMA}`);
   }
-  const attempts = readAttempts(attemptsPath).map(normalizeCompareAttempt);
+  const attempts = normalizeCompareAttempts(attemptsPath);
   const strategy = isRecord(loop.strategy) ? asString(loop.strategy.name) : null;
   const loopInfo = {
     loopDir: basename(absoluteLoopDir),

@@ -208,6 +208,30 @@ describe('osc run --dry-run', () => {
     expect(existsSync(join(target, '.osc/runs'))).toBe(false);
   });
 
+  it('refuses to write non-executable run artifacts in normal mode', () => {
+    const target = initializedScaffold();
+    const planPath = writePlan(target, '002-bad-dry-run', invalidPlan);
+
+    const result = spawnSync(tsx, [cli, 'run', planPath], { cwd: target, encoding: 'utf8' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Run package is not executable');
+    expect(result.stderr).toContain('missing verification steps');
+    expect(existsSync(join(target, '.osc/runs'))).toBe(false);
+  });
+
+  it('treats external-runner verification as a write-mode blocker', () => {
+    const target = initializedScaffold();
+    const deferringPlan = validPlan.replace('1. Run npm test.\n2. Run ./verify.sh --strict.', '1. External runner executes the scorer after this turn.');
+    const planPath = writePlan(target, '003-defers-proof', deferringPlan);
+
+    const result = spawnSync(tsx, [cli, 'run', planPath], { cwd: target, encoding: 'utf8' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('verification steps defer execution outside the run packet');
+    expect(existsSync(join(target, '.osc/runs'))).toBe(false);
+  });
+
   it('treats an undefined mission as a dry-run blocker', () => {
     const target = scaffoldWithUnsetMission();
     const planPath = writePlan(target, '001-dry-run-demo', validPlan);
