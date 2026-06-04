@@ -245,6 +245,20 @@ describe('run artifact generation', () => {
     expect(preview.manifest.packageQuality.blockers).toEqual([]);
   });
 
+  it('still blocks action-word steps when real proof is deferred outside the run packet', () => {
+    const root = tempRepo();
+    const deferringPlan = {
+      ...plan,
+      slug: '011-action-word-but-external-proof',
+      verificationSteps: ['Run no local tests; the external runner will run `npm test` after your turn and does not count as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, deferringPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
+  });
+
   it('allows non-blocking open questions while only blocking explicit BLOCKING questions', () => {
     const root = tempRepo();
     const planWithFutureQuestion = {
