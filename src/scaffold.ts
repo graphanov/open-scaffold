@@ -681,6 +681,23 @@ function numberedItems(text: string): string[] {
     .filter(Boolean);
 }
 
+function orderedOrBulletItems(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => /^(?:\d+\.|[-*])\s+/.test(line))
+    .map((line) => line.replace(/^(?:\d+\.|[-*])\s+/, '').trim())
+    .filter(Boolean);
+}
+
+function firstSection(sections: Map<string, string>, names: string[]): string {
+  for (const name of names) {
+    const body = sections.get(name);
+    if (body !== undefined) return body;
+  }
+  return '';
+}
+
 function parseExecutionStrategy(text: string): ExecutionStrategy | undefined {
   if (!text.trim()) return undefined;
   const groups: ExecutionGroup[] = [];
@@ -726,7 +743,7 @@ export function parsePlanFile(path: string): ParsedPlan {
     sections,
     filesToTouch: bulletItems(sections.get('Files to touch') ?? ''),
     acceptanceCriteria: bulletItems(sections.get('Acceptance criteria') ?? ''),
-    verificationSteps: numberedItems(sections.get('Verification steps') ?? ''),
+    verificationSteps: orderedOrBulletItems(firstSection(sections, ['Verification steps', 'Verification'])),
     openQuestions: bulletItems(sections.get('Open questions') ?? ''),
     executionStrategy: parseExecutionStrategy(sections.get('Execution strategy') ?? ''),
   };

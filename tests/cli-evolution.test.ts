@@ -545,6 +545,19 @@ describe('osc evolve CLI', () => {
     expect(markdown).toContain('Inspect scorer/evaluation coverage before recording another attempt.');
   });
 
+  it('fail-closes evolve analyze when attempts.jsonl contains malformed attempt records', () => {
+    const { root, planPath } = tempRepo();
+    const outDir = join(root, '.osc/evolution/bad-ledger');
+    execFileSync(tsx, [cli, 'evolve', 'init', planPath, '--out', outDir], { cwd: root, encoding: 'utf8' });
+    writeFileSync(join(outDir, 'attempts.jsonl'), JSON.stringify({ schema: 'open-scaffold.evolution-attempt.v1', generation: 1, run_id: 'manual-without-attempt-id' }) + '\n');
+
+    const result = spawnSync(tsx, [cli, 'evolve', 'analyze', outDir], { cwd: root, encoding: 'utf8' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('invalid-evolution-ledger');
+    expect(result.stderr).toContain('attempts.jsonl line 1 is missing attempt_id');
+  });
+
   it('rejects unknown strategies and prints evolve usage', () => {
     const { root, planPath } = tempRepo();
     const result = spawnSync(tsx, [cli, 'evolve', 'init', planPath, '--strategy', 'magical'], { cwd: root, encoding: 'utf8' });

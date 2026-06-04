@@ -1664,6 +1664,13 @@ function createArtifacts(args: string[], mode: ArtifactMode): void {
     process.exit(2);
   }
 
+  const preview = previewRunArtifacts(artifactRoot, plan, mode, artifactOptions);
+  if (!preview.manifest.packageQuality.executable) {
+    console.error(`Run package is not executable: ${preview.manifest.packageQuality.blockers.join('; ')}`);
+    console.error('No files were written. Clarify or repair the plan before creating run artifacts.');
+    process.exit(1);
+  }
+
   const run = createRunArtifacts(artifactRoot, plan, mode, artifactOptions);
   console.log(`Created ${mode} artifacts:`);
   console.log(`  Run: ${run.runDir}`);
