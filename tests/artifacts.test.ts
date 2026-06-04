@@ -203,6 +203,20 @@ describe('run artifact generation', () => {
     expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
   });
 
+  it('still blocks external-only commands even when they disclaim the external result', () => {
+    const root = tempRepo();
+    const deferringPlan = {
+      ...plan,
+      slug: '008-external-only-command-disclaims-deferral',
+      verificationSteps: ['External runner will run `npm test` after your turn and does not count as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, deferringPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
+  });
+
   it('allows non-blocking open questions while only blocking explicit BLOCKING questions', () => {
     const root = tempRepo();
     const planWithFutureQuestion = {

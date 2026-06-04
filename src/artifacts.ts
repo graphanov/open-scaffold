@@ -141,11 +141,13 @@ function blockingOpenQuestions(plan: ParsedPlan): string[] {
 }
 
 const DEFERRED_VERIFICATION_RE = /\b(external runner|run externally|runs externally|will be run externally|after (?:the )?(?:model )?turn|after your turn|later by|operator will run|someone else will run|later operator)\b/i;
+const EXTERNAL_RUNNER_WILL_RUN_RE = /\b(?:external runner|later operator|operator|someone else)\b.{0,80}\b(?:will run|runs|executes|will execute)\b|\b(?:will be run externally|run externally|runs externally|later by)\b/i;
 const FORBIDS_IN_RUN_VERIFICATION_RE = /\b(?:do not|don't|must not|never)\s+run\b/i;
 const REJECTS_DEFERRED_VERIFICATION_RE = /\b(?:do not|don't|does not|doesn't|must not|cannot|can't|never)\s+(?:count|treat|accept|use)\b.{0,120}\b(?:external runner|run externally|runs externally|after (?:the )?(?:model )?turn|after your turn|later operator|operator will run|someone else will run)\b.{0,120}\b(?:verification|proof)\b|\b(?:external runner|run externally|runs externally|after (?:the )?(?:model )?turn|after your turn|later operator|operator will run|someone else will run)\b.{0,120}\b(?:does not|doesn't|do not|don't|must not|cannot|can't|never)\s+count\b.{0,120}\b(?:verification|proof)?\b|\b(?:external runner|later operator)\b.{0,120}\b(?:not verification|is not verification|not proof|is not proof)\b/i;
 
 function defersVerificationOutsideRun(step: string): boolean {
   if (!DEFERRED_VERIFICATION_RE.test(step)) return false;
+  if (EXTERNAL_RUNNER_WILL_RUN_RE.test(step)) return true;
   if (FORBIDS_IN_RUN_VERIFICATION_RE.test(step)) return true;
   return !REJECTS_DEFERRED_VERIFICATION_RE.test(step);
 }
