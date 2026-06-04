@@ -162,13 +162,26 @@ function hasInRunActionBeforeDeferredMarker(step: string): boolean {
   return IN_RUN_ACTION_BEFORE_DEFERRED_RE.test(inRunTextBeforeDeferredMarker(step));
 }
 
+function hasCommandBoundaryBeforeDeferredMarker(step: string): boolean {
+  return /[.;]\s*(?:do not|don't|does not|doesn't|must not|cannot|can't|never)?/i.test(inRunTextBeforeDeferredMarker(step));
+}
+
+function hasRunnableAntiDeferralPolicy(step: string): boolean {
+  return REJECTS_DEFERRED_VERIFICATION_RE.test(step)
+    && hasInRunActionBeforeDeferredMarker(step)
+    && hasInRunCommandBeforeDeferredMarker(step)
+    && hasCommandBoundaryBeforeDeferredMarker(step);
+}
+
 function defersVerificationOutsideRun(step: string): boolean {
   if (!DEFERRED_VERIFICATION_RE.test(step)) return false;
+  if (hasRunnableAntiDeferralPolicy(step)) return false;
   if (
     REJECTS_DEFERRED_VERIFICATION_RE.test(step)
     && hasInRunActionBeforeDeferredMarker(step)
     && hasInRunCommandBeforeDeferredMarker(step)
-  ) return false;
+    && !hasCommandBoundaryBeforeDeferredMarker(step)
+  ) return true;
   if (EXTERNAL_RUNNER_WILL_RUN_RE.test(step)) return true;
   if (FORBIDS_IN_RUN_VERIFICATION_RE.test(step)) return true;
   return !REJECTS_DEFERRED_VERIFICATION_RE.test(step);
@@ -179,7 +192,7 @@ function looksLikeExecutableVerification(step: string): boolean {
   if (
     REJECTS_DEFERRED_VERIFICATION_RE.test(trimmed)
     && !IN_RUN_VERIFICATION_ACTION_RE.test(trimmed)
-    && !(hasInRunActionBeforeDeferredMarker(trimmed) && hasInRunCommandBeforeDeferredMarker(trimmed))
+    && !hasRunnableAntiDeferralPolicy(trimmed)
   ) {
     return false;
   }
