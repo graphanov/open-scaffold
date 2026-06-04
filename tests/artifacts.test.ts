@@ -175,6 +175,20 @@ describe('run artifact generation', () => {
     expect(preview.manifest.packageQuality.blockers).toEqual([]);
   });
 
+  it('still blocks instructions that explicitly say not to run verification because an external runner will run it', () => {
+    const root = tempRepo();
+    const deferringPlan = {
+      ...plan,
+      slug: '006-do-not-run-defers-proof',
+      verificationSteps: ['Do not run `npm test`; the external runner will run it after your turn.'],
+    };
+
+    const preview = previewRunArtifacts(root, deferringPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
+  });
+
   it('allows non-blocking open questions while only blocking explicit BLOCKING questions', () => {
     const root = tempRepo();
     const planWithFutureQuestion = {
