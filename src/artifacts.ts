@@ -154,6 +154,9 @@ function defersVerificationOutsideRun(step: string): boolean {
 
 function looksLikeExecutableVerification(step: string): boolean {
   const trimmed = step.trim();
+  if (REJECTS_DEFERRED_VERIFICATION_RE.test(trimmed) && !/^(?:run|execute|verify|validate|check|test)\b/i.test(trimmed)) {
+    return false;
+  }
   return /^(?:run|execute|verify|validate|check|test)\b/i.test(trimmed)
     || /(?:^|[`\s])(?:npm|pnpm|yarn|npx|node|tsx|python3?|pytest|cargo|make|bash|sh|git|gh|osc|\.\/)[^`\s]*/i.test(trimmed);
 }

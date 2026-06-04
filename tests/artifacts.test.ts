@@ -217,6 +217,20 @@ describe('run artifact generation', () => {
     expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
   });
 
+  it('does not treat deferred-proof rejection policy text as executable by itself', () => {
+    const root = tempRepo();
+    const policyOnlyPlan = {
+      ...plan,
+      slug: '009-policy-only-is-not-executable',
+      verificationSteps: ['Do not count a later operator running `npm test` as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, policyOnlyPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('missing executable verification command');
+  });
+
   it('allows non-blocking open questions while only blocking explicit BLOCKING questions', () => {
     const root = tempRepo();
     const planWithFutureQuestion = {
