@@ -140,14 +140,64 @@ function blockingOpenQuestions(plan: ParsedPlan): string[] {
   return plan.openQuestions.filter(isBlockingOpenQuestion);
 }
 
+const DEFERRED_VERIFICATION_RE = /\b(external runner|run externally|runs externally|will be run externally|after (?:the )?(?:model )?turn|after your turn|later by|operator will run|someone else will run|later operator)\b/i;
+const EXTERNAL_RUNNER_WILL_RUN_RE = /\b(?:external runner|later operator|operator|someone else)\b.{0,80}\b(?:will run|runs|executes|will execute)\b|\b(?:will be run externally|run externally|runs externally|later by)\b/i;
+const FORBIDS_IN_RUN_VERIFICATION_RE = /\b(?:do not|don't|must not|never)\s+run\b/i;
+const REJECTS_DEFERRED_VERIFICATION_RE = /\b(?:do not|don't|does not|doesn't|must not|cannot|can't|never)\s+(?:count|treat|accept|use)\b.{0,120}\b(?:external runner|run externally|runs externally|after (?:the )?(?:model )?turn|after your turn|later operator|operator will run|someone else will run)\b.{0,120}\b(?:verification|proof)\b|\b(?:external runner|run externally|runs externally|after (?:the )?(?:model )?turn|after your turn|later operator|operator will run|someone else will run)\b.{0,120}\b(?:does not|doesn't|do not|don't|must not|cannot|can't|never)\s+count\b.{0,120}\b(?:verification|proof)?\b|\b(?:external runner|later operator)\b.{0,120}\b(?:not verification|is not verification|not proof|is not proof)\b/i;
+
+const IN_RUN_VERIFICATION_ACTION_RE = /^(?:run|execute|verify|validate|check|test)\b/i;
+const EXECUTABLE_COMMAND_TOKEN_RE = /(?:^|[`\s])(?:npm|pnpm|yarn|npx|node|tsx|python3?|pytest|cargo|make|bash|sh|git|gh|osc|\.\/)[^`\s]*/i;
+const IN_RUN_ACTION_BEFORE_DEFERRED_RE = /(?:^|[:;.-]\s*|\*\*[^*]+:\*\*\s*)(?:run|execute|verify|validate|check|test)\b/i;
+
+function inRunTextBeforeDeferredMarker(step: string): string {
+  const deferredMatch = DEFERRED_VERIFICATION_RE.exec(step);
+  return deferredMatch ? step.slice(0, deferredMatch.index) : step;
+}
+
+function hasInRunCommandBeforeDeferredMarker(step: string): boolean {
+  return EXECUTABLE_COMMAND_TOKEN_RE.test(inRunTextBeforeDeferredMarker(step));
+}
+
+function hasInRunActionBeforeDeferredMarker(step: string): boolean {
+  return IN_RUN_ACTION_BEFORE_DEFERRED_RE.test(inRunTextBeforeDeferredMarker(step));
+}
+
+function hasCommandBoundaryBeforeDeferredMarker(step: string): boolean {
+  return /[.;]\s*(?:do not|don't|does not|doesn't|must not|cannot|can't|never)?/i.test(inRunTextBeforeDeferredMarker(step));
+}
+
+function hasRunnableAntiDeferralPolicy(step: string): boolean {
+  return REJECTS_DEFERRED_VERIFICATION_RE.test(step)
+    && hasInRunActionBeforeDeferredMarker(step)
+    && hasInRunCommandBeforeDeferredMarker(step)
+    && hasCommandBoundaryBeforeDeferredMarker(step);
+}
+
 function defersVerificationOutsideRun(step: string): boolean {
-  return /\b(external runner|run externally|runs externally|will be run externally|after (?:the )?(?:model )?turn|after your turn|later by|operator will run|someone else will run)\b/i.test(step);
+  if (!DEFERRED_VERIFICATION_RE.test(step)) return false;
+  if (hasRunnableAntiDeferralPolicy(step)) return false;
+  if (
+    REJECTS_DEFERRED_VERIFICATION_RE.test(step)
+    && hasInRunActionBeforeDeferredMarker(step)
+    && hasInRunCommandBeforeDeferredMarker(step)
+    && !hasCommandBoundaryBeforeDeferredMarker(step)
+  ) return true;
+  if (EXTERNAL_RUNNER_WILL_RUN_RE.test(step)) return true;
+  if (FORBIDS_IN_RUN_VERIFICATION_RE.test(step)) return true;
+  return !REJECTS_DEFERRED_VERIFICATION_RE.test(step);
 }
 
 function looksLikeExecutableVerification(step: string): boolean {
   const trimmed = step.trim();
-  return /^(?:run|execute|verify|validate|check|test)\b/i.test(trimmed)
-    || /(?:^|[`\s])(?:npm|pnpm|yarn|npx|node|tsx|python3?|pytest|cargo|make|bash|sh|git|gh|osc|\.\/)[^`\s]*/i.test(trimmed);
+  if (
+    REJECTS_DEFERRED_VERIFICATION_RE.test(trimmed)
+    && !IN_RUN_VERIFICATION_ACTION_RE.test(trimmed)
+    && !hasRunnableAntiDeferralPolicy(trimmed)
+  ) {
+    return false;
+  }
+  return IN_RUN_VERIFICATION_ACTION_RE.test(trimmed)
+    || EXECUTABLE_COMMAND_TOKEN_RE.test(trimmed);
 }
 
 function verificationBlockers(plan: ParsedPlan): string[] {

@@ -158,6 +158,135 @@ describe('run artifact generation', () => {
     expect(preview.manifest.packageQuality.blockers).toEqual([]);
   });
 
+  it('allows verification policy text that rejects deferred external proof', () => {
+    const root = tempRepo();
+    const scorerPlan = {
+      ...plan,
+      slug: '005-scorer-in-loop',
+      verificationSteps: [
+        'Run `cargo run -p m2000-v3-conformance --quiet -- artifact --json-out reports/result.json` before final handoff.',
+        'If the scorer command cannot run, record exact command, exit status, and stderr; do not count a later operator or external runner as verification.',
+      ],
+    };
+
+    const preview = previewRunArtifacts(root, scorerPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(true);
+    expect(preview.manifest.packageQuality.blockers).toEqual([]);
+  });
+
+  it('still blocks instructions that explicitly say not to run verification because an external runner will run it', () => {
+    const root = tempRepo();
+    const deferringPlan = {
+      ...plan,
+      slug: '006-do-not-run-defers-proof',
+      verificationSteps: ['Do not run `npm test`; the external runner will run it after your turn.'],
+    };
+
+    const preview = previewRunArtifacts(root, deferringPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
+  });
+
+  it('still blocks non-runnable deferred steps even when they disclaim the external result', () => {
+    const root = tempRepo();
+    const deferringPlan = {
+      ...plan,
+      slug: '007-do-not-run-disclaims-deferral',
+      verificationSteps: ['Do not run `npm test`; the external runner will run it after your turn and does not count as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, deferringPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
+  });
+
+  it('still blocks external-only commands even when they disclaim the external result', () => {
+    const root = tempRepo();
+    const deferringPlan = {
+      ...plan,
+      slug: '008-external-only-command-disclaims-deferral',
+      verificationSteps: ['External runner will run `npm test` after your turn and does not count as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, deferringPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
+  });
+
+  it('does not treat deferred-proof rejection policy text as executable by itself', () => {
+    const root = tempRepo();
+    const policyOnlyPlan = {
+      ...plan,
+      slug: '009-policy-only-is-not-executable',
+      verificationSteps: ['Do not count a later operator running `npm test` as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, policyOnlyPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('missing executable verification command');
+  });
+
+  it('allows a runnable in-run verification step to reject later external proof', () => {
+    const root = tempRepo();
+    const runnablePolicyPlan = {
+      ...plan,
+      slug: '010-run-and-reject-external-proof',
+      verificationSteps: ['Run `npm test`; do not count tests an external runner runs after your turn as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, runnablePolicyPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(true);
+    expect(preview.manifest.packageQuality.blockers).toEqual([]);
+  });
+
+  it('still blocks action-word steps when real proof is deferred outside the run packet', () => {
+    const root = tempRepo();
+    const deferringPlan = {
+      ...plan,
+      slug: '011-action-word-but-external-proof',
+      verificationSteps: ['Run no local tests; the external runner will run `npm test` after your turn and does not count as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, deferringPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
+  });
+
+  it('allows labeled runnable in-run commands to reject later external proof', () => {
+    const root = tempRepo();
+    const labeledPlan = {
+      ...plan,
+      slug: '012-labeled-run-and-reject-external-proof',
+      verificationSteps: ['**Local:** Run `npm test`; do not count tests an external runner runs after your turn as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, labeledPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(true);
+    expect(preview.manifest.packageQuality.blockers).toEqual([]);
+  });
+
+  it('keeps commands scheduled after the model turn blocked even when disclaimed', () => {
+    const root = tempRepo();
+    const deferringPlan = {
+      ...plan,
+      slug: '013-command-after-turn-disclaimed',
+      verificationSteps: ['Run `npm test` after your turn does not count as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, deferringPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
+  });
+
   it('allows non-blocking open questions while only blocking explicit BLOCKING questions', () => {
     const root = tempRepo();
     const planWithFutureQuestion = {
