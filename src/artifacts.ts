@@ -140,8 +140,12 @@ function blockingOpenQuestions(plan: ParsedPlan): string[] {
   return plan.openQuestions.filter(isBlockingOpenQuestion);
 }
 
+const DEFERRED_VERIFICATION_RE = /\b(external runner|run externally|runs externally|will be run externally|after (?:the )?(?:model )?turn|after your turn|later by|operator will run|someone else will run|later operator)\b/i;
+const REJECTS_DEFERRED_VERIFICATION_RE = /\b(do not|don't|does not|doesn't|must not|cannot|can't|not|never)\b.{0,120}\b(external runner|run externally|runs externally|after (?:the )?(?:model )?turn|after your turn|later operator|operator will run|someone else will run)\b|\b(external runner|run externally|runs externally|after (?:the )?(?:model )?turn|after your turn|later operator|operator will run|someone else will run)\b.{0,120}\b(does not count|doesn't count|do not count|not verification|is not verification|cannot count|can't count|must not count|fail closed|fails closed)\b/i;
+
 function defersVerificationOutsideRun(step: string): boolean {
-  return /\b(external runner|run externally|runs externally|will be run externally|after (?:the )?(?:model )?turn|after your turn|later by|operator will run|someone else will run)\b/i.test(step);
+  if (!DEFERRED_VERIFICATION_RE.test(step)) return false;
+  return !REJECTS_DEFERRED_VERIFICATION_RE.test(step);
 }
 
 function looksLikeExecutableVerification(step: string): boolean {

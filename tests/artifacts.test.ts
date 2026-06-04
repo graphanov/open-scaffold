@@ -158,6 +158,23 @@ describe('run artifact generation', () => {
     expect(preview.manifest.packageQuality.blockers).toEqual([]);
   });
 
+  it('allows verification policy text that rejects deferred external proof', () => {
+    const root = tempRepo();
+    const scorerPlan = {
+      ...plan,
+      slug: '005-scorer-in-loop',
+      verificationSteps: [
+        'Run `cargo run -p m2000-v3-conformance --quiet -- artifact --json-out reports/result.json` before final handoff.',
+        'If the scorer command cannot run, record exact command, exit status, and stderr; do not count a later operator or external runner as verification.',
+      ],
+    };
+
+    const preview = previewRunArtifacts(root, scorerPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(true);
+    expect(preview.manifest.packageQuality.blockers).toEqual([]);
+  });
+
   it('allows non-blocking open questions while only blocking explicit BLOCKING questions', () => {
     const root = tempRepo();
     const planWithFutureQuestion = {
