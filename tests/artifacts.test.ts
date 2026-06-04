@@ -259,6 +259,20 @@ describe('run artifact generation', () => {
     expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
   });
 
+  it('allows labeled runnable in-run commands to reject later external proof', () => {
+    const root = tempRepo();
+    const labeledPlan = {
+      ...plan,
+      slug: '012-labeled-run-and-reject-external-proof',
+      verificationSteps: ['**Local:** Run `npm test`; do not count tests an external runner runs after your turn as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, labeledPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(true);
+    expect(preview.manifest.packageQuality.blockers).toEqual([]);
+  });
+
   it('allows non-blocking open questions while only blocking explicit BLOCKING questions', () => {
     const root = tempRepo();
     const planWithFutureQuestion = {

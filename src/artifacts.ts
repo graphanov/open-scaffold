@@ -147,18 +147,26 @@ const REJECTS_DEFERRED_VERIFICATION_RE = /\b(?:do not|don't|does not|doesn't|mus
 
 const IN_RUN_VERIFICATION_ACTION_RE = /^(?:run|execute|verify|validate|check|test)\b/i;
 const EXECUTABLE_COMMAND_TOKEN_RE = /(?:^|[`\s])(?:npm|pnpm|yarn|npx|node|tsx|python3?|pytest|cargo|make|bash|sh|git|gh|osc|\.\/)[^`\s]*/i;
+const IN_RUN_ACTION_BEFORE_DEFERRED_RE = /(?:^|[:;.-]\s*|\*\*[^*]+:\*\*\s*)(?:run|execute|verify|validate|check|test)\b/i;
+
+function inRunTextBeforeDeferredMarker(step: string): string {
+  const deferredMatch = DEFERRED_VERIFICATION_RE.exec(step);
+  return deferredMatch ? step.slice(0, deferredMatch.index) : step;
+}
 
 function hasInRunCommandBeforeDeferredMarker(step: string): boolean {
-  const deferredMatch = DEFERRED_VERIFICATION_RE.exec(step);
-  const inRunText = deferredMatch ? step.slice(0, deferredMatch.index) : step;
-  return EXECUTABLE_COMMAND_TOKEN_RE.test(inRunText);
+  return EXECUTABLE_COMMAND_TOKEN_RE.test(inRunTextBeforeDeferredMarker(step));
+}
+
+function hasInRunActionBeforeDeferredMarker(step: string): boolean {
+  return IN_RUN_ACTION_BEFORE_DEFERRED_RE.test(inRunTextBeforeDeferredMarker(step));
 }
 
 function defersVerificationOutsideRun(step: string): boolean {
   if (!DEFERRED_VERIFICATION_RE.test(step)) return false;
   if (
     REJECTS_DEFERRED_VERIFICATION_RE.test(step)
-    && IN_RUN_VERIFICATION_ACTION_RE.test(step.trim())
+    && hasInRunActionBeforeDeferredMarker(step)
     && hasInRunCommandBeforeDeferredMarker(step)
   ) return false;
   if (EXTERNAL_RUNNER_WILL_RUN_RE.test(step)) return true;
@@ -168,7 +176,11 @@ function defersVerificationOutsideRun(step: string): boolean {
 
 function looksLikeExecutableVerification(step: string): boolean {
   const trimmed = step.trim();
-  if (REJECTS_DEFERRED_VERIFICATION_RE.test(trimmed) && !IN_RUN_VERIFICATION_ACTION_RE.test(trimmed)) {
+  if (
+    REJECTS_DEFERRED_VERIFICATION_RE.test(trimmed)
+    && !IN_RUN_VERIFICATION_ACTION_RE.test(trimmed)
+    && !(hasInRunActionBeforeDeferredMarker(trimmed) && hasInRunCommandBeforeDeferredMarker(trimmed))
+  ) {
     return false;
   }
   return IN_RUN_VERIFICATION_ACTION_RE.test(trimmed)
