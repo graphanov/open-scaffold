@@ -29,6 +29,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-04: closed 150-open-scaffold-efficiency-reset — close efficiency reset after merged controller diagnostics and run-packet gates
 - 2026-06-03: closed 144-next-action-packet-npx-release-sync — published open-scaffold@0.30.1, verified npm latest/fresh npx, and created GitHub Release v0.30.1
 - 2026-06-03: closed 143-framework-value-next-action-packet — PR #175 merged; next-action packet shipped as workflow-neutral handoff guidance
 - 2026-06-03: closed 142-private-pilot-usage-and-evolve-control — landed evolve repair hypotheses and usage telemetry
