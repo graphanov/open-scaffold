@@ -8,6 +8,8 @@ export const EVOLUTION_LOOP_SCHEMA = 'open-scaffold.evolution-loop.v1';
 export const EVOLUTION_ATTEMPT_SCHEMA = 'open-scaffold.evolution-attempt.v1';
 export const EVOLUTION_FRONTIER_SCHEMA = 'open-scaffold.evolution-frontier.v1';
 export const EVOLUTION_NEXT_ACTION_PACKET_SCHEMA = 'open-scaffold.evolution-next-action-packet.v1';
+export const EVOLUTION_CONTROLLER_SIGNAL_SCHEMA = 'open-scaffold.evolution-controller-signal.v1';
+export const EVOLUTION_EFFICIENCY_REPORT_SCHEMA = 'open-scaffold.evolution-efficiency-report.v1';
 const RUN_SCHEMA = 'open-scaffold.run.v1';
 const EVALUATION_SCHEMA = 'open-scaffold.evaluation.v1';
 const DISPATCH_RECEIPT_SCHEMA = 'open-scaffold.dispatch-receipt.v1';
@@ -1034,6 +1036,41 @@ export interface EvolutionNextActionPacket {
   boundaryNotes: string[];
 }
 
+export interface EvolutionControllerSignal {
+  schema: typeof EVOLUTION_CONTROLLER_SIGNAL_SCHEMA;
+  action: EvolutionAnalysisRecommendationAction;
+  summary: string;
+  reasons: string[];
+  resume: {
+    currentAttemptId: string | null;
+    frontierAttemptId: string | null;
+    currentEvaluation: string | null;
+  };
+  plateau: EvolutionNextActionPacket['plateau'];
+  acceptance: {
+    currentPass: number;
+    currentTotal: number;
+    remainingFailureIds: string[];
+    remainingFailures: EvolutionNextActionPacket['acceptance']['remainingFailures'];
+  };
+  requiredNextFields: string[];
+  usageReceipt: {
+    totalTokens: number | null;
+    estimatedUsd: number | null;
+    source: string | null;
+    unavailableReason: string | null;
+    completeness: {
+      present: number;
+      total: number;
+      missing: string[];
+      ratio: number;
+    };
+  };
+  warnings: string[];
+  evidenceRefs: string[];
+  boundaryNotes: string[];
+}
+
 export interface EvolutionAnalysisResult {
   kind: 'analysis';
   loop: { loopDir: string; loopId: string | null; objective: string | null; strategy: string | null; attemptCount: number };
@@ -1052,6 +1089,10 @@ export interface EvolutionAnalysisResult {
 
 export interface EvolutionAnalyzeOptions {
   plateauThreshold?: number;
+}
+
+export interface EvolutionAnalysisRenderOptions {
+  compact?: boolean;
 }
 
 function normalizeReason(value: string): string {
@@ -1310,7 +1351,11 @@ function attemptSummary(root: string, attempt: EvolutionCompareAttempt | null) {
   };
 }
 
-function recommendAnalysis(plateau: EvolutionAnalysisResult['plateau'], criteria: EvolutionAnalysisCriterion[], currentTotal: number): EvolutionAnalysisResult['recommendation'] {
+function isNoOpRetryAttempt(attempt: EvolutionAnalysisResult['currentAttempt']): boolean {
+  return attempt.decision === 'retry' && attempt.repairHypothesis?.actualDelta === 0;
+}
+
+function recommendAnalysis(plateau: EvolutionAnalysisResult['plateau'], criteria: EvolutionAnalysisCriterion[], currentTotal: number, currentAttempt: EvolutionAnalysisResult['currentAttempt']): EvolutionAnalysisResult['recommendation'] {
   if (currentTotal === 0) {
     return { action: 'inspect_scorer', summary: 'No current acceptance-criteria evidence is available; inspect the scorer or evaluation envelope before retrying.', reasons: ['no_current_acceptance_criteria'] };
   }
@@ -1336,6 +1381,13 @@ function recommendAnalysis(plateau: EvolutionAnalysisResult['plateau'], criteria
   }
   if (plateau.status === 'regressed') {
     return { action: 'inspect_scorer', summary: 'Latest score is below the best recorded score; inspect scorer/evidence before continuing.', reasons: ['score_regressed'] };
+  }
+  if (remaining.length > 0 && isNoOpRetryAttempt(currentAttempt)) {
+    return {
+      action: 'inspect_scorer',
+      summary: 'The current retry reported actual delta 0 while criteria still fail; inspect the scorer/evidence or change the repair hypothesis before another attempt.',
+      reasons: ['no_op_retry', 'remaining_failures'],
+    };
   }
   return { action: 'continue', summary: 'Score or acceptance-criteria evidence is still moving; one more bounded attempt may be useful.', reasons: ['still_moving'] };
 }
@@ -1561,10 +1613,10 @@ export function analyzeEvolutionLoop(loopDir: string, options: EvolutionAnalyzeO
     frontierTotal: frontierCounts.total,
     remainingFailures: currentCounts.remainingFailures,
   };
-  const recommendation = recommendAnalysis(plateau, criteria, currentCounts.total);
   const currentAttemptResult = attemptSummary(analysisRoot, currentAttempt);
   const previousAttemptResult = attemptSummary(analysisRoot, previousAttempt);
   const frontierAttemptResult = attemptSummary(analysisRoot, frontierAttempt);
+  const recommendation = recommendAnalysis(plateau, criteria, currentCounts.total, currentAttemptResult);
   const nextActionPacket = buildNextActionPacket(analysisRoot, loopInfo, plateau, currentAttemptResult, frontierAttemptResult, acceptanceSummary, criteria, recommendation);
   return {
     kind: 'analysis',
@@ -1605,6 +1657,118 @@ function impossibleLabel(criterion: EvolutionAnalysisCriterion): string {
     ...criterion.reasons.filter((reason) => !priority.includes(reason)),
   ];
   return ordered.join(',');
+}
+
+function bytes(value: string): number {
+  return Buffer.byteLength(value, 'utf8');
+}
+
+function roundRatio(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Number(value.toFixed(6));
+}
+
+function usageCompleteness(usage: EvolutionAttemptUsageSummary | null): EvolutionControllerSignal['usageReceipt']['completeness'] {
+  const missing: string[] = [];
+  if (usage?.totalTokens === null || usage?.totalTokens === undefined) missing.push('total_tokens');
+  if (usage?.estimatedUsd === null || usage?.estimatedUsd === undefined) missing.push('estimated_usd');
+  if (!meaningfulString(usage?.source) && !meaningfulString(usage?.unavailableReason)) missing.push('source_or_unavailable_reason');
+  const total = 3;
+  const present = total - missing.length;
+  return { present, total, missing, ratio: roundRatio(present / total) };
+}
+
+function evidenceBudgetWarning(packet: EvolutionNextActionPacket): string | null {
+  const evidenceBytes = bytes(packet.evidenceRefs.join('\n'));
+  if (packet.evidenceRefs.length > 5) return `Evidence packet carries ${packet.evidenceRefs.length} refs; compact before handoff if the next context is small.`;
+  if (evidenceBytes > 512) return `Evidence refs use ${evidenceBytes} byte(s); pass refs/digests rather than raw evidence text.`;
+  return null;
+}
+
+export function buildEvolutionControllerSignal(analysis: EvolutionAnalysisResult): EvolutionControllerSignal {
+  const packet = analysis.nextActionPacket;
+  const usage = packet.currentAttemptControl.usage;
+  const warnings = [
+    packet.currentAttemptControl.budgetWarning,
+    evidenceBudgetWarning(packet),
+    ...(usageCompleteness(usage).missing.length > 0 ? [`Usage receipt incomplete: missing ${usageCompleteness(usage).missing.join(', ')}.`] : []),
+  ].filter((warning): warning is string => Boolean(warning));
+  return {
+    schema: EVOLUTION_CONTROLLER_SIGNAL_SCHEMA,
+    action: packet.recommendedAction,
+    summary: packet.summary,
+    reasons: packet.reasons,
+    resume: {
+      currentAttemptId: packet.resumeFrom.currentAttemptId,
+      frontierAttemptId: packet.resumeFrom.frontierAttemptId,
+      currentEvaluation: packet.resumeFrom.currentEvaluation,
+    },
+    plateau: packet.plateau,
+    acceptance: {
+      currentPass: packet.acceptance.currentPass,
+      currentTotal: packet.acceptance.currentTotal,
+      remainingFailureIds: packet.acceptance.remainingFailures.map((criterion) => criterion.id),
+      remainingFailures: packet.acceptance.remainingFailures,
+    },
+    requiredNextFields: packet.requiredNextFields,
+    usageReceipt: {
+      totalTokens: usage?.totalTokens ?? null,
+      estimatedUsd: usage?.estimatedUsd ?? null,
+      source: usage?.source ?? null,
+      unavailableReason: usage?.unavailableReason ?? null,
+      completeness: usageCompleteness(usage),
+    },
+    warnings,
+    evidenceRefs: packet.evidenceRefs,
+    boundaryNotes: packet.boundaryNotes,
+  };
+}
+
+function renderCompactAnalysisTerminal(analysis: EvolutionAnalysisResult): string {
+  const signal = buildEvolutionControllerSignal(analysis);
+  const remaining = signal.acceptance.remainingFailures.length > 0
+    ? signal.acceptance.remainingFailures.map((criterion) => `${criterion.id}:${criterion.status}${criterion.impossible ? ':impossible' : ''}:${criterion.sensitivity}`).join(', ')
+    : '—';
+  const lines = [
+    `Evolution Control: ${analysis.loop.loopDir}`,
+    `Action: ${signal.action}`,
+    `Why: ${signal.reasons.join(', ') || '—'} — ${signal.summary}`,
+    `Resume: current=${signal.resume.currentAttemptId ?? '—'} | frontier=${signal.resume.frontierAttemptId ?? '—'} | evaluation=${signal.resume.currentEvaluation ?? '—'}`,
+    `Plateau: ${signal.plateau.status} | no-improve=${signal.plateau.noImprovementCount} | current=${formatScore(signal.plateau.currentScore)} | best=${formatScore(signal.plateau.bestScore)}`,
+    `Acceptance: ${signal.acceptance.currentPass}/${signal.acceptance.currentTotal} pass | remaining=${remaining}`,
+    `Required: ${signal.requiredNextFields.join(', ')}`,
+    `Usage: tokens=${formatInteger(signal.usageReceipt.totalTokens)} | usd=${formatUsd(signal.usageReceipt.estimatedUsd)} | source=${signal.usageReceipt.source ?? signal.usageReceipt.unavailableReason ?? '—'} | completeness=${signal.usageReceipt.completeness.present}/${signal.usageReceipt.completeness.total}`,
+    ...(signal.warnings.length > 0 ? signal.warnings.map((warning) => `Warning: ${warning}`) : []),
+    `Evidence refs: ${signal.evidenceRefs.join(', ') || '—'}`,
+    `Boundary: ${signal.boundaryNotes.join(' ')}`,
+  ];
+  return `${lines.join('\n')}\n`;
+}
+
+function renderCompactAnalysisMarkdown(analysis: EvolutionAnalysisResult): string {
+  const signal = buildEvolutionControllerSignal(analysis);
+  const lines = [
+    `# Evolution control: ${analysis.loop.loopDir}`,
+    '',
+    `- Action: \`${signal.action}\``,
+    `- Why: ${signal.reasons.join(', ') || '—'} — ${signal.summary}`,
+    `- Resume: current \`${signal.resume.currentAttemptId ?? '—'}\`; frontier \`${signal.resume.frontierAttemptId ?? '—'}\`; evaluation \`${signal.resume.currentEvaluation ?? '—'}\``,
+    `- Plateau: \`${signal.plateau.status}\`; no-improve ${signal.plateau.noImprovementCount}; current ${formatScore(signal.plateau.currentScore)}; best ${formatScore(signal.plateau.bestScore)}`,
+    `- Acceptance: ${signal.acceptance.currentPass}/${signal.acceptance.currentTotal} pass; remaining ${signal.acceptance.remainingFailureIds.map((id) => `\`${id}\``).join(', ') || '—'}`,
+    `- Required next fields: ${signal.requiredNextFields.map((field) => `\`${field}\``).join(', ')}`,
+    `- Usage receipt: tokens ${formatInteger(signal.usageReceipt.totalTokens)}; usd ${formatUsd(signal.usageReceipt.estimatedUsd)}; source ${signal.usageReceipt.source ?? signal.usageReceipt.unavailableReason ?? '—'}; completeness ${signal.usageReceipt.completeness.present}/${signal.usageReceipt.completeness.total}`,
+    ...(signal.warnings.length > 0 ? signal.warnings.map((warning) => `- Warning: ${warning}`) : []),
+    `- Evidence refs: ${signal.evidenceRefs.map((ref) => `\`${ref}\``).join(', ') || '—'}`,
+    '',
+    '## Remaining failures',
+    '',
+    ...(signal.acceptance.remainingFailures.length > 0 ? signal.acceptance.remainingFailures.map((criterion) => `- \`${criterion.id}\`: ${criterion.status}; sensitivity ${criterion.sensitivity}; impossible ${criterion.impossible ? 'yes' : 'no'} — ${criterion.text}`) : ['- —']),
+    '',
+    '## Boundaries',
+    '',
+    ...signal.boundaryNotes.map((note) => `- ${note}`),
+  ];
+  return `${lines.join('\n')}\n`;
 }
 
 function renderAnalysisTerminal(analysis: EvolutionAnalysisResult): string {
@@ -1747,7 +1911,12 @@ function renderAnalysisMarkdown(analysis: EvolutionAnalysisResult): string {
   return `${lines.join('\n')}\n`;
 }
 
-export function renderEvolutionAnalysis(analysis: EvolutionAnalysisResult, format: EvolutionAnalysisFormat = 'terminal'): string {
+export function renderEvolutionAnalysis(analysis: EvolutionAnalysisResult, format: EvolutionAnalysisFormat = 'terminal', options: EvolutionAnalysisRenderOptions = {}): string {
+  if (options.compact) {
+    if (format === 'json') return `${JSON.stringify(buildEvolutionControllerSignal(analysis), null, 2)}\n`;
+    if (format === 'markdown') return renderCompactAnalysisMarkdown(analysis);
+    return renderCompactAnalysisTerminal(analysis);
+  }
   if (format === 'json') return `${JSON.stringify(analysis, null, 2)}\n`;
   if (format === 'markdown') return renderAnalysisMarkdown(analysis);
   return renderAnalysisTerminal(analysis);

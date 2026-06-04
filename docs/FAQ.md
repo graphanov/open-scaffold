@@ -18,7 +18,7 @@ Questions that did not fit in the main README but are still worth answering.
 
 ### Does this reduce token usage / cost?
 
-> Often, indirectly — but this is not benchmarked yet. Plans mean less context-stuffing ("remember yesterday when..."). Immutability means fewer loops about what was already decided. `verify.sh` catches methodology drift mechanically instead of relying only on another review round. Treat cost reduction as a workflow hypothesis to measure in your own repo, not as a guaranteed benchmark.
+> Not proven. Plans may reduce context-stuffing and blind retries, but token/cost savings require receipts. Treat cost reduction as a workflow-control hypothesis to measure in your own repo. For repeated-attempt loops, start with the diagnostic/experimental `osc evolve analyze <loop-dir> --efficiency` report; if token/cost telemetry is missing, the report must say missing rather than guessing.
 
 ### Will my agent actually follow the protocol, or will it just ignore the files?
 
@@ -34,7 +34,7 @@ Questions that did not fit in the main README but are still worth answering.
 
 ### How much time does this actually save me vs. just winging it?
 
-> Not benchmarked, honestly. Treat any specific time-savings number as a hypothesis until you've measured it on your own workflow. What *is* observable: fewer "wait, I thought we decided X" moments, and sessions that resume in under a minute instead of fifteen.
+> Not benchmarked, honestly. Treat any specific time-savings number as a hypothesis until you have measured before/after artifacts. Open Scaffold does not make the model smarter and is not a public proof of productivity. What can be measured locally is workflow control: smaller handoff packets, required decision fields preserved, missing criteria surfaced, blind retries prevented, and token/cost receipts recorded when available.
 
 ### What if I'm bad at writing plans? Does this fall apart?
 
@@ -42,7 +42,7 @@ Questions that did not fit in the main README but are still worth answering.
 
 ### Is this just going to slow me down? I'm used to vibing.
 
-> A little on day one. That is the tax. After that, it should speed you up because session two does not start with "OK so where were we..." You trade a short setup step for lower re-explanation cost on future sessions. For anything you will work on more than once, the trade is usually worth it.
+> A little on day one. That is the tax. After that, the value is still a hypothesis until measured: less re-explanation, fewer blind retries, cleaner handoff recovery, and clearer stop/inspect/redesign decisions. For anything you will work on more than once, the trade may be worth it; verify it with artifacts rather than assuming it.
 
 ### Can I adopt this mid-project, or is it only for new repos?
 

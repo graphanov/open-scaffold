@@ -17,6 +17,7 @@ import { collectEvidence } from './evidence.js';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
 import { EXTERNAL_SCORER_ADAPTERS, loadEvaluationSource, renderEvaluationEnvelope, renderImportedEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope, writeImportedEvaluationEnvelope, type ExternalScorerAdapter } from './evaluation.js';
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, analyzeEvolutionLoop, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionAnalysis, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionAnalysisFormat, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
+import { measureEvolutionAnalysisEfficiency, renderEvolutionEfficiencyReport } from './evolution-efficiency.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { computeMetrics, formatMetrics, parseSinceDate } from './metrics.js';
 import { computeStudy, renderStudyMarkdown, validateStudyReport, writeStudyOutput } from './study.js';
@@ -1985,7 +1986,7 @@ function evalCommand(args: string[]): void {
 }
 
 function printEvolutionUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> [--repair-hypothesis <text>] [--target-metric <name>] [--expected-gain <number>] [--actual-delta <number>] [--tokens-total <integer>] [--estimated-usd <number>] [--usage-source <source>] [--usage-unavailable-reason <text>] | osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>] | osc evolve analyze <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>] | osc evolve check <loop-dir>', stream);
+  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> [--repair-hypothesis <text>] [--target-metric <name>] [--expected-gain <number>] [--actual-delta <number>] [--tokens-total <integer>] [--estimated-usd <number>] [--usage-source <source>] [--usage-unavailable-reason <text>] | osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>] | osc evolve analyze <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>] [--compact] [--efficiency] | osc evolve check <loop-dir>', stream);
 }
 
 function takeEvolutionValue(args: string[], index: number, flag: string): string {
@@ -2305,6 +2306,8 @@ function evolutionCommand(args: string[]): void {
     let format: EvolutionAnalysisFormat = 'terminal';
     let outPath: string | undefined;
     let plateauThreshold: number | undefined;
+    let compact = false;
+    let efficiency = false;
     for (let i = 0; i < rest.length; i += 1) {
       const flag = rest[i];
       switch (flag) {
@@ -2328,6 +2331,12 @@ function evolutionCommand(args: string[]): void {
           i += 1;
           break;
         }
+        case '--compact':
+          compact = true;
+          break;
+        case '--efficiency':
+          efficiency = true;
+          break;
         default:
           console.error(`Unknown option for evolve analyze: ${flag}`);
           printEvolutionUsage();
@@ -2338,11 +2347,13 @@ function evolutionCommand(args: string[]): void {
       const loopDir = resolve(sourceOrPath);
       const root = evolutionRootFor(loopDir);
       const analysis = analyzeEvolutionLoop(loopDir, { plateauThreshold }, root);
-      const rendered = renderEvolutionAnalysis(analysis, format);
+      const rendered = efficiency
+        ? renderEvolutionEfficiencyReport(measureEvolutionAnalysisEfficiency(analysis), format)
+        : renderEvolutionAnalysis(analysis, format, { compact });
       if (outPath) {
         const resolvedOut = resolve(outPath);
         writeFileSync(resolvedOut, rendered, 'utf8');
-        console.log(`Wrote evolution analysis: ${resolvedOut}`);
+        console.log(`Wrote evolution ${efficiency ? 'efficiency report' : 'analysis'}: ${resolvedOut}`);
       } else {
         process.stdout.write(rendered.endsWith('\n') ? rendered : `${rendered}\n`);
       }
