@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -30,13 +30,13 @@ Add public-safe measurement and compact controller output for `osc evolve analyz
 
 ## Acceptance criteria
 
-- [ ] Efficiency is explicitly defined in code and docs as controller signal per report/evidence overhead, with no benchmark or model-intelligence claim.
-- [ ] A local public-safe harness reports before/after metrics including output bytes per useful decision field, evidence bytes per action recommendation, token/cost telemetry completeness, blind retries prevented, next-action packet compactness, analyze-to-recommendation steps, and required-control-field ratio.
-- [ ] Compact/default analysis output is materially smaller while preserving required control fields, missing-current criteria, boundary notes, and safe evidence refs.
-- [ ] Retry recommendations require a measurable repair hypothesis and no-op/blind retry fixtures are routed away from blind continuation.
-- [ ] Tests prove private/unsafe refs do not leak and stop/redesign/inspect/continue recommendations remain boundary-safe.
-- [ ] Any 1.5x efficiency result is computed by code from before/after artifacts, not asserted manually.
-- [ ] The efficiency harness finds at least 10 additional measured full-to-compact controller targets that preserve required fields and clear the 1.5x byte-reduction threshold, or reports the miss explicitly.
+- [x] Efficiency is explicitly defined in code and docs as controller signal per report/evidence overhead, with no benchmark or model-intelligence claim. Evidence: `src/evolution-efficiency.ts`, `docs/EVIDENCE_METHODOLOGY.md`, `docs/EVOLUTION_LOOP.md`, `README.md`.
+- [x] A local public-safe harness reports before/after metrics including output bytes per useful decision field, evidence bytes per action recommendation, token/cost telemetry completeness, blind retries prevented, next-action packet compactness, analyze-to-recommendation steps, and required-control-field ratio. Evidence: `src/evolution-efficiency.ts`, `src/cli.ts`, `tests/evolution.test.ts`, `tests/cli-evolution.test.ts`.
+- [x] Compact/default analysis output is materially smaller while preserving required control fields, missing-current criteria, boundary notes, and safe evidence refs. Evidence: `src/evolution.ts`, `src/evolution-efficiency.ts`, `tests/evolution.test.ts`.
+- [x] Retry recommendations require a measurable repair hypothesis and no-op/blind retry fixtures are routed away from blind continuation. Evidence: `src/evolution.ts`, `tests/evolution.test.ts`, `tests/cli-evolution.test.ts`.
+- [x] Tests prove private/unsafe refs do not leak and stop/redesign/inspect/continue recommendations remain boundary-safe. Evidence: `tests/evolution.test.ts`, `tests/cli-evolution.test.ts`, `tests/public-positioning.test.ts`.
+- [x] Any 1.5x efficiency result is computed by code from before/after artifacts, not asserted manually. Evidence: `src/evolution-efficiency.ts`, `tests/evolution.test.ts`.
+- [x] The efficiency harness finds at least 10 additional measured full-to-compact controller targets that preserve required fields and clear the 1.5x byte-reduction threshold, or reports the miss explicitly. Evidence: `src/evolution-efficiency.ts`, `tests/evolution.test.ts`, `docs/EVOLUTION_LOOP.md`.
 
 ## Verification steps
 
