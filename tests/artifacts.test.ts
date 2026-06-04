@@ -189,6 +189,20 @@ describe('run artifact generation', () => {
     expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
   });
 
+  it('still blocks non-runnable deferred steps even when they disclaim the external result', () => {
+    const root = tempRepo();
+    const deferringPlan = {
+      ...plan,
+      slug: '007-do-not-run-disclaims-deferral',
+      verificationSteps: ['Do not run `npm test`; the external runner will run it after your turn and does not count as verification.'],
+    };
+
+    const preview = previewRunArtifacts(root, deferringPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(false);
+    expect(preview.manifest.packageQuality.blockers).toContain('verification steps defer execution outside the run packet');
+  });
+
   it('allows non-blocking open questions while only blocking explicit BLOCKING questions', () => {
     const root = tempRepo();
     const planWithFutureQuestion = {
