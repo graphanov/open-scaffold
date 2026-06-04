@@ -144,6 +144,20 @@ describe('run artifact generation', () => {
     expect(() => createRunArtifacts(root, deferringPlan as any, 'run')).toThrow(/verification steps defer execution outside the run packet/);
   });
 
+  it('recognizes labeled osc commands as executable verification', () => {
+    const root = tempRepo();
+    const labeledOscPlan = {
+      ...plan,
+      slug: '004-labeled-osc-verification',
+      verificationSteps: ['**Search:** Run `osc runtimes search omx`. Verify output includes the adapter.'],
+    };
+
+    const preview = previewRunArtifacts(root, labeledOscPlan as any, 'run');
+
+    expect(preview.manifest.packageQuality.executable).toBe(true);
+    expect(preview.manifest.packageQuality.blockers).toEqual([]);
+  });
+
   it('allows non-blocking open questions while only blocking explicit BLOCKING questions', () => {
     const root = tempRepo();
     const planWithFutureQuestion = {
