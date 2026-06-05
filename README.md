@@ -248,13 +248,15 @@ Shell fallback:
 
 ## Lab preview: plain-intent work
 
-The post-v1 target is a smoother Codex-first path that starts from plain intent while preserving the same record. The first natural-language composition is dry-run only:
+Historical/repositioned migration note: earlier builds exposed `osc work --dry-run` as a plain-intent composition preview. The reduced maintained CLI removes `osc work`; use the explicit no-spawn path instead:
 
 ```bash
-osc work "Add a /health endpoint with tests" --runtime codex --dry-run
+osc plan new <slug> --stage active
+osc run .osc/plans/active/<slug>.md --dry-run --runtime codex --workflow plan
+osc dispatch .osc/runs/RUN_ID/run.json --adapter <id>
 ```
 
-`osc work --dry-run` previews a candidate plan, run packet, and dispatch command without writing files, launching a runtime, calling provider APIs, or granting commit/push/PR/merge/publish authority. The supporting no-spawn pieces remain explicit: `osc start` prints a paste-ready Codex/OMX handoff from an existing plan, and `osc dispatch .osc/runs/RUN_ID/run.json --adapter <id>` invokes a reviewed local adapter config and captures receipt/evidence/log paths. Full execution remains future work behind a separate safety decision. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md).
+The explicit path keeps planning, run packaging, and adapter dispatch reviewable without making Open Scaffold core a runtime. A future `osc work` controller remains a backlog/safety-design topic, not a live current command. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md) for the historical controller rationale and migration context.
 
 ---
 
@@ -316,7 +318,7 @@ Stable enough to rely on today:
 Still experimental:
 
 - Runtime profiles and runtime-selection helpers beyond no-spawn run-packet metadata.
-- `osc work --dry-run`, `osc dispatch`, MCP, glass cockpit webhooks, local task database helpers, TUI/web dashboards, runtime packages, and Python parser packaging.
+- `osc dispatch`, MCP, glass cockpit webhooks, runtime packages, and Python parser packaging. Historical/repositioned surfaces such as `osc work --dry-run`, local task database helpers, and TUI/web dashboards are not live maintained CLI commands after the framework cleanup.
 
 Future / not included:
 
@@ -388,12 +390,12 @@ Skip it for:
 
 - [`docs/WHY_OPEN_SCAFFOLD.md`](docs/WHY_OPEN_SCAFFOLD.md) — visual story and fit.
 - [`docs/index.html`](docs/index.html) — one-page landing page for the 30-second explanation.
-- [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md) — post-v1 Codex-first `osc work` target and staged adapter path.
+- [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md) — historical/repositioned post-v1 Codex-first `osc work` target and staged adapter path.
 - [`docs/FIRST_WORK_RECORD.md`](docs/FIRST_WORK_RECORD.md) — guided `osc first-run` flow for one valid mission-plan-evidence path.
 - [`docs/PR_REVIEW_WITH_OSC.md`](docs/PR_REVIEW_WITH_OSC.md) — `osc pr check` and fork-safe PR workflow template.
 - [`docs/TRUST_BOUNDARIES.md`](docs/TRUST_BOUNDARIES.md) — dispatch, adapter, evidence, webhook, PR-check, and runtime trust boundaries.
 - [`docs/RUNTIME_BETA_LANE.md`](docs/RUNTIME_BETA_LANE.md) — current Codex/OMX beta lane and no-overclaim boundaries.
-- [`docs/COMMAND_MATURITY.md`](docs/COMMAND_MATURITY.md) — stable/lab/advanced command maturity language.
+- [`docs/COMMAND_MATURITY.md`](docs/COMMAND_MATURITY.md) — historical/repositioned command maturity language for the reduced `osc help` surface.
 - [`docs/SCHEMA_REGISTRY.md`](docs/SCHEMA_REGISTRY.md) — emitted artifact schema IDs and owners.
 - [`docs/ADOPTION_PROOF_INDEX.md`](docs/ADOPTION_PROOF_INDEX.md) — honest adoption-proof labels and reproduction requirements.
 - [`docs/MINIMUM_VIABLE_SCAFFOLD.md`](docs/MINIMUM_VIABLE_SCAFFOLD.md) — smallest practical day-one adoption path.

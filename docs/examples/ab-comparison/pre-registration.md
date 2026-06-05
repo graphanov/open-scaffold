@@ -1,6 +1,6 @@
 # A/B Comparison — Pre-Registration (template)
 
-> **This is a template, not a result.** Copy it into your own repo, fill every
+> **Historical/repositioned template, not a result.** Copy it into your own repo, fill every
 > section with your specifics, and commit it **before collecting any data**.
 > Nothing in this file is evidence about Open Scaffold; it is the instrument you
 > commit to in advance so the analysis cannot be reshaped to fit the outcome.

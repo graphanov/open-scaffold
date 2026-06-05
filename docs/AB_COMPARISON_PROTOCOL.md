@@ -1,6 +1,6 @@
 # Controlled Comparison (A/B) Protocol
 
-Status: protocol only — not yet run. Running this comparison is future work, gated on the observational self-study from `.osc/plans/done/125-methodology-evidence-harness.md` landing first and on having enough matched tasks/participants to run it credibly. This document is the recipe, not a result.
+Status: historical/repositioned protocol only — not yet run. Running this comparison is future work, gated on the observational self-study from `.osc/plans/done/125-methodology-evidence-harness.md` landing first and on having enough matched tasks/participants to run it credibly. This document is the recipe, not a result.
 
 ## Why this exists
 

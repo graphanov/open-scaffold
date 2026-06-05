@@ -2,7 +2,7 @@
 
 A phase-to-tool reference for agent-orchestrated development. This file is the operational reference; `README.md` is the landing page. When in doubt about which tool to reach for, start with the stable repo record: `MISSION.md` → plan → run packet or amendment → evidence → verification → close.
 
-The stable core is the file protocol and lifecycle helpers. Lab surfaces such as natural-language work previews, evolution ledgers, dashboards, cockpit webhooks, and adapter dispatch glue are optional layers around that record; they do not replace the plan/evidence/verification/close chain.
+The stable core is the file protocol and lifecycle helpers. Lab surfaces such as evolution ledgers, cockpit webhooks, runtime profiles, and adapter dispatch glue are optional layers around that record; they do not replace the plan/evidence/verification/close chain. Historical helpers removed from the reduced maintained CLI, such as `osc work`, `osc dashboard`, `osc task`, `osc plan wizard`, `osc plan graph`, `osc metrics`, and broad `osc doctor --fix`, are migration references only unless a future plan restores them with fresh evidence.
 
 Named coordinators, harnesses, and status/approval channels (operator surfaces) in this guide are examples. Use [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) to distinguish public examples, private deployment examples, runtime lanes, adapter candidates, and operator surfaces.
 
@@ -37,14 +37,7 @@ osc plan move <slug> --to active
 
 Use templates when the work shape is known but you want a stronger starting point than the blank handoff skeleton. Shipped templates live under `.osc/plans/templates/`; project teams can add `custom-<name>.md` templates there.
 
-For a first filled draft instead of a blank skeleton, use the terminal interview wizard:
-
-```bash
-osc plan wizard <slug> --stage active
-osc plan wizard <slug> --stage backlog --non-interactive --answers answers.json
-```
-
-The wizard asks for goal, context, constraints, likely files, acceptance criteria, verification, and open questions. It still records your answers only — it does not invent scope or judge whether the plan is good.
+Historical/repositioned migration note: earlier builds included `osc plan wizard` for a terminal interview. The reduced maintained CLI no longer ships that wizard; use `osc plan new` plus a reviewed template, or capture interview output from an external harness and promote it into the plan file.
 
 Validate the result before implementation when the plan will drive real work:
 
@@ -55,16 +48,7 @@ osc plan validate <slug-or-path> --strict --json
 
 Plan validation is mechanical: it catches missing sections, TODO markers, empty acceptance criteria, status/folder drift, vague goals, untagged blocking questions, and heading-order issues. It is not a semantic product review.
 
-When several plans reference each other, render a read-only dependency map before picking the next slice:
-
-```bash
-osc plan graph
-osc plan graph --format mermaid
-osc plan graph --format json --stage all
-osc plan graph --plan <slug> --direction upstream
-```
-
-The graph parser reads explicit plan references such as `depends on: <slug>`, `blocks: <slug>`, `blocked by: <slug>`, `follows: <slug>`, `inherits from: <slug>`, `see plan <slug>`, and `--plan <slug>`. It warns about unresolved or circular dependencies without mutating plans.
+Historical/repositioned migration note: earlier builds included `osc plan graph` for read-only dependency maps. The reduced maintained CLI no longer ships that graph surface; keep dependency notes in plan text, use `osc trace` for local chain inspection, or restore graphing through a future evidence-backed slice.
 
 Use `active` directly when execution is immediate. Use `blocked` or `backlog` when you need to park work without deleting the plan:
 
@@ -83,16 +67,7 @@ Then fill every TODO before implementation. The helpers create and move structur
 
 Implement what the plan says. Independent tasks can run in parallel. Every change must trace back to a plan file or amendment.
 
-For day-one local task tracking without an external board, `osc task` is a lab repo-local task bridge:
-
-```bash
-osc task new "Fix login redirect bug" --priority high --plan <plan-slug>
-osc task list --status todo
-osc task claim T-001
-osc task complete T-001
-```
-
-Tasks live in local `.osc/tasks.db` and can link to plans, but they do not replace plan acceptance criteria or GitHub Issues for public/shared work. See [`docs/TASKS.md`](TASKS.md).
+Historical/repositioned migration note: the local `osc task` bridge was removed from the reduced maintained CLI. Use plan files for durable work, GitHub Issues or another shared tracker for team queues, and keep any local scratch task list outside the core contract. [`docs/TASKS.md`](TASKS.md) is retained as historical design context.
 
 Before creating a durable run packet, preview what Open Scaffold would package:
 
@@ -133,7 +108,7 @@ osc verify --evidence-chain --plan <plan-slug>
 
 Trace shows the known local chain; evidence-chain verification checks that chain structurally.
 
-Run `./verify.sh` for a zero-dependency methodology compliance report (mission defined, plans exist, amendments sequential, changelog coverage). Use `./verify.sh --strict` for full checks including plan schema validation and paired-view drift detection. `osc verify` performs the generic CLI check; adapter repos keep their own namespace-specific verify behavior. Use `osc metrics` when you need numeric scaffold health: plan distribution, cycle time, stale active plans, close velocity, evidence completeness, and approval distribution. Use `osc metrics --json` for CI dashboards or status views that consume machine-readable output. When verification or manual review points at mechanical scaffold hygiene, run `osc doctor --fix --dry-run` first to preview safe repairs, then `osc doctor --fix` to apply fixable status alignment, amendment changelog backfills, narrow paired-view section drops, stale active-plan blocking, or missing release README repair. Use `osc evidence new <slug>` to scaffold a `.osc/releases/<date>-<slug>.md` evidence note after verification, then run `osc evidence collect <slug>` to append local verification output, git context, changed files, and explicit skipped-collector notes without overwriting your narrative. Add `--ci` only when you want `gh`-based PR/check collection. Replace any remaining TODOs with human-reviewed outcome text, then use `osc close <slug> --message "<what shipped>"` (or `npx open-scaffold close <slug> --message "<what shipped>"`) to move a verified plan to `done/`. Shell scripts remain the day-zero floor; `osc` is the canonical tested path for richer run/package behavior.
+Run `./verify.sh` for a zero-dependency methodology compliance report (mission defined, plans exist, amendments sequential, changelog coverage). Use `./verify.sh --strict` for full checks including plan schema validation and paired-view drift detection. `osc verify` performs the generic CLI check; adapter repos keep their own namespace-specific verify behavior. Use `osc doctor --check secret-scan` for the reduced maintained secret-scan diagnostic. Historical `osc metrics` and broad `osc doctor --fix` repair flows were removed from the reduced CLI and should be treated as migration references until restored by a future evidence-backed slice. Use `osc evidence new <slug>` to scaffold a `.osc/releases/<date>-<slug>.md` evidence note after verification, then run `osc evidence collect <slug>` to append local verification output, git context, changed files, and explicit skipped-collector notes without overwriting your narrative. Add `--ci` only when you want `gh`-based PR/check collection. Replace any remaining TODOs with human-reviewed outcome text, then use `osc close <slug> --message "<what shipped>"` (or `npx open-scaffold close <slug> --message "<what shipped>"`) to move a verified plan to `done/`. Shell scripts remain the day-zero floor; `osc` is the canonical tested path for richer run/package behavior.
 
 > **With adapters:** OMC/OMX handoffs should still end by running the repo-local `./verify.sh` plus acceptance-criteria checks. Runtime-native verify commands are wrappers around this evidence, not replacements for it.
 

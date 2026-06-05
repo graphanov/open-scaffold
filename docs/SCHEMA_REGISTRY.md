@@ -19,7 +19,7 @@ This page explains the policy around that registry.
 
 ## Current owners
 
-Use `osc schemas list --json` for the machine-readable list. Representative stable schemas include:
+Use `osc schemas list --json` for the machine-readable list. Representative schemas include:
 
 - `open-scaffold.run.v1` — run packet under `.osc/runs/<run_id>/run.json`.
 - `open-scaffold.adapter.v1` — project-local adapter config.
@@ -27,7 +27,8 @@ Use `osc schemas list --json` for the machine-readable list. Representative stab
 - `open-scaffold.dispatch-receipt.v1` — adapter receipt.
 - `open-scaffold.pr_check.v1` — structural PR work-record check.
 - `open-scaffold.trace.v1` — local work-record replay.
-- `open-scaffold.compact-evidence.v1` — compact evidence manifest.
+- `open-scaffold.audit-envelope.v1` — digest-only audit envelope for curated local artifacts.
+- `open-scaffold.evaluation.v1` — acceptance-criteria evaluation envelope scaffold / external scorer reference.
 
 ## Adding a schema
 

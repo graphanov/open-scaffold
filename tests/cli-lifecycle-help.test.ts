@@ -12,6 +12,7 @@ type HelpCase = {
   args: string[];
   expected: string;
   forbidden?: string;
+  expectedStatus?: number;
 };
 
 const topLevelHelpSections = [
@@ -26,19 +27,15 @@ const topLevelHelpCommands = [
   'osc init --tier <min|standard|max> --target <dir> [--force]',
   'osc init --from-existing --tier min --target <dir> [--force]',
   'osc init --min|--standard|--max --target <dir> [--force]',
-  'osc status [--json|--dashboard]',
+  'osc status [--json]',
   'osc plan <plan-path>',
   'osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]',
   'osc plan new --from-template list',
   'osc plan validate <slug-or-path> [--json] [--strict]',
-  'osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]',
   'osc plan move <slug> --to <active|backlog|blocked>',
-  'osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]',
-  'osc plan stats [--json]',
   'osc amend <plan-slug> [--message <text>]',
   'osc evidence new <slug>',
   'osc evidence collect <slug> [--ci] [--dry-run] [--verbose]',
-  'osc evidence compact <run-or-loop> [--evaluation <evaluation-json>] [--candidate-note <path>]... [--out <dir>] [--json]',
   'osc close <plan-slug> [--message <text>]',
   'osc trace <plan-slug> [--json] [--include-unverified]',
   'osc verify [--evidence-chain [--plan <slug>] [--json] [--strict] [--online-github]]',
@@ -52,20 +49,10 @@ const topLevelHelpCommands = [
   'osc delegate <plan-path> [run binding options]',
   'osc run <plan-path> [--dry-run] [--json] [run binding options]',
   'osc dispatch <run-json> --adapter <adapter-id>',
-  'osc work <task-description> --runtime <preset> --dry-run [--json] [--adapter <adapter-id>]',
   'osc review <plan-path> [run binding options]',
   'osc ultrareview <plan-path> [run binding options]',
-  'osc task new <title> [--priority <high|medium|low>] [--plan <slug>]',
-  'osc task list [--status <status>] [--priority <priority>] [--plan <slug>] [--json]',
-  'osc task show <task-id>',
-  'osc task claim|start|complete|cancel <task-id>',
-  'osc task block <task-id> --reason <text>',
-  'osc task comment <task-id> <comment>',
-  'osc task link <task-id> --plan <slug>',
   'osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]',
-  'osc eval init <run-or-plan> [--out <path>]',
-  'osc eval import <run-or-plan> --adapter generic-ac-json-v1 --scorer <scorer-json> [--out <path>]',
-  'osc eval check <evaluation-path>',
+  'osc eval init <plan-path> [--out <path>]',
   'osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]',
   'osc audit check <audit-manifest-path>',
   'osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>]',
@@ -76,14 +63,18 @@ const topLevelHelpCommands = [
   'osc cockpit config',
   'osc cockpit test [--dry-run]',
   'osc cockpit post --event <event> [--message <text>] [--run-id <id>] [--plan <slug>] [--task-id <id>] [--pr <url>] [--evidence-path <path>] [--dry-run]',
-  'osc dashboard [--watch] [--interval <seconds>]',
-  'osc dashboard --web [--out <path>]',
-  'osc dashboard --serve [--port <port>] [--open]',
   'osc mcp serve [--repo <path>] [--allow-write] [--validate]',
-  'osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]',
-  'osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <name>]',
   'osc runtimes list [--json]',
   'osc runtimes show <id>',
+  'osc doctor --check secret-scan',
+  'removed/repositioned: osc plan wizard',
+  'removed/repositioned: osc plan graph',
+  'removed/repositioned: osc plan stats',
+  'removed/repositioned: osc evidence compact',
+  'removed/repositioned: osc task new/list/show/claim/start/complete/cancel/block/comment/link',
+  'removed/repositioned: osc eval import/check',
+  'removed/repositioned: osc status --dashboard',
+  'removed/repositioned: osc work, osc dashboard, osc metrics, osc study, osc ab, broad osc doctor checks, resume helpers',
 ];
 
 const cases: HelpCase[] = [
@@ -108,7 +99,8 @@ const cases: HelpCase[] = [
   {
     name: 'plan wizard',
     args: ['plan', 'wizard', '--help'],
-    expected: 'Usage: osc plan wizard <slug>',
+    expected: 'osc plan wizard was removed/repositioned',
+    expectedStatus: 2,
     forbidden: 'Missing required argument',
   },
   {
@@ -120,7 +112,8 @@ const cases: HelpCase[] = [
   {
     name: 'plan stats',
     args: ['plan', 'stats', '--help'],
-    expected: 'Usage: osc plan stats [--json]',
+    expected: 'osc plan stats was removed/repositioned',
+    expectedStatus: 2,
     forbidden: 'Unknown option',
   },
   {
@@ -144,7 +137,8 @@ const cases: HelpCase[] = [
   {
     name: 'evidence compact',
     args: ['evidence', 'compact', '--help'],
-    expected: 'Usage: osc evidence compact <run-or-loop> [--evaluation <evaluation-json>] [--candidate-note <path>]... [--out <dir>] [--json]',
+    expected: 'osc evidence compact was removed/repositioned',
+    expectedStatus: 2,
     forbidden: 'Missing required argument',
   },
 ];
@@ -179,10 +173,31 @@ describe('plan lifecycle help flags', () => {
     it(`prints help for ${item.name}`, () => {
       const result = spawnSync(node, [...cliArgs, ...item.args], { cwd: repoRoot, encoding: 'utf8' });
 
-      expect(result.status).toBe(0);
-      expect(result.stderr).toBe('');
-      expect(result.stdout).toContain(item.expected);
+      expect(result.status).toBe(item.expectedStatus ?? 0);
+      if (item.expectedStatus && item.expectedStatus !== 0) {
+        expect(result.stderr).toContain(item.expected);
+      } else {
+        expect(result.stderr).toBe('');
+        expect(result.stdout).toContain(item.expected);
+      }
       if (item.forbidden) expect(result.stdout + result.stderr).not.toContain(item.forbidden);
     });
   }
+});
+
+
+describe('removed/repositioned command shims', () => {
+  it('rejects the retired status dashboard option explicitly', () => {
+    const result = spawnSync(node, [...cliArgs, 'status', '--dashboard'], { cwd: repoRoot, encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('osc status --dashboard was removed/repositioned');
+  });
+
+  it('rejects unknown status options instead of ignoring them', () => {
+    const result = spawnSync(node, [...cliArgs, 'status', '--bogus'], { cwd: repoRoot, encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('Unknown option for status: --bogus');
+  });
 });

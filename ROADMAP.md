@@ -413,11 +413,11 @@ Owner gates:
 
 ### Milestone 19 — Post-v1 adoption workflow target
 
-Status: staged implementation through `.osc/plans/done/099-runtime-adoption-ux-reset.md`, `docs/RUNTIME_ADOPTION_WORKFLOW.md`, and follow-up Codex-first adoption slices through `104-osc-work-dry-run-target`. `osc work --dry-run` is now the first natural-language composition layer; the 2026-05-28 control-loop decision promotes future execution to backlog plan `119-osc-work-execute-controller` while rejecting a native core runtime. The completed MCP readiness decision slice (`.osc/plans/done/131-mcp-integration-surface-readiness.md`) keeps MCP as an integration facet and routes any future write/execution authority downstream of that controller model.
+Status: historical/repositioned after the framework cleanup. Earlier staged work through `.osc/plans/done/099-runtime-adoption-ux-reset.md`, `docs/RUNTIME_ADOPTION_WORKFLOW.md`, and `104-osc-work-dry-run-target` explored `osc work --dry-run` as a natural-language composition layer, but the reduced maintained CLI removed `osc work` from the live command surface. The 2026-05-28 control-loop decision still routes any future execution controller to backlog plan `119-osc-work-execute-controller` while rejecting a native core runtime. The completed MCP readiness decision slice (`.osc/plans/done/131-mcp-integration-surface-readiness.md`) keeps MCP as an integration facet and routes any future write/execution authority downstream of that controller model.
 
 Goal: turn the credible v1 work-record protocol into a smoother adoption path without collapsing Open Scaffold core into a provider-specific runtime.
 
-Target workflow:
+Historical target workflow (not a live reduced-CLI command):
 
 ```bash
 osc work "Add a /health endpoint with tests" --runtime codex
@@ -441,7 +441,7 @@ Implementation sequence:
 2. Done — `osc start` added as a no-spawn, paste-ready Codex/OMX agent-entry command.
 3. Done — Codex-first adapter package path hardened around `runtime-omx` and the broad `codex` preset.
 4. Done — `osc dispatch <run.json> --adapter <id>` added as explicit local-adapter invocation glue.
-5. Done in repo — `osc work --dry-run` previews a natural-language task as candidate plan/run/dispatch steps without writing artifacts or launching runtimes.
+5. Historical/repositioned — `osc work --dry-run` previously previewed a natural-language task as candidate plan/run/dispatch steps; it is no longer a live reduced-CLI command.
 6. Backlog — `119-osc-work-execute-controller`: design and implement a safe `osc work` run-lifecycle controller that owns plan/package/run/receipt/evidence/verification/human gates while explicit adapters own execution, auth, spawning, sandbox translation, and sessions.
 7. Later — reconsider native runtime ownership only after at least two credible adapter proofs or one production adapter, closed security P0s, real adoption evidence that adapters are insufficient, and a separate ADR accepting process lifecycle and credential burden.
 

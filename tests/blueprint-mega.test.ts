@@ -258,7 +258,21 @@ describe('blueprint registry and schema surfaces', () => {
     const schemas = spawnSync(tsx, [cli, 'schemas', 'list', '--json'], { cwd: repoRoot, encoding: 'utf8' });
     expect(schemas.status, schemas.stderr).toBe(0);
     const parsed = JSON.parse(schemas.stdout);
-    expect(parsed.some((schema: { id: string }) => schema.id === 'open-scaffold.run.v1')).toBe(true);
-    expect(parsed.some((schema: { id: string }) => schema.id === 'open-scaffold.pr_check.v1')).toBe(true);
+    const schemaIds = parsed.map((schema: { id: string }) => schema.id);
+    expect(schemaIds).toEqual(expect.arrayContaining([
+      'open-scaffold.run.v1',
+      'open-scaffold.pr_check.v1',
+      'open-scaffold.audit-envelope.v1',
+      'open-scaffold.evaluation.v1',
+    ]));
+    expect(schemaIds).not.toContain('open-scaffold.compact-evidence.v1');
+
+    const auditSchema = spawnSync(tsx, [cli, 'schemas', 'show', 'open-scaffold.audit-envelope.v1'], { cwd: repoRoot, encoding: 'utf8' });
+    expect(auditSchema.status, auditSchema.stderr).toBe(0);
+    expect(auditSchema.stdout).toContain('Owner: src/audit.ts');
+
+    const evalSchema = spawnSync(tsx, [cli, 'schemas', 'show', 'open-scaffold.evaluation.v1'], { cwd: repoRoot, encoding: 'utf8' });
+    expect(evalSchema.status, evalSchema.stderr).toBe(0);
+    expect(evalSchema.stdout).toContain('Emitted by: osc eval init');
   });
 });

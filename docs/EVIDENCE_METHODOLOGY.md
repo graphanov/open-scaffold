@@ -1,6 +1,6 @@
 # Evidence Methodology
 
-Status: active measurement protocol for the observational self-study produced by `osc study`. This document is the recipe and the honesty contract; the computed result lives in `docs/EVIDENCE_SELF_STUDY.md`, and the controlled comparison that this study deliberately does **not** run is specified in `docs/AB_COMPARISON_PROTOCOL.md`.
+Status: historical/repositioned measurement protocol for an observational self-study previously produced by `osc study`; `osc study` is not a live reduced-CLI command after the framework cleanup. This document is the recipe and the honesty contract; the computed result lives in `docs/EVIDENCE_SELF_STUDY.md`, and the controlled comparison that this study deliberately does **not** run is specified in `docs/AB_COMPARISON_PROTOCOL.md`.
 
 ## Why this exists
 

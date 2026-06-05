@@ -73,13 +73,12 @@ These surfaces are usable but not promised as final API shape. They may change w
 - Runtime profiles and runtime selection beyond run-packet metadata.
 - `osc run`, `osc delegate`, `osc review`, and `osc ultrareview` beyond their current no-spawn artifact-generation role.
 - `osc dispatch` as explicit local-adapter invocation glue; adapter commands, receipts, and launch policy remain experimental and adapter-owned.
-- `osc work --dry-run` as a no-spawn natural-language composition preview; non-dry-run work execution remains future-gated behind the 2026-05-28 control-loop decision and backlog plan `119-osc-work-execute-controller`.
+- Historical/repositioned: `osc work --dry-run` previously explored no-spawn natural-language composition, but it is not a live reduced-CLI command after the framework cleanup; future work execution remains gated behind the 2026-05-28 control-loop decision and backlog plan `119-osc-work-execute-controller`.
 - `osc evolve` ledger helpers for repeated attempts; they record attempt/frontier decisions but do not execute or approve work.
 - Evaluation and audit envelope helpers.
 - Optional MCP server interface.
 - Glass cockpit webhook examples for Discord and Slack.
-- Local task database helpers.
-- TUI or web dashboards.
+- Historical/repositioned local task database helpers and TUI/web dashboards; they are not live reduced-CLI commands after the framework cleanup.
 - Runtime-specific packages such as `packages/runtime-omx/`.
 - Python reference parser packaging until it is promoted through separate packaging evidence.
 

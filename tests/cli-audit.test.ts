@@ -149,5 +149,20 @@ describe('osc audit CLI', () => {
 
     expect(envelope.schema).toBe('open-scaffold.evaluation.v1');
     expect(envelope.subject.plan).toBe('.osc/plans/active/037-demo.md');
+    expect(envelope.acceptance_criteria.map((criterion: { id: string }) => criterion.id)).toEqual(['AC1', 'AC2']);
+  });
+
+  it('rejects run packets for eval init instead of emitting empty plan criteria', () => {
+    const { root } = tempRepo();
+    const runDir = join(root, '.osc/runs/20260605T000000Z-demo-run');
+    mkdirSync(runDir, { recursive: true });
+    const runPath = join(runDir, 'run.json');
+    writeFileSync(runPath, JSON.stringify({ run_id: 'demo-run', plan: '.osc/plans/active/037-demo.md' }, null, 2));
+
+    const result = spawnSync(tsx, [cli, 'eval', 'init', runPath], { cwd: root, encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('osc eval init only accepts a plan markdown file under .osc/plans/<stage>/');
+    expect(result.stderr).toContain('run-packet evaluation is repositioned outside the reduced maintained CLI');
   });
 });

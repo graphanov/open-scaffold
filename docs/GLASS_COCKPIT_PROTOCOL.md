@@ -1,5 +1,7 @@
 # Glass Cockpit Protocol
 
+Status note: dashboard command examples are historical/repositioned after the framework cleanup. The reduced maintained CLI keeps cockpit event configuration/posting surfaces, but static/terminal `osc dashboard` generation was removed and should be treated as migration context unless restored by a future evidence-backed slice.
+
 Open Scaffold treats operator surfaces — the places people watch, steer, and approve work — as control glass, not truth. Discord, Slack, Telegram, GitHub comments, CLI dashboards, web UIs, and webhook-fed rooms can show status, ask questions, request approval, and publish progress. They should not become the only place the project remembers what happened.
 
 This protocol defines a runtime-neutral event shape for private control rooms, team rooms, stakeholder rooms, and build-in-public streams.
@@ -81,7 +83,7 @@ Use for:
 - stakeholder-friendly snapshots of mission, plans, tasks, evidence, and verification status;
 - public-safe build-in-public snapshots that still point back to repository truth.
 
-Default visibility: same as the repository. The generated page is read-only and self-contained: no backend, no network dependency, no external scripts, no analytics, and no chat transcript storage. `osc dashboard --web` writes a static `.osc/dashboard.html` file. `osc dashboard --serve` serves the same view on localhost for local review only; `--open` prints the browser URL without spawning an OS command from core.
+Default visibility: same as the repository. Historical/repositioned note: prior dashboard builds wrote a static `.osc/dashboard.html` or served it locally; the reduced maintained CLI no longer ships `osc dashboard --web`, `--serve`, or `--open`.
 
 ### Stakeholder room
 
@@ -98,16 +100,16 @@ Default visibility: curated.
 
 ### Terminal dashboard
 
-`osc dashboard` is the simplest local glass cockpit: a read-only terminal view over the repo-owned state. It shows mission status, plan counts, active-plan freshness, recent evidence notes, verification health, and optional task summary data without becoming a second source of truth.
+Historical/repositioned note: `osc dashboard` previously acted as the simplest local glass cockpit, a read-only terminal view over repo-owned state. The reduced maintained CLI removed that command; use `osc status`, `osc trace`, evidence notes, and cockpit event artifacts for current CLI-backed orientation.
 
 Use for:
 
 - quick local orientation before starting or resuming a slice;
 - checking active-plan staleness and evidence recency;
-- watching repo state with `osc dashboard --watch` during manual work;
+- historical: watching repo state with `osc dashboard --watch` during manual work;
 - sharing a human-readable state view without opening a browser or running a daemon.
 
-The dashboard must point back to durable paths such as `.osc/plans/*` and `.osc/releases/*`. It must remain read-only in v1: plan edits, approvals, publication, and task transitions still happen through the existing CLI, GitHub, or task bridge surfaces.
+The dashboard must point back to durable paths such as `.osc/plans/*` and `.osc/releases/*`. It must remain read-only in v1: plan edits, approvals, publication, and task transitions still happen through the existing CLI, GitHub, or external tracker surfaces.
 
 ## Event envelope
 

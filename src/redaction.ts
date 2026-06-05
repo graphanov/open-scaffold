@@ -24,7 +24,7 @@ const SECRET_PATTERNS: Array<{ kind: SecretFinding['kind']; pattern: RegExp; rep
 ];
 
 const PUBLIC_SCAN_EXTENSIONS = new Set(['.md', '.txt', '.json', '.yml', '.yaml', '.ts', '.tsx', '.js', '.mjs', '.cjs', '.sh', '.html', '.css']);
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'coverage', '.osc-dev', '.omc', '.omx']);
+const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'coverage', '.osc-dev', '.clawhip', '.omc', '.omx']);
 const SKIP_PREFIXES = ['.osc/research/', '.osc/runs/', '.osc/state/', 'tests/'];
 const SKIP_FILES = new Set(['.osc/dashboard.html']);
 

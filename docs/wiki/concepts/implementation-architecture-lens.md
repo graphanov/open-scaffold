@@ -150,7 +150,7 @@ Those may become adapter, evaluator, runtime, ledger-anchor, or future-product w
 
 ## Follow-up candidates
 
-Structured evaluation mechanics start with `osc eval init` and `osc eval check`: generate a JSON evaluation envelope, check that every acceptance criterion has evidence/status/rationale/evaluator coverage, and require a correction route for non-pass outcomes. This still does not automatically certify domain correctness, benchmark models, or replace human/product approval.
+Structured evaluation mechanics currently start with the reduced `osc eval init <plan-path>` surface: generate a JSON evaluation-envelope scaffold from plan acceptance criteria. Fuller `eval check` validation is repositioned outside the reduced maintained CLI until renewed protected-core evidence justifies restoring it. This still does not automatically certify domain correctness, benchmark models, or replace human/product approval.
 
 Local audit manifest mechanics start with `osc audit init` and `osc audit check`: generate a JSON audit-envelope digest manifest for curated local artifacts, then check repo-relative paths and sha256 digest consistency. This still does not certify compliance, approve release/merge, prove domain correctness, spawn runtimes, benchmark models, or anchor evidence externally.
 

@@ -1,14 +1,12 @@
 # Command maturity
 
-Open Scaffold commands are intentionally labeled by maturity so first-time users see the stable path before lab or advanced surfaces.
-
-The CLI registry is in `src/command-maturity.ts` and is rendered by:
+Status: historical/repositioned guidance after the framework cleanup. The previous command-maturity registry in `src/command-maturity.ts` and the `osc commands` / `osc commands --json` surfaces were removed from the reduced maintained CLI. Current command grouping is rendered by:
 
 ```bash
 osc help
-osc commands
-osc commands --json
 ```
+
+Open Scaffold commands should still be presented by maturity so first-time users see the stable path before lab, advanced, historical, or migration surfaces.
 
 ## Labels
 
