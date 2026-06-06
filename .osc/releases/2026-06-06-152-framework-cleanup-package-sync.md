@@ -14,7 +14,7 @@ The package-visible change is a narrowed/reduced Open Scaffold CLI/source surfac
 - Source closeout PR: https://github.com/graphanov/open-scaffold/pull/184.
 - Release-sync plan: `.osc/plans/active/152-framework-cleanup-package-sync.md`.
 - Run ID / run packet: N/A for this scoped package/release sync.
-- Branch / PR: `release/0.31.0-framework-cleanup-sync`; PR pending.
+- Branch / PR: `release/0.31.0-framework-cleanup-sync` / https://github.com/graphanov/open-scaffold/pull/185.
 
 ## Verification
 
@@ -38,7 +38,7 @@ Candidate gates before PR-ready:
 - [x] `npm run osc -- doctor --check secret-scan` — PASS: `PASS secret-scan: no obvious token/webhook strings found.`
 - [x] `npm pack --dry-run --json` payload inspection after cleaning ignored local build residue — PASS for `open-scaffold@0.31.0`; entry count 198; no stale removed-command `dist/*` modules; no Python `__pycache__` files.
 - [x] `npm publish --dry-run --tag latest` — PASS for `open-scaffold@0.31.0` with tag `latest`.
-- [ ] Release candidate PR CI and review/thread gate — pending.
+- [ ] Release candidate PR CI and review/thread gate — CI green on initial PR head; Codex requested the actual PR URL in this evidence note, so follow-up review remains pending.
 
 Post-merge/publication gates after owner-approved follow-through:
 
