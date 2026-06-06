@@ -67,6 +67,7 @@ const topLevelHelpCommands = [
   'osc runtimes list [--json]',
   'osc runtimes show <id>',
   'osc doctor --check secret-scan',
+  'migration notes: docs/COMMAND_MATURITY.md',
   'removed/repositioned: osc plan wizard',
   'removed/repositioned: osc plan graph',
   'removed/repositioned: osc plan stats',
@@ -176,6 +177,10 @@ describe('plan lifecycle help flags', () => {
       expect(result.status).toBe(item.expectedStatus ?? 0);
       if (item.expectedStatus && item.expectedStatus !== 0) {
         expect(result.stderr).toContain(item.expected);
+        if (item.expected.includes('removed/repositioned')) {
+          expect(result.stderr).toContain('docs/COMMAND_MATURITY.md');
+          expect(result.stderr).not.toContain('.osc/runs/');
+        }
       } else {
         expect(result.stderr).toBe('');
         expect(result.stdout).toContain(item.expected);
@@ -192,6 +197,8 @@ describe('removed/repositioned command shims', () => {
 
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('osc status --dashboard was removed/repositioned');
+    expect(result.stderr).toContain('docs/COMMAND_MATURITY.md');
+    expect(result.stderr).not.toContain('.osc/runs/');
   });
 
   it('rejects unknown status options instead of ignoring them', () => {

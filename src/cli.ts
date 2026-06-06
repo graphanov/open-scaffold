@@ -100,6 +100,7 @@ Diagnostics and advanced:
   osc doctor --check secret-scan
 
 Removed/repositioned migration appendix (not live maintained commands):
+  migration notes: docs/COMMAND_MATURITY.md
   removed/repositioned: osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
   removed/repositioned: osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]
   removed/repositioned: osc plan stats [--json]
@@ -726,7 +727,7 @@ function runtimesCommand(args: string[]): void {
 }
 
 function removed(command: string): never {
-  die(`osc ${command} was removed/repositioned by the framework cleanup. See .osc/runs/20260605T154630Z-151-framework-cleanup-shrink-run/break-removal-ledger.md for migration notes.`, 2);
+  die(`osc ${command} was removed/repositioned by the framework cleanup. See docs/COMMAND_MATURITY.md for shipped migration notes.`, 2);
 }
 
 async function main(): Promise<void> {
