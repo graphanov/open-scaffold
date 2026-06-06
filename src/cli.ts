@@ -115,7 +115,7 @@ function die(message: string, code = 2): never {
   console.error(message);
   process.exit(code);
 }
-function isHelp(args: string[]): boolean { return args.length === 0 || args[0] === '-h' || args[0] === '--help' || args[0] === 'help'; }
+function isHelp(args: string[]): boolean { return args[0] === '-h' || args[0] === '--help' || args[0] === 'help'; }
 function value(args: string[], flag: string): string | undefined {
   const i = args.indexOf(flag);
   if (i >= 0) return args[i + 1];
@@ -367,10 +367,11 @@ Validation: ${summary.failures} failure(s), ${summary.warnings} warning(s)`);
 
 
 function planCommand(args: string[]): void {
-  if (isHelp(args)) { console.log('Usage: osc plan <plan-path> | osc plan new|validate|move ...'); return; }
+  if (args.length === 0 || isHelp(args)) { console.log('Usage: osc plan <plan-path> | osc plan new|validate|move ...'); return; }
   const sub = args[0];
   if (sub === 'new') {
     if (isHelpArg(args[1])) { console.log('Usage: osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]'); return; }
+    validateOptions(args.slice(1), ['--stage','--from-template'], [], 'plan new');
     if (args[1] === '--from-template' && args[2] === 'list') { for (const t of listPlanTemplates()) console.log(`${t.name}\t${t.path}`); return; }
     const slug = positional(args.slice(1), ['--stage','--from-template'])[0] ?? die('Usage: osc plan new <slug> --stage <active|backlog|blocked>');
     const stage = choice(requireValue(args, '--stage'), PLAN_CREATION_STAGES, '--stage') as PlanCreationStage;
@@ -436,7 +437,7 @@ function lifecycleCommand(kind: 'amend' | 'close', args: string[]): void {
 }
 
 function evidenceCommand(args: string[]): void {
-  if (isHelp(args)) { console.log('Usage: osc evidence new <slug> | osc evidence collect <slug> [--ci] [--dry-run] [--verbose]'); return; }
+  if (args.length === 0 || isHelp(args)) { console.log('Usage: osc evidence new <slug> | osc evidence collect <slug> [--ci] [--dry-run] [--verbose]'); return; }
   const sub = args[0];
   if (sub === 'compact') removed('evidence compact');
   if ((sub === 'new' || sub === 'collect') && isHelpArg(args[1])) { console.log(`Usage: osc evidence ${sub} <slug>${sub === 'collect' ? ' [--ci] [--dry-run] [--verbose]' : ''}`); return; }

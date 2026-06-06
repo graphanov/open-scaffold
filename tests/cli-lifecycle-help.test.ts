@@ -192,6 +192,16 @@ describe('plan lifecycle help flags', () => {
 
 
 describe('removed/repositioned command shims', () => {
+  it('treats missing amend/close operands as errors, not help', () => {
+    for (const command of ['amend', 'close']) {
+      const result = spawnSync(node, [...cliArgs, command], { cwd: repoRoot, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain(`Usage: osc ${command} <plan-slug>`);
+    }
+  });
+
   it('rejects the retired status dashboard option explicitly', () => {
     const result = spawnSync(node, [...cliArgs, 'status', '--dashboard'], { cwd: repoRoot, encoding: 'utf8' });
 

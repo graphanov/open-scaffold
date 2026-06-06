@@ -210,6 +210,14 @@ describe('osc init CLI', () => {
     expect(result.stderr).not.toContain('Run binding options:');
   });
 
+  it('treats missing init operands as an error, not help', () => {
+    const result = spawnSync(tsx, [cli, 'init'], { encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Missing --tier');
+  });
+
   it('does not treat a target value named help as an init help request', () => {
     const parent = tempTarget();
     const result = spawnSync(tsx, [cli, 'init', '--target', 'help', '--tier', 'min'], { cwd: parent, encoding: 'utf8' });
