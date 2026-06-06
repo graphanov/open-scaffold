@@ -252,9 +252,12 @@ Historical/repositioned migration note: earlier builds exposed `osc work --dry-r
 
 ```bash
 osc plan new <slug> --stage active
-osc run .osc/plans/active/<slug>.md --dry-run --runtime codex --workflow plan
+osc run .osc/plans/active/<slug>.md --runtime codex --workflow plan
 osc dispatch .osc/runs/RUN_ID/run.json --adapter <id>
 ```
+
+Use `osc run ... --dry-run` only to preview the run packet; rerun without
+`--dry-run` before dispatch so `.osc/runs/RUN_ID/run.json` actually exists.
 
 The explicit path keeps planning, run packaging, and adapter dispatch reviewable without making Open Scaffold core a runtime. A future `osc work` controller remains a backlog/safety-design topic, not a live current command. See [`docs/RUNTIME_ADOPTION_WORKFLOW.md`](docs/RUNTIME_ADOPTION_WORKFLOW.md) for the historical controller rationale and migration context.
 

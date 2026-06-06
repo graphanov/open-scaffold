@@ -73,4 +73,12 @@ describe('reduced CLI documentation coherence', () => {
 
     expect(unmarked).toEqual([]);
   });
+
+  it('keeps the removed work replacement recipe dispatchable', () => {
+    const readme = readFileSync(resolve(repoRoot, 'README.md'), 'utf8');
+
+    expect(readme).toContain('osc run .osc/plans/active/<slug>.md --runtime codex --workflow plan');
+    expect(readme).toContain('Use `osc run ... --dry-run` only to preview the run packet');
+    expect(readme).not.toContain('osc run .osc/plans/active/<slug>.md --dry-run --runtime codex --workflow plan\nosc dispatch .osc/runs/RUN_ID/run.json');
+  });
 });

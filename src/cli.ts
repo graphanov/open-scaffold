@@ -145,6 +145,28 @@ function positional(args: string[], valueFlags: string[]): string[] {
   return out;
 }
 
+function validateOptions(args: string[], valueFlags: string[], booleanFlags: string[], context: string): void {
+  const valueSet = new Set(valueFlags);
+  const booleanSet = new Set(booleanFlags);
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (!arg.startsWith('--')) continue;
+    const [flag, inlineValue] = arg.split('=', 2);
+    if (valueSet.has(flag)) {
+      if (arg.includes('=')) {
+        if (!inlineValue) die(`Missing value for ${flag}`, 2);
+        continue;
+      }
+      const next = args[i + 1];
+      if (!next || next.startsWith('--')) die(`Missing value for ${flag}`, 2);
+      i += 1;
+      continue;
+    }
+    if (booleanSet.has(flag) && !arg.includes('=')) continue;
+    die(`Unknown option for ${context}: ${flag}`, 2);
+  }
+}
+
 function usage(message: string, stream: 'stdout' | 'stderr' = 'stderr'): void {
   if (stream === 'stdout') console.log(message);
   else console.error(message);
@@ -232,12 +254,15 @@ function applyRuntimeSelection(options: RunArtifactOptions, root: string): void 
   }
 }
 
-function parseRunOptions(args: string[]): { planPath: string; options: RunArtifactOptions; dryRun: boolean; json: boolean } {
+const RUN_VALUE_FLAGS = ['--task-id','--source-ref','--runtime','--workflow','--executor','--harness-skill','--repo','--worktree','--branch','--operator-surface','--operator-thread','--issue','--pr','--commit-policy'];
+
+function parseRunOptions(mode: ArtifactMode, args: string[]): { planPath: string; options: RunArtifactOptions; dryRun: boolean; json: boolean } {
   if (isHelpArg(args[0])) {
     printRunArtifactsUsage('run', 'stdout');
     process.exit(0);
   }
-  const [planPath] = positional(args, ['--task-id','--source-ref','--runtime','--workflow','--executor','--harness-skill','--repo','--worktree','--branch','--operator-surface','--operator-thread','--issue','--pr','--commit-policy']);
+  validateOptions(args, RUN_VALUE_FLAGS, mode === 'run' ? ['--dry-run', '--json'] : [], mode);
+  const [planPath] = positional(args, RUN_VALUE_FLAGS);
   if (!planPath) { printRunArtifactsUsage('run'); process.exit(2); }
   const workflow = value(args, '--workflow') as RuntimeWorkflow | undefined;
   const executor = value(args, '--executor') as ExecutorLane | undefined;
@@ -273,7 +298,7 @@ function parseRunOptions(args: string[]): { planPath: string; options: RunArtifa
 
 function artifactsCommand(mode: ArtifactMode, args: string[]): void {
   if (isHelpArg(args[0])) { printRunArtifactsUsage(mode, 'stdout'); return; }
-  const parsed = parseRunOptions(args);
+  const parsed = parseRunOptions(mode, args);
   const planPath = resolve(parsed.planPath);
   if (!existsSync(planPath)) die(`Plan not found: ${planPath}`, 1);
   const scaffoldRoot = findScaffoldRoot(dirname(planPath));
@@ -647,6 +672,7 @@ function schemasCommand(args: string[]): void {
 
 function doctorCommand(args: string[]): void {
   if (isHelpArg(args[0])) { console.log('Usage: osc doctor --check secret-scan'); return; }
+  validateOptions(args, ['--check'], [], 'doctor');
   const check = value(args, '--check');
   if (check && check !== 'secret-scan') die(`Unknown doctor check: ${check}`, 2);
   const findings = scanPublicFilesForSecrets(process.cwd());

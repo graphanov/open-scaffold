@@ -207,4 +207,14 @@ describe('removed/repositioned command shims', () => {
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('Unknown option for status: --bogus');
   });
+
+  it('rejects removed broad doctor options instead of running secret scan', () => {
+    for (const args of [['--fix'], ['--dry-run'], ['--severity', 'high']]) {
+      const result = spawnSync(node, [...cliArgs, 'doctor', ...args], { cwd: repoRoot, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain(`Unknown option for doctor: ${args[0]}`);
+      expect(result.stdout).not.toContain('PASS secret-scan');
+    }
+  });
 });
