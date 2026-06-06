@@ -4,6 +4,25 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v0.31.0 — Framework cleanup shrink release
+
+Status: release candidate in repo until owner-approved trusted publishing and GitHub Release follow-through complete.
+
+Highlights:
+
+- Publishes the framework cleanup shrink from PR #183 plus closeout PR #184 to the public `npx open-scaffold@latest` package surface.
+- Reduces the maintained TypeScript source surface from the 20,890 LOC baseline to 12,520 LOC while preserving the protected repo-native work-record loop and runtime-neutral boundaries.
+- Repositions removed or contracted commands behind shipped migration/help docs such as `docs/COMMAND_MATURITY.md` instead of ignored local evidence paths.
+- Keeps Open Scaffold pre-1.0: this release tightens and reduces package-visible surfaces, and users depending on experimental/lab command shapes should pin exact versions and read the migration notes.
+
+Evidence:
+
+- Source plan: `.osc/plans/done/151-framework-cleanup-shrink.md`
+- Source PR: https://github.com/graphanov/open-scaffold/pull/183
+- Closeout PR: https://github.com/graphanov/open-scaffold/pull/184
+- Release-sync plan: `.osc/plans/active/152-framework-cleanup-package-sync.md`
+- Release-sync evidence note: `.osc/releases/2026-06-06-152-framework-cleanup-package-sync.md`
+
 ## v0.30.1 — Evolution handoff packet release
 
 Status: published to npm as `open-scaffold@0.30.1`; GitHub Release `v0.30.1` is Latest after owner-approved trusted publishing and release follow-through.
