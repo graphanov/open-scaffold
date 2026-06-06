@@ -36,7 +36,7 @@ Open Scaffold core owns the portable project substrate:
 - `docs/SLICE_CLOSE_PROTOCOL.md` — evidence receipts, postflight decisions, approval strength, correction routing, and next-slice inheritance.
 - `docs/EVOLUTION_LOOP.md` — multi-attempt loop state, attempt journals, frontier promotion, and improvement routing.
 - `osc mcp serve` / `osc-mcp` — optional stdio MCP server that exposes local mission, plan, evidence, status, rules, and roadmap state to MCP-capable tools without requiring each agent to parse markdown directly.
-- `osc task` — optional local SQLite task bridge for day-one repo-local task tracking in `.osc/tasks.db`; see [`docs/TASKS.md`](TASKS.md).
+- External trackers / GitHub Issues — optional work-queue bindings around the repo record. Historical/repositioned note: the earlier `osc task` local SQLite bridge and `.osc/tasks.db` store were removed from the reduced maintained CLI; see [`docs/TASKS.md`](TASKS.md) for retired design context.
 - `verify.sh` / `osc verify` — methodology compliance and evidence-chain structural checks.
 - `osc trace` — read-only local work-record replay for one plan.
 - `.github/` templates — issue and PR traceability for GitHub-centered workflows.
@@ -107,7 +107,7 @@ Examples:
 - GitHub Issues
 - Linear
 - Jira
-- the optional local `.osc/tasks.db` task queue exposed by `osc task`
+- historical/repositioned local `.osc/tasks.db` task queues from the retired `osc task` bridge
 - a custom orchestrator board
 
 Open Scaffold should define how roadmap items and plans link to these systems, but it should not assume one board is universal. The dispatch pattern is documented in [`docs/RUNTIME_HARNESS_DISPATCH.md`](RUNTIME_HARNESS_DISPATCH.md): core creates the package, coordinators/task bridges choose and launch the harness, and evidence returns to `.osc/runs`, GitHub, or release notes.

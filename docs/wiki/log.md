@@ -40,7 +40,7 @@
 - Kept the command local and structure-only: no domain correctness judgment, compliance certification, approval decision, model benchmarking, runtime spawning, or external anchoring.
 
 ## [2026-05-17] implement | Evaluation envelope CLI
-- Added `osc eval init` / `osc eval check` as the first JSON-backed evaluation-envelope mechanics.
+- Historical/repositioned: added `osc eval init` / `osc eval check` as early JSON-backed evaluation-envelope mechanics; after the cleanup, only reduced `osc eval init <plan-path>` remains in the maintained CLI and richer eval checking is migration-only.
 - Kept the command structure-only: no domain correctness judgment, compliance certification, model benchmarking, runtime spawning, or external anchoring.
 
 ## [2026-05-17] amend | Implementation architecture envelopes

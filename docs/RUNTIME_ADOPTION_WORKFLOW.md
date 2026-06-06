@@ -1,5 +1,7 @@
 # Runtime Adoption Workflow Target
 
+Status: historical/repositioned after the framework cleanup. `osc work` examples in this document record the controller design target and migration rationale; `osc work` is not a live reduced-CLI command. Current maintained paths are explicit plan creation, `osc run --dry-run`, `osc start`, `osc dispatch`, evidence, verification, and close.
+
 Open Scaffold's post-v1 target is a workflow that feels executable without turning core into an autonomous agent runtime.
 
 The north-star command is intentionally simple:
@@ -8,7 +10,7 @@ The north-star command is intentionally simple:
 osc work "Add a /health endpoint with tests" --runtime codex
 ```
 
-The current implemented composition layer is explicitly dry-run only:
+Historical note: the previous composition layer was explicitly dry-run only:
 
 ```bash
 osc work "Add a /health endpoint with tests" --runtime codex --dry-run
@@ -233,9 +235,9 @@ The command:
 
 `osc dispatch` is adapter invocation glue, not a hidden provider runtime. Core does not import provider SDKs, auto-install adapters, own credentials, supervise tmux/processes, or grant commit/push/PR/merge/publish authority. Adapter packages own their launch policy and must return receipts/evidence that the operator can inspect. Dispatch hardening is structural safety posture; it does not prove runtime correctness or compliance.
 
-### Stage 4 — `osc work --dry-run`
+### Stage 4 — historical/repositioned `osc work --dry-run`
 
-Current repo support adds the first no-spawn composition:
+Historical/repositioned note: previous repo support added the first no-spawn composition:
 
 ```bash
 osc work "Add a /health endpoint with tests" --runtime codex --dry-run
@@ -248,7 +250,7 @@ It previews:
 - an `open-scaffold.run.v1` run packet preview;
 - the next `osc start`, `osc run`, and `osc dispatch` commands the operator can approve.
 
-It stops before writing `.osc/plans` or `.osc/runs` artifacts, before runtime execution, before provider API calls, and before any commit/push/PR/merge/publish/deploy side effect. Non-dry-run `osc work` remains intentionally refused until a separate safety design exists.
+Historically it stopped before writing `.osc/plans` or `.osc/runs` artifacts, before runtime execution, before provider API calls, and before any commit/push/PR/merge/publish/deploy side effect. After the cleanup, `osc work` is removed from the reduced maintained CLI; future non-dry-run work remains a separate safety design, not a current command.
 
 ### Stage 5 — Optional gated execution
 

@@ -1,228 +1,206 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { renderStartPrompt, parseStartRuntime, START_RUNTIMES } from './start.js';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
-import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type OperatorSurface, type RunArtifactOptions, type RuntimePreset, type RuntimeWorkflow } from './artifacts.js';
+import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type RunArtifactOptions, type RuntimeWorkflow } from './artifacts.js';
+import { AdapterTrustError, checkAdapterTrust, formatAdapterTrustStatus, formatTrustedAdapterList, listTrustedAdapters, trustAdapter } from './adapter-trust.js';
 import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
 import { compareBareAttempts, renderAttemptComparisonJson, renderAttemptComparisonMarkdown } from './compare.js';
-import { runDashboard, type DashboardRunOptions } from './dashboard.js';
 import { DispatchUsageError, formatDispatchSummary, runDispatch } from './dispatch.js';
-import { AdapterTrustError, checkAdapterTrust, formatAdapterTrustStatus, formatTrustedAdapterList, listTrustedAdapters, trustAdapter } from './adapter-trust.js';
-import { doctorExitCode, formatDoctorReport, parseDoctorCheckName, runDoctor, type DoctorOptions, type DoctorSeverity } from './doctor.js';
-import { askInteractiveFirstRun, formatFirstRunResult, runFirstRun } from './first-run.js';
-import { openDashboardUrl, serveDashboard, writeWebDashboard } from './dashboard-web.js';
-import { buildCompactEvidence, renderCompactEvidenceMarkdown, writeCompactEvidence } from './compact-evidence.js';
 import { collectEvidence } from './evidence.js';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
-import { EXTERNAL_SCORER_ADAPTERS, loadEvaluationSource, renderEvaluationEnvelope, renderImportedEvaluationEnvelope, validateEvaluationEnvelopeFile, writeEvaluationEnvelope, writeImportedEvaluationEnvelope, type ExternalScorerAdapter } from './evaluation.js';
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, analyzeEvolutionLoop, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionAnalysis, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionAnalysisFormat, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
 import { measureEvolutionAnalysisEfficiency, renderEvolutionEfficiencyReport } from './evolution-efficiency.js';
+import { askInteractiveFirstRun, formatFirstRunResult, runFirstRun } from './first-run.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
-import { computeMetrics, formatMetrics, parseSinceDate } from './metrics.js';
-import { computeStudy, renderStudyMarkdown, validateStudyReport, writeStudyOutput } from './study.js';
-import { computePrSummary, renderPrSummaryMarkdown } from './pr-summary.js';
-import { computePrCheck, renderPrCheckMarkdown } from './pr-check.js';
-import { checkAbPacket, formatAbCheckReport } from './ab.js';
 import { runMcpCommand } from './mcp-server.js';
+import { scanPublicFilesForSecrets } from './redaction.js';
+import { computePrCheck, renderPrCheckMarkdown } from './pr-check.js';
+import { computePrSummary, renderPrSummaryMarkdown } from './pr-summary.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
-import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
-import { addTaskComment, createTask, formatTaskDetails, formatTaskSummary, formatTaskTable, getTaskDetails, getTaskSummary, linkTaskPlan, listTasks, taskToJson, transitionTask, TASK_PRIORITIES, TASK_STATUSES, TaskUsageError, type TaskStatus } from './tasks.js';
+import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, findScaffoldRoot, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
+import { renderSchemaDetail, renderSchemaList, schemaById, SCHEMA_REGISTRY } from './schema-registry.js';
+import { buildTrace, formatTraceReport, TraceUsageError } from './trace.js';
 import { validateScaffold } from './validation.js';
 import { formatPlanValidationIssues, hasBlockingIssues, resolvePlanValidationPath, validatePlanFile } from './plan-validate.js';
-import { buildPlanGraph, normalizePlanReference, renderPlanGraphAscii, renderPlanGraphMermaid, type PlanGraphDirection, type PlanGraphFormat, type PlanGraphStageFilter } from './plan-graph.js';
-import { computePlanStats, formatPlanStats } from './plan-stats.js';
-import { askInteractiveAnswers, assertWizardReady, createWizardPlan, loadAnswersFile, type PlanWizardAnswers } from './wizard.js';
-import { buildWorkDryRunPreview, formatWorkDryRunPreview } from './work.js';
-import { buildTrace, formatTraceReport, TraceUsageError } from './trace.js';
-import { renderCommandHelp } from './command-maturity.js';
-import { renderSchemaDetail, renderSchemaList, schemaById, SCHEMA_REGISTRY } from './schema-registry.js';
 
-function printHelp(): void {
-  console.log(renderCommandHelp());
-}
-
-function packageVersion(): string {
+function rootPackageVersion(): string {
   try {
-    const parsed = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version?: unknown };
-    return typeof parsed.version === 'string' && parsed.version.trim() ? parsed.version : '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
-}
-
-function requireArg(args: string[], name: string): string {
-  const value = args[0];
-  if (!value) {
-    console.error(`Missing required argument: ${name}`);
-    process.exit(2);
-  }
-  return value;
-}
-
-const EXECUTOR_LANES = ['omc-claude', 'omx-codex', 'plain-agent', 'human', 'custom'] as const;
-const OPERATOR_SURFACES = ['discord', 'slack', 'telegram', 'github', 'cli', 'none', 'custom'] as const;
-const RUNTIME_WORKFLOWS = ['interview', 'plan', 'team', 'loop', 'execute', 'goal', 'custom'] as const;
-
-function parseChoice<T extends readonly string[]>(value: string, choices: T, flag: string): T[number] {
-  if ((choices as readonly string[]).includes(value)) return value as T[number];
-  console.error(`Invalid value for ${flag}: ${value}. Expected one of: ${choices.join(', ')}`);
-  process.exit(2);
-}
-
-function applyRuntimeSelection(options: RunArtifactOptions, root: string): void {
-  if (!options.runtime) return;
-  let resolved: ReturnType<typeof resolveRuntimeProfile>;
-  let available: string[] = [];
-  try {
-    const profiles = loadRuntimeProfiles(root);
-    available = profiles.map((entry) => entry.profile.id);
-    resolved = profiles.find((entry) => entry.profile.id === options.runtime) ?? null;
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  }
-  if (!resolved) {
-    console.error(`Unknown runtime profile: ${options.runtime}. Available runtimes: ${available.join(', ') || '(none)'}`);
-    process.exit(2);
-  }
-
-  const { profile, source } = resolved;
-  if (options.executor && options.executor !== profile.lane) {
-    console.error(`--runtime ${options.runtime} maps to executor ${profile.lane}, but --executor ${options.executor} was also provided`);
-    process.exit(2);
-  }
-  options.executor = profile.lane;
-  options.runtimeProfileId = profile.id;
-  options.runtimeProfileSource = source;
-
-  if (!options.workflow && profile.defaults?.workflow) {
-    options.workflow = profile.defaults.workflow;
-  }
-  if (!options.operatorSurface && profile.defaults?.operatorSurface) {
-    if (!(OPERATOR_SURFACES as readonly string[]).includes(profile.defaults.operatorSurface)) {
-      console.error(`Runtime profile ${profile.id} has unsupported defaults.operatorSurface: ${profile.defaults.operatorSurface}`);
-      process.exit(1);
+    const here = dirname(fileURLToPath(import.meta.url));
+    const candidates = [join(here, '..', 'package.json'), join(process.cwd(), 'package.json')];
+    for (const path of candidates) {
+      const parsed = JSON.parse(readFileSync(path, 'utf8')) as { version?: string };
+      if (parsed.version) return parsed.version;
     }
-    options.operatorSurface = profile.defaults.operatorSurface as OperatorSurface;
-  }
+  } catch {}
+  return '0.0.0';
+}
 
-  if (options.workflow) {
-    const hasWorkflowMapping = Boolean(profile.workflows && Object.prototype.hasOwnProperty.call(profile.workflows, options.workflow));
-    const expectedHarnessSkill = hasWorkflowMapping ? profile.workflows?.[options.workflow] : undefined;
-    if (typeof expectedHarnessSkill === 'string') {
-      if (options.harnessSkill && options.harnessSkill !== expectedHarnessSkill) {
-        console.error(`--runtime ${options.runtime} with --workflow ${options.workflow} requires --harness-skill ${expectedHarnessSkill}, got ${options.harnessSkill}`);
-        process.exit(2);
+function help(): string {
+  return `osc — Open Scaffold CLI
+
+MISSION.md → plan → run packet/amendment → evidence → verification → close
+Command maturity: stable day-one/day-two commands first; lab and advanced commands are labeled. Removed lab/advanced surfaces are listed separately as migration breadcrumbs.
+
+First-read demo:
+  osc first-run --non-interactive --slug <slug> --mission <text> --goal <text>
+  osc init --tier <min|standard|max> --target <dir> [--force]
+  osc init --from-existing --tier min --target <dir> [--force]
+  osc init --min|--standard|--max --target <dir> [--force]
+  osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]
+
+Stable core protocol:
+  osc status [--json]
+  osc plan <plan-path>
+  osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]
+  osc plan new --from-template list
+  osc plan validate <slug-or-path> [--json] [--strict]
+  osc plan move <slug> --to <active|backlog|blocked>
+  osc amend <plan-slug> [--message <text>]
+  osc evidence new <slug>
+  osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
+  osc close <plan-slug> [--message <text>]
+  osc trace <plan-slug> [--json] [--include-unverified]
+  osc verify [--evidence-chain [--plan <slug>] [--json] [--strict] [--online-github]]
+  osc pr check <plan-slug> [--format <markdown|json>] [--online-github]
+  osc schemas list [--json]
+  osc schemas show <schema-id>
+
+Handoff and run packages:
+  osc start <plan-slug-or-path> --runtime <codex|omx|plain|human|custom>
+  osc delegate <plan-path> [run binding options]
+  osc run <plan-path> [--dry-run] [--json] [run binding options]
+  osc dispatch <run-json> --adapter <adapter-id>
+  osc review <plan-path> [run binding options]
+  osc ultrareview <plan-path> [run binding options]
+  osc adapter check <adapter-id>
+  osc adapter trust <adapter-id>
+  osc adapter list --trusted
+  osc runtimes list [--json]
+  osc runtimes show <id>
+
+Lab and experimental:
+  osc eval init <plan-path> [--out <path>]
+  osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]
+  osc audit check <audit-manifest-path>
+  osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>]
+  osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> [--repair-hypothesis <text>] [--target-metric <name>] [--expected-gain <number>] [--actual-delta <number>] [--tokens-total <integer>] [--estimated-usd <number>] [--usage-source <source>] [--usage-unavailable-reason <text>]
+  osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>]
+  osc evolve analyze <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>]
+  osc evolve check <loop-dir>
+  osc cockpit config
+  osc cockpit test [--dry-run]
+  osc cockpit post --event <event> [--message <text>] [--run-id <id>] [--plan <slug>] [--task-id <id>] [--pr <url>] [--evidence-path <path>] [--dry-run]
+
+Diagnostics and advanced:
+  osc mcp serve [--repo <path>] [--allow-write] [--validate]
+  osc doctor --check secret-scan
+
+Removed/repositioned migration appendix (not live maintained commands):
+  migration notes: docs/COMMAND_MATURITY.md
+  removed/repositioned: osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
+  removed/repositioned: osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]
+  removed/repositioned: osc plan stats [--json]
+  removed/repositioned: osc evidence compact <run-or-loop> [--evaluation <evaluation-json>] [--candidate-note <path>]... [--out <dir>] [--json]
+  removed/repositioned: osc task new/list/show/claim/start/complete/cancel/block/comment/link
+  removed/repositioned: osc eval import/check
+  removed/repositioned: osc status --dashboard
+  removed/repositioned: osc work, osc dashboard, osc metrics, osc study, osc ab, broad osc doctor checks, resume helpers
+`;
+}
+function die(message: string, code = 2): never {
+  console.error(message);
+  process.exit(code);
+}
+function isHelp(args: string[]): boolean { return args[0] === '-h' || args[0] === '--help' || args[0] === 'help'; }
+function value(args: string[], flag: string): string | undefined {
+  const i = args.indexOf(flag);
+  if (i >= 0) return args[i + 1];
+  const prefix = `${flag}=`;
+  return args.find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
+}
+function requireValue(args: string[], flag: string): string { return value(args, flag) ?? die(`Missing ${flag}`); }
+function values(args: string[], flag: string): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < args.length; i += 1) if (args[i] === flag && args[i + 1]) out.push(args[++i]);
+  return out;
+}
+function has(args: string[], flag: string): boolean { return args.includes(flag); }
+function choice<T extends readonly string[]>(raw: string, allowed: T, label: string): T[number] {
+  if ((allowed as readonly string[]).includes(raw)) return raw as T[number];
+  die(`Invalid value for ${label}: ${raw}. Expected one of: ${allowed.join(', ')}`);
+}
+function positional(args: string[], valueFlags: string[]): string[] {
+  const skip = new Set(valueFlags);
+  const out: string[] = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (skip.has(arg)) { i += 1; continue; }
+    if (arg.startsWith('--')) continue;
+    out.push(arg);
+  }
+  return out;
+}
+
+function validateOptions(args: string[], valueFlags: string[], booleanFlags: string[], context: string): void {
+  const valueSet = new Set(valueFlags);
+  const booleanSet = new Set(booleanFlags);
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (!arg.startsWith('--')) continue;
+    const [flag, inlineValue] = arg.split('=', 2);
+    if (valueSet.has(flag)) {
+      if (arg.includes('=')) {
+        if (!inlineValue) die(`Missing value for ${flag}`, 2);
+        continue;
       }
-      options.harnessSkill = expectedHarnessSkill;
-    } else if (hasWorkflowMapping) {
-      // Explicit null mapping means the workflow is supported but has no inferred harness skill.
-    } else if (profile.defaults?.harnessSkill && options.workflow === profile.defaults.workflow && !options.harnessSkill) {
-      options.harnessSkill = profile.defaults.harnessSkill;
-    } else if (profile.defaults?.harnessSkill && !options.harnessSkill) {
-      console.error(`--runtime ${options.runtime} does not define workflow ${options.workflow}; provide --harness-skill explicitly or choose a supported workflow`);
-      process.exit(2);
+      const next = args[i + 1];
+      if (!next || next.startsWith('--')) die(`Missing value for ${flag}`, 2);
+      i += 1;
+      continue;
     }
-  } else if (profile.defaults?.harnessSkill && !options.harnessSkill) {
-    options.harnessSkill = profile.defaults.harnessSkill;
+    if (booleanSet.has(flag) && !arg.includes('=')) continue;
+    die(`Unknown option for ${context}: ${flag}`, 2);
   }
 }
 
-function parseRunOptions(args: string[]): { planPathArg: string; options: RunArtifactOptions; dryRun: boolean; json: boolean } {
-  const planPathArg = requireArg(args, 'plan-path');
-  const rest = args.slice(1);
-  const options: RunArtifactOptions = {};
-  let dryRun = false;
-  let json = false;
-
-  function takeValue(index: number, flag: string): string {
-    const value = rest[index + 1];
-    if (!value || value.startsWith('--')) {
-      console.error(`Missing value for ${flag}`);
-      process.exit(2);
-    }
-    return value;
-  }
-
-  for (let i = 0; i < rest.length; i += 1) {
-    const flag = rest[i];
-    switch (flag) {
-      case '--task-id':
-        options.taskId = takeValue(i, flag);
-        i += 1;
-        break;
-      case '--source-ref':
-        options.sourceRef = [...(options.sourceRef ?? []), takeValue(i, flag)];
-        i += 1;
-        break;
-      case '--runtime':
-        options.runtime = takeValue(i, flag) as RuntimePreset;
-        i += 1;
-        break;
-      case '--workflow':
-        options.workflow = parseChoice(takeValue(i, flag), RUNTIME_WORKFLOWS, flag) as RuntimeWorkflow;
-        i += 1;
-        break;
-      case '--executor':
-        options.executor = parseChoice(takeValue(i, flag), EXECUTOR_LANES, flag) as ExecutorLane;
-        i += 1;
-        break;
-      case '--harness-skill':
-        options.harnessSkill = takeValue(i, flag);
-        i += 1;
-        break;
-      case '--repo':
-        options.repo = takeValue(i, flag);
-        i += 1;
-        break;
-      case '--worktree':
-        options.worktree = takeValue(i, flag);
-        i += 1;
-        break;
-      case '--branch':
-        options.branch = takeValue(i, flag);
-        i += 1;
-        break;
-      case '--operator-surface':
-        options.operatorSurface = parseChoice(takeValue(i, flag), OPERATOR_SURFACES, flag) as OperatorSurface;
-        i += 1;
-        break;
-      case '--operator-thread':
-        options.operatorThread = takeValue(i, flag);
-        i += 1;
-        break;
-      case '--issue':
-        options.issue = takeValue(i, flag);
-        i += 1;
-        break;
-      case '--pr':
-        options.pr = takeValue(i, flag);
-        i += 1;
-        break;
-      case '--commit-policy':
-        options.commitPolicy = takeValue(i, flag);
-        i += 1;
-        break;
-      case '--dry-run':
-        dryRun = true;
-        break;
-      case '--json':
-        json = true;
-        break;
-      default:
-        console.error(`Unknown option for run artifacts: ${flag}`);
-        printHelp();
-        process.exit(2);
-    }
-  }
-
-  return { planPathArg, options, dryRun, json };
+function usage(message: string, stream: 'stdout' | 'stderr' = 'stderr'): void {
+  if (stream === 'stdout') console.log(message);
+  else console.error(message);
+}
+function isHelpArg(arg: string | undefined): boolean {
+  return arg === '-h' || arg === '--help' || arg === 'help';
+}
+function requiredArg(args: string[], name: string): string {
+  if (!args[0] || args[0].startsWith('--')) die(`Missing required argument: ${name}`);
+  return args[0];
+}
+function relativeToCwd(path: string): string {
+  const rel = relative(process.cwd(), path);
+  return rel && !rel.startsWith('..') ? rel : path;
+}
+function scaffoldHelperError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  const usageLike = /^(Unsafe slug|Invalid value|Invalid plan stage|Use osc close|Unknown option|Missing value)/.test(message);
+  die(message, usageLike ? 2 : 1);
 }
 
-function printRunArtifactsUsage(mode: ArtifactMode): void {
+function findRootWithPlans(start: string): string | null {
+  let current = resolve(start);
+  while (true) {
+    if (existsSync(join(current, '.osc', 'plans'))) return current;
+    const parent = dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
+function printRunArtifactsUsage(mode: ArtifactMode, stream: 'stdout' | 'stderr' = 'stderr'): void {
   const dryRunOptions = mode === 'run' ? ' [--dry-run] [--json]' : '';
-  console.log(`Usage: osc ${mode} <plan-path>${dryRunOptions} [run binding options]
+  usage(`Usage: osc ${mode} <plan-path>${dryRunOptions} [run binding options]
 
 Run binding options:
   --task-id <id>              Canonical task/card/issue id for this work item
@@ -238,3175 +216,586 @@ Run binding options:
   --operator-thread <id>      Optional chat/thread/comment binding id
   --issue <id-or-url>         Optional GitHub issue binding
   --pr <id-or-url>            Optional PR binding
-  --commit-policy <text>      Commit/push approval rule${mode === 'run' ? '\n\nDry-run options:\n  --dry-run                   Preview run artifacts without writing .osc/runs files\n  --json                      With --dry-run, print only machine-readable JSON' : ''}`);
+  --commit-policy <text>      Commit/push approval rule${mode === 'run' ? '\n\nDry-run options:\n  --dry-run                   Preview run artifacts without writing .osc/runs files\n  --json                      With --dry-run, print only machine-readable JSON' : ''}`, stream);
 }
 
-function printInitUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc init --tier <min|standard|max> --target <dir> [--force]
-  osc init --from-existing --tier min --target <dir> [--force]
-  osc init --min|--standard|--max --target <dir> [--force]`, stream);
-}
+const OPERATOR_SURFACES = ['discord', 'slack', 'telegram', 'github', 'cli', 'none', 'custom'] as const;
 
-function hasInitHelpRequest(args: string[]): boolean {
-  let previousFlagNeedsValue = false;
-  for (const arg of args) {
-    if (previousFlagNeedsValue) {
-      previousFlagNeedsValue = false;
-      continue;
+function applyRuntimeSelection(options: RunArtifactOptions, root: string): void {
+  if (!options.runtime) return;
+  const profiles = loadRuntimeProfiles(root);
+  const resolved = profiles.find((entry) => entry.profile.id === options.runtime) ?? null;
+  if (!resolved) die(`Unknown runtime profile: ${options.runtime}. Available runtimes: ${profiles.map((entry) => entry.profile.id).join(', ') || '(none)'}`, 2);
+  const { profile, source } = resolved;
+  if (options.executor && options.executor !== profile.lane) die(`--runtime ${options.runtime} maps to executor ${profile.lane}, but --executor ${options.executor} was also provided`, 2);
+  options.executor = profile.lane;
+  options.runtimeProfileId = profile.id;
+  options.runtimeProfileSource = source;
+  if (!options.workflow && profile.defaults?.workflow) options.workflow = profile.defaults.workflow;
+  if (!options.operatorSurface && profile.defaults?.operatorSurface) {
+    if (!(OPERATOR_SURFACES as readonly string[]).includes(profile.defaults.operatorSurface)) die(`Runtime profile ${profile.id} has unsupported defaults.operatorSurface: ${profile.defaults.operatorSurface}`, 1);
+    options.operatorSurface = profile.defaults.operatorSurface as RunArtifactOptions['operatorSurface'];
+  }
+  if (options.workflow) {
+    const hasWorkflowMapping = Boolean(profile.workflows && Object.prototype.hasOwnProperty.call(profile.workflows, options.workflow));
+    const expected = hasWorkflowMapping ? profile.workflows?.[options.workflow] : undefined;
+    if (typeof expected === 'string') {
+      if (options.harnessSkill && options.harnessSkill !== expected) die(`--runtime ${options.runtime} with --workflow ${options.workflow} requires --harness-skill ${expected}, got ${options.harnessSkill}`, 2);
+      options.harnessSkill = expected;
+    } else if (hasWorkflowMapping) {
+      // explicit null mapping: supported workflow with no inferred harness skill
+    } else if (profile.defaults?.harnessSkill && options.workflow === profile.defaults.workflow && !options.harnessSkill) {
+      options.harnessSkill = profile.defaults.harnessSkill;
+    } else if (profile.defaults?.harnessSkill && !options.harnessSkill) {
+      die(`--runtime ${options.runtime} does not define workflow ${options.workflow}; provide --harness-skill explicitly or choose a supported workflow`, 2);
     }
-    if (arg === '--tier' || arg === '--target') {
-      previousFlagNeedsValue = true;
-      continue;
-    }
-    if (arg === '--help' || arg === '-h') return true;
-  }
-  return args.length === 1 && args[0] === 'help';
-}
-
-function parseInitOptions(args: string[]): { tier: ScaffoldTier; target: string; force: boolean; fromExisting: boolean } {
-  let tier: ScaffoldTier | undefined;
-  let target: string | undefined;
-  let force = false;
-  let fromExisting = false;
-
-  function takeValue(index: number, flag: string): string {
-    const value = args[index + 1];
-    if (!value || value.startsWith('--')) {
-      console.error(`Missing value for ${flag}`);
-      process.exit(2);
-    }
-    return value;
-  }
-
-  for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--tier':
-        tier = parseChoice(takeValue(i, flag), scaffoldTiers, flag) as ScaffoldTier;
-        i += 1;
-        break;
-      case '--min':
-        tier = 'min';
-        break;
-      case '--standard':
-        tier = 'standard';
-        break;
-      case '--max':
-        tier = 'max';
-        break;
-      case '--target':
-        target = takeValue(i, flag);
-        i += 1;
-        break;
-      case '--force':
-        force = true;
-        break;
-      case '--from-existing':
-        fromExisting = true;
-        break;
-      default:
-        console.error(`Unknown option for init: ${flag}`);
-        printInitUsage();
-        process.exit(2);
-    }
-  }
-
-  if (!tier) {
-    console.error('Missing required option: --tier <min|standard|max>');
-    process.exit(2);
-  }
-  if (!target) {
-    console.error('Missing required option: --target <dir>');
-    process.exit(2);
-  }
-  return { tier, target, force, fromExisting };
-}
-
-function init(args: string[]): void {
-  if (hasInitHelpRequest(args)) {
-    printInitUsage('stdout');
-    return;
-  }
-  const options = parseInitOptions(args);
-  try {
-    const result = initializeScaffold(options);
-    console.log(result.summary);
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
+  } else if (profile.defaults?.harnessSkill && !options.harnessSkill) {
+    options.harnessSkill = profile.defaults.harnessSkill;
   }
 }
 
-function printDashboardUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc dashboard [--watch] [--interval <seconds>]', stream);
-}
+const RUN_VALUE_FLAGS = ['--task-id','--source-ref','--runtime','--workflow','--executor','--harness-skill','--repo','--worktree','--branch','--operator-surface','--operator-thread','--issue','--pr','--commit-policy'];
 
-function parseDashboardOptions(args: string[]): DashboardRunOptions {
-  const options: DashboardRunOptions = {};
-  for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--watch':
-        options.watch = true;
-        break;
-      case '--interval': {
-        const value = args[i + 1];
-        if (!value || value.startsWith('--')) {
-          console.error('Missing value for --interval');
-          process.exit(2);
-        }
-        const intervalSeconds = Number.parseInt(value, 10);
-        if (!Number.isFinite(intervalSeconds) || intervalSeconds < 1) {
-          console.error(`Invalid value for --interval: ${value}. Expected a positive number of seconds.`);
-          process.exit(2);
-        }
-        options.intervalSeconds = intervalSeconds;
-        i += 1;
-        break;
-      }
-      default:
-        console.error(`Unknown option for dashboard: ${flag}`);
-        printDashboardUsage();
-        process.exit(2);
-    }
-  }
-  return options;
-}
-
-async function dashboardCommand(args: string[]): Promise<void> {
+function parseRunOptions(mode: ArtifactMode, args: string[]): { planPath: string; options: RunArtifactOptions; dryRun: boolean; json: boolean } {
   if (isHelpArg(args[0])) {
-    printDashboardUsage('stdout');
-    return;
+    printRunArtifactsUsage('run', 'stdout');
+    process.exit(0);
   }
-  await runDashboard(parseDashboardOptions(args));
-}
-
-async function status(args: string[]): Promise<void> {
-  if (args.includes('--dashboard')) {
-    await dashboardCommand(args.filter((arg) => arg !== '--dashboard'));
-    return;
-  }
-  const unknown = args.filter((arg) => arg !== '--json');
-  if (unknown.length > 0) {
-    console.error(`Unknown option for status: ${unknown[0]}`);
-    printUsage('Usage: osc status [--json|--dashboard]');
-    process.exit(2);
-  }
-  const json = args.includes('--json');
-  const state = inspectScaffold(process.cwd());
-  let taskSummary: ReturnType<typeof getTaskSummary> = null;
+  validateOptions(args, RUN_VALUE_FLAGS, mode === 'run' ? ['--dry-run', '--json'] : [], mode);
+  const [planPath] = positional(args, RUN_VALUE_FLAGS);
+  if (!planPath) { printRunArtifactsUsage('run'); process.exit(2); }
+  const workflow = value(args, '--workflow') as RuntimeWorkflow | undefined;
+  const executor = value(args, '--executor') as ExecutorLane | undefined;
+  const options: RunArtifactOptions = {
+    taskId: value(args, '--task-id'),
+    sourceRef: values(args, '--source-ref'),
+    runtime: value(args, '--runtime'),
+    workflow,
+    executor,
+    harnessSkill: value(args, '--harness-skill'),
+    repo: value(args, '--repo'),
+    worktree: value(args, '--worktree'),
+    branch: value(args, '--branch'),
+    operatorSurface: value(args, '--operator-surface') as RunArtifactOptions['operatorSurface'],
+    operatorThread: value(args, '--operator-thread'),
+    issue: value(args, '--issue'),
+    pr: value(args, '--pr'),
+    commitPolicy: value(args, '--commit-policy'),
+  };
   try {
-    taskSummary = getTaskSummary(process.cwd());
+    applyRuntimeSelection(options, options.repo ? resolve(options.repo) : (findScaffoldRoot(dirname(resolve(planPath))) ?? process.cwd()));
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!message.startsWith('No Open Scaffold root found')) throw error;
+    if (error instanceof Error) die(error.message, /Unknown runtime profile|requires --harness-skill|does not define workflow|maps to executor/.test(error.message) ? 2 : 1);
+    throw error;
   }
-  if (json) {
-    console.log(JSON.stringify({ ...state, tasks: taskSummary }, null, 2));
+  return {
+    planPath,
+    dryRun: has(args, '--dry-run'),
+    json: has(args, '--json'),
+    options,
+  };
+}
+
+function artifactsCommand(mode: ArtifactMode, args: string[]): void {
+  if (isHelpArg(args[0])) { printRunArtifactsUsage(mode, 'stdout'); return; }
+  const parsed = parseRunOptions(mode, args);
+  const planPath = resolve(parsed.planPath);
+  if (!existsSync(planPath)) die(`Plan not found: ${planPath}`, 1);
+  const scaffoldRoot = findScaffoldRoot(dirname(planPath));
+  const plan = parsePlanFile(planPath);
+  const root = parsed.dryRun ? (scaffoldRoot ?? process.cwd()) : process.cwd();
+  const options = { ...parsed.options, scaffoldRoot: scaffoldRoot ?? process.cwd() };
+  if (parsed.dryRun) {
+    const preview = previewRunArtifacts(root, plan, mode, options);
+    const payload = { run: preview.manifest, packageMarkdown: preview.packageMarkdown, promptFiles: preview.promptFiles, filesToTouch: preview.filesToTouch };
+    if (parsed.json) console.log(JSON.stringify(payload, null, 2));
+    else {
+      console.log('Dry-run run.json:');
+      console.log(JSON.stringify(preview.manifest, null, 2));
+      console.log('Dry-run package.md:');
+      console.log(preview.packageMarkdown);
+      console.log(`Would create run ${preview.runId} for ${preview.manifest.plan.slug} with executor ${preview.manifest.executor.lane ?? 'unspecified'}${preview.manifest.runtimeSelection.workflow ? `, workflow ${preview.manifest.runtimeSelection.workflow}` : ''}${preview.manifest.executor.harnessSkill ? `, harness skill ${preview.manifest.executor.harnessSkill}` : ''}.`);
+      if (preview.filesToTouch.length) console.log(`Files to touch: ${preview.filesToTouch.join(', ')}`);
+    }
+    if (!preview.manifest.packageQuality.executable) process.exit(1);
     return;
   }
-  console.log('Open Scaffold status');
-  console.log(`Namespace: ${state.namespace}`);
-  console.log(`Mission: ${state.mission.defined ? 'defined' : `not defined (${state.mission.reason})`}`);
-  for (const stage of ['active', 'backlog', 'blocked', 'done'] as const) {
-    const plans = state.plans[stage];
-    console.log(`${stage}: ${plans.length}`);
-    for (const plan of plans) console.log(`  - ${plan.slug}`);
-  }
-  if (taskSummary) console.log(formatTaskSummary(taskSummary));
+  if (parsed.json) die('--json is only supported with --dry-run for osc run');
+  const result = createRunArtifacts(process.cwd(), plan, mode, options);
+  console.log('Created run artifacts:');
+  console.log(`  Run: ${resolve(result.runDir)}`);
+  console.log(`  Manifest: ${resolve(result.manifestPath)}`);
+  for (const prompt of result.promptPaths) console.log(`  Prompt: ${resolve(prompt)}`);
+  console.log('  Note: generic open-scaffold did not spawn a runtime; dispatch via your coordinator or harness adapter.');
 }
 
-function exitForScaffoldHelperError(error: unknown): never {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(message);
-  if (message.startsWith('Unsafe slug') || message.startsWith('Invalid plan stage')) process.exit(2);
-  process.exit(1);
-}
-
-interface PlanNewOptions {
-  slug?: string;
-  stage: PlanCreationStage;
-  templateName?: string;
-  listTemplates: boolean;
-}
-
-function printPlanUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc plan <plan-path>
-  osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]
-  osc plan new --from-template list
-  osc plan validate <slug-or-path> [--json] [--strict]
-  osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]
-  osc plan move <slug> --to <active|backlog|blocked>
-  osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]
-  osc plan stats [--json]`, stream);
-}
-
-function printPlanNewUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>] | osc plan new --from-template list', stream);
-}
-
-function printPlanValidateUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc plan validate <slug-or-path> [--json] [--strict]', stream);
-}
-
-function printPlanMoveUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc plan move <slug> --to <active|backlog|blocked>', stream);
-}
-
-function printPlanGraphUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc plan graph [--format <ascii|mermaid|json>] [--stage <active|backlog|all>] [--direction <downstream|upstream|both>] [--plan <slug>]', stream);
-}
-
-function printPlanStatsUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc plan stats [--json]', stream);
-}
-
-function parsePlanGraphOptions(args: string[]): { format: PlanGraphFormat; stage?: PlanGraphStageFilter; direction: PlanGraphDirection; plan?: string } {
-  let format: PlanGraphFormat = 'ascii';
-  let stage: PlanGraphStageFilter | undefined;
-  let direction: PlanGraphDirection = 'both';
-  let plan: string | undefined;
+function initCommand(args: string[]): void {
+  const initUsage = 'Usage: osc init --tier <min|standard|max> --target <dir> [--force]\n  osc init --from-existing --tier min --target <dir> [--force]\n  osc init --min|--standard|--max --target <dir> [--force]';
+  if (isHelp(args)) { console.log(initUsage); return; }
   for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--format': {
-        const value = args[i + 1];
-        if (!value || value.startsWith('--') || !['ascii', 'mermaid', 'json'].includes(value)) {
-          console.error('Missing or invalid value for --format. Expected ascii, mermaid, or json.');
-          printPlanGraphUsage();
-          process.exit(2);
-        }
-        format = value as PlanGraphFormat;
-        i += 1;
-        break;
-      }
-      case '--stage': {
-        const value = args[i + 1];
-        if (!value || value.startsWith('--') || !['active', 'backlog', 'all'].includes(value)) {
-          console.error('Missing or invalid value for --stage. Expected active, backlog, or all.');
-          printPlanGraphUsage();
-          process.exit(2);
-        }
-        stage = value as PlanGraphStageFilter;
-        i += 1;
-        break;
-      }
-      case '--direction': {
-        const value = args[i + 1];
-        if (!value || value.startsWith('--') || !['downstream', 'upstream', 'both'].includes(value)) {
-          console.error('Missing or invalid value for --direction. Expected downstream, upstream, or both.');
-          printPlanGraphUsage();
-          process.exit(2);
-        }
-        direction = value as PlanGraphDirection;
-        i += 1;
-        break;
-      }
-      case '--plan': {
-        const value = args[i + 1];
-        if (!value || value.startsWith('--')) {
-          console.error('Missing value for --plan');
-          printPlanGraphUsage();
-          process.exit(2);
-        }
-        const normalized = normalizePlanReference(value);
-        if (!normalized) {
-          console.error(`Invalid value for --plan: ${value}`);
-          printPlanGraphUsage();
-          process.exit(2);
-        }
-        plan = normalized;
-        i += 1;
-        break;
-      }
-      default:
-        console.error(`Unknown option for plan graph: ${flag}`);
-        printPlanGraphUsage();
-        process.exit(2);
-    }
+    const arg = args[i];
+    if (arg === '--tier' || arg === '--target') { i += 1; continue; }
+    if (['--force', '--from-existing', '--min', '--standard', '--max'].includes(arg)) continue;
+    if (arg.startsWith('--')) { console.error(`Unknown option for init: ${arg}`); console.error(initUsage); process.exit(2); }
   }
-  if (stage === 'all' && direction !== 'both' && !plan) {
-    console.error('Invalid option combination: --stage all only supports --direction both unless --plan is provided. Use --plan for focused upstream/downstream views.');
-    printPlanGraphUsage();
-    process.exit(2);
-  }
-  return { format, stage, direction, plan };
+  const tierRaw = value(args, '--tier') ?? (has(args, '--min') ? 'min' : has(args, '--standard') ? 'standard' : has(args, '--max') ? 'max' : undefined);
+  const tier = choice(tierRaw ?? die('Missing --tier'), scaffoldTiers, '--tier') as ScaffoldTier;
+  const result = initializeScaffold({ tier, target: requireValue(args, '--target'), force: has(args, '--force'), fromExisting: has(args, '--from-existing') });
+  console.log(result.summary);
 }
 
-function parsePlanNewOptions(args: string[]): PlanNewOptions {
-  if (args[0] === '--from-template' && args[1] === 'list' && args.length === 2) {
-    return { stage: 'active', templateName: 'list', listTemplates: true };
+async function firstRunCommand(args: string[]): Promise<void> {
+  if (isHelpArg(args[0])) { console.log('Usage: osc first-run [--non-interactive --slug <slug> --mission <text> --goal <text>]'); return; }
+  const options = has(args, '--non-interactive')
+    ? { slug: requireValue(args, '--slug'), mission: requireValue(args, '--mission'), goal: requireValue(args, '--goal') }
+    : await askInteractiveFirstRun();
+  process.stdout.write(formatFirstRunResult(runFirstRun(options, process.cwd())));
+}
+
+function statusCommand(args: string[]): void {
+  if (has(args, '--dashboard')) removed('status --dashboard');
+  const unknown = args.find((arg) => arg !== '--json');
+  if (unknown) die(`Unknown option for status: ${unknown}`, 2);
+  const scaffold = inspectScaffold(process.cwd());
+  const validation = validateScaffold(process.cwd());
+  const summary = { mission: scaffold.mission.defined ? 'defined' : 'undefined', plans: Object.fromEntries(Object.entries(scaffold.plans).map(([stage, plans]) => [stage, plans.length])), failures: validation.failures.length, warnings: validation.warnings.length };
+  if (has(args, '--json')) console.log(JSON.stringify({ scaffold, validation, summary }, null, 2));
+  else console.log(`Mission: ${summary.mission}
+Plans: ${JSON.stringify(summary.plans)}
+Validation: ${summary.failures} failure(s), ${summary.warnings} warning(s)`);
+}
+
+
+function planCommand(args: string[]): void {
+  if (args.length === 0 || isHelp(args)) { console.log('Usage: osc plan <plan-path> | osc plan new|validate|move ...'); return; }
+  const sub = args[0];
+  if (sub === 'new') {
+    if (isHelpArg(args[1])) { console.log('Usage: osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]'); return; }
+    validateOptions(args.slice(1), ['--stage','--from-template'], [], 'plan new');
+    if (args[1] === '--from-template' && args[2] === 'list') { for (const t of listPlanTemplates()) console.log(`${t.name}\t${t.path}`); return; }
+    const slug = positional(args.slice(1), ['--stage','--from-template'])[0] ?? die('Usage: osc plan new <slug> --stage <active|backlog|blocked>');
+    const stage = choice(requireValue(args, '--stage'), PLAN_CREATION_STAGES, '--stage') as PlanCreationStage;
+    try {
+      const created = createPlanSkeleton(slug, stage, process.cwd(), { templateName: value(args, '--from-template') });
+      console.log(`Created plan: ${created.relativePath ?? relativeToCwd(created.path)}`);
+      if (value(args, '--from-template')) console.log(`Template: ${value(args, '--from-template')}`);
+      console.log('Next: review the template placeholders and replace angle-bracket prompts before implementation.');
+    } catch (error) { scaffoldHelperError(error); }
+    return;
   }
-  const slug = requireArg(args, 'slug');
-  const rest = args.slice(1);
-  let stage: PlanCreationStage | undefined;
-  let templateName: string | undefined;
-  let listTemplates = false;
-  for (let i = 0; i < rest.length; i += 1) {
-    const flag = rest[i];
-    if (flag === '--stage') {
-      const value = rest[i + 1];
-      if (!value || value.startsWith('--')) {
-        console.error('Missing value for --stage');
-        process.exit(2);
-      }
-      if (!(PLAN_CREATION_STAGES as readonly string[]).includes(value)) {
-        console.error(`Invalid value for --stage: ${value}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
-        process.exit(2);
-      }
-      stage = value as PlanCreationStage;
-      i += 1;
-    } else if (flag === '--from-template') {
-      const value = rest[i + 1];
-      if (!value || value.startsWith('--')) {
-        console.error('Missing value for --from-template');
-        process.exit(2);
-      }
-      templateName = value;
-      listTemplates = value === 'list';
-      i += 1;
+  if (sub === 'validate') {
+    if (isHelpArg(args[1])) { console.log('Usage: osc plan validate <slug-or-path> [--json] [--strict]'); return; }
+    const target = args[1] ?? die('Usage: osc plan validate <slug-or-path> [--json] [--strict]');
+    const result = validatePlanFile(resolvePlanValidationPath(target), { strict: has(args, '--strict') });
+    if (has(args, '--json')) console.log(JSON.stringify(result.issues, null, 2));
+    else console.log(formatPlanValidationIssues(result.issues) || 'Plan validation passed.');
+    if (hasBlockingIssues(result.issues, has(args, '--strict'))) process.exit(1);
+    return;
+  }
+  if (sub === 'move') {
+    if (isHelpArg(args[1])) { console.log('Usage: osc plan move <slug> --to <active|backlog|blocked>'); return; }
+    const slug = args[1] ?? die('Usage: osc plan move <slug> --to <active|backlog|blocked>');
+    const unknown = args.slice(2).filter((arg, index, arr) => arg !== '--to' && arr[index - 1] !== '--to');
+    if (unknown.length) die(`Unknown option for plan move: ${unknown[0]}`);
+    const rawTo = requireValue(args, '--to');
+    if (rawTo === 'done') die('Use osc close to move plans to done.', 2);
+    try {
+      const moved = movePlan(slug, choice(rawTo, PLAN_CREATION_STAGES, '--to') as PlanCreationStage);
+      console.log(`Moved plan: ${moved.slug ?? slug}`);
+      console.log(`From: ${moved.fromStage}`);
+      console.log(`To: ${moved.toStage}`);
+    } catch (error) { scaffoldHelperError(error); }
+    return;
+  }
+  if (['wizard', 'stats', 'graph'].includes(sub)) removed(`plan ${sub}`);
+  const plan = parsePlanFile(resolve(sub));
+  console.log(JSON.stringify(planToJson(plan), null, 2));
+}
+
+function lifecycleCommand(kind: 'amend' | 'close', args: string[]): void {
+  if (isHelp(args)) { console.log(`Usage: osc ${kind} <plan-slug> [--message <text>]`); return; }
+  const slug = args[0] ?? die(`Usage: osc ${kind} <plan-slug> [--message <text>]`);
+  const message = value(args, '--message') ?? '';
+  const unknown = args.slice(1).filter((arg, index, arr) => arg !== '--message' && arr[index - 1] !== '--message');
+  if (unknown.length) die(`Unknown option for ${kind}: ${unknown[0]}`);
+  try {
+    if (kind === 'amend') {
+      const result = createPlanAmendment(slug, process.cwd(), message);
+      console.log(`Created amendment: ${result.relativePath ?? relativeToCwd(result.path)}`);
+      if (result.changelogStamped) console.log('Stamped: MISSION.md changelog');
+      console.log('Next: fill in the TODO sections in the amendment, then verify and commit.');
     } else {
-      console.error(`Unknown option for plan new: ${flag}`);
-      printPlanNewUsage();
-      process.exit(2);
-    }
-  }
-  if (listTemplates) return { slug, stage: stage ?? 'active', templateName, listTemplates };
-  if (!stage) {
-    console.error('Missing required option: --stage <active|backlog|blocked>');
-    process.exit(2);
-  }
-  return { slug, stage, templateName, listTemplates };
-}
-
-function parsePlanMoveDestination(args: string[]): PlanCreationStage {
-  let toStage: PlanCreationStage | undefined;
-  for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
-    if (flag === '--to') {
-      const value = args[i + 1];
-      if (!value || value.startsWith('--')) {
-        console.error('Missing value for --to');
-        process.exit(2);
-      }
-      if (value === 'done') {
-        console.error('Use osc close <plan-slug> [--message <text>] to move a plan to done.');
-        process.exit(2);
-      }
-      if (!(PLAN_CREATION_STAGES as readonly string[]).includes(value)) {
-        console.error(`Invalid value for --to: ${value}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
-        process.exit(2);
-      }
-      toStage = value as PlanCreationStage;
-      i += 1;
-    } else {
-      console.error(`Unknown option for plan move: ${flag}`);
-      console.error('Usage: osc plan move <slug> --to <active|backlog|blocked>');
-      process.exit(2);
-    }
-  }
-  if (!toStage) {
-    console.error('Missing required option: --to <active|backlog|blocked>');
-    process.exit(2);
-  }
-  return toStage;
-}
-
-function printPlanWizardUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc plan wizard <slug> [--stage <active|backlog|blocked>] [--non-interactive --answers <answers.json>]', stream);
-}
-
-function parsePlanWizardOptions(args: string[]): { slug: string; stage: PlanCreationStage; nonInteractive: boolean; answersPath?: string } {
-  const slug = requireArg(args, 'slug');
-  const rest = args.slice(1);
-  let stage: PlanCreationStage = 'active';
-  let nonInteractive = false;
-  let answersPath: string | undefined;
-  for (let i = 0; i < rest.length; i += 1) {
-    const flag = rest[i];
-    switch (flag) {
-      case '--stage': {
-        const value = rest[i + 1];
-        if (!value || value.startsWith('--')) {
-          console.error('Missing value for --stage');
-          process.exit(2);
-        }
-        if (!(PLAN_CREATION_STAGES as readonly string[]).includes(value)) {
-          console.error(`Invalid value for --stage: ${value}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
-          process.exit(2);
-        }
-        stage = value as PlanCreationStage;
-        i += 1;
-        break;
-      }
-      case '--non-interactive':
-        nonInteractive = true;
-        break;
-      case '--answers': {
-        const value = rest[i + 1];
-        if (!value || value.startsWith('--')) {
-          console.error('Missing value for --answers');
-          process.exit(2);
-        }
-        answersPath = value;
-        i += 1;
-        break;
-      }
-      default:
-        console.error(`Unknown option for plan wizard: ${flag}`);
-        printPlanWizardUsage();
-        process.exit(2);
-    }
-  }
-  if (nonInteractive && !answersPath) {
-    console.error('Missing required option for --non-interactive: --answers <answers.json>');
-    process.exit(2);
-  }
-  if (answersPath && !nonInteractive) {
-    console.error('--answers is only supported with --non-interactive');
-    process.exit(2);
-  }
-  return { slug, stage, nonInteractive, answersPath };
-}
-
-async function planCommand(args: string[]): Promise<void> {
-  const [subcommand, ...rest] = args;
-  if (subcommand === undefined || isHelpArg(subcommand)) {
-    printPlanUsage('stdout');
-    return;
-  }
-
-  if (subcommand === 'new') {
-    if (isHelpArg(rest[0])) {
-      printPlanNewUsage('stdout');
-      return;
-    }
-    const options = parsePlanNewOptions(rest);
-    if (options.listTemplates) {
-      try {
-        const templates = listPlanTemplates(process.cwd());
-        for (const template of templates) console.log(`${template.name}\t${template.path}`);
-        return;
-      } catch (error) {
-        exitForScaffoldHelperError(error);
-      }
-    }
-    const slug = options.slug as string;
-    try {
-      const result = createPlanSkeleton(slug, options.stage, process.cwd(), { templateName: options.templateName });
-      console.log(`Created plan: ${result.relativePath}`);
-      if (result.templateName) {
-        console.log(`Template: ${result.templateName}`);
-        console.log('Next: review the template placeholders and replace angle-bracket prompts before implementation.');
-      } else {
-        console.log('Next: fill the TODO prompts before implementation; do not treat the skeleton as acceptance criteria.');
-      }
-      return;
-    } catch (error) {
-      exitForScaffoldHelperError(error);
-    }
-  }
-
-  if (subcommand === 'graph') {
-    if (isHelpArg(rest[0])) {
-      printPlanGraphUsage('stdout');
-      return;
-    }
-    const options = parsePlanGraphOptions(rest);
-    try {
-      const graph = buildPlanGraph({ root: process.cwd(), stage: options.stage, direction: options.direction, plan: options.plan });
-      for (const warning of graph.warnings) console.error(`WARN ${warning}`);
-      if (options.format === 'json') {
-        console.log(JSON.stringify(graph, null, 2));
-      } else if (options.format === 'mermaid') {
-        process.stdout.write(renderPlanGraphMermaid(graph));
-      } else {
-        process.stdout.write(renderPlanGraphAscii(graph));
-      }
-      return;
-    } catch (error) {
-      exitForScaffoldHelperError(error);
-    }
-  }
-
-  if (subcommand === 'validate') {
-    if (isHelpArg(rest[0])) {
-      printPlanValidateUsage('stdout');
-      return;
-    }
-    const target = requireArg(rest, 'slug-or-path');
-    const validateArgs = rest.slice(1);
-    let json = false;
-    let strict = false;
-    for (const flag of validateArgs) {
-      if (flag === '--json') json = true;
-      else if (flag === '--strict') strict = true;
-      else {
-        console.error(`Unknown option for plan validate: ${flag}`);
-        printPlanValidateUsage();
-        process.exit(2);
-      }
-    }
-    try {
-      const planPath = resolvePlanValidationPath(target, process.cwd());
-      const result = validatePlanFile(planPath, { strict });
-      if (json) {
-        console.log(JSON.stringify(result.issues, null, 2));
-      } else {
-        console.log(formatPlanValidationIssues(result.issues));
-      }
-      if (hasBlockingIssues(result.issues, strict)) process.exit(1);
-      return;
-    } catch (error) {
-      exitForScaffoldHelperError(error);
-    }
-  }
-
-  if (subcommand === 'wizard') {
-    if (isHelpArg(rest[0])) {
-      printPlanWizardUsage('stdout');
-      return;
-    }
-    const options = parsePlanWizardOptions(rest);
-    try {
-      assertWizardReady(process.cwd());
-      let answers: PlanWizardAnswers;
-      if (options.nonInteractive) {
-        answers = loadAnswersFile(resolve(options.answersPath as string));
-      } else {
-        answers = await askInteractiveAnswers();
-      }
-      const result = createWizardPlan(options.slug, options.stage, answers, process.cwd());
-      console.log(`Created plan: ${result.relativePath}`);
-      console.log('Next: review the generated plan, adjust any _not specified_ sections, then verify before implementation.');
-      return;
-    } catch (error) {
-      exitForScaffoldHelperError(error);
-    }
-  }
-
-  if (subcommand === 'move') {
-    if (isHelpArg(rest[0])) {
-      printPlanMoveUsage('stdout');
-      return;
-    }
-    const slug = requireArg(rest, 'slug');
-    const toStage = parsePlanMoveDestination(rest.slice(1));
-    try {
-      const result = movePlan(slug, toStage, process.cwd());
-      if (result.alreadyInStage) {
-        console.log(`Plan ${result.slug}.md is already in ${result.toStage}/; status aligned.`);
-        return;
-      }
-      console.log(`Moved plan: ${result.slug}`);
-      console.log(`From: ${result.fromStage}`);
-      console.log(`To: ${result.toStage}`);
-      console.log(`Moved files: ${result.movedFiles.join(', ')}`);
-      return;
-    } catch (error) {
-      exitForScaffoldHelperError(error);
-    }
-  }
-
-  if (subcommand === 'stats') {
-    if (isHelpArg(rest[0])) {
-      printPlanStatsUsage('stdout');
-      return;
-    }
-    let json = false;
-    for (const flag of rest) {
-      if (flag === '--json') json = true;
-      else {
-        console.error(`Unknown option for plan stats: ${flag}`);
-        printPlanStatsUsage();
-        process.exit(2);
-      }
-    }
-    try {
-      const stats = computePlanStats(process.cwd());
-      if (json) {
-        console.log(JSON.stringify(stats, null, 2));
-      } else {
-        console.log(formatPlanStats(stats));
-      }
-      return;
-    } catch (error) {
-      exitForScaffoldHelperError(error);
-    }
-  }
-
-  const planPath = resolve(requireArg(args, 'plan-path'));
-  console.log(JSON.stringify(planToJson(parsePlanFile(planPath)), null, 2));
-}
-
-function isHelpArg(arg: string | undefined): boolean {
-  return arg === '-h' || arg === '--help' || arg === 'help';
-}
-
-function printUsage(message: string, stream: 'stdout' | 'stderr' = 'stderr'): void {
-  if (stream === 'stdout') console.log(message);
-  else console.error(message);
-}
-
-function printCompareUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]', stream);
-}
-
-function compareCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printCompareUsage('stdout');
-    return;
-  }
-  const attemptA = args[0];
-  const attemptB = args[1];
-  if (!attemptA || !attemptB) {
-    printCompareUsage();
-    process.exit(2);
-  }
-  let json = false;
-  let outPath: string | undefined;
-  const rest = args.slice(2);
-  for (let i = 0; i < rest.length; i += 1) {
-    const flag = rest[i];
-    switch (flag) {
-      case '--json':
-        json = true;
-        break;
-      case '--output':
-      case '--out': {
-        const value = rest[i + 1];
-        if (!value || value.startsWith('--')) {
-          console.error(`Missing value for ${flag}`);
-          printCompareUsage();
-          process.exit(2);
-        }
-        outPath = value;
-        i += 1;
-        break;
-      }
-      default:
-        console.error(`Unknown option for compare: ${flag}`);
-        printCompareUsage();
-        process.exit(2);
-    }
-  }
-
-  try {
-    const comparison = compareBareAttempts(attemptA, attemptB);
-    const rendered = json ? renderAttemptComparisonJson(comparison) : renderAttemptComparisonMarkdown(comparison);
-    if (outPath) {
-      const resolvedOut = resolve(outPath);
-      writeFileSync(resolvedOut, rendered, 'utf8');
-      console.log(`Wrote attempt comparison: ${resolvedOut}`);
-    } else {
-      process.stdout.write(rendered.endsWith('\n') ? rendered : `${rendered}\n`);
+      const result = closePlan(slug, process.cwd(), message);
+      if (result.alreadyDone) { console.log(`Plan ${result.slug}.md is already in done/.`); return; }
+      console.log(`Closed: ${result.slug}`);
+      console.log(`Moved to done/: ${result.movedFiles.join(', ')}`);
+      if (result.changelogStamped) console.log('Stamped: MISSION.md changelog');
     }
   } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  }
-}
-
-function printEvidenceUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc evidence new <slug> | osc evidence collect <slug> [--ci] [--dry-run] [--verbose] | osc evidence compact <run-or-loop> [--evaluation <evaluation-json>] [--candidate-note <path>]... [--out <dir>] [--json]', stream);
-}
-
-function printEvidenceNewUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc evidence new <slug>', stream);
-}
-
-function printEvidenceCollectUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc evidence collect <slug> [--ci] [--dry-run] [--verbose]', stream);
-}
-
-function printEvidenceCompactUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc evidence compact <run-or-loop> [--evaluation <evaluation-json>] [--candidate-note <path>]... [--out <dir>] [--json]', stream);
-}
-
-function printTraceUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc trace <plan-slug> [--json] [--include-unverified]', stream);
-}
-
-interface TraceCommandOptions {
-  slug: string;
-  json: boolean;
-  includeUnverified: boolean;
-}
-
-function parseTraceOptions(args: string[]): TraceCommandOptions {
-  const slug = args[0];
-  if (!slug || slug.startsWith('--')) {
-    console.error('Missing required argument: plan-slug');
-    printTraceUsage();
-    process.exit(2);
-  }
-  const options: TraceCommandOptions = { slug, json: false, includeUnverified: false };
-  for (let i = 1; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--json':
-        options.json = true;
-        break;
-      case '--include-unverified':
-        options.includeUnverified = true;
-        break;
-      default:
-        console.error(`Unknown option for trace: ${flag}`);
-        printTraceUsage();
-        process.exit(2);
-    }
-  }
-  return options;
-}
-
-function traceCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printTraceUsage('stdout');
-    return;
-  }
-  const options = parseTraceOptions(args);
-  try {
-    const report = buildTrace(process.cwd(), options.slug, { includeUnverified: options.includeUnverified });
-    if (options.json) {
-      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    } else {
-      process.stdout.write(formatTraceReport(report));
-    }
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(error instanceof TraceUsageError ? 2 : 1);
-  }
-}
-
-function printVerifyUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc verify [--evidence-chain [--plan <slug>] [--json] [--strict] [--online-github]]', stream);
-}
-
-interface VerifyCommandOptions {
-  evidenceChain: boolean;
-  plan?: string;
-  json: boolean;
-  strict: boolean;
-  onlineGithub: boolean;
-}
-
-function parseVerifyOptions(args: string[]): VerifyCommandOptions {
-  const options: VerifyCommandOptions = { evidenceChain: false, json: false, strict: false, onlineGithub: false };
-  for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--evidence-chain':
-        options.evidenceChain = true;
-        break;
-      case '--plan': {
-        const value = args[i + 1];
-        if (!value || value.startsWith('--')) {
-          console.error('Missing value for --plan');
-          printVerifyUsage();
-          process.exit(2);
-        }
-        options.plan = value;
-        i += 1;
-        break;
-      }
-      case '--json':
-        options.json = true;
-        break;
-      case '--strict':
-        options.strict = true;
-        break;
-      case '--online-github':
-      case '--github-online':
-        options.onlineGithub = true;
-        break;
-      default:
-        console.error(`Unknown option for verify: ${flag}`);
-        printVerifyUsage();
-        process.exit(2);
-    }
-  }
-  if (!options.evidenceChain && options.json) {
-    console.error('--json is only supported with --evidence-chain');
-    printVerifyUsage();
-    process.exit(2);
-  }
-  if (!options.evidenceChain && (options.plan || options.strict)) {
-    console.error('--plan and --strict are only supported with --evidence-chain');
-    printVerifyUsage();
-    process.exit(2);
-  }
-  return options;
-}
-
-function verifyCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printVerifyUsage('stdout');
-    return;
-  }
-  const options = parseVerifyOptions(args);
-  if (options.evidenceChain) {
-    try {
-      const report = verifyEvidenceChain(process.cwd(), { plan: options.plan, onlineGithub: options.onlineGithub });
-      if (options.json) {
-        console.log(JSON.stringify(report.plans, null, 2));
-      } else {
-        process.stdout.write(formatEvidenceChainReport(report, { strict: options.strict }));
-      }
-      const exitCode = evidenceChainExitCode(report, { strict: options.strict });
-      if (exitCode !== 0) process.exit(exitCode);
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  }
-
-  const result = validateScaffold(process.cwd());
-  for (const failure of result.failures) {
-    console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
-  }
-  for (const warning of result.warnings) {
-    console.warn(`WARN ${warning.code}: ${warning.message}${warning.path ? ` (${warning.path})` : ''}`);
-  }
-  if (!result.ok) process.exit(1);
-  const state = inspectScaffold(process.cwd());
-  const count = Object.values(state.plans).flat().length;
-  console.log(`PASS mission defined and ${count} plan file(s) found; ${result.warnings.length} warning(s)`);
-}
-
-function printDoctorUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(
-    'Usage: osc doctor [--fix] [--dry-run] [--severity <info|warn|error>] [--check <status-alignment|changelog-gap|paired-view|stale-plan|release-readme|secret-scan>]',
-    stream,
-  );
-}
-
-function parseDoctorOptions(args: string[]): DoctorOptions {
-  const options: DoctorOptions = {};
-  for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--fix':
-        options.fix = true;
-        break;
-      case '--dry-run':
-        options.dryRun = true;
-        break;
-      case '--severity': {
-        const value = args[i + 1];
-        if (!value || value.startsWith('--') || !['info', 'warn', 'error'].includes(value)) {
-          console.error('Missing or invalid value for --severity. Expected info, warn, or error.');
-          printDoctorUsage();
-          process.exit(2);
-        }
-        options.severity = value as DoctorSeverity;
-        i += 1;
-        break;
-      }
-      case '--check': {
-        const value = args[i + 1];
-        const check = value ? parseDoctorCheckName(value) : null;
-        if (!value || value.startsWith('--') || !check) {
-          console.error('Missing or invalid value for --check.');
-          printDoctorUsage();
-          process.exit(2);
-        }
-        options.check = check;
-        i += 1;
-        break;
-      }
-      default:
-        console.error(`Unknown option for doctor: ${flag}`);
-        printDoctorUsage();
-        process.exit(2);
-    }
-  }
-  return options;
-}
-
-function doctorCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printDoctorUsage('stdout');
-    return;
-  }
-  const options = parseDoctorOptions(args);
-  try {
-    const result = runDoctor(process.cwd(), options);
-    process.stdout.write(formatDoctorReport(result, options));
-    const exitCode = doctorExitCode(result, options);
-    if (exitCode !== 0) process.exit(exitCode);
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
+    scaffoldHelperError(error);
   }
 }
 
 function evidenceCommand(args: string[]): void {
-  const [subcommand, ...rest] = args;
-  if (isHelpArg(subcommand) || subcommand === undefined) {
-    printEvidenceUsage('stdout');
-    return;
-  }
-
-  if (subcommand === 'new') {
-    if (isHelpArg(rest[0])) {
-      printEvidenceNewUsage('stdout');
-      return;
-    }
-    const slug = requireArg(rest, 'slug');
-    if (rest.length > 1) {
-      console.error(`Unknown option for evidence new: ${rest[1]}`);
-      printEvidenceNewUsage();
-      process.exit(2);
-    }
+  if (args.length === 0 || isHelp(args)) { console.log('Usage: osc evidence new <slug> | osc evidence collect <slug> [--ci] [--dry-run] [--verbose]'); return; }
+  const sub = args[0];
+  if (sub === 'compact') removed('evidence compact');
+  if ((sub === 'new' || sub === 'collect') && isHelpArg(args[1])) { console.log(`Usage: osc evidence ${sub} <slug>${sub === 'collect' ? ' [--ci] [--dry-run] [--verbose]' : ''}`); return; }
+  const slug = args[1] ?? die('Usage: osc evidence new|collect <slug>');
+  if (sub === 'new') {
     try {
       const result = createEvidenceNoteSkeleton(slug, process.cwd());
-      console.log(`Created evidence note: ${result.relativePath}`);
+      console.log(`Created evidence note: ${result.relativePath ?? relativeToCwd(result.path)}`);
       console.log('Next: replace every TODO with verified evidence before closing the plan.');
-      return;
-    } catch (error) {
-      exitForScaffoldHelperError(error);
-    }
+    } catch (error) { scaffoldHelperError(error); }
   }
-
-  if (subcommand === 'collect') {
-    if (isHelpArg(rest[0])) {
-      printEvidenceCollectUsage('stdout');
-      return;
-    }
-    const slug = requireArg(rest, 'slug');
-    let ci = false;
-    let dryRun = false;
-    let verbose = false;
-    for (const flag of rest.slice(1)) {
-      if (flag === '--ci') ci = true;
-      else if (flag === '--dry-run') dryRun = true;
-      else if (flag === '--verbose') verbose = true;
-      else {
-        console.error(`Unknown option for evidence collect: ${flag}`);
-        printEvidenceCollectUsage();
-        process.exit(2);
-      }
-    }
+  else if (sub === 'collect') {
     try {
-      const result = collectEvidence(slug, process.cwd(), { ci, dryRun, verbose });
-      if (dryRun) {
+      const result = collectEvidence(slug, process.cwd(), { ci: has(args, '--ci'), dryRun: has(args, '--dry-run'), verbose: has(args, '--verbose') });
+      if (has(args, '--dry-run')) {
         console.log(result.block);
         console.log('No files were written. Re-run without --dry-run to append this block.');
       } else {
         console.log(`Collected evidence: ${result.relativePath}`);
         console.log(`Appended timestamped block for ${result.slug}.`);
-        if (verbose) console.log(result.block);
+        if (has(args, '--verbose')) console.log(result.block);
       }
-      return;
-    } catch (error) {
-      exitForScaffoldHelperError(error);
-    }
-  }
-
-  if (subcommand === 'compact') {
-    if (isHelpArg(rest[0])) {
-      printEvidenceCompactUsage('stdout');
-      return;
-    }
-    const source = requireArg(rest, 'run-or-loop');
-    let evaluationPath: string | undefined;
-    let outDir: string | undefined;
-    let json = false;
-    const candidateNotes: string[] = [];
-    for (let i = 1; i < rest.length; i += 1) {
-      const flag = rest[i];
-      const take = () => {
-        const value = rest[i + 1];
-        if (!value || value.startsWith('--')) {
-          console.error(`Missing value for ${flag}`);
-          printEvidenceCompactUsage();
-          process.exit(2);
-        }
-        i += 1;
-        return value;
-      };
-      switch (flag) {
-        case '--evaluation':
-          evaluationPath = take();
-          break;
-        case '--candidate-note':
-          candidateNotes.push(take());
-          break;
-        case '--out':
-        case '--output':
-          outDir = take();
-          break;
-        case '--json':
-          json = true;
-          break;
-        default:
-          console.error(`Unknown option for evidence compact: ${flag}`);
-          printEvidenceCompactUsage();
-          process.exit(2);
-      }
-    }
-    try {
-      const options = { evaluationPath, candidateNotes };
-      if (outDir) {
-        const result = writeCompactEvidence(source, outDir, process.cwd(), options);
-        console.log(`Wrote compact evidence summary: ${result.summaryPath}`);
-        console.log(`Wrote compact evidence manifest: ${result.manifestPath}`);
-      } else {
-        const manifest = buildCompactEvidence(source, process.cwd(), options);
-        if (json) {
-          console.log(JSON.stringify(manifest, null, 2));
-        } else {
-          process.stdout.write(renderCompactEvidenceMarkdown(manifest));
-        }
-      }
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  }
-
-  printEvidenceUsage();
-  process.exit(2);
+    } catch (error) { scaffoldHelperError(error); }
+  } else die('Usage: osc evidence new|collect <slug>');
 }
 
-function printLifecycleUsage(command: 'amend' | 'close', stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc ${command} <plan-slug> [--message <text>]`, stream);
+function verifyCommand(args: string[]): void {
+  const verifyUsage = 'Usage: osc verify [--evidence-chain [--plan <slug>] [--json] [--strict] [--online-github]]';
+  if (isHelpArg(args[0])) { console.log(verifyUsage); return; }
+  if (!has(args, '--evidence-chain') && has(args, '--json')) { console.error('--json is only supported with --evidence-chain'); console.error(verifyUsage); process.exit(2); }
+  if (!has(args, '--evidence-chain') && (has(args, '--strict') || has(args, '--plan'))) { console.error('--plan and --strict are only supported with --evidence-chain'); console.error(verifyUsage); process.exit(2); }
+  if (has(args, '--evidence-chain')) {
+    const report = verifyEvidenceChain(process.cwd(), { plan: value(args, '--plan'), onlineGithub: has(args, '--online-github') || has(args, '--github-online') });
+    if (has(args, '--json')) console.log(JSON.stringify(report.plans, null, 2)); else process.stdout.write(formatEvidenceChainReport(report, { strict: has(args, '--strict') }));
+    process.exit(evidenceChainExitCode(report, { strict: has(args, '--strict') }));
+  }
+  const result = validateScaffold(process.cwd());
+  console.log(result.failures.length === 0 ? 'Scaffold verification passed.' : result.failures.map((f) => f.message).join('\n'));
+  if (result.failures.length > 0) process.exit(1);
 }
 
-type LifecycleOptions = {
-  slug: string;
-  message: string;
-};
-
-function parseLifecycleOptions(args: string[], command: 'amend' | 'close'): LifecycleOptions {
-  const slug = requireArg(args, 'plan-slug');
-  let message = '';
-  const rest = args.slice(1);
-  for (let i = 0; i < rest.length; i += 1) {
-    const flag = rest[i];
-    if (flag === '--message') {
-      const value = rest[i + 1];
-      if (!value || value.startsWith('--')) {
-        console.error(`Missing value for --message`);
-        process.exit(2);
-      }
-      message = value;
-      i += 1;
-      continue;
-    }
-    console.error(`Unknown option for ${command}: ${flag}`);
-    printLifecycleUsage(command);
-    process.exit(2);
-  }
-  return { slug, message };
-}
-
-function amendCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printLifecycleUsage('amend', 'stdout');
-    return;
-  }
-  const { slug, message } = parseLifecycleOptions(args, 'amend');
+function traceCommand(args: string[]): void {
+  if (isHelpArg(args[0])) { console.log('Usage: osc trace <plan-slug> [--json] [--include-unverified]'); return; }
+  const slug = args[0] ?? die('Missing required argument: plan-slug');
+  for (const flag of args.slice(1)) if (flag !== '--json' && flag !== '--include-unverified') die(`Unknown option for trace: ${flag}`, 2);
   try {
-    const result = createPlanAmendment(slug, process.cwd(), message);
-    console.log(`Created amendment: ${result.relativePath}`);
-    if (result.changelogStamped) console.log('Stamped: MISSION.md changelog');
-    console.log('Next: fill in the TODO sections in the amendment, then verify and commit.');
-  } catch (error) {
-    exitForScaffoldHelperError(error);
-  }
-}
-
-function closeCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printLifecycleUsage('close', 'stdout');
-    return;
-  }
-  const { slug, message } = parseLifecycleOptions(args, 'close');
-  try {
-    const result = closePlan(slug, process.cwd(), message);
-    if (result.alreadyDone) {
-      console.log(`Plan ${result.slug}.md is already in done/.`);
-      return;
-    }
-    console.log(`Closed: ${result.slug}`);
-    console.log(`Moved to done/: ${result.movedFiles.join(', ')}`);
-    if (result.changelogStamped) console.log('Stamped: MISSION.md changelog');
-  } catch (error) {
-    exitForScaffoldHelperError(error);
-  }
-}
-
-function printStartUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc start <plan-slug-or-path> --runtime <${START_RUNTIMES.join('|')}>
-
-Prints a paste-ready agent handoff prompt. It does not spawn a runtime, create .osc/runs artifacts, commit, push, or open a PR.`, stream);
-}
-
-function takeStartValue(args: string[], index: number, flag: string): string {
-  const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${flag}`);
-    printStartUsage();
-    process.exit(2);
-  }
-  return value;
+    const report = buildTrace(process.cwd(), slug, { includeUnverified: has(args, '--include-unverified') });
+    if (has(args, '--json')) console.log(JSON.stringify(report, null, 2)); else console.log(formatTraceReport(report));
+  } catch (error) { if (error instanceof TraceUsageError) die(error.message); throw error; }
 }
 
 function startCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printStartUsage('stdout');
-    return;
-  }
-  const planReference = requireArg(args, 'plan-slug-or-path');
-  let runtime: ReturnType<typeof parseStartRuntime> = null;
-  const rest = args.slice(1);
-  for (let i = 0; i < rest.length; i += 1) {
-    const flag = rest[i];
-    switch (flag) {
-      case '--runtime':
-        runtime = parseStartRuntime(takeStartValue(rest, i, flag));
-        if (!runtime) {
-          console.error(`Invalid value for --runtime. Expected one of: ${START_RUNTIMES.join(', ')}`);
-          process.exit(2);
-        }
-        i += 1;
-        break;
-      default:
-        console.error(`Unknown option for start: ${flag}`);
-        printStartUsage();
-        process.exit(2);
-    }
-  }
-  if (!runtime) {
-    console.error(`Missing required option: --runtime <${START_RUNTIMES.join('|')}>`);
-    printStartUsage();
-    process.exit(2);
-  }
-  try {
-    process.stdout.write(renderStartPrompt(planReference, { runtime, cwd: process.cwd() }).prompt);
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  }
-}
-
-
-function printAdapterUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc adapter check <adapter-id>
-  osc adapter trust <adapter-id>
-  osc adapter list --trusted
-
-Project-local adapter configs are untrusted by default. Trust is local gitignored state keyed by adapter config digest.`, stream);
+  const plan = args[0] ?? die('Usage: osc start <plan-slug-or-path> --runtime <codex|omx|plain|human|custom>');
+  const runtime = parseStartRuntime(requireValue(args, '--runtime')) ?? die(`Invalid --runtime. Expected ${START_RUNTIMES.join('|')}`);
+  const result = renderStartPrompt(plan, { runtime, cwd: process.cwd() });
+  console.log(result.prompt);
 }
 
 function adapterCommand(args: string[]): void {
-  const [subcommand, ...rest] = args;
-  if (subcommand === undefined || isHelpArg(subcommand)) {
-    printAdapterUsage('stdout');
-    return;
-  }
+  const sub = args[0];
   try {
-    if (subcommand === 'check') {
-      const id = requireArg(rest, 'adapter-id');
-      if (rest.length > 1) throw new AdapterTrustError(`Unknown option for adapter check: ${rest[1]}`);
-      process.stdout.write(formatAdapterTrustStatus(checkAdapterTrust(id, process.cwd())));
-      return;
+    if (sub === 'list' && has(args, '--trusted')) console.log(formatTrustedAdapterList(listTrustedAdapters()));
+    else if (sub === 'check') console.log(formatAdapterTrustStatus(checkAdapterTrust(args[1] ?? die('Usage: osc adapter check <adapter-id>'))));
+    else if (sub === 'trust') {
+      const id = args[1] ?? die('Usage: osc adapter trust <adapter-id>');
+      const status = trustAdapter(id);
+      console.log(`Trusted adapter: ${status.adapterId}`);
+      console.log(formatAdapterTrustStatus(status));
     }
-    if (subcommand === 'trust') {
-      const id = requireArg(rest, 'adapter-id');
-      if (rest.length > 1) throw new AdapterTrustError(`Unknown option for adapter trust: ${rest[1]}`);
-      const status = trustAdapter(id, process.cwd());
-      process.stdout.write(`Trusted adapter: ${status.adapterId}\nDigest: ${status.digest}\nConfig: ${status.configPath}\nState: .osc/state/trusted-adapters.json\n`);
-      return;
-    }
-    if (subcommand === 'list') {
-      if (rest.length !== 1 || rest[0] !== '--trusted') throw new AdapterTrustError('Usage: osc adapter list --trusted');
-      process.stdout.write(formatTrustedAdapterList(listTrustedAdapters(process.cwd())));
-      return;
-    }
-    throw new AdapterTrustError(`Unknown adapter subcommand: ${subcommand}`);
+    else die('Usage: osc adapter check|trust <adapter-id> | osc adapter list --trusted');
   } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    printAdapterUsage();
-    process.exit(error instanceof AdapterTrustError ? 2 : 1);
+    if (error instanceof AdapterTrustError) die(error.message, 2);
+    throw error;
   }
-}
-
-function printDispatchUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc dispatch <run-json> --adapter <adapter-id> [--allow-full-env]
-
-Invokes an explicit trusted adapter for an existing run packet, captures bounded adapter stdout/stderr logs, and prints receipt/evidence paths. Open Scaffold core restricts adapter environment variables by default, does not auto-install adapters, and does not grant commit/push/merge/publish authority.
-
-Options:
-  --adapter <adapter-id>  Project-local adapter config to invoke
-  --allow-full-env       UNSAFE local override: pass the full parent environment to the adapter`, stream);
-}
-
-function takeDispatchValue(args: string[], index: number, flag: string): string {
-  const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${flag}`);
-    printDispatchUsage();
-    process.exit(2);
-  }
-  return value;
 }
 
 function dispatchCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printDispatchUsage('stdout');
-    return;
-  }
-  const runJson = requireArg(args, 'run-json');
-  let adapterId: string | undefined;
-  let allowFullEnv = false;
-  const rest = args.slice(1);
-  for (let i = 0; i < rest.length; i += 1) {
-    const flag = rest[i];
-    switch (flag) {
-      case '--adapter':
-        adapterId = takeDispatchValue(rest, i, flag);
-        i += 1;
-        break;
-      case '--allow-full-env':
-        allowFullEnv = true;
-        break;
-      default:
-        console.error(`Unknown option for dispatch: ${flag}`);
-        printDispatchUsage();
-        process.exit(2);
-    }
-  }
-  if (!adapterId) {
-    console.error('Missing required option: --adapter <adapter-id>');
-    printDispatchUsage();
-    process.exit(2);
-  }
+  const runPacket = args[0] ?? die('Usage: osc dispatch <run-json> --adapter <adapter-id> [--allow-full-env]');
   try {
-    const result = runDispatch(runJson, { adapterId, allowFullEnv }, process.cwd());
-    const root = findScaffoldRoot(dirname(result.runPacketPath)) ?? process.cwd();
-    process.stdout.write(formatDispatchSummary(result, root));
-    if (result.exitStatus !== 0) process.exit(1);
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    if (error instanceof DispatchUsageError || error instanceof AdapterTrustError) process.exit(2);
-    process.exit(1);
-  }
+    const adapterId = value(args, '--adapter') ?? die('Missing required option: --adapter <adapter-id>', 2);
+    const result = runDispatch(runPacket, { adapterId, allowFullEnv: has(args, '--allow-full-env') });
+    console.log(formatDispatchSummary(result, process.cwd()));
+    if (result.exitStatus !== 0 || result.timedOut) process.exit(1);
+  } catch (error) { if (error instanceof DispatchUsageError || error instanceof AdapterTrustError) die(error.message, 2); throw error; }
 }
 
-function printWorkUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc work <task-description> --runtime <preset> --dry-run [--json] [--adapter <adapter-id>]
-
-Options:
-  --runtime <preset>          Runtime preset to preview: codex | omx | omc | plain | human | custom | project profile
-  --workflow <workflow>       Optional workflow override: interview | plan | team | loop | execute | goal | custom
-  --adapter <adapter-id>      Optional dispatch adapter id for the preview command
-  --dry-run                   Required: print plan/run/dispatch preview without writing files or launching runtimes
-  --json                      Print machine-readable dry-run JSON`, stream);
+function compareCommand(args: string[]): void {
+  if (isHelpArg(args[0])) { console.log('Usage: osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]'); return; }
+  const [a, b] = positional(args, ['--output','--out']);
+  if (!a || !b) die('Usage: osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]');
+  const comparison = compareBareAttempts(a, b);
+  const output = has(args, '--json') ? renderAttemptComparisonJson(comparison) : renderAttemptComparisonMarkdown(comparison);
+  const out = value(args, '--output') ?? value(args, '--out');
+  if (out) {
+    const resolvedOut = resolve(out);
+    writeFileSync(resolvedOut, output);
+    console.log(`Wrote attempt comparison: ${resolvedOut}`);
+  } else process.stdout.write(output.endsWith('\n') ? output : `${output}\n`);
 }
 
-function takeWorkValue(args: string[], index: number, flag: string): string {
-  const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${flag}`);
-    printWorkUsage();
-    process.exit(2);
-  }
-  return value;
+function prSummaryCommand(args: string[]): void {
+  if (isHelpArg(args[0])) { console.log('Usage: osc pr-summary <plan-slug> [--format <markdown|json>]'); return; }
+  const slug = args[0] ?? die('Missing required argument: plan-slug');
+  const format = value(args, '--format') ?? 'markdown';
+  if (!['markdown', 'json'].includes(format)) die(`Invalid value for --format: ${format}. Expected one of: markdown, json`);
+  const report = computePrSummary(slug);
+  if (format === 'json') console.log(JSON.stringify(report, null, 2)); else console.log(renderPrSummaryMarkdown(report));
 }
-
-function isSafeWorkAdapterId(value: string): boolean {
-  return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value) && !value.includes('..');
-}
-
-function formatUnsafeWorkValue(value: string): string {
-  return JSON.stringify(value.trim());
-}
-
-function workCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printWorkUsage('stdout');
-    return;
-  }
-  const intentParts: string[] = [];
-  const options: RunArtifactOptions = { commitPolicy: 'no commit/push/PR/merge/publish/deploy unless explicitly approved by the operator' };
-  let adapterId: string | undefined;
-  let dryRun = false;
-  let json = false;
-
-  for (let i = 0; i < args.length; i += 1) {
-    const arg = args[i];
-    if (arg.startsWith('--')) {
-      switch (arg) {
-        case '--runtime':
-          options.runtime = takeWorkValue(args, i, arg) as RuntimePreset;
-          i += 1;
-          break;
-        case '--workflow':
-          options.workflow = parseChoice(takeWorkValue(args, i, arg), RUNTIME_WORKFLOWS, arg) as RuntimeWorkflow;
-          i += 1;
-          break;
-        case '--adapter': {
-          const value = takeWorkValue(args, i, arg);
-          if (!isSafeWorkAdapterId(value)) {
-            console.error(`Unsafe adapter id: ${formatUnsafeWorkValue(value)}`);
-            process.exit(2);
-          }
-          adapterId = value;
-          i += 1;
-          break;
-        }
-        case '--dry-run':
-          dryRun = true;
-          break;
-        case '--json':
-          json = true;
-          break;
-        default:
-          console.error(`Unknown option for work: ${arg}`);
-          printWorkUsage();
-          process.exit(2);
-      }
-    } else {
-      intentParts.push(arg);
-    }
-  }
-
-  const intent = intentParts.join(' ').trim();
-  if (!intent) {
-    console.error('Missing required argument: task-description');
-    printWorkUsage();
-    process.exit(2);
-  }
-  if (!options.runtime) {
-    console.error('Missing required option: --runtime <preset>');
-    printWorkUsage();
-    process.exit(2);
-  }
-  if (!dryRun) {
-    console.error('osc work is preview-only in this release; pass --dry-run to print the plan/run/dispatch preview.');
-    process.exit(2);
-  }
-
-  const root = findScaffoldRoot(process.cwd()) ?? process.cwd();
-  applyRuntimeSelection(options, root);
-  const preview = buildWorkDryRunPreview(root, intent, options, adapterId, process.cwd());
-  if (json) {
-    console.log(JSON.stringify(preview, null, 2));
-  } else {
-    process.stdout.write(formatWorkDryRunPreview(preview));
-  }
-}
-
-function createArtifacts(args: string[], mode: ArtifactMode): void {
-  if (args[0] === '-h' || args[0] === '--help' || args[0] === 'help') {
-    printRunArtifactsUsage(mode);
-    return;
-  }
-  const { planPathArg, options, dryRun, json } = parseRunOptions(args);
-  const absolutePlanPath = resolve(planPathArg);
-  if (!existsSync(absolutePlanPath)) {
-    console.error(`Plan not found: ${absolutePlanPath}`);
-    process.exit(1);
-  }
-  const planPath = realpathSync(absolutePlanPath);
-  const scaffoldRoot = findScaffoldRoot(dirname(planPath)) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
-  applyRuntimeSelection(options, options.repo ? resolve(options.repo) : scaffoldRoot);
-  const artifactRoot = process.cwd();
-  const artifactOptions: RunArtifactOptions = { ...options, scaffoldRoot };
-  const plan = parsePlanFile(planPath);
-
-  if (dryRun) {
-    if (mode !== 'run') {
-      console.error('--dry-run is only supported for osc run');
-      process.exit(2);
-    }
-    const preview = previewRunArtifacts(artifactRoot, plan, mode, artifactOptions);
-    const payload = {
-      run: preview.manifest,
-      packageMarkdown: preview.packageMarkdown,
-      filesToTouch: preview.filesToTouch,
-    };
-    if (json) {
-      console.log(JSON.stringify(payload, null, 2));
-    } else {
-      const executor = preview.manifest.executor.lane ?? 'unspecified';
-      const workflow = preview.manifest.runtimeSelection.workflow ?? 'unspecified';
-      const harnessSkill = preview.manifest.executor.harnessSkill ?? 'none';
-      console.log('Dry-run run.json:');
-      console.log(JSON.stringify(preview.manifest, null, 2));
-      console.log('');
-      console.log('Dry-run package.md:');
-      console.log(preview.packageMarkdown);
-      console.log('Dry-run summary:');
-      console.log(`Would create run ${preview.runId} in ${preview.manifest.artifacts.runDir} with executor ${executor}, workflow ${workflow}, harness skill ${harnessSkill}.`);
-      if (preview.filesToTouch.length) {
-        console.log('Files to touch:');
-        for (const file of preview.filesToTouch) console.log(`  - ${file}`);
-      } else {
-        console.log('Files to touch: none listed.');
-      }
-      if (!preview.manifest.packageQuality.executable) {
-        console.log('Blockers:');
-        for (const blocker of preview.manifest.packageQuality.blockers) console.log(`  - ${blocker}`);
-      }
-      console.log('No files were written. Re-run without --dry-run to create .osc/runs artifacts.');
-    }
-    if (!preview.manifest.packageQuality.executable) process.exit(1);
-    return;
-  }
-
-  if (json) {
-    console.error('--json is only supported with --dry-run for osc run');
-    process.exit(2);
-  }
-
-  const preview = previewRunArtifacts(artifactRoot, plan, mode, artifactOptions);
-  if (!preview.manifest.packageQuality.executable) {
-    console.error(`Run package is not executable: ${preview.manifest.packageQuality.blockers.join('; ')}`);
-    console.error('No files were written. Clarify or repair the plan before creating run artifacts.');
-    process.exit(1);
-  }
-
-  const run = createRunArtifacts(artifactRoot, plan, mode, artifactOptions);
-  console.log(`Created ${mode} artifacts:`);
-  console.log(`  Run: ${run.runDir}`);
-  console.log(`  Manifest: ${run.manifestPath}`);
-  for (const prompt of run.promptPaths) console.log(`  Prompt: ${prompt}`);
-  console.log('  Note: generic open-scaffold did not spawn a runtime; dispatch via your coordinator or harness adapter.');
-}
-
-function printAuditUsage(): void {
-  console.error('Usage: osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>] | osc audit check <audit-manifest-path>');
-}
-
-function takeAuditValue(args: string[], index: number, flag: string): string {
-  const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${flag}`);
-    process.exit(2);
-  }
-  return value;
-}
-
-function auditRootFor(manifestPath: string): string {
-  return findScaffoldRoot(dirname(manifestPath)) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
-}
-
-function auditRootForSource(sourcePath: string): string {
-  const resolvedSource = resolve(sourcePath);
-  return findScaffoldRoot(dirname(resolvedSource)) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
+function prCommand(args: string[]): void {
+  if (isHelpArg(args[0])) { console.log('Usage: osc pr check <plan-slug> [--format <markdown|json>] [--online-github]'); return; }
+  if (args[0] !== 'check') die('Usage: osc pr check <plan-slug> [--format <markdown|json>] [--online-github]');
+  const slug = requiredArg(args.slice(1), 'plan-slug');
+  const format = value(args, '--format') ?? 'markdown';
+  if (!['markdown', 'json'].includes(format)) die(`Invalid value for --format: ${format}. Expected one of: markdown, json`);
+  const report = computePrCheck(slug, { onlineGithub: has(args, '--online-github') || has(args, '--github-online') });
+  if (format === 'json') console.log(JSON.stringify(report, null, 2)); else console.log(renderPrCheckMarkdown(report));
 }
 
 function auditCommand(args: string[]): void {
-  const [subcommand, sourceOrPath, ...rest] = args;
-  if (subcommand === 'init') {
-    if (!sourceOrPath) {
-      printAuditUsage();
-      process.exit(2);
-    }
-    let outPath: string | null = null;
-    let force = false;
+  const sub = args[0] ?? die('Usage: osc audit init|check ...');
+  if (sub === 'init') {
+    const source = args[1] ?? die('Usage: osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]');
     const artifacts: AuditArtifactInput[] = [];
-    for (let i = 0; i < rest.length; i += 1) {
-      const flag = rest[i];
-      switch (flag) {
-        case '--artifact': {
-          const role = takeAuditValue(rest, i, flag);
-          const path = rest[i + 2];
-          if (!path || path.startsWith('--')) {
-            console.error('Missing path for --artifact <role> <path>');
-            process.exit(2);
-          }
-          artifacts.push({ role, path });
-          i += 2;
-          break;
-        }
-        case '--out':
-        case '--output':
-          outPath = takeAuditValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--force':
-          force = true;
-          break;
-        default:
-          console.error(`Unknown option for audit init: ${flag}`);
-          printAuditUsage();
-          process.exit(2);
-      }
-    }
-    const auditRoot = auditRootForSource(sourceOrPath);
-    const auditSource = resolve(sourceOrPath);
-    try {
-      if (!outPath) {
-        process.stdout.write(renderAuditManifest(auditSource, artifacts, auditRoot));
-        return;
-      }
-      const absoluteOut = resolve(outPath);
-      if (existsSync(absoluteOut) && !force) {
-        console.error(`Refusing to overwrite existing audit manifest: ${absoluteOut}`);
-        process.exit(1);
-      }
-      if (force && existsSync(absoluteOut)) {
-        writeFileSync(absoluteOut, renderAuditManifest(auditSource, artifacts, auditRoot), 'utf8');
-      } else {
-        writeAuditManifest(auditSource, artifacts, absoluteOut, auditRoot);
-      }
-      console.log(`Created audit manifest: ${absoluteOut}`);
-      console.log('Note: this is a local digest-integrity manifest only; it does not certify correctness, compliance, approval, runtime execution, model quality, or external anchoring.');
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  }
-
-  if (subcommand === 'check') {
-    if (!sourceOrPath) {
-      printAuditUsage();
-      process.exit(2);
-    }
-    if (rest.length > 0) {
-      console.error(`Unknown option for audit check: ${rest[0]}`);
-      printAuditUsage();
-      process.exit(2);
-    }
-    const manifestPath = resolve(sourceOrPath);
-    const result = validateAuditManifestFile(manifestPath, auditRootFor(manifestPath));
-    for (const failure of result.failures) {
-      console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
-    }
-    for (const warning of result.warnings) {
-      console.warn(`WARN ${warning.code}: ${warning.message}${warning.path ? ` (${warning.path})` : ''}`);
-    }
-    if (!result.ok) process.exit(1);
+    for (let i = 0; i < args.length; i += 1) if (args[i] === '--artifact') artifacts.push({ role: args[i + 1] ?? die('Missing artifact role'), path: args[i + 2] ?? die('Missing artifact path') });
+    const out = value(args, '--out') ?? value(args, '--output');
+    const auditRoot = findRootWithPlans(dirname(resolve(source))) ?? findRootWithPlans(process.cwd()) ?? process.cwd();
+    const manifest = renderAuditManifest(resolve(source), artifacts, auditRoot);
+    if (!out) { process.stdout.write(manifest); return; }
+    const absoluteOut = resolve(out);
+    if (existsSync(absoluteOut) && !has(args, '--force')) die(`Refusing to overwrite existing audit manifest: ${absoluteOut}`, 1);
+    if (has(args, '--force') && existsSync(absoluteOut)) writeFileSync(absoluteOut, manifest, 'utf8');
+    else writeAuditManifest(resolve(source), artifacts, absoluteOut, auditRoot);
+    console.log(`Created audit manifest: ${absoluteOut}`);
+    console.log('Note: this is a local digest-integrity manifest only; it does not certify correctness, compliance, approval, runtime execution, model quality, or external anchoring.');
+  } else if (sub === 'check') {
+    if (args.length > 2) { console.error(`Unknown option for audit check: ${args[2]}`); console.error('Usage: osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>] | osc audit check <audit-manifest-path>'); process.exit(2); }
+    const manifestPath = resolve(args[1] ?? die('Usage: osc audit check <audit-manifest-path>'));
+    const auditRoot = findRootWithPlans(dirname(manifestPath)) ?? findRootWithPlans(process.cwd()) ?? process.cwd();
+    const result = validateAuditManifestFile(manifestPath, auditRoot);
+    for (const failure of result.failures) console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
+    for (const warning of result.warnings) console.warn(`WARN ${warning.code}: ${warning.message}${warning.path ? ` (${warning.path})` : ''}`);
+    if (result.failures.length > 0) process.exit(1);
     let artifactCount = 0;
     try {
       const parsed = JSON.parse(readFileSync(manifestPath, 'utf8')) as { artifacts?: unknown[] };
       artifactCount = Array.isArray(parsed.artifacts) ? parsed.artifacts.length : 0;
-    } catch {
-      artifactCount = 0;
-    }
+    } catch {}
     console.log(`PASS audit manifest structure/digests valid; ${artifactCount} artifact(s); ${result.warnings.length} warning(s)`);
     console.log('Note: this check validates local artifact presence and sha256 digest consistency only; it does not judge correctness, compliance, approval, runtime execution, model quality, or external anchoring.');
-    return;
-  }
-
-  printAuditUsage();
-  process.exit(2);
+  } else die('Usage: osc audit init|check ...');
 }
 
-function printEvalUsage(): void {
-  console.error('Usage: osc eval init <run-or-plan> [--out <path>] | osc eval import <run-or-plan> --adapter generic-ac-json-v1 --scorer <scorer-json> [--out <path>] | osc eval check <evaluation-path>');
-}
-
-function findScaffoldRoot(start: string): string | null {
-  let current = resolve(start);
-  while (true) {
-    if (existsSync(join(current, '.osc')) || existsSync(join(current, '.git'))) return current;
-    const parent = dirname(current);
-    if (parent === current) return null;
-    current = parent;
-  }
-}
-
-function evaluationRootFor(envelopePath: string): string {
-  return findScaffoldRoot(dirname(envelopePath)) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
-}
-
-function takeEvalValue(args: string[], index: number, flag: string): string {
-  const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${flag}`);
-    process.exit(2);
-  }
-  return value;
-}
-
-function parseExternalScorerAdapter(value: string): ExternalScorerAdapter {
-  if (EXTERNAL_SCORER_ADAPTERS.includes(value as ExternalScorerAdapter)) return value as ExternalScorerAdapter;
-  console.error(`Unsupported eval import adapter: ${value}`);
-  printEvalUsage();
-  process.exit(2);
-}
-
-function evalCommand(args: string[]): void {
-  const [subcommand, sourceOrPath, ...rest] = args;
-  if (subcommand === 'init') {
-    if (!sourceOrPath) {
-      printEvalUsage();
+function evolveCommand(args: string[]): void {
+  const sub = args[0] ?? die('Usage: osc evolve init|record|compare|analyze|check');
+  if (isHelpArg(sub)) { console.log('Usage: osc evolve init|record|compare|analyze|check <args>'); return; }
+  if (sub === 'init') {
+    const source = args[1] ?? die('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy>]');
+    const rawStrategy = value(args, '--strategy') ?? 'manual';
+    if (!(EVOLUTION_STRATEGIES as readonly string[]).includes(rawStrategy)) {
+      console.error(`Invalid value for --strategy: ${rawStrategy}`);
+      usage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>]');
       process.exit(2);
     }
-    let outPath: string | null = null;
-    let force = false;
-    for (let i = 0; i < rest.length; i += 1) {
-      const flag = rest[i];
-      switch (flag) {
-        case '--out':
-        case '--output':
-          outPath = takeEvalValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--force':
-          force = true;
-          break;
-        default:
-          console.error(`Unknown option for eval init: ${flag}`);
-          printEvalUsage();
-          process.exit(2);
-      }
-    }
-    try {
-      if (!outPath) {
-        const source = loadEvaluationSource(sourceOrPath, process.cwd());
-        process.stdout.write(renderEvaluationEnvelope(source));
-        return;
-      }
-      const absoluteOut = resolve(outPath);
-      if (existsSync(absoluteOut) && !force) {
-        console.error(`Refusing to overwrite existing evaluation envelope: ${absoluteOut}`);
-        process.exit(1);
-      }
-      if (force && existsSync(absoluteOut)) {
-        const source = loadEvaluationSource(sourceOrPath, process.cwd());
-        writeFileSync(absoluteOut, renderEvaluationEnvelope(source), 'utf8');
-      } else {
-        writeEvaluationEnvelope(sourceOrPath, absoluteOut, process.cwd());
-      }
-      console.log(`Created evaluation envelope: ${absoluteOut}`);
-      console.log('Note: this is a structure/coverage template only; fill evidence, evaluator, decision, and routing before check/close.');
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  }
-
-  if (subcommand === 'import') {
-    if (!sourceOrPath) {
-      printEvalUsage();
-      process.exit(2);
-    }
-    let adapter: ExternalScorerAdapter | null = null;
-    let scorerPath: string | null = null;
-    let outPath: string | null = null;
-    let force = false;
-    for (let i = 0; i < rest.length; i += 1) {
-      const flag = rest[i];
-      switch (flag) {
-        case '--adapter':
-          adapter = parseExternalScorerAdapter(takeEvalValue(rest, i, flag));
-          i += 1;
-          break;
-        case '--scorer':
-        case '--scorer-json':
-          scorerPath = takeEvalValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--out':
-        case '--output':
-          outPath = takeEvalValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--force':
-          force = true;
-          break;
-        default:
-          console.error(`Unknown option for eval import: ${flag}`);
-          printEvalUsage();
-          process.exit(2);
-      }
-    }
-    if (!adapter) {
-      console.error('Missing required option for eval import: --adapter');
-      printEvalUsage();
-      process.exit(2);
-    }
-    if (!scorerPath) {
-      console.error('Missing required option for eval import: --scorer');
-      printEvalUsage();
-      process.exit(2);
-    }
-    try {
-      if (!outPath) {
-        const source = loadEvaluationSource(sourceOrPath, process.cwd());
-        process.stdout.write(renderImportedEvaluationEnvelope(source, scorerPath, process.cwd(), { adapter }));
-        return;
-      }
-      const absoluteOut = resolve(outPath);
-      if (existsSync(absoluteOut) && !force) {
-        console.error(`Refusing to overwrite existing evaluation envelope: ${absoluteOut}`);
-        process.exit(1);
-      }
-      if (force && existsSync(absoluteOut)) {
-        const source = loadEvaluationSource(sourceOrPath, process.cwd());
-        writeFileSync(absoluteOut, renderImportedEvaluationEnvelope(source, scorerPath, process.cwd(), { adapter }), 'utf8');
-      } else {
-        writeImportedEvaluationEnvelope(sourceOrPath, scorerPath, absoluteOut, process.cwd(), { adapter });
-      }
-      console.log(`Created imported evaluation envelope: ${absoluteOut}`);
-      console.log('Note: imported scorer evidence does not make Open Scaffold the scorer and does not certify correctness, compliance, production readiness, or model quality.');
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  }
-
-  if (subcommand === 'check') {
-    if (!sourceOrPath) {
-      printEvalUsage();
-      process.exit(2);
-    }
-    if (rest.length > 0) {
-      console.error(`Unknown option for eval check: ${rest[0]}`);
-      printEvalUsage();
-      process.exit(2);
-    }
-    const envelopePath = resolve(sourceOrPath);
-    const result = validateEvaluationEnvelopeFile(envelopePath, evaluationRootFor(envelopePath));
-    for (const failure of result.failures) {
-      console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
-    }
-    for (const warning of result.warnings) {
-      console.warn(`WARN ${warning.code}: ${warning.message}${warning.path ? ` (${warning.path})` : ''}`);
-    }
-    if (!result.ok) process.exit(1);
-    let criterionCount = 0;
-    try {
-      const parsed = JSON.parse(readFileSync(envelopePath, 'utf8')) as { acceptance_criteria?: unknown[] };
-      criterionCount = Array.isArray(parsed.acceptance_criteria) ? parsed.acceptance_criteria.length : 0;
-    } catch {
-      criterionCount = 0;
-    }
-    console.log(`PASS evaluation envelope structure valid; ${criterionCount} criterion evaluation(s); ${result.warnings.length} warning(s)`);
-    console.log('Note: this check validates schema/coverage/routing only; it does not judge correctness, compliance, production readiness, or model quality.');
-    return;
-  }
-
-  printEvalUsage();
-  process.exit(2);
-}
-
-function printEvolutionUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>] | osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> [--repair-hypothesis <text>] [--target-metric <name>] [--expected-gain <number>] [--actual-delta <number>] [--tokens-total <integer>] [--estimated-usd <number>] [--usage-source <source>] [--usage-unavailable-reason <text>] | osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>] | osc evolve analyze <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>] [--compact] [--efficiency] | osc evolve check <loop-dir>', stream);
-}
-
-function takeEvolutionValue(args: string[], index: number, flag: string): string {
-  const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${flag}`);
-    process.exit(2);
-  }
-  return value;
-}
-
-function parseEvolutionStrategy(value: string): EvolutionStrategy {
-  if ((EVOLUTION_STRATEGIES as readonly string[]).includes(value)) return value as EvolutionStrategy;
-  console.error(`Invalid value for --strategy: ${value}. Expected one of: ${EVOLUTION_STRATEGIES.join(', ')}`);
-  printEvolutionUsage();
-  process.exit(2);
-}
-
-function parseEvolutionDecision(value: string): EvolutionDecision {
-  if ((EVOLUTION_DECISIONS as readonly string[]).includes(value)) return value as EvolutionDecision;
-  console.error(`Invalid value for --decision: ${value}. Expected one of: ${EVOLUTION_DECISIONS.join(', ')}`);
-  printEvolutionUsage();
-  process.exit(2);
-}
-
-function parseEvolutionCompareFormat(value: string): EvolutionCompareFormat {
-  if (value === 'terminal' || value === 'markdown' || value === 'json') return value;
-  console.error(`Invalid value for --format: ${value}. Expected one of: terminal, markdown, json`);
-  printEvolutionUsage();
-  process.exit(2);
-}
-
-function parseEvolutionAnalysisFormat(value: string): EvolutionAnalysisFormat {
-  return parseEvolutionCompareFormat(value);
-}
-
-function parseEvolutionFiniteNumber(raw: string, flag: string): number {
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) {
-    console.error(`Invalid value for ${flag}: ${raw}. Expected a finite number.`);
-    process.exit(2);
-  }
-  return parsed;
-}
-
-function parseEvolutionNonNegativeInteger(raw: string, flag: string): number {
-  const parsed = Number(raw);
-  if (!Number.isInteger(parsed) || parsed < 0) {
-    console.error(`Invalid value for ${flag}: ${raw}. Expected a non-negative integer.`);
-    process.exit(2);
-  }
-  return parsed;
-}
-
-function parseEvolutionNonNegativeNumber(raw: string, flag: string): number {
-  const parsed = parseEvolutionFiniteNumber(raw, flag);
-  if (parsed < 0) {
-    console.error(`Invalid value for ${flag}: ${raw}. Expected a non-negative number.`);
-    process.exit(2);
-  }
-  return parsed;
-}
-
-function evolutionRootFor(path: string): string {
-  return findScaffoldRoot(path) ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
-}
-
-function evolutionCommand(args: string[]): void {
-  const [subcommand, sourceOrPath, ...rest] = args;
-  if (subcommand === undefined || isHelpArg(subcommand)) {
-    printEvolutionUsage('stdout');
-    return;
-  }
-
-  if (subcommand === 'init') {
-    if (!sourceOrPath) {
-      printEvolutionUsage();
-      process.exit(2);
-    }
-    let outPath: string | null = null;
-    let strategy: EvolutionStrategy = 'manual';
-    for (let i = 0; i < rest.length; i += 1) {
-      const flag = rest[i];
-      switch (flag) {
-        case '--out':
-        case '--output':
-          outPath = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--strategy':
-          strategy = parseEvolutionStrategy(takeEvolutionValue(rest, i, flag));
-          i += 1;
-          break;
-        default:
-          console.error(`Unknown option for evolve init: ${flag}`);
-          printEvolutionUsage();
-          process.exit(2);
-      }
-    }
-    try {
-      const sourcePath = resolve(sourceOrPath);
-      const root = evolutionRootFor(dirname(sourcePath));
-      const outDir = outPath ? resolve(outPath) : '';
-      const result = writeEvolutionLoop(sourcePath, outDir, root, { strategy });
-      console.log(`Created evolution loop: ${result.loopDir}`);
-      console.log(`  Loop: ${result.loopPath}`);
-      console.log(`  Attempts: ${result.attemptsPath}`);
-      console.log(`  Frontier: ${result.frontierPath}`);
-      console.log('Note: this records loop state only; Open Scaffold core does not spawn runtimes, rank models, certify compliance, or approve release.');
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  }
-
-  if (subcommand === 'record') {
-    if (!sourceOrPath) {
-      printEvolutionUsage();
-      process.exit(2);
-    }
-    let runPath: string | null = null;
-    let evaluationPath: string | undefined;
-    const receiptPaths: string[] = [];
-    const evidencePaths: string[] = [];
-    let decision: EvolutionDecision | null = null;
-    let score: number | undefined;
-    let rationale = '';
-    let repairHypothesis: string | undefined;
-    let targetMetric: string | undefined;
-    let expectedGain: number | undefined;
-    let actualDelta: number | undefined;
-    let tokensTotal: number | undefined;
-    let estimatedUsd: number | undefined;
-    let usageSource: string | undefined;
-    let usageUnavailableReason: string | undefined;
-    for (let i = 0; i < rest.length; i += 1) {
-      const flag = rest[i];
-      switch (flag) {
-        case '--run':
-          runPath = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--evaluation':
-          evaluationPath = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--receipt':
-          receiptPaths.push(takeEvolutionValue(rest, i, flag));
-          i += 1;
-          break;
-        case '--evidence':
-          evidencePaths.push(takeEvolutionValue(rest, i, flag));
-          i += 1;
-          break;
-        case '--decision':
-          decision = parseEvolutionDecision(takeEvolutionValue(rest, i, flag));
-          i += 1;
-          break;
-        case '--score': {
-          const raw = takeEvolutionValue(rest, i, flag);
-          score = Number(raw);
-          if (!Number.isFinite(score)) {
-            console.error(`Invalid value for --score: ${raw}. Expected a number between 0 and 1.`);
-            process.exit(2);
-          }
-          i += 1;
-          break;
-        }
-        case '--rationale':
-          rationale = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--repair-hypothesis':
-          repairHypothesis = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--target-metric':
-          targetMetric = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--expected-gain':
-          expectedGain = parseEvolutionFiniteNumber(takeEvolutionValue(rest, i, flag), flag);
-          i += 1;
-          break;
-        case '--actual-delta':
-          actualDelta = parseEvolutionFiniteNumber(takeEvolutionValue(rest, i, flag), flag);
-          i += 1;
-          break;
-        case '--tokens-total':
-          tokensTotal = parseEvolutionNonNegativeInteger(takeEvolutionValue(rest, i, flag), flag);
-          i += 1;
-          break;
-        case '--estimated-usd':
-          estimatedUsd = parseEvolutionNonNegativeNumber(takeEvolutionValue(rest, i, flag), flag);
-          i += 1;
-          break;
-        case '--usage-source':
-          usageSource = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--usage-unavailable-reason':
-          usageUnavailableReason = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        default:
-          console.error(`Unknown option for evolve record: ${flag}`);
-          printEvolutionUsage();
-          process.exit(2);
-      }
-    }
-    if (!runPath) {
-      console.error('Missing required option for evolve record: --run <run-packet>');
-      process.exit(2);
-    }
-    if (!decision) {
-      console.error('Missing required option for evolve record: --decision <promote|reject|retry|block>');
-      process.exit(2);
-    }
-    try {
-      const loopDir = resolve(sourceOrPath);
-      const root = evolutionRootFor(loopDir);
-      const absoluteRunPath = resolve(runPath);
-      const absoluteEvaluationPath = evaluationPath ? resolve(evaluationPath) : undefined;
-      const absoluteReceiptPaths = receiptPaths.map((receiptPath) => resolve(receiptPath));
-      const absoluteEvidencePaths = evidencePaths.map((evidencePath) => resolve(evidencePath));
-      const result = recordEvolutionAttempt(loopDir, {
-        runPath: absoluteRunPath,
-        evaluationPath: absoluteEvaluationPath,
-        receiptPaths: absoluteReceiptPaths,
-        evidencePaths: absoluteEvidencePaths,
-        decision,
-        score,
-        rationale,
-        repairHypothesis: repairHypothesis !== undefined || targetMetric !== undefined || expectedGain !== undefined || actualDelta !== undefined ? {
-          hypothesis: repairHypothesis ?? '',
-          targetMetric: targetMetric ?? null,
-          expectedGain: expectedGain ?? null,
-          actualDelta: actualDelta ?? null,
-        } : undefined,
-        usage: tokensTotal !== undefined || estimatedUsd !== undefined || usageSource !== undefined || usageUnavailableReason !== undefined ? {
-          totalTokens: tokensTotal ?? null,
-          estimatedUsd: estimatedUsd ?? null,
-          source: usageSource ?? null,
-          unavailableReason: usageUnavailableReason ?? null,
-        } : undefined,
-      }, root);
-      console.log(`Recorded evolution attempt: ${String(result.attempt.attempt_id)}`);
-      if (result.frontierUpdated) console.log(`Updated frontier: ${String(result.attempt.attempt_id)}`);
-      console.log('Note: this recorded an attempt decision only; scorer output is evidence, not automatic approval.');
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  }
-
-  if (subcommand === 'compare') {
-    if (!sourceOrPath) {
-      printEvolutionUsage();
-      process.exit(2);
-    }
-    let a: string | undefined;
-    let b: string | undefined;
-    let format: EvolutionCompareFormat = 'terminal';
-    let outPath: string | undefined;
-    for (let i = 0; i < rest.length; i += 1) {
-      const flag = rest[i];
-      switch (flag) {
-        case '--a':
-          a = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--b':
-          b = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--format':
-          format = parseEvolutionCompareFormat(takeEvolutionValue(rest, i, flag));
-          i += 1;
-          break;
-        case '--out':
-        case '--output':
-          outPath = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        default:
-          console.error(`Unknown option for evolve compare: ${flag}`);
-          printEvolutionUsage();
-          process.exit(2);
-      }
-    }
-    try {
-      const loopDir = resolve(sourceOrPath);
-      const root = evolutionRootFor(loopDir);
-      const comparison = compareEvolutionLoop(loopDir, { a, b }, root);
-      const rendered = renderEvolutionComparison(comparison, format);
-      if (outPath) {
-        const resolvedOut = resolve(outPath);
-        writeFileSync(resolvedOut, rendered, 'utf8');
-        console.log(`Wrote evolution comparison: ${resolvedOut}`);
-      } else {
-        process.stdout.write(rendered.endsWith('\n') ? rendered : `${rendered}\n`);
-      }
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  }
-
-  if (subcommand === 'analyze') {
-    if (!sourceOrPath) {
-      printEvolutionUsage();
-      process.exit(2);
-    }
-    let format: EvolutionAnalysisFormat = 'terminal';
-    let outPath: string | undefined;
-    let plateauThreshold: number | undefined;
-    let compact = false;
-    let efficiency = false;
-    for (let i = 0; i < rest.length; i += 1) {
-      const flag = rest[i];
-      switch (flag) {
-        case '--format':
-          format = parseEvolutionAnalysisFormat(takeEvolutionValue(rest, i, flag));
-          i += 1;
-          break;
-        case '--out':
-        case '--output':
-          outPath = takeEvolutionValue(rest, i, flag);
-          i += 1;
-          break;
-        case '--plateau-threshold': {
-          const raw = takeEvolutionValue(rest, i, flag);
-          const parsed = Number(raw);
-          if (!Number.isInteger(parsed) || parsed < 1) {
-            console.error(`Invalid value for --plateau-threshold: ${raw}. Expected a positive integer.`);
-            process.exit(2);
-          }
-          plateauThreshold = parsed;
-          i += 1;
-          break;
-        }
-        case '--compact':
-          compact = true;
-          break;
-        case '--efficiency':
-          efficiency = true;
-          break;
-        default:
-          console.error(`Unknown option for evolve analyze: ${flag}`);
-          printEvolutionUsage();
-          process.exit(2);
-      }
-    }
-    try {
-      const loopDir = resolve(sourceOrPath);
-      const root = evolutionRootFor(loopDir);
-      const analysis = analyzeEvolutionLoop(loopDir, { plateauThreshold }, root);
-      const rendered = efficiency
-        ? renderEvolutionEfficiencyReport(measureEvolutionAnalysisEfficiency(analysis), format)
-        : renderEvolutionAnalysis(analysis, format, { compact });
-      if (outPath) {
-        const resolvedOut = resolve(outPath);
-        writeFileSync(resolvedOut, rendered, 'utf8');
-        console.log(`Wrote evolution ${efficiency ? 'efficiency report' : 'analysis'}: ${resolvedOut}`);
-      } else {
-        process.stdout.write(rendered.endsWith('\n') ? rendered : `${rendered}\n`);
-      }
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  }
-
-  if (subcommand === 'check') {
-    if (!sourceOrPath) {
-      printEvolutionUsage();
-      process.exit(2);
-    }
-    if (rest.length > 0) {
-      console.error(`Unknown option for evolve check: ${rest[0]}`);
-      printEvolutionUsage();
-      process.exit(2);
-    }
-    const loopDir = resolve(sourceOrPath);
-    const root = evolutionRootFor(loopDir);
-    const result = validateEvolutionLoopDir(loopDir, root);
-    for (const failure of result.failures) {
-      console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
-    }
-    for (const warning of result.warnings) {
-      console.warn(`WARN ${warning.code}: ${warning.message}${warning.path ? ` (${warning.path})` : ''}`);
-    }
-    if (!result.ok) process.exit(1);
+    const strategy = rawStrategy as EvolutionStrategy;
+    const sourcePath = resolve(source);
+    const root = findRootWithPlans(dirname(sourcePath)) ?? findScaffoldRoot(dirname(sourcePath)) ?? process.cwd();
+    const result = writeEvolutionLoop(sourcePath, value(args, '--out') ?? value(args, '--output') ?? '', root, { strategy });
+    console.log(`Created evolution loop: ${result.loopDir}`);
+    console.log('Boundary: Open Scaffold records loop metadata only; it does not spawn a runtime or rank models.');
+  } else if (sub === 'record') {
+    const loopDir = args[1] ?? die('Usage: osc evolve record <loop-dir> --run <run-packet> --decision <promote|reject|retry|block> --rationale <text>');
+    const decision = choice(requireValue(args, '--decision'), EVOLUTION_DECISIONS, '--decision') as EvolutionDecision;
+    const loopAbs = resolve(loopDir);
+    const root = findRootWithPlans(loopAbs) ?? findScaffoldRoot(loopAbs) ?? process.cwd();
+    const resolveFromCwd = (path: string | undefined) => path ? resolve(path) : undefined;
+    const result = recordEvolutionAttempt(loopAbs, { runPath: resolve(requireValue(args, '--run')), evaluationPath: resolveFromCwd(value(args, '--evaluation')), receiptPaths: values(args, '--receipt').map((path) => resolve(path)), evidencePaths: values(args, '--evidence').map((path) => resolve(path)), decision, score: value(args, '--score') ? Number(value(args, '--score')) : undefined, rationale: value(args, '--rationale') ?? '', repairHypothesis: value(args, '--repair-hypothesis') ? { hypothesis: value(args, '--repair-hypothesis')!, targetMetric: value(args, '--target-metric'), expectedGain: value(args, '--expected-gain') ? Number(value(args, '--expected-gain')) : undefined, actualDelta: value(args, '--actual-delta') ? Number(value(args, '--actual-delta')) : undefined } : undefined, usage: value(args, '--tokens-total') || value(args, '--estimated-usd') || value(args, '--usage-source') || value(args, '--usage-unavailable-reason') ? { totalTokens: value(args, '--tokens-total') ? Number(value(args, '--tokens-total')) : undefined, estimatedUsd: value(args, '--estimated-usd') ? Number(value(args, '--estimated-usd')) : undefined, source: value(args, '--usage-source') ?? 'manual', unavailableReason: value(args, '--usage-unavailable-reason') } : undefined }, root);
+    console.log(`Recorded evolution attempt: ${String(result.attempt.attempt_id ?? result.attempt.id ?? 'unknown')}`);
+    if (result.frontierUpdated) console.log(`Updated frontier: ${String(result.attempt.attempt_id ?? result.attempt.id ?? 'unknown')}`);
+  } else if (sub === 'compare') {
+    const format = (value(args, '--format') ?? 'terminal') as EvolutionCompareFormat;
+    const output = renderEvolutionComparison(compareEvolutionLoop(args[1] ?? die('Usage: osc evolve compare <loop-dir>'), { a: value(args, '--a'), b: value(args, '--b') }, process.cwd()), format);
+    const out = value(args, '--out') ?? value(args, '--output');
+    if (out) { writeFileSync(resolve(out), output); console.log(`Wrote evolution comparison: ${resolve(out)}`); }
+    else process.stdout.write(output);
+  } else if (sub === 'analyze') {
+    const format = (value(args, '--format') ?? 'terminal') as EvolutionAnalysisFormat;
+    const analysis = analyzeEvolutionLoop(args[1] ?? die('Usage: osc evolve analyze <loop-dir>'), { plateauThreshold: value(args, '--plateau-threshold') ? Number(value(args, '--plateau-threshold')) : undefined }, process.cwd());
+    const output = has(args, '--efficiency')
+      ? renderEvolutionEfficiencyReport(measureEvolutionAnalysisEfficiency(analysis), format)
+      : renderEvolutionAnalysis(analysis, format, { compact: has(args, '--compact') });
+    const out = value(args, '--out') ?? value(args, '--output');
+    if (out) { writeFileSync(resolve(out), output); console.log(`Wrote evolution analysis: ${resolve(out)}`); }
+    else process.stdout.write(output);
+  } else if (sub === 'check') {
+    const loopDir = args[1] ?? die('Usage: osc evolve check <loop-dir>');
+    const loopAbs = resolve(loopDir);
+    const result = validateEvolutionLoopDir(loopAbs, findRootWithPlans(loopAbs) ?? process.cwd());
+    for (const failure of result.failures) console.error(`FAIL ${failure.code}: ${failure.message}${failure.path ? ` (${failure.path})` : ''}`);
+    for (const warning of result.warnings) console.warn(`WARN ${warning.code}: ${warning.message}${warning.path ? ` (${warning.path})` : ''}`);
+    if (result.failures.length > 0) process.exit(1);
     console.log(`PASS evolution loop structure valid; ${result.warnings.length} warning(s)`);
-    console.log('Note: this check validates curated loop state only; it does not execute attempts, rank models, certify compliance, or approve release.');
-    return;
-  }
-
-  printEvolutionUsage();
-  process.exit(2);
-}
-
-function printMetricsUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc metrics [--json] [--since <date>] [--lookback <weeks>] [--table] [--verbose]
-
-Options:
-  --json              Print a single machine-readable JSON object
-  --since <date>      Include only plans created on or after the date; supports YYYY-MM-DD, ISO 8601, "30 days ago", and "last month"
-  --lookback <weeks>  Close-velocity lookback window in weeks (default: 12)
-  --table             Force human-readable output even when --json is present
-  --verbose           Include per-plan slug, stage, age, evidence, and approval details`, stream);
-}
-
-function takeMetricsValue(args: string[], index: number, flag: string): string {
-  const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${flag}`);
-    process.exit(2);
-  }
-  return value;
-}
-
-function metricsCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printMetricsUsage('stdout');
-    return;
-  }
-
-  let json = false;
-  let table = false;
-  let verbose = false;
-  let since: Date | undefined;
-  let lookbackWeeks: number | undefined;
-
-  for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--json':
-        json = true;
-        break;
-      case '--table':
-        table = true;
-        break;
-      case '--verbose':
-        verbose = true;
-        break;
-      case '--since':
-        try {
-          since = parseSinceDate(takeMetricsValue(args, i, flag));
-        } catch (error) {
-          console.error(error instanceof Error ? error.message : String(error));
-          process.exit(2);
-        }
-        i += 1;
-        break;
-      case '--lookback': {
-        const raw = takeMetricsValue(args, i, flag);
-        const parsed = Number(raw);
-        if (!Number.isFinite(parsed) || parsed <= 0) {
-          console.error(`Invalid value for --lookback: ${raw}. Expected a positive number of weeks.`);
-          process.exit(2);
-        }
-        lookbackWeeks = parsed;
-        i += 1;
-        break;
-      }
-      default:
-        console.error(`Unknown option for metrics: ${flag}`);
-        printMetricsUsage();
-        process.exit(2);
-    }
-  }
-
-  try {
-    const metrics = computeMetrics({ root: process.cwd(), since, lookbackWeeks, verbose });
-    if (json && !table) console.log(JSON.stringify(metrics, null, 2));
-    else console.log(formatMetrics(metrics, { verbose }));
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  }
-}
-
-function printStudyUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc study [--json] [--since <date>] [--out <path>]
-
-Computes source-labeled, observational evidence signals for the methodology's value
-hypotheses from this repository's own committed git history and .osc/ artifacts.
-Read-only and offline: it makes no network calls and imputes no numbers. See
-docs/EVIDENCE_METHODOLOGY.md for the protocol.
-
-Options:
-  --json            Print the machine-readable study report (open-scaffold.study.v1)
-  --since <date>    Restrict plans/commits to on or after the date; supports YYYY-MM-DD, ISO 8601, "30 days ago", "last month"
-  --out <path>      Write the report to a file (markdown by default, JSON when --json is set) instead of stdout`, stream);
-}
-
-function studyCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printStudyUsage('stdout');
-    return;
-  }
-
-  let json = false;
-  let since: Date | undefined;
-  let out: string | undefined;
-
-  for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--json':
-        json = true;
-        break;
-      case '--since':
-        try {
-          since = parseSinceDate(takeMetricsValue(args, i, flag));
-        } catch (error) {
-          console.error(error instanceof Error ? error.message : String(error));
-          process.exit(2);
-        }
-        i += 1;
-        break;
-      case '--out':
-        out = takeMetricsValue(args, i, flag);
-        i += 1;
-        break;
-      default:
-        console.error(`Unknown option for study: ${flag}`);
-        printStudyUsage();
-        process.exit(2);
-    }
-  }
-
-  try {
-    const report = computeStudy({ root: process.cwd(), since });
-    const validation = validateStudyReport(report);
-    if (!validation.ok) {
-      console.error('Study report failed its own honesty checks:');
-      for (const error of validation.errors) console.error(`  - ${error}`);
-      process.exit(1);
-    }
-    const format: 'markdown' | 'json' = json ? 'json' : 'markdown';
-    if (out) {
-      const written = writeStudyOutput(report, out, format, process.cwd());
-      console.log(`Wrote ${format} study report to ${written.path}`);
-      return;
-    }
-    if (json) console.log(JSON.stringify(report, null, 2));
-    else console.log(renderStudyMarkdown(report));
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  }
-}
-
-function printPrSummaryUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc pr-summary <plan-slug> [--format <markdown|json>]
-
-Renders a read-only, reviewer-ready summary of a plan — goal, acceptance-criteria
-checklist state, evidence-note status, plan-validation result, and open questions —
-for mirroring into a pull request. Reuses the plan/evidence readers and the same
-checks as \`osc plan validate\`; it makes no network calls and is never a source of
-truth. A missing or unsafe plan reference renders an explicit "no plan found"
-summary and still exits 0 so it cannot break a PR check.
-
-Options:
-  --format <markdown|json>   Output format (default: markdown). JSON emits the open-scaffold.pr_summary.v1 report.`, stream);
-}
-
-function prSummaryCommand(args: string[]): void {
-  if (isHelpArg(args[0])) {
-    printPrSummaryUsage('stdout');
-    return;
-  }
-  const slug = requireArg(args, 'plan-slug');
-
-  let format: 'markdown' | 'json' = 'markdown';
-  for (let i = 1; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--format':
-        format = parseChoice(takeMetricsValue(args, i, flag), ['markdown', 'json'] as const, '--format');
-        i += 1;
-        break;
-      default:
-        console.error(`Unknown option for pr-summary: ${flag}`);
-        printPrSummaryUsage();
-        process.exit(2);
-    }
-  }
-
-  try {
-    const report = computePrSummary(slug, { root: process.cwd() });
-    if (format === 'json') console.log(JSON.stringify(report, null, 2));
-    else console.log(renderPrSummaryMarkdown(report));
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  }
-}
-
-function printAbUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc ab check <path>
-
-Read-only structural validator for an A/B comparison pilot packet (see
-docs/AB_COMPARISON_PILOT.md). Pass the packet directory (containing
-pre-registration.md and a raw-data .csv), or a single .md or .csv file.
-
-It confirms the pre-registration has its required sections and commit-before-data
-attestation, and that every raw-data row has a valid arm (A/B) and a source-labeled,
-source-consistent value. It never writes, scores, or interprets data. Exit 0 when
-well-formed, 1 when malformed. A pass means the instrument is well-formed — not that
-any experiment was run or that the scaffold improves any outcome.`, stream);
-}
-
-function abCommand(args: string[]): void {
-  const [subcommand, ...rest] = args;
-  if (isHelpArg(subcommand) || subcommand === undefined) {
-    printAbUsage('stdout');
-    return;
-  }
-  if (subcommand !== 'check') {
-    console.error(`Unknown subcommand for ab: ${subcommand}`);
-    printAbUsage();
-    process.exit(2);
-  }
-  if (isHelpArg(rest[0])) {
-    printAbUsage('stdout');
-    return;
-  }
-  const target = requireArg(rest, 'path');
-  if (rest.length > 1) {
-    console.error(`Unknown option for ab check: ${rest[1]}`);
-    printAbUsage();
-    process.exit(2);
-  }
-  const report = checkAbPacket(target, process.cwd());
-  if (report.ok) {
-    console.log(formatAbCheckReport(report));
-  } else {
-    console.error(formatAbCheckReport(report));
-    process.exit(1);
-  }
-}
-
-function printTaskUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc task new <title> [--priority <${TASK_PRIORITIES.join('|')}>] [--plan <slug>]
-  osc task list [--status <${TASK_STATUSES.join('|')}>] [--priority <${TASK_PRIORITIES.join('|')}>] [--plan <slug>] [--json]
-  osc task show <task-id>
-  osc task claim|start|complete|cancel <task-id>
-  osc task block <task-id> --reason <text>
-  osc task comment <task-id> <comment>
-  osc task link <task-id> --plan <slug>`, stream);
-}
-
-function takeTaskValue(args: string[], index: number, flag: string): string {
-  const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${flag}`);
-    process.exit(2);
-  }
-  return value;
-}
-
-function exitForTaskError(error: unknown): never {
-  console.error(error instanceof Error ? error.message : String(error));
-  if (error instanceof TaskUsageError) process.exit(2);
-  process.exit(1);
-}
-
-function taskCommand(args: string[]): void {
-  const [subcommand, ...rest] = args;
-  if (subcommand === undefined || isHelpArg(subcommand)) {
-    printTaskUsage('stdout');
-    return;
-  }
-
-  try {
-    if (subcommand === 'new') {
-      const title = requireArg(rest, 'title');
-      let priority: string | undefined;
-      let plan: string | undefined;
-      for (let i = 1; i < rest.length; i += 1) {
-        const flag = rest[i];
-        switch (flag) {
-          case '--priority':
-            priority = takeTaskValue(rest, i, flag);
-            i += 1;
-            break;
-          case '--plan':
-            plan = takeTaskValue(rest, i, flag);
-            i += 1;
-            break;
-          default:
-            console.error(`Unknown option for task new: ${flag}`);
-            printTaskUsage();
-            process.exit(2);
-        }
-      }
-      const task = createTask(title, { priority, plan }, process.cwd());
-      console.log(`Created task ${task.id}: ${task.title}`);
-      return;
-    }
-
-    if (subcommand === 'list') {
-      let json = false;
-      let status: string | undefined;
-      let priority: string | undefined;
-      let plan: string | undefined;
-      for (let i = 0; i < rest.length; i += 1) {
-        const flag = rest[i];
-        switch (flag) {
-          case '--json':
-            json = true;
-            break;
-          case '--status':
-            status = takeTaskValue(rest, i, flag);
-            i += 1;
-            break;
-          case '--priority':
-            priority = takeTaskValue(rest, i, flag);
-            i += 1;
-            break;
-          case '--plan':
-            plan = takeTaskValue(rest, i, flag);
-            i += 1;
-            break;
-          default:
-            console.error(`Unknown option for task list: ${flag}`);
-            printTaskUsage();
-            process.exit(2);
-        }
-      }
-      const tasks = listTasks({ status, priority, plan }, process.cwd());
-      if (json) console.log(JSON.stringify(tasks.map(taskToJson), null, 2));
-      else process.stdout.write(formatTaskTable(tasks));
-      return;
-    }
-
-    if (subcommand === 'show') {
-      const id = requireArg(rest, 'task-id');
-      if (rest.length > 1) {
-        console.error(`Unknown option for task show: ${rest[1]}`);
-        printTaskUsage();
-        process.exit(2);
-      }
-      process.stdout.write(formatTaskDetails(getTaskDetails(id, process.cwd())));
-      return;
-    }
-
-    if (subcommand === 'claim' || subcommand === 'start' || subcommand === 'complete' || subcommand === 'cancel') {
-      const id = requireArg(rest, 'task-id');
-      if (rest.length > 1) {
-        console.error(`Unknown option for task ${subcommand}: ${rest[1]}`);
-        printTaskUsage();
-        process.exit(2);
-      }
-      const nextStatus: TaskStatus = subcommand === 'complete' ? 'done' : subcommand === 'cancel' ? 'cancelled' : 'in-progress';
-      const task = transitionTask(id, nextStatus, {}, process.cwd());
-      console.log(`${task.id} is now ${task.status}`);
-      return;
-    }
-
-    if (subcommand === 'block') {
-      const id = requireArg(rest, 'task-id');
-      let reason: string | undefined;
-      for (let i = 1; i < rest.length; i += 1) {
-        const flag = rest[i];
-        if (flag === '--reason') {
-          reason = takeTaskValue(rest, i, flag);
-          i += 1;
-        } else {
-          console.error(`Unknown option for task block: ${flag}`);
-          printTaskUsage();
-          process.exit(2);
-        }
-      }
-      if (!reason) {
-        console.error('Missing required option: --reason <text>');
-        process.exit(2);
-      }
-      const task = transitionTask(id, 'blocked', { reason }, process.cwd());
-      console.log(`${task.id} is now ${task.status}`);
-      return;
-    }
-
-    if (subcommand === 'comment') {
-      const id = requireArg(rest, 'task-id');
-      const body = rest.slice(1).join(' ').trim();
-      if (!body) {
-        console.error('Missing required argument: comment');
-        process.exit(2);
-      }
-      addTaskComment(id, body, process.cwd());
-      console.log(`Added comment to ${id.toUpperCase()}`);
-      return;
-    }
-
-    if (subcommand === 'link') {
-      const id = requireArg(rest, 'task-id');
-      let plan: string | undefined;
-      for (let i = 1; i < rest.length; i += 1) {
-        const flag = rest[i];
-        if (flag === '--plan') {
-          plan = takeTaskValue(rest, i, flag);
-          i += 1;
-        } else {
-          console.error(`Unknown option for task link: ${flag}`);
-          printTaskUsage();
-          process.exit(2);
-        }
-      }
-      if (!plan) {
-        console.error('Missing required option: --plan <slug>');
-        process.exit(2);
-      }
-      const task = linkTaskPlan(id, plan, process.cwd());
-      console.log(`Linked ${task.id} to plan ${task.plan}`);
-      return;
-    }
-  } catch (error) {
-    exitForTaskError(error);
-  }
-
-  console.error(`Unknown task subcommand: ${subcommand}`);
-  printTaskUsage();
-  process.exit(2);
-}
-
-function runtimes(args: string[]): void {
-  const [subcommand, ...rest] = args;
-  if (subcommand === 'list') {
-    const json = rest.includes('--json');
-    const unknown = rest.find((arg) => arg !== '--json');
-    if (unknown) {
-      console.error(`Unknown option for runtimes list: ${unknown}`);
-      console.error('Usage: osc runtimes list [--json]');
-      process.exit(2);
-    }
-    try {
-      const entries = loadRuntimeProfiles(process.cwd());
-      if (json) {
-        console.log(JSON.stringify(entries.map((entry) => ({
-          id: entry.profile.id,
-          source: entry.source,
-          path: entry.path ?? null,
-          lane: entry.profile.lane,
-          status: entry.profile.status,
-          displayName: entry.profile.displayName,
-        })), null, 2));
-      } else {
-        for (const entry of entries) {
-          console.log(`${entry.profile.id}\t${entry.source}\t${entry.profile.lane}\t${entry.profile.status}\t${entry.profile.displayName}`);
-        }
-      }
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-    return;
-  }
-  if (subcommand === 'show') {
-    const [id] = rest;
-    if (!id) {
-      console.error('Missing required argument: runtime id');
-      process.exit(2);
-    }
-    let resolved: ReturnType<typeof resolveRuntimeProfile>;
-    try {
-      resolved = resolveRuntimeProfile(process.cwd(), id);
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-    if (!resolved) {
-      console.error(`Unknown runtime profile: ${id}`);
-      process.exit(2);
-    }
-    console.log(JSON.stringify({ ...resolved.profile, source: resolved.source, path: resolved.path ?? null }, null, 2));
-    return;
-  }
-  console.error('Usage: osc runtimes list [--json] | osc runtimes show <id>');
-  process.exit(2);
-}
-
-interface WebDashboardOptions {
-  mode: 'web' | 'serve';
-  out?: string;
-  port?: number;
-  open: boolean;
-}
-
-function printWebDashboardUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc dashboard --web [--out <path>] | osc dashboard --serve [--port <port>] [--open]', stream);
-}
-
-function takeWebDashboardValue(args: string[], index: number, flag: string): string {
-  const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${flag}`);
-    printWebDashboardUsage();
-    process.exit(2);
-  }
-  return value;
-}
-
-function parseWebDashboardOptions(args: string[]): WebDashboardOptions {
-  let mode: 'web' | 'serve' | undefined;
-  let out: string | undefined;
-  let port: number | undefined;
-  let open = false;
-
-  for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--web':
-        if (mode && mode !== 'web') {
-          console.error('Choose either --web or --serve, not both.');
-          printWebDashboardUsage();
-          process.exit(2);
-        }
-        mode = 'web';
-        break;
-      case '--serve':
-        if (mode && mode !== 'serve') {
-          console.error('Choose either --web or --serve, not both.');
-          printWebDashboardUsage();
-          process.exit(2);
-        }
-        mode = 'serve';
-        break;
-      case '--out':
-        out = takeWebDashboardValue(args, i, flag);
-        i += 1;
-        break;
-      case '--port': {
-        const raw = takeWebDashboardValue(args, i, flag);
-        const parsed = Number.parseInt(raw, 10);
-        if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
-          console.error(`Invalid value for --port: ${raw}. Expected a port between 0 and 65535.`);
-          process.exit(2);
-        }
-        port = parsed;
-        i += 1;
-        break;
-      }
-      case '--open':
-        open = true;
-        break;
-      default:
-        console.error(`Unknown option for dashboard: ${flag}`);
-        printWebDashboardUsage();
-        process.exit(2);
-    }
-  }
-
-  if (!mode) {
-    console.error('Missing required option: --web or --serve');
-    printWebDashboardUsage();
-    process.exit(2);
-  }
-  if (mode === 'web' && port !== undefined) {
-    console.error('--port is only supported with --serve');
-    process.exit(2);
-  }
-  if (mode === 'web' && open) {
-    console.error('--open is only supported with --serve');
-    process.exit(2);
-  }
-  if (mode === 'serve' && out) {
-    console.error('--out is only supported with --web');
-    process.exit(2);
-  }
-
-  return { mode, out, port, open };
-}
-
-function isWebDashboardInvocation(args: string[]): boolean {
-  return args.some((arg) => ['--web', '--serve', '--out', '--port', '--open'].includes(arg));
-}
-
-async function webDashboardCommand(args: string[]): Promise<void> {
-  if (args.length === 0 || isHelpArg(args[0])) {
-    printWebDashboardUsage('stdout');
-    return;
-  }
-  const options = parseWebDashboardOptions(args);
-  try {
-    if (options.mode === 'web') {
-      const result = writeWebDashboard({ root: process.cwd(), out: options.out });
-      const relativePath = relative(process.cwd(), result.path);
-      console.log(`Generated web dashboard: ${relativePath.startsWith('..') ? result.path : relativePath}`);
-      console.log(`Bytes: ${result.bytes}`);
-      return;
-    }
-
-    const handle = await serveDashboard({ root: process.cwd(), port: options.port });
-    console.log(`Serving Open Scaffold dashboard at ${handle.url}`);
-    if (options.open) openDashboardUrl(handle.url);
-    process.once('SIGINT', () => {
-      handle.close()
-        .then(() => process.exit(0))
-        .catch(() => process.exit(1));
-    });
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  }
-}
-
-function printCockpitUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage(`Usage: osc cockpit config
-  osc cockpit test [--dry-run]
-  osc cockpit post --event <${COCKPIT_EVENT_TYPES.join('|')}> [--message <text>] [--run-id <id>] [--plan <slug>] [--task-id <id>] [--pr <url>] [--evidence-path <path>] [--dry-run]`, stream);
-}
-
-function takeCockpitValue(args: string[], index: number, flag: string): string {
-  const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
-    throw new CockpitUsageError(`Missing value for ${flag}`);
-  }
-  return value;
-}
-
-function parseCockpitPostOptions(args: string[]): CockpitPostOptions {
-  let event: CockpitEventType | undefined;
-  let message: string | undefined;
-  let runId: string | undefined;
-  let planSlug: string | undefined;
-  let taskId: string | undefined;
-  let pr: string | undefined;
-  let evidencePath: string | undefined;
-  let dryRun = false;
-
-  for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--event':
-        event = parseChoice(takeCockpitValue(args, i, flag), COCKPIT_EVENT_TYPES, flag) as CockpitEventType;
-        i += 1;
-        break;
-      case '--message':
-        message = takeCockpitValue(args, i, flag);
-        i += 1;
-        break;
-      case '--run-id':
-        runId = takeCockpitValue(args, i, flag);
-        i += 1;
-        break;
-      case '--plan':
-        planSlug = takeCockpitValue(args, i, flag);
-        i += 1;
-        break;
-      case '--task-id':
-        taskId = takeCockpitValue(args, i, flag);
-        i += 1;
-        break;
-      case '--pr':
-        pr = takeCockpitValue(args, i, flag);
-        i += 1;
-        break;
-      case '--evidence-path':
-        evidencePath = takeCockpitValue(args, i, flag);
-        i += 1;
-        break;
-      case '--dry-run':
-        dryRun = true;
-        break;
-      default:
-        throw new CockpitUsageError(`Unknown option for cockpit post: ${flag}`);
-    }
-  }
-  if (!event) throw new CockpitUsageError(`Missing required option: --event <${COCKPIT_EVENT_TYPES.join('|')}>`);
-  return { event, message, runId, planSlug, taskId, pr, evidencePath, dryRun };
-}
-
-function parseCockpitTestOptions(args: string[]): { dryRun: boolean } {
-  let dryRun = false;
-  for (const arg of args) {
-    if (arg === '--dry-run') dryRun = true;
-    else throw new CockpitUsageError(`Unknown option for cockpit test: ${arg}`);
-  }
-  return { dryRun };
+    console.log('Note: this validates local loop structure only; it does not execute attempts, rank models, certify compliance, or approve release.');
+  } else die('Usage: osc evolve init|record|compare|analyze|check');
 }
 
 async function cockpitCommand(args: string[]): Promise<void> {
-  const [subcommand, ...rest] = args;
-  if (subcommand === undefined || isHelpArg(subcommand)) {
-    printCockpitUsage('stdout');
-    return;
-  }
-
+  const sub = args[0] ?? die('Usage: osc cockpit config|test|post');
   try {
-    if (subcommand === 'config') {
-      if (rest.length > 0) throw new CockpitUsageError(`Unknown option for cockpit config: ${rest[0]}`);
-      process.stdout.write(formatCockpitConfig(loadCockpitConfig(process.cwd())));
-      return;
-    }
-
-    if (subcommand === 'test') {
-      const options = parseCockpitTestOptions(rest);
-      const summary = await postCockpitEvent({ event: 'status', message: 'Open Scaffold cockpit test message.', dryRun: options.dryRun, testMode: true }, process.cwd());
-      process.stdout.write(formatCockpitDispatchSummary(summary));
+    if (isHelpArg(sub)) { console.log(`Usage: osc cockpit config\n  osc cockpit test [--dry-run]\n  osc cockpit post --event <${COCKPIT_EVENT_TYPES.join('|')}> [--message <text>] [--run-id <id>] [--plan <slug>] [--task-id <id>] [--pr <url>] [--evidence-path <path>] [--dry-run]`); return; }
+    if (sub === 'config') console.log(formatCockpitConfig(loadCockpitConfig(process.cwd())));
+    else if (sub === 'test') {
+      const summary = await postCockpitEvent({ event: 'status', message: 'Open Scaffold cockpit test message.', dryRun: has(args, '--dry-run'), testMode: true }, process.cwd());
+      console.log(formatCockpitDispatchSummary(summary));
       if (hasCockpitDispatchFailures(summary)) process.exit(1);
-      return;
-    }
-
-    if (subcommand === 'post') {
-      const options = parseCockpitPostOptions(rest);
+    } else if (sub === 'post') {
+      const event = choice(requireValue(args, '--event'), COCKPIT_EVENT_TYPES, '--event') as CockpitEventType;
+      const options: CockpitPostOptions = { event, message: value(args, '--message'), runId: value(args, '--run-id'), planSlug: value(args, '--plan'), taskId: value(args, '--task-id'), pr: value(args, '--pr'), evidencePath: value(args, '--evidence-path'), dryRun: has(args, '--dry-run') };
       const summary = await postCockpitEvent(options, process.cwd());
-      process.stdout.write(formatCockpitDispatchSummary(summary));
+      console.log(formatCockpitDispatchSummary(summary));
       if (hasCockpitDispatchFailures(summary)) process.exit(1);
-      return;
-    }
-  } catch (error) {
-    if (error instanceof CockpitUsageError) {
-      console.error(error.message);
-      printCockpitUsage();
-      process.exit(2);
-    }
-    if (error instanceof CockpitConfigError) {
-      console.error(error.message);
-      process.exit(1);
-    }
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  }
-
-  console.error(`Unknown cockpit subcommand: ${subcommand}`);
-  printCockpitUsage();
-  process.exit(2);
-}
-
-
-function takeNamedValue(args: string[], index: number, flag: string, usage: () => void): string {
-  const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
-    console.error(`Missing value for ${flag}`);
-    usage();
-    process.exit(2);
-  }
-  return value;
-}
-
-function printFirstRunUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc first-run [--non-interactive --slug <slug> --mission <text> --goal <text>]', stream);
-}
-
-async function firstRunCommand(args: string[]): Promise<void> {
-  if (isHelpArg(args[0])) {
-    printFirstRunUsage('stdout');
-    return;
-  }
-  let nonInteractive = false;
-  let slug: string | undefined;
-  let mission: string | undefined;
-  let goal: string | undefined;
-  for (let i = 0; i < args.length; i += 1) {
-    const flag = args[i];
-    switch (flag) {
-      case '--non-interactive':
-        nonInteractive = true;
-        break;
-      case '--slug':
-        slug = takeNamedValue(args, i, flag, printFirstRunUsage);
-        i += 1;
-        break;
-      case '--mission':
-        mission = takeNamedValue(args, i, flag, printFirstRunUsage);
-        i += 1;
-        break;
-      case '--goal':
-        goal = takeNamedValue(args, i, flag, printFirstRunUsage);
-        i += 1;
-        break;
-      default:
-        console.error(`Unknown option for first-run: ${flag}`);
-        printFirstRunUsage();
-        process.exit(2);
-    }
-  }
-  if (nonInteractive && (!slug || !mission || !goal)) {
-    console.error('first-run --non-interactive requires --slug, --mission, and --goal.');
-    printFirstRunUsage();
-    process.exit(2);
-  }
-  try {
-    const options = nonInteractive
-      ? { slug: slug!, mission: mission!, goal: goal!, nonInteractive: true }
-      : await askInteractiveFirstRun();
-    process.stdout.write(formatFirstRunResult(runFirstRun(options, process.cwd())));
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  }
-}
-
-function printPrUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc pr check <plan-slug> [--format <markdown|json>] [--online-github]', stream);
-}
-
-function prCommand(args: string[]): void {
-  const [subcommand, ...rest] = args;
-  if (subcommand === undefined || isHelpArg(subcommand)) {
-    printPrUsage('stdout');
-    return;
-  }
-  if (subcommand !== 'check') {
-    console.error(`Unknown pr subcommand: ${subcommand}`);
-    printPrUsage();
-    process.exit(2);
-  }
-  const slug = requireArg(rest, 'plan-slug');
-  let format: 'markdown' | 'json' = 'markdown';
-  let onlineGithub = false;
-  for (let i = 1; i < rest.length; i += 1) {
-    const flag = rest[i];
-    switch (flag) {
-      case '--format':
-        format = parseChoice(takeNamedValue(rest, i, flag, printPrUsage), ['markdown', 'json'] as const, '--format');
-        i += 1;
-        break;
-      case '--online-github':
-      case '--github-online':
-        onlineGithub = true;
-        break;
-      default:
-        console.error(`Unknown option for pr check: ${flag}`);
-        printPrUsage();
-        process.exit(2);
-    }
-  }
-  try {
-    const report = computePrCheck(slug, { root: process.cwd(), onlineGithub });
-    if (format === 'json') console.log(JSON.stringify(report, null, 2));
-    else console.log(renderPrCheckMarkdown(report));
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  }
-}
-
-function printSchemasUsage(stream: 'stdout' | 'stderr' = 'stderr'): void {
-  printUsage('Usage: osc schemas list [--json] | osc schemas show <schema-id>', stream);
+    } else die('Usage: osc cockpit config|test|post');
+  } catch (error) { if (error instanceof CockpitUsageError || error instanceof CockpitConfigError) die(error.message); throw error; }
 }
 
 function schemasCommand(args: string[]): void {
-  const [subcommand, ...rest] = args;
-  if (subcommand === undefined || isHelpArg(subcommand)) {
-    printSchemasUsage('stdout');
-    return;
+  if (args[0] === 'list') {
+    if (has(args, '--json')) console.log(JSON.stringify(SCHEMA_REGISTRY, null, 2));
+    else console.log(renderSchemaList());
   }
-  if (subcommand === 'list') {
-    let json = false;
-    for (const flag of rest) {
-      if (flag === '--json') json = true;
-      else {
-        console.error(`Unknown option for schemas list: ${flag}`);
-        printSchemasUsage();
-        process.exit(2);
-      }
-    }
-    if (json) console.log(JSON.stringify(SCHEMA_REGISTRY, null, 2));
-    else process.stdout.write(renderSchemaList());
-    return;
+  else if (args[0] === 'show') console.log(renderSchemaDetail(schemaById(args[1] ?? die('Usage: osc schemas show <schema-id>')) ?? (() => die('Unknown schema id'))()));
+  else die('Usage: osc schemas list | osc schemas show <schema-id>');
+}
+
+function doctorCommand(args: string[]): void {
+  if (isHelpArg(args[0])) { console.log('Usage: osc doctor --check secret-scan'); return; }
+  validateOptions(args, ['--check'], [], 'doctor');
+  const check = value(args, '--check');
+  if (check && check !== 'secret-scan') die(`Unknown doctor check: ${check}`, 2);
+  const findings = scanPublicFilesForSecrets(process.cwd());
+  if (findings.length === 0) { console.log('PASS secret-scan: no obvious token/webhook strings found.'); return; }
+  console.log(`FAIL secret-scan: ${findings.length} potential secret(s) found.`);
+  for (const finding of findings) console.log(`- ${finding.path}:${finding.line}: ${finding.detail}`);
+  process.exit(1);
+}
+function evalCommand(args: string[]): void {
+  const sub = args[0];
+  if (sub === 'import' || sub === 'check') removed(`eval ${sub}`);
+  if (sub !== 'init') die('Usage: osc eval init <plan-path> [--out <path>]', 2);
+  const source = args[1] ?? die('Usage: osc eval init <plan-path> [--out <path>]', 2);
+  const sourcePath = resolve(source);
+  const root = findRootWithPlans(dirname(sourcePath)) ?? process.cwd();
+  const relSource = relative(root, sourcePath).split('\\').join('/');
+  const isPlanFile = /^\.osc\/plans\/(active|backlog|blocked|done)\/[^/]+\.md$/.test(relSource)
+    && !/-amendment-\d+\.md$/.test(relSource);
+  if (!sourcePath.endsWith('.md') || !existsSync(sourcePath) || !statSync(sourcePath).isFile() || !isPlanFile) {
+    die('osc eval init only accepts a plan markdown file under .osc/plans/<stage>/; run-packet evaluation is repositioned outside the reduced maintained CLI.', 2);
   }
-  if (subcommand === 'show') {
-    const id = requireArg(rest, 'schema-id');
-    if (rest.length > 1) {
-      console.error(`Unknown option for schemas show: ${rest[1]}`);
-      printSchemasUsage();
-      process.exit(2);
+  const plan = parsePlanFile(sourcePath);
+  const now = new Date().toISOString();
+  const envelope = {
+    schema: 'open-scaffold.evaluation.v1',
+    evaluation_id: `${plan.slug}-evaluation`,
+    created_at: now,
+    subject: {
+      source: 'plan',
+      plan: relative(root, sourcePath),
+      plan_slug: plan.slug,
+      task_id: null,
+      run_id: null,
+      run_packet: null,
+    },
+    acceptance_criteria: plan.acceptanceCriteria.map((text, index) => ({
+      id: `AC${index + 1}`,
+      text,
+      status: 'not_evaluated',
+      evaluator: { kind: 'human', name: null, ref: null },
+      evidence: [],
+      rationale: 'TODO: evaluate this criterion with concrete evidence.',
+    })),
+    decision: { status: 'blocked', approver: 'human', rationale: 'TODO: record the close decision after evaluation.' },
+    improvement: { route: 'retry_run', target: null, carried_forward: [], do_not_assume: ['This scaffolded evaluation is not approval evidence until filled.'] },
+    boundary: { runtime_spawning: false, model_ranking: false, correctness_certification: false },
+  };
+  const out = value(args, '--out') ?? value(args, '--output');
+  const json = `${JSON.stringify(envelope, null, 2)}\n`;
+  if (out) { writeFileSync(resolve(out), json); console.log(`Wrote evaluation envelope: ${resolve(out)}`); }
+  else process.stdout.write(json);
+}
+
+function runtimesCommand(args: string[]): void {
+  const [sub, ...rest] = args;
+  try {
+    if (sub === 'list') {
+      const json = rest.includes('--json');
+      const unknown = rest.find((arg) => arg !== '--json');
+      if (unknown) die(`Unknown option for runtimes list: ${unknown}`, 2);
+      const entries = loadRuntimeProfiles(process.cwd());
+      if (json) console.log(JSON.stringify(entries.map((entry) => ({ id: entry.profile.id, source: entry.source, path: entry.path ?? null, lane: entry.profile.lane, status: entry.profile.status, displayName: entry.profile.displayName })), null, 2));
+      else for (const entry of entries) console.log(`${entry.profile.id}\t${entry.source}\t${entry.profile.lane}\t${entry.profile.status}\t${entry.profile.displayName}`);
+      return;
     }
-    const schema = schemaById(id);
-    if (!schema) {
-      console.error(`Unknown schema id: ${id}`);
-      process.exit(2);
+    if (sub === 'show') {
+      const id = requiredArg(rest, 'runtime id');
+      const resolved = resolveRuntimeProfile(process.cwd(), id);
+      if (!resolved) die(`Unknown runtime profile: ${id}`, 2);
+      console.log(JSON.stringify({ ...resolved.profile, source: resolved.source, path: resolved.path ?? null }, null, 2));
+      return;
     }
-    process.stdout.write(renderSchemaDetail(schema));
-    return;
+  } catch (error) {
+    if (error instanceof Error) die(error.message, 1);
+    throw error;
   }
-  console.error(`Unknown schemas subcommand: ${subcommand}`);
-  printSchemasUsage();
-  process.exit(2);
+  die('Usage: osc runtimes list [--json] | osc runtimes show <id>', 2);
+}
+
+function removed(command: string): never {
+  die(`osc ${command} was removed/repositioned by the framework cleanup. See docs/COMMAND_MATURITY.md for shipped migration notes.`, 2);
 }
 
 async function main(): Promise<void> {
-  const [command, ...args] = process.argv.slice(2);
-  switch (command) {
-    case undefined:
-    case '-h':
-    case '--help':
-    case 'help':
-      printHelp();
-      return;
-    case '-v':
-    case '--version':
-    case 'version':
-      console.log(packageVersion());
-      return;
-    case 'init':
-      init(args);
-      return;
-    case 'first-run':
-      await firstRunCommand(args);
-      return;
-    case 'status':
-      await status(args);
-      return;
-    case 'dashboard':
-      if (isWebDashboardInvocation(args)) {
-        await webDashboardCommand(args);
-      } else {
-        await dashboardCommand(args);
+  const [command = 'help', ...args] = process.argv.slice(2);
+  try {
+    switch (command) {
+      case '-h': case '--help': case 'help': console.log(help()); return;
+      case '-v': case '--version': case 'version': console.log(rootPackageVersion()); return;
+      case 'init': initCommand(args); return;
+      case 'first-run': await firstRunCommand(args); return;
+      case 'status': statusCommand(args); return;
+      case 'plan': planCommand(args); return;
+      case 'amend': lifecycleCommand('amend', args); return;
+      case 'close': lifecycleCommand('close', args); return;
+      case 'evidence': evidenceCommand(args); return;
+      case 'verify': verifyCommand(args); return;
+      case 'trace': traceCommand(args); return;
+      case 'start': startCommand(args); return;
+      case 'delegate': case 'run': case 'review': case 'ultrareview': artifactsCommand(command, args); return;
+      case 'adapter': adapterCommand(args); return;
+      case 'dispatch': dispatchCommand(args); return;
+      case 'compare': compareCommand(args); return;
+      case 'pr-summary': prSummaryCommand(args); return;
+      case 'pr': prCommand(args); return;
+      case 'audit': auditCommand(args); return;
+      case 'evolve': evolveCommand(args); return;
+      case 'mcp': process.exitCode = await runMcpCommand(args); return;
+      case 'cockpit': await cockpitCommand(args); return;
+      case 'schemas': schemasCommand(args); return;
+      case 'doctor': doctorCommand(args); return;
+      case 'runtimes': runtimesCommand(args); return;
+      case 'eval': evalCommand(args); return;
+      case 'task': case 'metrics': case 'study': case 'ab': case 'dashboard': case 'work': removed(command);
+      default: {
+        die(`Unknown command: ${command}\n${help()}`);
       }
-      return;
-    case 'task':
-      taskCommand(args);
-      return;
-    case 'plan':
-      await planCommand(args);
-      return;
-    case 'amend':
-      amendCommand(args);
-      return;
-    case 'delegate':
-    case 'run':
-      createArtifacts(args, command);
-      return;
-    case 'adapter':
-      adapterCommand(args);
-      return;
-    case 'dispatch':
-      dispatchCommand(args);
-      return;
-    case 'work':
-      workCommand(args);
-      return;
-    case 'compare':
-      compareCommand(args);
-      return;
-    case 'trace':
-      traceCommand(args);
-      return;
-    case 'review':
-    case 'ultrareview':
-      createArtifacts(args, command);
-      return;
-    case 'eval':
-      evalCommand(args);
-      return;
-    case 'audit':
-      auditCommand(args);
-      return;
-    case 'evolve':
-      evolutionCommand(args);
-      return;
-    case 'mcp': {
-      const exitCode = await runMcpCommand(args, process.cwd());
-      if (exitCode !== 0) process.exit(exitCode);
-      return;
     }
-    case 'metrics':
-      metricsCommand(args);
-      return;
-    case 'study':
-      studyCommand(args);
-      return;
-    case 'pr-summary':
-      prSummaryCommand(args);
-      return;
-    case 'pr':
-      prCommand(args);
-      return;
-    case 'ab':
-      abCommand(args);
-      return;
-    case 'cockpit':
-      await cockpitCommand(args);
-      return;
-    case 'evidence':
-      evidenceCommand(args);
-      return;
-    case 'close':
-      closeCommand(args);
-      return;
-    case 'start':
-      startCommand(args);
-      return;
-    case 'verify':
-      verifyCommand(args);
-      return;
-    case 'doctor':
-      doctorCommand(args);
-      return;
-    case 'schemas':
-      schemasCommand(args);
-      return;
-    case 'runtimes':
-      runtimes(args);
-      return;
-    default:
-      console.error(`Unknown command: ${command}`);
-      printHelp();
-      process.exit(2);
+  } catch (error) {
+    if (error instanceof Error) die(error.message, 1);
+    throw error;
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
-});
+main();

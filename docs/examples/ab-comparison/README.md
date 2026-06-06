@@ -1,6 +1,6 @@
 # A/B Comparison — Pilot Packet
 
-> **No data has been collected. This packet proves nothing about outcomes.**
+> **Historical/repositioned packet. No data has been collected. This packet proves nothing about outcomes.**
 > It is a *pre-registered measurement instrument* — the templates an adopting
 > team copies to run the controlled comparison described in
 > [`docs/AB_COMPARISON_PROTOCOL.md`](../../AB_COMPARISON_PROTOCOL.md) on their own

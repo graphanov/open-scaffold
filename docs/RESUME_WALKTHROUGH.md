@@ -1,10 +1,12 @@
 # Zero-Context Resume Walkthrough
 
+Status: historical/repositioned walkthrough after the framework cleanup. The durable resume concept remains valid through `osc status`, `osc trace`, run packets, evidence notes, and plans, but the previous consolidated resume composer was removed from maintained source.
+
 This walkthrough shows how a fresh AI agent, or its solo-developer operator, can resume bounded work straight from the repo after total chat-context loss — no re-explaining needed.
 
-The example uses the committed mid-flight fixture at `examples/resume-demo/`. The command output below is taken from that fixture with the local CLI build.
+The example uses the committed mid-flight fixture at `examples/resume-demo/`. The command output below is historical fixture output from an earlier local CLI build.
 
-> **Disclaimer:** The consolidated resume summary shown at the end is reconstructed by test tooling (`src/resume.ts` + `tests/resume-snapshot.test.ts`). It is not emitted by a shipped stable command today, and Open Scaffold core still does not spawn an agent.
+> **Disclaimer:** The consolidated resume summary shown at the end was reconstructed by retired test tooling. It is not emitted by a shipped stable command today, and Open Scaffold core still does not spawn an agent.
 
 ---
 
@@ -150,6 +152,5 @@ No chat history. No re-explaining. The repo is the context.
 
 - Fixture: [`examples/resume-demo/`](../examples/resume-demo/)
 - Golden file: [`examples/resume-demo/expected-resume-summary.json`](../examples/resume-demo/expected-resume-summary.json)
-- Resume composer (test-only): [`src/resume.ts`](../src/resume.ts)
-- Snapshot test: [`tests/resume-snapshot.test.ts`](../tests/resume-snapshot.test.ts)
+- Historical/repositioned: the test-only resume composer and snapshot test were removed from maintained source during the framework cleanup; use `osc trace`, run packets, and evidence notes for current handover.
 - Front door: [`docs/START_HERE.md`](START_HERE.md)

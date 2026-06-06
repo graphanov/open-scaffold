@@ -1,5 +1,7 @@
 # Local Tasks
 
+Status: historical/repositioned design note. `osc task` was removed from the reduced maintained CLI during the framework cleanup; the command examples below are retained to explain the retired local-task bridge and are not live current-command guidance. Use `.osc/plans/` for durable work and GitHub Issues or another shared tracker for team queues.
+
 `osc task` is the optional local task bridge for solo developers and small teams that do not want to wire GitHub Issues, Linear, Jira, or an external Kanban board on day one.
 
 It is intentionally small:

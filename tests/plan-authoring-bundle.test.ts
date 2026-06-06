@@ -75,6 +75,19 @@ describe('plan authoring templates', () => {
     expect(missing.stderr).toContain("Template not found: custom-missing");
   });
 
+  it('rejects unknown plan creation flags before writing durable plan state', () => {
+    const target = initializedScaffold();
+
+    const result = spawnSync(tsx, [cli, 'plan', 'new', '011-typo', '--stage', 'active', '--stgae', 'backlog'], {
+      cwd: target,
+      encoding: 'utf8',
+    });
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('Unknown option for plan new: --stgae');
+    expect(existsSync(join(target, '.osc/plans/active/011-typo.md'))).toBe(false);
+  });
+
   it('uses project-local custom templates after validating their plan structure', () => {
     const target = initializedScaffold();
     writeFileSync(join(target, '.osc/plans/templates/custom-acme.md'), [

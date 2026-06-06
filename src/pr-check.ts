@@ -2,8 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { findScaffoldRoot, parseChecklist, parsePlanFile } from './scaffold.js';
 import { findEvidenceNote } from './evidence.js';
-import { evidenceApprovalStatus } from './metrics.js';
-import { computePrSummary, renderPrSummaryMarkdown, type PrSummaryReport } from './pr-summary.js';
+import { computePrSummary, evidenceApprovalStatus, renderPrSummaryMarkdown, type PrSummaryReport } from './pr-summary.js';
 
 export const PR_CHECK_SCHEMA = 'open-scaffold.pr_check.v1';
 export const STRUCTURAL_ONLY_WARNING = 'Structural-only warning: this checks plan/evidence/run/PR record shape. It does not prove semantic correctness, compliance, production readiness, approval, or that the implementation is good.';

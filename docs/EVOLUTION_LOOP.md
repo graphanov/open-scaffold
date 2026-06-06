@@ -109,28 +109,15 @@ The additional target matrix is deliberately narrow and diagnostic. It measures 
 
 The analysis command is a decision aid. It does not mutate loop files unless `--out` is supplied for a rendered report, and even then it writes only the requested report path. It does not spawn runtimes, rerun benchmarks, rank models, certify compliance, promote a frontier, or approve work.
 
-Import structured external scorer output into an evaluation envelope when a domain tool already did the judging:
+Historical/repositioned migration note: earlier builds exposed `osc eval import` and `osc evidence compact` for richer external scorer conversion and compact public-safe evidence bundles. Those helpers are outside the reduced maintained CLI after the framework cleanup. Current reduced CLI support is narrower:
 
 ```bash
-osc eval import .osc/runs/demo-run/run.json \
-  --adapter generic-ac-json-v1 \
-  --scorer docs/evidence/external-ac-score.json \
-  --out docs/evidence/demo-evaluation.json
+osc eval init .osc/plans/active/<plan>.md --out docs/evidence/<plan>-evaluation.json
+osc audit init .osc/plans/active/<plan>.md --artifact evidence docs/evidence/<external-score>.json --out docs/evidence/<plan>-audit.json
+osc audit check docs/evidence/<plan>-audit.json
 ```
 
-The generic adapter maps AC-result JSON (`passCount`, `totalAcs`, `acs[].id`, `name`, `pass`, `skipped`, `quality`, `detail`, `breakdown`, determinism, and composite score) into `open-scaffold.evaluation.v1`. It records scorer provenance and routes non-pass or skipped/probe-only criteria to retry/block instead of approval. Composite score and determinism are verification metadata, not acceptance approval. The import path does not run the scorer, call an API, rerun a benchmark, embed raw/private logs, or make Open Scaffold depend on any particular benchmark. Benchmark-specific converters belong in benchmark repos or optional integrations.
-
-Write compact evidence when a repeated loop has useful raw local forensics but the repo should promote only a concise public-safe summary and digest-backed manifest:
-
-```bash
-osc evidence compact .osc/evolution/demo-loop --out docs/evidence/demo-compact
-osc evidence compact .osc/runs/demo-run/run.json \
-  --evaluation docs/evidence/demo-evaluation.json \
-  --candidate-note docs/evidence/model-note.md \
-  --out docs/evidence/demo-run-compact
-```
-
-`osc evidence compact` writes `compact-evidence.md` and `compact-evidence.json` when `--out` is supplied. The summary keeps objective, run/attempt ids, evaluation status counts, failed criteria, verification commands, decision, and next recommendation visible. Raw logs, JSONL transcripts, private runtime state, and local absolute paths are not embedded; local files are represented as safe repo-relative labels plus SHA-256 digests when available. `--candidate-note` refs are marked `canonical=false` and do not rewrite `attempts.jsonl` or `frontier.json`.
+Use `osc eval init <plan-path>` to draft an acceptance-criteria envelope from a plan, then attach external scorer output as curated evidence/audit artifacts. If a project still needs the retired import or compact-evidence behavior, keep that converter in an optional integration or migration appendix rather than treating it as a live core command.
 
 `osc evolve` does not create a run, launch a runtime, call an LLM, publish benchmark rankings, certify compliance, approve a merge, or decide product taste. It does not make a model smarter. It only records and analyzes curated loop state so recoverability, control, handoff, governance, and efficiency can be inspected instead of assumed.
 
@@ -265,7 +252,7 @@ That makes OMX the first serious runtime-engine direction without making the cor
 1. `osc evolve init <plan-or-run> --out .osc/evolution/<loop_id>` creates the loop.
 2. `osc run <plan> --runtime codex --workflow plan` creates a run packet.
 3. `open-scaffold-runtime-omx .osc/runs/<run_id>/run.json` validates the Codex/OMX `$ralplan` handoff and writes receipt/evidence without spawning by default.
-4. `osc eval init/check` records acceptance-criteria evaluation when needed.
+4. `osc eval init <plan-path>` can scaffold an acceptance-criteria evaluation envelope when needed; richer eval checking is repositioned outside the reduced maintained CLI.
 5. `osc evolve record ... --receipt .osc/runs/<run_id>/dispatch-receipt.json --evidence .osc/runs/<run_id>/runtime-omx-evidence.md` appends the attempt.
 6. If the attempt is best so far, `--decision promote` updates `frontier.json`.
 7. The coordinator chooses: retry, create next slice, close, or block.

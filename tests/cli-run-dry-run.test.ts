@@ -253,4 +253,26 @@ describe('osc run --dry-run', () => {
     expect(result.stderr).toContain('Plan not found:');
     expect(existsSync(join(target, '.osc/runs'))).toBe(false);
   });
+
+  it('rejects unknown run binding flags before creating artifacts', () => {
+    const target = initializedScaffold();
+    const planPath = writePlan(target, '001-dry-run-demo', validPlan);
+
+    const result = spawnSync(tsx, [cli, 'run', planPath, '--runtim', 'codex'], { cwd: target, encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('Unknown option for run: --runtim');
+    expect(existsSync(join(target, '.osc/runs'))).toBe(false);
+  });
+
+  it('rejects missing run binding option values before creating artifacts', () => {
+    const target = initializedScaffold();
+    const planPath = writePlan(target, '001-dry-run-demo', validPlan);
+
+    const result = spawnSync(tsx, [cli, 'run', planPath, '--runtime'], { cwd: target, encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('Missing value for --runtime');
+    expect(existsSync(join(target, '.osc/runs'))).toBe(false);
+  });
 });

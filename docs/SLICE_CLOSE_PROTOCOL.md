@@ -236,11 +236,10 @@ The evaluation envelope is a record of judgment and routing, not an automatic cl
 The v1 CLI surface emits and checks JSON envelopes so the first implementation can stay dependency-light and deterministic:
 
 ```bash
-osc eval init <run-or-plan> [--out <path>]
-osc eval check <evaluation-path>
+osc eval init <plan-path> [--out <path>]
 ```
 
-`osc eval init` drafts the envelope from plan acceptance criteria or a run packet. `osc eval check` validates schema, criterion coverage, evidence/rationale presence, evaluator source, decision consistency, and correction routing. It does not run verification commands, judge domain correctness, benchmark models, certify compliance, approve release/merge, spawn runtimes, or anchor evidence externally.
+`osc eval init` drafts a lightweight envelope from plan acceptance criteria. The fuller `eval check` / run-packet evaluation path is repositioned outside the reduced maintained CLI until it has renewed protected-core evidence. The envelope does not run verification commands, judge domain correctness, benchmark models, certify compliance, approve release/merge, spawn runtimes, or anchor evidence externally.
 
 ## Audit envelope
 

@@ -1,14 +1,12 @@
 # Command maturity
 
-Open Scaffold commands are intentionally labeled by maturity so first-time users see the stable path before lab or advanced surfaces.
-
-The CLI registry is in `src/command-maturity.ts` and is rendered by:
+Status: historical/repositioned guidance after the framework cleanup. The previous command-maturity registry in `src/command-maturity.ts` and the `osc commands` / `osc commands --json` surfaces were removed from the reduced maintained CLI. Current command grouping is rendered by:
 
 ```bash
 osc help
-osc commands
-osc commands --json
 ```
+
+Open Scaffold commands should still be presented by maturity so first-time users see the stable path before lab, advanced, historical, or migration surfaces.
 
 ## Labels
 
@@ -41,3 +39,20 @@ osc close <slug> --message <text>
 ```
 
 Use `osc compare` as a first-read demo surface, not as an objective agent-ranking claim.
+
+## Removed / repositioned command migration notes
+
+Framework cleanup removed several lab, analytics, and convenience commands from the
+maintained CLI surface. Clean clones and npm installs should use this shipped page as
+the migration breadcrumb; run-local break/removal ledgers under `.osc/runs/` are
+evidence artifacts, not package documentation.
+
+| Removed or repositioned surface | Current route |
+|---|---|
+| `osc plan wizard`, `osc plan graph`, `osc plan stats` | Use explicit plan files, `osc plan new`, `osc plan validate`, `osc plan move`, and the `.osc/plans/` folder-as-status workflow. |
+| `osc evidence compact` | Use release/evidence notes, `osc evidence collect`, `osc trace`, and `osc verify --evidence-chain` for durable proof. |
+| `osc task ...` | Use GitHub Issues, Kanban, or another external task tracker, then bind work back to `.osc` plans and run packets. |
+| `osc eval import/check` | Use `osc eval init` only to scaffold a plan-based evaluation envelope; scorer import/check workflows are no longer a maintained live surface. |
+| `osc status --dashboard`, `osc dashboard` | Use `osc status`, cockpit events, PR comments, and evidence notes instead of local dashboard modes. |
+| `osc work` | Use `osc start` or `osc run --dry-run` to create explicit handoff/run packets; runtime execution remains adapter/orchestrator-owned. |
+| `osc metrics`, `osc study`, `osc ab`, broad `osc doctor` checks, resume helpers | Keep analysis, study design, and resume/handoff proof in docs/evidence until a roadmap item promotes a smaller maintained command again. |

@@ -10,7 +10,21 @@ import {
 } from './scaffold.js';
 import { resolvePlanValidationPath, validatePlanFile, type PlanValidationIssue } from './plan-validate.js';
 import { findEvidenceNote } from './evidence.js';
-import { evidenceApprovalStatus, type ApprovalStatus } from './metrics.js';
+
+
+export type ApprovalStatus = 'approved' | 'weak_approved' | 'rejected' | 'blocked' | 'unknown';
+
+export function evidenceApprovalStatus(text: string): ApprovalStatus {
+  if (!text.trim()) return 'unknown';
+  const explicit = text.match(/approval\.status\s*[:=]\s*(approved|weak_approved|rejected|blocked)\b/i);
+  if (explicit) return explicit[1].toLowerCase() as ApprovalStatus;
+  const ownerDecision = text.match(/owner decision\s*:\s*(approved|weak_approved|rejected|blocked)\b/i);
+  if (ownerDecision) return ownerDecision[1].toLowerCase() as ApprovalStatus;
+  const decision = text.match(/decision(?:\s+for\s+this\s+slice)?\s*:\s*(approved|weak_approved|rejected|blocked)\b/i);
+  if (decision) return decision[1].toLowerCase() as ApprovalStatus;
+  if (/\bweak approval\b|\bweak_approved\b/i.test(text)) return 'weak_approved';
+  return 'unknown';
+}
 
 export const PR_SUMMARY_SCHEMA = 'open-scaffold.pr_summary.v1';
 

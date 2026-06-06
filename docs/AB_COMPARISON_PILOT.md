@@ -1,6 +1,6 @@
 # A/B Comparison — Pilot Runbook
 
-> **Status: harness only. No data has been collected and no causal claim is
+> **Status: historical/repositioned harness only. No data has been collected and no causal claim is
 > made.** This runbook turns the text-only [`AB_COMPARISON_PROTOCOL.md`](AB_COMPARISON_PROTOCOL.md)
 > into ordered, runnable steps and points at the templates in
 > [`examples/ab-comparison/`](examples/ab-comparison/README.md). Following it
