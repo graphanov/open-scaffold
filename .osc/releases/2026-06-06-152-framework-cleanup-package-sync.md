@@ -2,7 +2,7 @@
 
 ## Summary
 
-Release-sync candidate for publishing the merged framework cleanup shrink as `open-scaffold@0.31.0`.
+Release-sync evidence for publishing the merged framework cleanup shrink as `open-scaffold@0.31.0`.
 
 The package-visible change is a narrowed/reduced Open Scaffold CLI/source surface after PR #183, with shipped migration breadcrumbs and preserved protected core behavior. This release remains pre-1.0 hardening: it does not claim runtime execution, model improvement, benchmark proof, compliance certification, production readiness, or a mature 1.0 contract.
 
@@ -12,7 +12,7 @@ The package-visible change is a narrowed/reduced Open Scaffold CLI/source surfac
 - Source plan: `.osc/plans/done/151-framework-cleanup-shrink.md`.
 - Source PR: https://github.com/graphanov/open-scaffold/pull/183.
 - Source closeout PR: https://github.com/graphanov/open-scaffold/pull/184.
-- Release-sync plan: `.osc/plans/active/152-framework-cleanup-package-sync.md`.
+- Release-sync plan: `.osc/plans/done/152-framework-cleanup-package-sync.md`.
 - Run ID / run packet: N/A for this scoped package/release sync.
 - Branch / PR: `release/0.31.0-framework-cleanup-sync` / https://github.com/graphanov/open-scaffold/pull/185.
 
@@ -38,26 +38,24 @@ Candidate gates before PR-ready:
 - [x] `npm run osc -- doctor --check secret-scan` — PASS: `PASS secret-scan: no obvious token/webhook strings found.`
 - [x] `npm pack --dry-run --json` payload inspection after cleaning ignored local build residue — PASS for `open-scaffold@0.31.0`; entry count 198; no stale removed-command `dist/*` modules; no Python `__pycache__` files.
 - [x] `npm publish --dry-run --tag latest` — PASS for `open-scaffold@0.31.0` with tag `latest`.
-- [ ] Release candidate PR CI and review/thread gate — CI green on initial PR head; Codex requested the actual PR URL in this evidence note, so follow-up review remains pending.
+- [x] Release candidate PR CI and review/thread gate — PASS: PR #185 CI green; latest-head Codex clean at `2026-06-06T15:18:32Z`; review threads unresolved count `0` after fixed/outdated thread resolution.
 
 Post-merge/publication gates after owner-approved follow-through:
 
-- [ ] Sync clean `main` after release PR merge.
-- [ ] Main CI for release commit.
-- [ ] Post-merge local publish gates.
-- [ ] Trusted publishing workflow publishes `open-scaffold@0.31.0` with dist-tag `latest`.
-- [ ] `npm view open-scaffold version dist-tags --json --prefer-online` reports `0.31.0`, `latest: 0.31.0`.
-- [ ] Fresh isolated-cache `npx --yes open-scaffold@latest --help` from an external temp directory passes.
-- [ ] Fresh isolated-cache smoke proves removed/repositioned command guidance from the published package.
-- [ ] GitHub Release `v0.31.0` exists, targets the release commit, and is marked Latest.
-- [ ] This plan is closed to `done` with final public proof.
+- [x] Sync clean `main` after release PR merge — PASS: local `main` fast-forwarded to `origin/main` at `b50f2b272b302c5b12118912c47880046eeb33e3`.
+- [x] Main CI for release commit — PASS: https://github.com/graphanov/open-scaffold/actions/runs/27066136409.
+- [x] Post-merge local publish gates — PASS: `git diff --check`, `./verify.sh --strict`, `npm test -- --run`, `npm run build`, `npm run osc -- doctor --check secret-scan`, `npm pack --dry-run --json`, and `npm publish --dry-run --tag latest`.
+- [x] Trusted publishing workflow publishes `open-scaffold@0.31.0` with dist-tag `latest` — PASS: https://github.com/graphanov/open-scaffold/actions/runs/27066187879.
+- [x] `npm view open-scaffold version dist-tags --json --prefer-online` reports `0.31.0`, `latest: 0.31.0`.
+- [x] Fresh isolated-cache `npx --yes open-scaffold@latest --help` from an external temp directory passes.
+- [x] Fresh isolated-cache smoke proves removed/repositioned command guidance from the published package: `osc work --help` exits `2` and points to `docs/COMMAND_MATURITY.md`.
+- [x] GitHub Release `v0.31.0` exists, targets `b50f2b272b302c5b12118912c47880046eeb33e3`, and is marked Latest: https://github.com/graphanov/open-scaffold/releases/tag/v0.31.0.
+- [x] This plan is closed to `done` with final public proof.
 
 ## Outcome
 
-Pending. The release-sync branch prepares `open-scaffold@0.31.0`; npm publication and GitHub Release movement are not yet claimed until verified after PR merge and trusted publishing.
+Published and verified. `open-scaffold@0.31.0` is live on npm with dist-tag `latest`, fresh isolated-cache `npx open-scaffold@latest` passes, and GitHub Release `v0.31.0` is marked Latest at the release commit.
 
 ## Follow-up
 
-- Merge the release-sync PR only after CI/review gates pass.
-- Dispatch trusted publishing for `0.31.0` with npm tag `latest` after the release-sync commit lands on `main`.
-- Verify npm/latest, fresh `npx`, GitHub Release Latest, and close this plan to `done` after public proof.
+- None for this release-sync slice after closeout PR merge. Future package-visible changes still require separate owner-approved release follow-through.

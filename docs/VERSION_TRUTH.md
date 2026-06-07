@@ -5,8 +5,8 @@ This page is the canonical reconciliation between the current package version an
 ## Current line: `v0.31.x` (pre-1.0 hardening)
 
 - **Current `package.json` version:** `0.31.0`.
-- **npm latest:** `0.30.1` with dist-tag `latest` until the owner-approved `0.31.0` trusted publishing run completes; run `npm view open-scaffold version dist-tags --json` for live confirmation.
-- **GitHub Release latest:** `v0.30.1` is marked **Latest** until the `v0.31.0` GitHub Release follow-through completes.
+- **npm latest:** `0.31.0` with dist-tag `latest` after owner-approved trusted publishing; run `npm view open-scaffold version dist-tags --json` for live confirmation.
+- **GitHub Release latest:** `v0.31.0` is marked **Latest** after GitHub Release follow-through.
 - **Maturity:** pre-1.0 hardening. The core work-record protocol is usable, but the public product surface, runtime boundary, and adoption story are still moving. See [`docs/STABILITY.md`](STABILITY.md) for the full stable-vs-experimental boundary.
 
 Do not treat the repository version alone as proof of npm publication or GitHub Release movement. Verify the registry and release surfaces separately.
