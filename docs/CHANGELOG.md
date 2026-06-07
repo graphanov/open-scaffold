@@ -6,7 +6,7 @@ For live package truth, check npm. For live release truth, check GitHub Releases
 
 ## v0.31.0 — Framework cleanup shrink release
 
-Status: release candidate in repo until owner-approved trusted publishing and GitHub Release follow-through complete.
+Status: published to npm as `open-scaffold@0.31.0`; GitHub Release `v0.31.0` is Latest after owner-approved trusted publishing and release follow-through.
 
 Highlights:
 
@@ -20,12 +20,13 @@ Evidence:
 - Source plan: `.osc/plans/done/151-framework-cleanup-shrink.md`
 - Source PR: https://github.com/graphanov/open-scaffold/pull/183
 - Closeout PR: https://github.com/graphanov/open-scaffold/pull/184
-- Release-sync plan: `.osc/plans/active/152-framework-cleanup-package-sync.md`
+- Release-sync plan: `.osc/plans/done/152-framework-cleanup-package-sync.md`
+- Release-sync PR: https://github.com/graphanov/open-scaffold/pull/185
 - Release-sync evidence note: `.osc/releases/2026-06-06-152-framework-cleanup-package-sync.md`
 
 ## v0.30.1 — Evolution handoff packet release
 
-Status: published to npm as `open-scaffold@0.30.1`; GitHub Release `v0.30.1` is Latest after owner-approved trusted publishing and release follow-through.
+Status: published to npm as `open-scaffold@0.30.1`; GitHub Release `v0.30.1` was Latest after owner-approved trusted publishing and release follow-through, then was superseded by `v0.31.0`.
 
 Highlights:
 
@@ -43,7 +44,7 @@ Evidence:
 
 ## v0.30.0 — Blueprint security and adoption release
 
-Status: published to npm as `open-scaffold@0.30.0`; GitHub Release `v0.30.0` is Latest after owner-approved trusted publishing and release follow-through.
+Status: published to npm as `open-scaffold@0.30.0`; GitHub Release `v0.30.0` was Latest after owner-approved trusted publishing and release follow-through, then was superseded by `v0.30.1`.
 
 Highlights:
 
@@ -78,7 +79,7 @@ Evidence:
 
 ## v0.20.3 — Canonical section parser package sync
 
-Status: published to npm as `open-scaffold@0.20.3`; GitHub Release `v0.20.3` is Latest after owner-preapproved trusted publishing and release follow-through.
+Status: published to npm as `open-scaffold@0.20.3`; GitHub Release `v0.20.3` was Latest after owner-preapproved trusted publishing and release follow-through, then was superseded by `v0.20.4`.
 
 Highlights:
 
@@ -96,7 +97,7 @@ Evidence:
 
 ## v0.20.2 — Methodology and reviewer evidence package sync
 
-Status: published to npm as `open-scaffold@0.20.2`; GitHub Release `v0.20.2` is Latest after owner-approved trusted publishing and release follow-through.
+Status: published to npm as `open-scaffold@0.20.2`; GitHub Release `v0.20.2` was Latest after owner-approved trusted publishing and release follow-through, then was superseded by `v0.20.3`.
 
 Highlights:
 
