@@ -188,9 +188,11 @@ describe('proof comparison harness', () => {
 
     const remoteRef = manifest(root);
     const remoteManifest = JSON.parse(readFileSync(remoteRef, 'utf8')) as { metrics: Array<{ source_refs: string[] }> };
-    remoteManifest.metrics[0].source_refs = ['https://example.invalid/not-committed.json'];
-    writeFileSync(remoteRef, `${JSON.stringify(remoteManifest, null, 2)}\n`);
-    expect(validateProofManifestFile(remoteRef).failures.map((failure) => failure.code)).toContain('private-source-ref');
+    for (const privateRef of ['https://example.invalid/not-committed.json', '.osc/runs/run.json', '.osc-dev/local.json', '.omx/log.json', '.claude/transcript.md']) {
+      remoteManifest.metrics[0].source_refs = [privateRef];
+      writeFileSync(remoteRef, `${JSON.stringify(remoteManifest, null, 2)}\n`);
+      expect(validateProofManifestFile(remoteRef).failures.map((failure) => failure.code)).toContain('private-source-ref');
+    }
   });
 
   it('exposes prove compare and prove check through the CLI', () => {

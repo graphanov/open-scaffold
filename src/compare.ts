@@ -360,7 +360,7 @@ const PROOF_CATEGORIES: ProofCategory[] = ['quality', 'tokens', 'speed', 'evolut
 const proofStrings = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : [];
 const proofIssue = (level: 'fail' | 'warn', code: string, message: string, path?: string): ProofIssue => ({ level, code, message, path });
 const proofArm = (value: unknown, fallback: string) => { const raw = isRecord(value) ? value : {}; return { id: asString(raw.id)?.trim() || fallback, label: asString(raw.label)?.trim() || fallback, runtime: asString(raw.runtime) }; };
-const proofRefIsPrivate = (ref: string) => /^[a-z]+:\/\//i.test(ref) || isAbsolute(ref) || normalizeRelativePath(ref).startsWith('../') || ['.git/', '.osc/state/', '.osc/research/', '.hermes/', 'node_modules/'].some((prefix) => normalizeRelativePath(ref) === prefix.slice(0, -1) || normalizeRelativePath(ref).startsWith(prefix));
+const proofRefIsPrivate = (ref: string) => /^[a-z]+:\/\//i.test(ref) || isAbsolute(ref) || normalizeRelativePath(ref).startsWith('../') || ['.git/', '.claude/', '.clawhip/', '.omc/', '.omx/', '.osc-dev/', '.osc/state/', '.osc/research/', '.osc/runs/', '.osc/reviews/.tmp/', '.hermes/', 'node_modules/'].some((prefix) => normalizeRelativePath(ref) === prefix.slice(0, -1) || normalizeRelativePath(ref).startsWith(prefix));
 const proofRefExists = (manifestDir: string, ref: string) => existsSync(resolve(manifestDir, ref)) && statSync(resolve(manifestDir, ref)).isFile();
 function proofMetric(value: unknown, index: number, manifestDir: string, failures: ProofIssue[], warnings: ProofIssue[]): ProofMetric | null {
   const path = `metrics[${index}]`;
