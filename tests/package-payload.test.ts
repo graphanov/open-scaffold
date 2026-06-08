@@ -50,7 +50,7 @@ describe('npm package payload', () => {
     expect(forbidden).toEqual([]);
   }, 20_000);
 
-  it('ships compare-demo and resume-demo example fixtures in the published package', () => {
+  it('ships compare-demo, resume-demo, and proof-harness example fixtures in the published package', () => {
     const output = execFileSync('npm', ['pack', '--dry-run', '--json'], {
       cwd: repoRoot,
       encoding: 'utf8',
@@ -68,6 +68,11 @@ describe('npm package payload', () => {
     expect(paths).toContain('examples/attempt-compare/attempt-b/diff.patch');
     expect(paths).toContain('examples/attempt-compare/attempt-b/rationale.txt');
     expect(paths).toContain('examples/attempt-compare/attempt-b/transcript.md');
+
+    // proof harness fixture must ship so `npx open-scaffold prove compare ...` has an inspectable bounded result
+    expect(paths).toContain('examples/proof/scaffold-vs-naked-codex/manifest.json');
+    expect(paths).toContain('examples/proof/scaffold-vs-naked-codex/receipts/aggregate.json');
+    expect(paths).toContain('examples/proof/scaffold-vs-naked-codex/prompts/scaffolded-compact-prompt.md');
 
     // resume-demo fixture must ship so the zero-context-resume demo works from a fresh install
     if (existsSync(join(repoRoot, 'examples', 'resume-demo'))) {
@@ -113,6 +118,22 @@ describe('npm package payload', () => {
 
       expect(compareOutput).toContain('# Attempt comparison: attempt-a → attempt-b');
       expect(compareOutput).toContain('This command reads local files only. It does not spawn runtimes, promote a frontier, or approve work.');
+
+      const proofOutput = execFileSync('node', [
+        join(packageDir, 'dist/cli.js'),
+        'prove',
+        'compare',
+        '--format',
+        'markdown',
+        'examples/proof/scaffold-vs-naked-codex/manifest.json',
+      ], {
+        cwd: freshCwd,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      expect(proofOutput).toContain('Bounded proof verdict: PASS');
+      expect(proofOutput).toContain('usage.prompt_payload_bytes');
     } finally {
       rmSync(packDir, { recursive: true, force: true });
       rmSync(extractDir, { recursive: true, force: true });

@@ -1,0 +1,25 @@
+{
+  "action": "stop",
+  "reasons": [
+    "all_current_criteria_pass",
+    "acceptance_3_of_3_pass",
+    "plateau_improving_no_retry_needed",
+    "current_score_equals_best_score_0.94"
+  ],
+  "resume": {
+    "current": "attempt-c",
+    "frontier": "attempt-c",
+    "evaluation": "docs/evidence/attempt-c-evaluation.json"
+  },
+  "acceptance": {
+    "passed": 3,
+    "total": 3,
+    "remaining": []
+  },
+  "required_next_fields": [
+    "human_approval_or_closeout_decision",
+    "closeout_verification_evidence",
+    "next_slice_or_done_routing"
+  ],
+  "boundary_note": "This packet is handoff/decision support only; it does not spawn runtimes or execute the next attempt. It is not benchmark support, model ranking, correctness certification, or acceptance approval."
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "open-scaffold.proof-aggregate.v1",
+  "comparison_id": "scaffold-vs-naked-codex-2026-06-08",
+  "replicates_per_arm": 3,
+  "arms": {
+    "control": {
+      "prompt_bytes": 15225,
+      "median_codex_reported_total_tokens": 35380,
+      "median_wall_seconds": 11.087,
+      "median_quality_score": 5,
+      "quality_score_total": 5
+    },
+    "scaffolded": {
+      "prompt_bytes": 1308,
+      "median_codex_reported_total_tokens": 31635,
+      "median_wall_seconds": 10.469,
+      "median_quality_score": 5,
+      "quality_score_total": 5
+    }
+  },
+  "deltas": {
+    "prompt_payload_reduction_ratio": 11.639908,
+    "codex_total_token_reduction_ratio_median": 1.118382,
+    "wall_time_speedup_ratio_median": 1.059031,
+    "quality_score_delta_median": 0,
+    "quality_per_1k_codex_tokens_control": 0.141323,
+    "quality_per_1k_codex_tokens_scaffolded": 0.158053,
+    "evolution_frontier_accepted_criteria_delta": 1
+  }
+}

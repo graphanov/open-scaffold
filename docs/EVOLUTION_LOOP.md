@@ -107,6 +107,14 @@ The primary efficiency definition is: preserve the same required workflow-contro
 
 The additional target matrix is deliberately narrow and diagnostic. It measures report overhead surfaces such as full markdown to compact markdown, full JSON to controller-signal JSON, verbose score-sensitivity tables to compact acceptance lines, AC delta tables to remaining-failure summaries, and full criteria JSON to remaining-failure JSON. A target counts diagnostically when required controller fields are preserved and the compact surface is at least 1.5x smaller. Public-summary language should prefer strong targets and label marginal rows instead of headlining a raw `N/N` count. This is still not a product-wide efficiency proof.
 
+For a source-labeled scaffolded-vs-naked-Codex fixture that uses this compact controller signal as the scaffolded arm, run:
+
+```bash
+osc prove compare examples/proof/scaffold-vs-naked-codex/manifest.json --format markdown
+```
+
+That fixture reports quality, prompt-payload/token, speed, and evolution-loop metrics from committed receipts. It is bounded proof for one cold-resume decision task, not a universal model benchmark.
+
 The analysis command is a decision aid. It does not mutate loop files unless `--out` is supplied for a rendered report, and even then it writes only the requested report path. It does not spawn runtimes, rerun benchmarks, rank models, certify compliance, promote a frontier, or approve work.
 
 Historical/repositioned migration note: earlier builds exposed `osc eval import` and `osc evidence compact` for richer external scorer conversion and compact public-safe evidence bundles. Those helpers are outside the reduced maintained CLI after the framework cleanup. Current reduced CLI support is narrower:

@@ -38,7 +38,7 @@ osc verify --evidence-chain --plan <slug> --strict
 osc close <slug> --message <text>
 ```
 
-Use `osc compare` as a first-read demo surface, not as an objective agent-ranking claim.
+Use `osc compare` as a first-read demo surface, not as an objective agent-ranking claim. Use `osc prove compare` as a lab receipt comparator for bounded scaffolded-vs-control evidence; it must keep caveats and source refs visible.
 
 ## Removed / repositioned command migration notes
 
@@ -55,4 +55,4 @@ evidence artifacts, not package documentation.
 | `osc eval import/check` | Use `osc eval init` only to scaffold a plan-based evaluation envelope; scorer import/check workflows are no longer a maintained live surface. |
 | `osc status --dashboard`, `osc dashboard` | Use `osc status`, cockpit events, PR comments, and evidence notes instead of local dashboard modes. |
 | `osc work` | Use `osc start` or `osc run --dry-run` to create explicit handoff/run packets; runtime execution remains adapter/orchestrator-owned. |
-| `osc metrics`, `osc study`, `osc ab`, broad `osc doctor` checks, resume helpers | Keep analysis, study design, and resume/handoff proof in docs/evidence until a roadmap item promotes a smaller maintained command again. |
+| `osc metrics`, `osc study`, broad `osc doctor` checks, resume helpers | Keep broad analysis, observational studies, and resume/handoff proof in docs/evidence unless a smaller maintained command exists. For bounded scaffolded-vs-control receipt comparisons, use `osc prove compare`; the full `osc ab` controlled-study surface remains documentation-only/future. |

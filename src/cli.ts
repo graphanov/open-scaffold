@@ -8,7 +8,7 @@ import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, typ
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type RunArtifactOptions, type RuntimeWorkflow } from './artifacts.js';
 import { AdapterTrustError, checkAdapterTrust, formatAdapterTrustStatus, formatTrustedAdapterList, listTrustedAdapters, trustAdapter } from './adapter-trust.js';
 import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
-import { compareBareAttempts, renderAttemptComparisonJson, renderAttemptComparisonMarkdown } from './compare.js';
+import { compareBareAttempts, compareProofManifest, renderAttemptComparisonJson, renderAttemptComparisonMarkdown, renderProofComparison, validateProofManifestFile, type ProofRenderFormat } from './compare.js';
 import { DispatchUsageError, formatDispatchSummary, runDispatch } from './dispatch.js';
 import { collectEvidence } from './evidence.js';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
@@ -86,6 +86,8 @@ Lab and experimental:
   osc eval init <plan-path> [--out <path>]
   osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]
   osc audit check <audit-manifest-path>
+  osc prove compare <manifest.json> [--format <terminal|markdown|json>] [--out <path>]
+  osc prove check <manifest.json>
   osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy|tournament|novelty|map_elites|custom>]
   osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> [--repair-hypothesis <text>] [--target-metric <name>] [--expected-gain <number>] [--actual-delta <number>] [--tokens-total <integer>] [--estimated-usd <number>] [--usage-source <source>] [--usage-unavailable-reason <text>]
   osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>]
@@ -590,6 +592,30 @@ function auditCommand(args: string[]): void {
   } else die('Usage: osc audit init|check ...');
 }
 
+function proofCommand(args: string[]): void {
+  const sub = args[0] ?? die('Usage: osc prove compare|check <manifest.json>');
+  if (isHelpArg(sub)) { console.log('Usage: osc prove compare <manifest.json> [--format <terminal|markdown|json>] [--out <path>]\n  osc prove check <manifest.json>'); return; }
+  if (sub === 'compare') {
+    validateOptions(args.slice(1), ['--format','--out','--output'], [], 'prove compare');
+    const proofArgs = positional(args.slice(1), ['--format','--out','--output']);
+    if (proofArgs.length !== 1) die('Usage: osc prove compare <manifest.json> [--format <terminal|markdown|json>] [--out <path>]', 2);
+    const manifestPath = proofArgs[0], format = (value(args, '--format') ?? 'terminal') as ProofRenderFormat, out = value(args, '--out') ?? value(args, '--output');
+    if (!['terminal', 'markdown', 'json'].includes(format)) die(`Invalid value for --format: ${format}. Expected one of: terminal, markdown, json`, 2);
+    const output = renderProofComparison(compareProofManifest(manifestPath), format);
+    if (out) { writeFileSync(resolve(out), output); console.log(`Wrote proof comparison: ${resolve(out)}`); } else process.stdout.write(output); return;
+  }
+  if (sub === 'check') {
+    validateOptions(args.slice(1), [], [], 'prove check');
+    const proofArgs = positional(args.slice(1), []);
+    if (proofArgs.length !== 1) die('Usage: osc prove check <manifest.json>', 2);
+    const validation = validateProofManifestFile(proofArgs[0]);
+    for (const issue of [...validation.failures, ...validation.warnings]) (issue.level === 'fail' ? console.error : console.warn)(`${issue.level.toUpperCase()} ${issue.code}: ${issue.message}${issue.path ? ` (${issue.path})` : ''}`);
+    if (validation.failures.length > 0) process.exit(1);
+    console.log(`PASS proof comparison manifest valid; ${validation.warnings.length} warning(s)`); console.log('Note: this validates source-labeled receipts only; it does not spawn Codex, rank models, certify correctness, or prove universal superiority.'); return;
+  }
+  die('Usage: osc prove compare|check <manifest.json>', 2);
+}
+
 function evolveCommand(args: string[]): void {
   const sub = args[0] ?? die('Usage: osc evolve init|record|compare|analyze|check');
   if (isHelpArg(sub)) { console.log('Usage: osc evolve init|record|compare|analyze|check <args>'); return; }
@@ -780,6 +806,7 @@ async function main(): Promise<void> {
       case 'pr-summary': prSummaryCommand(args); return;
       case 'pr': prCommand(args); return;
       case 'audit': auditCommand(args); return;
+      case 'prove': proofCommand(args); return;
       case 'evolve': evolveCommand(args); return;
       case 'mcp': process.exitCode = await runMcpCommand(args); return;
       case 'cockpit': await cockpitCommand(args); return;

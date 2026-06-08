@@ -23,7 +23,7 @@ Use it when AI-assisted work needs **control**, **clarity**, **reviewability**, 
 
 It does not replace your agent, IDE, task tracker, CI, or compliance process. Those tools do the work or run the program. Open Scaffold records what was asked, what was handed off, what came back, what was checked, and what humans approved. For the boundary between structural evidence and process assurance, see [`docs/AUDITABILITY.md`](docs/AUDITABILITY.md) and [`docs/TRUST_BOUNDARIES.md`](docs/TRUST_BOUNDARIES.md).
 
-Open Scaffold does not make models smarter and is not benchmark proof. The current value claim under test is narrower: workflow control, handoff recovery, governance, and measured controller-output efficiency. Any efficiency claim needs a diagnostic/experimental before/after artifact such as `osc evolve analyze --efficiency`; do not promote token, cost, or quality wins from prose alone.
+Open Scaffold does not make models smarter and one fixture is not universal benchmark proof. The current value claim under test is narrower: workflow control, handoff recovery, governance, and measured controller-output efficiency. Any efficiency claim needs a diagnostic/experimental before/after artifact such as `osc evolve analyze --efficiency` or a source-labeled proof manifest checked with `osc prove compare`; do not promote token, cost, or quality wins from prose alone. See [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) for the bounded naked-Codex comparison fixture.
 
 **First command for an existing repo:**
 
@@ -79,6 +79,14 @@ npm run osc -- compare \
 ```
 
 This does not run an agent and does not choose an objective winner. It shows the core pattern: attempts become inspectable files, the differences become reviewable, and the decision can be recorded instead of disappearing into chat.
+
+To inspect the first bounded scaffolded-vs-naked-Codex proof fixture from a source checkout:
+
+```bash
+npm run osc -- prove compare examples/proof/scaffold-vs-naked-codex/manifest.json --format markdown
+```
+
+That proof fixture reports source-labeled quality, token, speed, and evolution-loop metrics. It is a bounded cold-resume result, not a claim that Open Scaffold wins every task.
 
 ---
 

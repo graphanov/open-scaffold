@@ -133,12 +133,13 @@ describe('public work-record positioning', () => {
     expect(trace).not.toMatch(/trust score|compliance-grade|tamper-proof|certif(y|ies|ied)/i);
   });
 
-  it('keeps efficiency positioning benchmark-neutral and artifact-measured', () => {
+  it('keeps efficiency positioning benchmark-neutral and artifact-measured while exposing bounded proof receipts', () => {
     const readme = read('README.md');
     const evolution = read('docs/EVOLUTION_LOOP.md');
     const methodology = read('docs/EVIDENCE_METHODOLOGY.md');
     const faq = read('docs/FAQ.md');
-    const combined = [readme, evolution, methodology, faq].join('\n');
+    const proof = read('docs/PROOF_HARNESS.md');
+    const combined = [readme, evolution, methodology, faq, proof].join('\n');
 
     expect(combined).toContain('does not make models smarter');
     expect(combined).toContain('is not benchmark proof');
@@ -148,6 +149,12 @@ describe('public work-record positioning', () => {
     expect(combined).toContain('experimental');
     expect(evolution).toContain('osc evolve analyze .osc/evolution/demo-loop --efficiency');
     expect(methodology).toContain('output bytes per useful decision field');
+    expect(methodology).toContain('osc prove compare');
+    expect(proof).toContain('Bounded fixture proof only');
+    expect(proof).toContain('not a universal benchmark');
+    expect(proof).toContain('15,225 bytes');
+    expect(proof).toContain('31,635');
+    expect(readme).toContain('docs/PROOF_HARNESS.md');
     expect(faq).toContain('token/cost savings require receipts');
   });
 

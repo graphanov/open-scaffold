@@ -50,6 +50,7 @@
     ".osc/releases/README.md",
     ".osc/specs/.gitkeep",
     "examples/attempt-compare",
+    "examples/proof",
     "examples/resume-demo",
     "docs",
     "python",
