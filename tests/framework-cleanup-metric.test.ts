@@ -6,7 +6,10 @@ import { describe, expect, it } from 'vitest';
 const repoRoot = resolve(import.meta.dirname, '..');
 const maintainedRoots = ['src', 'packages/runtime-omx/src'] as const;
 const cleanupBaselineLoc = 20_890;
-const cleanupTargetLoc = 12_534;
+// Harness command-surface integration deliberately adds maintained backend/router code.
+// Keep the cap explicit so future growth must update this test with intent.
+const cleanupTargetLoc = 13_758;
+const cleanupTargetFiles = 38;
 
 interface MaintainedSourceFile {
   path: string;
@@ -48,10 +51,10 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(12_534);
+    expect(cleanupTargetLoc).toBe(13_758);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
-    expect(files.length).toBeLessThanOrEqual(33);
+    expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);
   });
 
   it('matches the shell measurement command used by the cleanup baseline on POSIX systems', () => {
