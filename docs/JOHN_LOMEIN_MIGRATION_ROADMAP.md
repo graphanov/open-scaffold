@@ -13,20 +13,20 @@ $team
 
 ## Current state
 
-Open Scaffold has the first harness foundation PR open and green:
+Open Scaffold has landed the first harness foundation PR:
 
 | Item | Current value |
 | --- | --- |
-| Current PR | graphanov/open-scaffold#192 |
+| Foundation PR | graphanov/open-scaffold#192 |
 | Branch | `feat/harness-command-surface` |
-| Plan | `.osc/plans/active/154-harness-command-surface.md` |
-| Status | Open, mergeable, CI passing |
+| Plan | `.osc/plans/done/154-harness-command-surface.md` |
+| Status | Merged; plan 154 is closed as `done`. |
 | What it proves | Open Scaffold can host the command surface, event/status model, feedback files, handoff lab, simulated benchmark smoke, and strict proof gate. |
 | What it does not prove yet | Open Scaffold has not yet reproduced the live John Lomein runtime signal. |
 
 The important boundary is this:
 
-> PR #192 is a foundation PR. It should be closed by owner review/merge, then followed by runtime and reproduction PRs. It should not be treated as the whole migration.
+> PR #192 was the foundation PR. It landed the command surface and queued the remaining runtime/reproduction chain. It is not the whole migration.
 
 ## End state
 
@@ -53,21 +53,21 @@ GitHub may assign a different number if another PR is opened first. The PR numbe
 
 | PR slot | Plan | Branch | Title | Purpose | Merge gate |
 | --- | --- | --- | --- | --- | --- |
-| #192 | `154-harness-command-surface` | `feat/harness-command-surface` | `feat: add harness command surface` | Establish `$interview`, `$plan`, `$work`, `$team`, backend CLI, status/events, feedback model, handoff lab, simulated proof smoke, and docs. | Owner reviews and merges; then close plan 154. |
-| #193 | `155-controlled-runtime-parity` | `feat/controlled-runtime-parity` | `feat: add controlled runtime parity` | Make `$work` run a bounded Codex/agent adapter with strict marker parsing, receipts, timeouts, human gate pause/resume, and safe artifact handling. | Live temp runtime smoke passes without committing runtime residue. |
-| #194 | `156-feedback-handoff-improvement-parity` | `feat/feedback-handoff-improvement-parity` | `feat: wire feedback and handoff improvement loop` | Make feedback, repair hypotheses, accepted improvements, retries, and compact handoffs part of real `$work`/`$team` flows. | Failed/rejected run becomes a repair hypothesis; retry inherits it; handoff packet passes budget. |
-| #195 | `157-reproduction-proof-parity` | `feat/harness-reproduction-proof-parity` | `feat: reproduce source prototype proof lanes` | Run Open Scaffold-owned reproduction suites: targeted handoff, representative live fixtures, ablations, and strict proof report. | Evidence says reproduced, partially reproduced, or not reproduced with raw paths and no broad claim unless gates clear. |
-| #196 | `158-team-control-room-adapter-parity` | `feat/team-control-room-adapter-parity` | `feat: add team and control-room adapter contracts` | Make `$team` a real coordinated multi-worker harness and expose transport/status contracts for Hermes/plugin/desktop surfaces. | Multiple worker lanes share one status/evidence/postflight record and remain transport-agnostic. |
-| #197 | `159-harness-release-readiness` | `docs/harness-release-readiness` | `docs: prepare harness release readiness` | Polish public docs, examples, command maturity, package/release notes, and owner gates after the harness actually works. | Fresh install/help smoke and release-readiness checks pass; publish/release remain owner-gated. |
+| #192 | `154-harness-command-surface` | `feat/harness-command-surface` | `feat: add harness command surface` | Establish `$interview`, `$plan`, `$work`, `$team`, backend CLI, status/events, feedback model, handoff lab, simulated proof smoke, and docs. | Merged; plan 154 moved to `done/`. |
+| Next runtime slot | `155-controlled-runtime-parity` | `feat/controlled-runtime-parity` | `feat: add controlled runtime parity` | Make `$work` run a bounded Codex/agent adapter with strict marker parsing, receipts, timeouts, human gate pause/resume, and safe artifact handling. | Live temp runtime smoke passes without committing runtime residue. |
+| Later slot | `156-feedback-handoff-improvement-parity` | `feat/feedback-handoff-improvement-parity` | `feat: wire feedback and handoff improvement loop` | Make feedback, repair hypotheses, accepted improvements, retries, and compact handoffs part of real `$work`/`$team` flows. | Failed/rejected run becomes a repair hypothesis; retry inherits it; handoff packet passes budget. |
+| Later slot | `157-reproduction-proof-parity` | `feat/harness-reproduction-proof-parity` | `feat: reproduce source prototype proof lanes` | Run Open Scaffold-owned reproduction suites: targeted handoff, representative live fixtures, ablations, and strict proof report. | Evidence says reproduced, partially reproduced, or not reproduced with raw paths and no broad claim unless gates clear. |
+| Later slot | `158-team-control-room-adapter-parity` | `feat/team-control-room-adapter-parity` | `feat: add team and control-room adapter contracts` | Make `$team` a real coordinated multi-worker harness and expose transport/status contracts for Hermes/plugin/desktop surfaces. | Multiple worker lanes share one status/evidence/postflight record and remain transport-agnostic. |
+| Later slot | `159-harness-release-readiness` | `docs/harness-release-readiness` | `docs: prepare harness release readiness` | Polish public docs, examples, command maturity, package/release notes, and owner gates after the harness actually works. | Fresh install/help smoke and release-readiness checks pass; publish/release remain owner-gated. |
 
 ## When each PR starts
 
-1. **PR #192 is first.** It is already open and passing. Daniel decides whether to merge it.
-2. **PR #193 starts after #192 merges** unless Daniel explicitly wants stacked work. If stacked, base #193 on `feat/harness-command-surface`; otherwise base it on fresh `main`.
-3. **PR #194 starts after #193** because feedback/retry must attach to the real runtime receipt shape.
-4. **PR #195 starts after #194** because reproduction must test the real runtime plus feedback/handoff loop, not a standalone smoke fixture.
-5. **PR #196 can start after #193 if needed**, but it should land after #194 unless `$team` parity becomes the immediate blocker.
-6. **PR #197 is last.** Do not polish release copy before the runtime and proof story are true.
+1. **PR #192 is merged.** The foundation is on `main`; plan 154 is closed in `done/`.
+2. **Controlled runtime parity starts after the closeout PR lands.** Base `feat/controlled-runtime-parity` on fresh `main`; GitHub may assign a number other than the old planning slot because the closeout PR used the next number.
+3. **Feedback/handoff improvement starts after controlled runtime parity** because feedback/retry must attach to the real runtime receipt shape.
+4. **Reproduction proof starts after feedback/handoff improvement** because reproduction must test the real runtime plus feedback/handoff loop, not a standalone smoke fixture.
+5. **Team/control-room adapter parity can start after controlled runtime parity if needed**, but it should land after feedback/handoff improvement unless `$team` parity becomes the immediate blocker.
+6. **Harness release readiness is last.** Do not polish release copy before the runtime and proof story are true.
 
 ## Reproduction ladder
 
@@ -97,16 +97,16 @@ Use this wording ladder in reports and docs:
 
 Never say Open Scaffold broadly beats naked Codex unless the Open Scaffold-run evidence clears live paired runs, enough fixtures, ablations, clean completions, no quality regression, no token/duration/round regression, and no prompt-quality or budget confound.
 
-## PR #192 closeout gate
+## PR #192 closeout
 
-PR #192 can be considered ready for owner closeout when:
+PR #192 is closed:
 
-- CI remains green.
-- The PR body links this roadmap and the follow-up backlog plans.
-- Daniel accepts that #192 is the foundation, not the full reproduction.
-- Daniel chooses merge or close. Hermes must not merge, publish, release, force-push, or rewrite history without explicit approval.
+- CI was green before merge.
+- The PR body linked this roadmap and the follow-up backlog plans.
+- The foundation landed without claiming full runtime reproduction.
+- Plan 154 now lives at `.osc/plans/done/154-harness-command-surface.md` with internal status `done`.
 
-After #192 merges, immediately run the Open Scaffold plan closeout for plan 154 and move it to `done/` in a follow-up closeout commit/PR if branch protection requires it.
+Next work starts from fresh `main` after the closeout PR is merged.
 
 ## Owner gates
 
