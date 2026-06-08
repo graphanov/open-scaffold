@@ -40,6 +40,32 @@ osc close <slug> --message <text>
 
 Use `osc compare` as a first-read demo surface, not as an objective agent-ranking claim. Use `osc prove compare` as a lab receipt comparator for bounded scaffolded-vs-control evidence; it must keep caveats and source refs visible.
 
+## Harness backend path
+
+The primary human-facing harness UX is the small `$command` grammar:
+
+```text
+$interview
+$plan
+$work
+$team
+```
+
+The maintained CLI backend for that grammar is:
+
+```bash
+osc harness '$interview ...'
+osc harness '$plan ...'
+osc harness '$work ...'
+osc harness '$team ...'
+osc feedback record <run-id> ...
+osc feedback analyze <run-id>
+osc bench suite --mode simulated --out .osc/bench/simulated-runtime-smoke
+osc bench handoff-lab --out .osc/bench/handoff-lab-15
+```
+
+These commands are backend/CI/repro surfaces. They are not a revival of `osc work ...` as the main UX, and they do not grant runtime spawn, merge, publish, or release authority.
+
 ## Removed / repositioned command migration notes
 
 Framework cleanup removed several lab, analytics, and convenience commands from the

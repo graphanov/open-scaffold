@@ -55,8 +55,57 @@ Under the hood, this is just files:
 MISSION.md                         why this repo exists
 .osc/plans/                        scoped work with acceptance criteria
 .osc/runs/<run_id>/run.json         handoff package for a worker or reviewer
+.osc/runs/<run_id>/feedback.jsonl   feedback and repair hypotheses
+.osc/improvements/applied/         accepted lessons future runs can inherit
+.osc/bench/                        benchmark/reproduction receipts
 .osc/releases/                     evidence notes and release records
 ```
+
+---
+
+## Harness command surface
+
+Open Scaffold is also a small-command harness for AI-assisted work:
+
+> Open Scaffold helps clarify the task, plan it in the repo, run controlled AI workers, preserve evidence, learn from feedback, and test whether the workflow actually helped.
+
+The human-facing grammar is intentionally small:
+
+| Command | Meaning |
+| --- | --- |
+| `$interview` | Clarify messy intent into a bounded work package. |
+| `$plan` | Create or amend the repo-native Open Scaffold plan. |
+| `$work` | Package one bounded slice for controlled runtime execution. |
+| `$team` | Package multiple coordinated worker lanes with shared evidence. |
+
+For shell, CI, tests, and adapter integrations, use the backend CLI:
+
+```bash
+osc harness '$interview "clarify this work"' --json
+osc harness '$plan "add the harness docs" --slug harness-docs'
+osc harness '$work "implement one bounded slice" --context "plan is ready"' --json
+osc harness '$team "split implementation docs review" --worker implementation --worker docs --worker review'
+```
+
+Feedback is part of `$work` and `$team`, not a fifth top-level UX command. Backend commands can record/analyze it for scripts:
+
+```bash
+osc feedback record <run-id> --source tests --verdict retry --scope run \
+  --what-happened "Verification failed" \
+  --why-it-matters "The run is not ready to claim pass" \
+  --repair-hypothesis "Fix the failed check and rerun" \
+  --next-action retry
+osc feedback analyze <run-id>
+```
+
+Benchmarks and handoff labs write proof receipts, but they do not authorize broad claims:
+
+```bash
+osc bench suite --mode simulated --out .osc/bench/simulated-runtime-smoke
+osc bench handoff-lab --out .osc/bench/handoff-lab-15
+```
+
+Humans still own merge, publish, release, deployment, and approval gates. Open Scaffold core packages work and records receipts; adapters or humans execute it. Read more in [`docs/HARNESS_COMMANDS.md`](docs/HARNESS_COMMANDS.md), [`docs/HARNESS_ARCHITECTURE.md`](docs/HARNESS_ARCHITECTURE.md), [`docs/FEEDBACK_IMPROVEMENT_LOOP.md`](docs/FEEDBACK_IMPROVEMENT_LOOP.md), [`docs/HARNESS_REPRODUCIBILITY.md`](docs/HARNESS_REPRODUCIBILITY.md), [`docs/HANDOFF_COMPILER.md`](docs/HANDOFF_COMPILER.md), and [`docs/CONTROL_ROOM_FOUNDATION.md`](docs/CONTROL_ROOM_FOUNDATION.md).
 
 ---
 

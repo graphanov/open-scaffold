@@ -14,7 +14,10 @@ import { collectEvidence } from './evidence.js';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, analyzeEvolutionLoop, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionAnalysis, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionAnalysisFormat, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
 import { measureEvolutionAnalysisEfficiency, renderEvolutionEfficiencyReport } from './evolution-efficiency.js';
+import { analyzeFeedback, recordFeedback } from './feedback.js';
 import { askInteractiveFirstRun, formatFirstRunResult, runFirstRun } from './first-run.js';
+import { answerHumanGate, getHarnessStatus, routeHarnessCommand } from './harness.js';
+import { runBenchSuite, runHandoffLab } from './bench.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { runMcpCommand } from './mcp-server.js';
 import { scanPublicFilesForSecrets } from './redaction.js';
@@ -81,6 +84,20 @@ Handoff and run packages:
   osc adapter list --trusted
   osc runtimes list [--json]
   osc runtimes show <id>
+
+Harness command surface:
+  primary UX: $interview | $plan | $work | $team
+  osc harness '$interview ...' [--json]
+  osc harness '$plan ...' [--json]
+  osc harness '$work ...' [--json]
+  osc harness '$team ...' [--json]
+  osc harness status <run-id> [--json]
+  osc harness answer <run-id> --gate <id> --answer <text> [--json]
+  osc feedback record <run-id> --source <human|tests|reviewer|benchmark|runtime|codex|hermes> --verdict <pass|retry|reject|block|improve> --scope <run|plan|command|docs|benchmark|runtime> --what-happened <text> --why-it-matters <text> [--repair-hypothesis <text>] [--evidence-path <path>]... --next-action <text> [--json]
+  osc feedback analyze <run-id> [--json]
+  osc bench suite [--mode simulated|live] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--out <dir>] [--json]
+  osc bench handoff-lab [--out <dir>] [--json]
+  Backend commands are for CI/scripts/repro. The human-facing grammar stays the four $commands.
 
 Lab and experimental:
   osc eval init <plan-path> [--out <path>]
@@ -779,6 +796,108 @@ function runtimesCommand(args: string[]): void {
   die('Usage: osc runtimes list [--json] | osc runtimes show <id>', 2);
 }
 
+function harnessCommand(args: string[]): void {
+  if (isHelpArg(args[0])) { console.log("Usage: osc harness '$interview|$plan|$work|$team ...' [--json]\n  osc harness status <run-id> [--json]\n  osc harness answer <run-id> --gate <id> --answer <text> [--json]"); return; }
+  const json = has(args, '--json');
+  try {
+    if (args[0] === 'status') {
+      const runId = args[1] ?? die('Usage: osc harness status <run-id> [--json]', 2);
+      const status = getHarnessStatus({ repoRoot: process.cwd(), runId });
+      if (json) console.log(JSON.stringify(status, null, 2)); else console.log(`${status.runId}\t${status.state}\t${status.pendingHumanGates.length} pending gate(s)`);
+      return;
+    }
+    if (args[0] === 'answer') {
+      const runId = args[1] ?? die('Usage: osc harness answer <run-id> --gate <id> --answer <text> [--json]', 2);
+      const result = answerHumanGate({ repoRoot: process.cwd(), runId, gateId: requireValue(args, '--gate'), answer: requireValue(args, '--answer') });
+      if (json) console.log(JSON.stringify(result, null, 2)); else console.log(`Answered gate for ${result.runId}; state=${result.status.state}`);
+      return;
+    }
+    const input = args.find((arg) => arg.startsWith('$')) ?? die("Usage: osc harness '$interview|$plan|$work|$team ...' [--json]", 2);
+    const result = routeHarnessCommand({ repoRoot: process.cwd(), input });
+    if (json) console.log(JSON.stringify(result, null, 2));
+    else {
+      console.log(`${result.command}: ${result.status.state}`);
+      console.log(`run: ${result.runId}`);
+      for (const artifact of result.artifacts) console.log(`artifact: ${artifact.path}`);
+    }
+  } catch (error) {
+    if (error instanceof Error) die(error.message, 2);
+    throw error;
+  }
+}
+
+function feedbackCommand(args: string[]): void {
+  const sub = args[0] ?? die('Usage: osc feedback record|analyze ...', 2);
+  const json = has(args, '--json');
+  try {
+    if (sub === 'record') {
+      const runId = args[1] ?? die('Usage: osc feedback record <run-id> --source <source> --verdict <verdict> --scope <scope> --what-happened <text> --why-it-matters <text> --next-action <text>', 2);
+      const result = recordFeedback({
+        repoRoot: process.cwd(),
+        runId,
+        source: requireValue(args, '--source') as Parameters<typeof recordFeedback>[0]['source'],
+        verdict: requireValue(args, '--verdict') as Parameters<typeof recordFeedback>[0]['verdict'],
+        scope: requireValue(args, '--scope') as Parameters<typeof recordFeedback>[0]['scope'],
+        whatHappened: requireValue(args, '--what-happened'),
+        whyItMatters: requireValue(args, '--why-it-matters'),
+        repairHypothesis: value(args, '--repair-hypothesis'),
+        evidencePaths: values(args, '--evidence-path'),
+        nextAction: requireValue(args, '--next-action'),
+      });
+      if (json) console.log(JSON.stringify(result, null, 2)); else console.log(`Recorded feedback: ${result.path}`);
+      return;
+    }
+    if (sub === 'analyze') {
+      const runId = args[1] ?? die('Usage: osc feedback analyze <run-id> [--json]', 2);
+      const result = analyzeFeedback({ repoRoot: process.cwd(), runId });
+      if (json) console.log(JSON.stringify(result, null, 2)); else console.log(`Analyzed feedback for ${runId}: next=${result.nextAction}`);
+      return;
+    }
+  } catch (error) {
+    if (error instanceof Error) die(error.message, 2);
+    throw error;
+  }
+  die('Usage: osc feedback record|analyze ...', 2);
+}
+
+function benchCommand(args: string[]): void {
+  const sub = args[0] ?? die('Usage: osc bench suite|handoff-lab ...', 2);
+  try {
+    if (sub === 'suite') {
+      const mode = choice(value(args, '--mode') ?? 'simulated', ['simulated', 'live'] as const, '--mode');
+      const result = runBenchSuite({
+        repoRoot: process.cwd(),
+        mode,
+        outDir: value(args, '--out') ?? value(args, '--output') ?? '.osc/bench/simulated-runtime-smoke',
+        fixtureIds: values(args, '--fixture'),
+        includeAblations: has(args, '--include-ablations'),
+        ablationFixtureIds: values(args, '--ablation-fixture'),
+      });
+      if (has(args, '--json')) console.log(JSON.stringify(result, null, 2));
+      else {
+        console.log(`Wrote benchmark aggregate: ${result.aggregatePath}`);
+        console.log(`Wrote benchmark report: ${result.reportPath}`);
+        console.log(`Broad dominance: ${result.proofGate.status}`);
+      }
+      return;
+    }
+    if (sub === 'handoff-lab') {
+      const result = runHandoffLab({ repoRoot: process.cwd(), outDir: value(args, '--out') ?? value(args, '--output') ?? '.osc/bench/handoff-lab-15' });
+      if (has(args, '--json')) console.log(JSON.stringify(result, null, 2));
+      else {
+        console.log(`Handoff lab tested ${result.methodsTested} methods.`);
+        console.log(`Wrote handoff lab aggregate: ${result.aggregatePath}`);
+        console.log(`Wrote handoff lab report: ${result.reportPath}`);
+      }
+      return;
+    }
+  } catch (error) {
+    if (error instanceof Error) die(error.message, 2);
+    throw error;
+  }
+  die('Usage: osc bench suite|handoff-lab ...', 2);
+}
+
 function removed(command: string): never {
   die(`osc ${command} was removed/repositioned by the framework cleanup. See docs/COMMAND_MATURITY.md for shipped migration notes.`, 2);
 }
@@ -813,6 +932,9 @@ async function main(): Promise<void> {
       case 'schemas': schemasCommand(args); return;
       case 'doctor': doctorCommand(args); return;
       case 'runtimes': runtimesCommand(args); return;
+      case 'harness': harnessCommand(args); return;
+      case 'feedback': feedbackCommand(args); return;
+      case 'bench': benchCommand(args); return;
       case 'eval': evalCommand(args); return;
       case 'task': case 'metrics': case 'study': case 'ab': case 'dashboard': case 'work': removed(command);
       default: {
