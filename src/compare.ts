@@ -56,6 +56,7 @@ function readOptionalFile(dir: string, name: AttemptFileName, readContent = true
 
 const packageRoot = fileURLToPath(new URL('..', import.meta.url));
 const packagedCompareExamplePrefix = 'examples/attempt-compare/';
+const packagedProofExamplePrefix = 'examples/proof/';
 
 function normalizeRelativePath(pathArg: string): string {
   return normalize(pathArg).split(sep).join('/').replace(/^\.\/+/, '');
@@ -383,14 +384,16 @@ function validateProofRaw(raw: unknown, manifestDir: string): ProofValidationRes
   else { const categories = new Set<ProofCategory>(); raw.metrics.forEach((metric, index) => { const parsed = proofMetric(metric, index, manifestDir, failures, warnings); if (parsed) categories.add(parsed.category); }); for (const category of PROOF_CATEGORIES) if (!categories.has(category)) failures.push(proofIssue('fail', 'missing-required-category', `Manifest must include a ${category} metric.`, 'metrics')); }
   return { failures, warnings };
 }
+function resolveProofManifestPath(pathArg: string): string { const callerRelative = resolve(pathArg), normalized = normalizeRelativePath(pathArg); if (existsSync(callerRelative) || isAbsolute(pathArg) || normalized === '..' || normalized.startsWith('../')) return callerRelative; const packagedPath = join(packageRoot, ...normalized.split('/')); return (normalized === 'examples/proof' || normalized.startsWith(packagedProofExamplePrefix)) && existsSync(packagedPath) ? packagedPath : callerRelative; }
+
 export function validateProofManifestFile(pathArg: string): ProofValidationResult {
-  try { const manifestPath = resolve(pathArg); return validateProofRaw(JSON.parse(readFileSync(manifestPath, 'utf8')) as unknown, dirname(manifestPath)); } catch (error) { return { failures: [proofIssue('fail', 'unreadable-manifest', error instanceof Error ? error.message : String(error), pathArg)], warnings: [] }; }
+  try { const manifestPath = resolveProofManifestPath(pathArg); return validateProofRaw(JSON.parse(readFileSync(manifestPath, 'utf8')) as unknown, dirname(manifestPath)); } catch (error) { return { failures: [proofIssue('fail', 'unreadable-manifest', error instanceof Error ? error.message : String(error), pathArg)], warnings: [] }; }
 }
 const proofWinner = (metric: ProofMetric): ProofWinner => metric.scaffolded === metric.control ? 'tie' : metric.direction === 'higher' ? (metric.scaffolded > metric.control ? 'scaffolded' : 'control') : (metric.scaffolded < metric.control ? 'scaffolded' : 'control');
 const proofRatio = (metric: ProofMetric, winner: ProofWinner) => { if (winner === 'tie') return 1; const baseline = winner === 'scaffolded' ? metric.control : metric.scaffolded, improved = winner === 'scaffolded' ? metric.scaffolded : metric.control, ratio = metric.direction === 'higher' ? (baseline === 0 ? null : improved / baseline) : (improved === 0 ? null : baseline / improved); return ratio === null ? null : Number(ratio.toFixed(6)); };
 function proofCategoryStatus(metrics: Array<ProofMetric & { winner: ProofWinner }>, category: ProofCategory) { const scoped = metrics.filter((metric) => metric.category === category); return scoped.length === 0 ? 'missing' : scoped.some((metric) => metric.winner === 'control') ? 'regressed' : scoped.some((metric) => metric.winner === 'scaffolded') ? 'improved' : 'tied'; }
 export function compareProofManifest(pathArg: string) {
-  const manifestPath = resolve(pathArg), manifestDir = dirname(manifestPath), raw = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>, validation = validateProofRaw(raw, manifestDir);
+  const manifestPath = resolveProofManifestPath(pathArg), manifestDir = dirname(manifestPath), raw = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>, validation = validateProofRaw(raw, manifestDir);
   if (validation.failures.length > 0) throw new Error(`Invalid proof comparison manifest: ${validation.failures.map((failure) => failure.code).join(', ')}`);
   const metrics = ((raw.metrics as unknown[]) ?? []).map((metric, index) => proofMetric(metric, index, manifestDir, [], [])).filter((metric): metric is ProofMetric => Boolean(metric)).map((metric) => { const winner = proofWinner(metric); return { ...metric, winner, delta: Number((metric.scaffolded - metric.control).toFixed(6)), improvementRatio: proofRatio(metric, winner), sourceRefs: metric.source_refs }; });
   const categories = Object.fromEntries(PROOF_CATEGORIES.map((category) => [category, proofCategoryStatus(metrics, category)])) as Record<ProofCategory, 'improved' | 'regressed' | 'tied' | 'missing'>, scaffoldedWins = metrics.filter((metric) => metric.winner === 'scaffolded').length, controlWins = metrics.filter((metric) => metric.winner === 'control').length, ties = metrics.filter((metric) => metric.winner === 'tie').length;

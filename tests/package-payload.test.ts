@@ -118,6 +118,22 @@ describe('npm package payload', () => {
 
       expect(compareOutput).toContain('# Attempt comparison: attempt-a → attempt-b');
       expect(compareOutput).toContain('This command reads local files only. It does not spawn runtimes, promote a frontier, or approve work.');
+
+      const proofOutput = execFileSync('node', [
+        join(packageDir, 'dist/cli.js'),
+        'prove',
+        'compare',
+        '--format',
+        'markdown',
+        'examples/proof/scaffold-vs-naked-codex/manifest.json',
+      ], {
+        cwd: freshCwd,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      expect(proofOutput).toContain('Bounded proof verdict: PASS');
+      expect(proofOutput).toContain('usage.prompt_payload_bytes');
     } finally {
       rmSync(packDir, { recursive: true, force: true });
       rmSync(extractDir, { recursive: true, force: true });
