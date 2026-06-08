@@ -50,3 +50,7 @@ Open Scaffold docs should preserve that truth:
 ## Current PR scope
 
 This integration establishes the harness foundation and simulated proof machinery. It does not implement a full desktop app, publish npm, create a release, merge PRs, force-push, or make Open Scaffold an autonomous authority.
+
+## Follow-up roadmap
+
+The full migration continues through a planned PR chain: controlled runtime parity, feedback/handoff improvement parity, reproduction proof parity, team/control-room adapter parity, and release readiness. See [`JOHN_LOMEIN_MIGRATION_ROADMAP.md`](JOHN_LOMEIN_MIGRATION_ROADMAP.md) for the current state, PR associations, closeout gates, and step-by-step plan.

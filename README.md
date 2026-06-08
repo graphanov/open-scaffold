@@ -105,7 +105,7 @@ osc bench suite --mode simulated --out .osc/bench/simulated-runtime-smoke
 osc bench handoff-lab --out .osc/bench/handoff-lab-15
 ```
 
-Humans still own merge, publish, release, deployment, and approval gates. Open Scaffold core packages work and records receipts; adapters or humans execute it. Read more in [`docs/HARNESS_COMMANDS.md`](docs/HARNESS_COMMANDS.md), [`docs/HARNESS_ARCHITECTURE.md`](docs/HARNESS_ARCHITECTURE.md), [`docs/FEEDBACK_IMPROVEMENT_LOOP.md`](docs/FEEDBACK_IMPROVEMENT_LOOP.md), [`docs/HARNESS_REPRODUCIBILITY.md`](docs/HARNESS_REPRODUCIBILITY.md), [`docs/HANDOFF_COMPILER.md`](docs/HANDOFF_COMPILER.md), and [`docs/CONTROL_ROOM_FOUNDATION.md`](docs/CONTROL_ROOM_FOUNDATION.md).
+Humans still own merge, publish, release, deployment, and approval gates. Open Scaffold core packages work and records receipts; adapters or humans execute it. Read more in [`docs/HARNESS_COMMANDS.md`](docs/HARNESS_COMMANDS.md), [`docs/HARNESS_ARCHITECTURE.md`](docs/HARNESS_ARCHITECTURE.md), [`docs/FEEDBACK_IMPROVEMENT_LOOP.md`](docs/FEEDBACK_IMPROVEMENT_LOOP.md), [`docs/HARNESS_REPRODUCIBILITY.md`](docs/HARNESS_REPRODUCIBILITY.md), [`docs/HANDOFF_COMPILER.md`](docs/HANDOFF_COMPILER.md), [`docs/CONTROL_ROOM_FOUNDATION.md`](docs/CONTROL_ROOM_FOUNDATION.md), and the source-prototype migration roadmap in [`docs/JOHN_LOMEIN_MIGRATION_ROADMAP.md`](docs/JOHN_LOMEIN_MIGRATION_ROADMAP.md).
 
 ---
 

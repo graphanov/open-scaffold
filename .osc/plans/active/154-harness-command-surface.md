@@ -31,7 +31,8 @@ Add an Open Scaffold harness foundation with `$interview`, `$plan`, `$work`, and
 - `src/path-safety.ts` — reject traversal and symlink descendant artifact writes under `.osc` output paths.
 - `src/schema-registry.ts` — register new `osc.*`/`open-scaffold.*` harness schemas.
 - `tests/harness.test.ts`, `tests/feedback.test.ts`, `tests/handoff.test.ts`, `tests/bench.test.ts`, `tests/path-safety.test.ts`, `tests/cli-harness.test.ts` — TDD coverage for the new contracts.
-- `README.md`, `docs/HARNESS_COMMANDS.md`, `docs/HARNESS_ARCHITECTURE.md`, `docs/FEEDBACK_IMPROVEMENT_LOOP.md`, `docs/HANDOFF_COMPILER.md`, `docs/HARNESS_REPRODUCIBILITY.md`, `docs/CONTROL_ROOM_FOUNDATION.md`, `docs/JOHN_LOMEIN_MIGRATION.md`, `docs/COMMAND_MATURITY.md` — plain-language product, architecture, feedback, handoff, benchmark, future control-room, and migration docs.
+- `README.md`, `docs/HARNESS_COMMANDS.md`, `docs/HARNESS_ARCHITECTURE.md`, `docs/FEEDBACK_IMPROVEMENT_LOOP.md`, `docs/HANDOFF_COMPILER.md`, `docs/HARNESS_REPRODUCIBILITY.md`, `docs/CONTROL_ROOM_FOUNDATION.md`, `docs/JOHN_LOMEIN_MIGRATION.md`, `docs/JOHN_LOMEIN_MIGRATION_ROADMAP.md`, `docs/COMMAND_MATURITY.md` — plain-language product, architecture, feedback, handoff, benchmark, future control-room, migration, follow-up PR chain, and command maturity docs.
+- `.osc/plans/backlog/155-controlled-runtime-parity.md`, `.osc/plans/backlog/156-feedback-handoff-improvement-parity.md`, `.osc/plans/backlog/157-reproduction-proof-parity.md`, `.osc/plans/backlog/158-team-control-room-adapter-parity.md`, `.osc/plans/backlog/159-harness-release-readiness.md` — follow-up backlog plans that carry the rest of the migration after PR #192.
 
 ## Execution strategy
 
@@ -88,6 +89,7 @@ Add an Open Scaffold harness foundation with `$interview`, `$plan`, `$work`, and
 - [ ] Simulated benchmark and handoff-lab commands produce aggregate/report artifacts, include quality/tokens/duration/rounds, run all explicitly selected ablation fixtures, and refuse broad claims when confounds remain.
 - [ ] Artifact writers reject path traversal and symlink descendant escapes, including symlinked output root, method/lane roots, child artifact parents, and final symlink targets.
 - [ ] Public docs contain no absolute local paths and keep John Lomein only as prototype provenance in migration notes.
+- [ ] The migration roadmap records where PR #192 stops, which follow-up PR slots carry the remaining runtime/reproduction work, and which owner gates remain before merge, publish, release, or broad proof claims.
 
 ## Verification steps
 
