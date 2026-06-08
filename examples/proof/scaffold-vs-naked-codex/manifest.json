@@ -1,0 +1,127 @@
+{
+  "schema": "open-scaffold.proof-comparison.v1",
+  "comparison_id": "scaffold-vs-naked-codex-2026-06-08",
+  "title": "Scaffolded Codex vs naked Codex: compact evolution handoff",
+  "question": "For a bounded cold-resume evolution-loop decision, does Open Scaffold give Codex the same or better decision quality with a lighter/faster prompt than a naked raw-artifact prompt?",
+  "arms": {
+    "control": {
+      "id": "naked-codex-raw-artifacts",
+      "label": "Naked Codex over raw loop artifacts",
+      "runtime": "codex-cli 0.136.0 / gpt-5.5"
+    },
+    "scaffolded": {
+      "id": "open-scaffold-compact-controller-signal",
+      "label": "Open Scaffold compact evolution controller signal + Codex",
+      "runtime": "codex-cli 0.136.0 / gpt-5.5"
+    }
+  },
+  "metrics": [
+    {
+      "id": "quality.decision_score_median",
+      "label": "Median rubric score for next-action decision",
+      "category": "quality",
+      "unit": "points / 5",
+      "direction": "higher",
+      "control": 5,
+      "scaffolded": 5,
+      "source_refs": [
+        "receipts/aggregate.json",
+        "receipts/control-r1.json",
+        "receipts/control-r2.json",
+        "receipts/control-r3.json",
+        "receipts/scaffolded-r1.json",
+        "receipts/scaffolded-r2.json",
+        "receipts/scaffolded-r3.json"
+      ],
+      "notes": "Quality tied at 5/5 median; the scaffolded arm did not trade quality away for compactness."
+    },
+    {
+      "id": "quality.score_per_1k_codex_tokens",
+      "label": "Decision quality per 1k Codex-reported tokens",
+      "category": "quality",
+      "unit": "points / 1k tokens",
+      "direction": "higher",
+      "control": 0.141323,
+      "scaffolded": 0.158053,
+      "source_refs": [
+        "receipts/aggregate.json"
+      ],
+      "notes": "Derived from median 5/5 quality and Codex-reported total tokens."
+    },
+    {
+      "id": "usage.prompt_payload_bytes",
+      "label": "Prompt payload bytes given to Codex",
+      "category": "tokens",
+      "unit": "bytes",
+      "direction": "lower",
+      "control": 15225,
+      "scaffolded": 1308,
+      "source_refs": [
+        "prompts/control-naked-raw-prompt.md",
+        "prompts/scaffolded-compact-prompt.md",
+        "receipts/aggregate.json"
+      ],
+      "notes": "Direct payload size, not an inferred model-token count."
+    },
+    {
+      "id": "usage.codex_reported_total_tokens_median",
+      "label": "Median total tokens reported by Codex CLI",
+      "category": "tokens",
+      "unit": "tokens",
+      "direction": "lower",
+      "control": 35380,
+      "scaffolded": 31635,
+      "source_refs": [
+        "receipts/aggregate.json",
+        "receipts/control-r1.json",
+        "receipts/control-r2.json",
+        "receipts/control-r3.json",
+        "receipts/scaffolded-r1.json",
+        "receipts/scaffolded-r2.json",
+        "receipts/scaffolded-r3.json"
+      ],
+      "notes": "Three read-only replicates per arm; medians are used because individual Codex token receipts were noisy."
+    },
+    {
+      "id": "speed.wall_seconds_median",
+      "label": "Median wall-clock seconds for Codex response",
+      "category": "speed",
+      "unit": "seconds",
+      "direction": "lower",
+      "control": 11.087,
+      "scaffolded": 10.469,
+      "source_refs": [
+        "receipts/aggregate.json",
+        "receipts/control-r1.json",
+        "receipts/control-r2.json",
+        "receipts/control-r3.json",
+        "receipts/scaffolded-r1.json",
+        "receipts/scaffolded-r2.json",
+        "receipts/scaffolded-r3.json"
+      ],
+      "notes": "Wall time includes Codex CLI overhead on the local machine."
+    },
+    {
+      "id": "evolution.frontier_accepted_criteria_delta",
+      "label": "Evolution loop accepted-criteria gain from baseline to frontier",
+      "category": "evolution",
+      "unit": "accepted criteria",
+      "direction": "higher",
+      "control": 0,
+      "scaffolded": 1,
+      "source_refs": [
+        "evolution-source/attempts.jsonl",
+        "evolution-source/attempt-a-evaluation.json",
+        "evolution-source/attempt-c-evaluation.json",
+        "receipts/aggregate.json"
+      ],
+      "notes": "The Open Scaffold loop records a rejected regressing attempt and a promoted frontier that moves the fixture from 2/3 to 3/3 accepted criteria."
+    }
+  ],
+  "caveats": [
+    "Bounded fixture proof only: one cold-resume evolution-loop decision task, not all AI work.",
+    "Codex CLI total-token receipts were noisy across replicates; prompt payload bytes and medians are reported separately instead of hidden.",
+    "Open Scaffold did not spawn Codex in this proof; Codex was run manually/read-only and the framework evaluated source-labeled receipts.",
+    "The evolution delta comes from the checked-in evolution-ledger demo, not from claiming this run made a model smarter."
+  ]
+}

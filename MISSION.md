@@ -29,6 +29,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-08: closed 153-scaffold-vs-naked-proof-harness — bounded proof harness and source-labeled naked-Codex fixture landed
 - 2026-06-07: closed 152-framework-cleanup-package-sync — Published open-scaffold@0.31.0, verified npm/latest and fresh npx, and created GitHub Release v0.31.0 as Latest.
 - 2026-06-06: closed 151-framework-cleanup-shrink — Merged PR #183 after green CI, latest-head Codex clean/thread-zero review, and owner approval; close the framework cleanup shrink slice.
 - 2026-06-04: closed 150-open-scaffold-efficiency-reset — close efficiency reset after merged controller diagnostics and run-packet gates

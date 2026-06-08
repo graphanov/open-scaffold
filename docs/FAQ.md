@@ -18,7 +18,7 @@ Questions that did not fit in the main README but are still worth answering.
 
 ### Does this reduce token usage / cost?
 
-> Not proven. Plans may reduce context-stuffing and blind retries, but token/cost savings require receipts. Treat cost reduction as a workflow-control hypothesis to measure in your own repo. For repeated-attempt loops, start with the diagnostic/experimental `osc evolve analyze <loop-dir> --efficiency` report; if token/cost telemetry is missing, the report must say missing rather than guessing.
+> Not globally proven. Plans may reduce context-stuffing and blind retries, but token/cost savings require receipts. Treat cost reduction as a workflow-control hypothesis to measure in your own repo. For repeated-attempt loops, start with the diagnostic/experimental `osc evolve analyze <loop-dir> --efficiency` report; if token/cost telemetry is missing, the report must say missing rather than guessing. For a bounded naked-Codex comparison with source-labeled receipts, inspect `osc prove compare examples/proof/scaffold-vs-naked-codex/manifest.json --format markdown`.
 
 ### Will my agent actually follow the protocol, or will it just ignore the files?
 

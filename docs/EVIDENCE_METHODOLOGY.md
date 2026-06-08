@@ -1,6 +1,6 @@
 # Evidence Methodology
 
-Status: historical/repositioned measurement protocol for an observational self-study previously produced by `osc study`; `osc study` is not a live reduced-CLI command after the framework cleanup. This document is the recipe and the honesty contract; the computed result lives in `docs/EVIDENCE_SELF_STUDY.md`, and the controlled comparison that this study deliberately does **not** run is specified in `docs/AB_COMPARISON_PROTOCOL.md`.
+Status: historical/repositioned measurement protocol for an observational self-study previously produced by `osc study`; `osc study` is not a live reduced-CLI command after the framework cleanup. This document is the recipe and the honesty contract; the computed result lives in `docs/EVIDENCE_SELF_STUDY.md`, and the broader controlled comparison remains specified in `docs/AB_COMPARISON_PROTOCOL.md`. A smaller bounded receipt comparator now exists as `osc prove compare`; see `docs/PROOF_HARNESS.md` and `examples/proof/scaffold-vs-naked-codex/` for the first source-labeled naked-Codex fixture result.
 
 ## Why this exists
 
@@ -31,6 +31,8 @@ These are enforced by `osc study` and by `tests/study.test.ts`, not just stated 
 Moving from "scaffolded work *correlates* with X" to "the scaffold *caused* X" is the job of `docs/AB_COMPARISON_PROTOCOL.md`, which is **out of scope for this study and is not run here.**
 
 ## Workflow-control efficiency
+
+`osc prove compare` is now the maintained bounded receipt-comparison surface for scaffolded-vs-control fixtures. The first fixture, `examples/proof/scaffold-vs-naked-codex/manifest.json`, compares naked Codex over raw loop artifacts against Codex over the Open Scaffold compact evolution controller signal. It reports source-labeled quality, token, speed, and evolution-loop metrics, and keeps its caveats visible. This is narrower than the full A/B protocol: it proves one fixture result, not a general causal claim.
 
 Open Scaffold does not make models smarter, and `osc study` is not benchmark proof. The narrower efficiency thesis is that the repo record may reduce workflow-control overhead by producing smaller, sharper stop / inspect / redesign / continue signals while preserving decision quality.
 

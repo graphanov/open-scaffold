@@ -1,6 +1,6 @@
 # Controlled Comparison (A/B) Protocol
 
-Status: historical/repositioned protocol only — not yet run. Running this comparison is future work, gated on the observational self-study from `.osc/plans/done/125-methodology-evidence-harness.md` landing first and on having enough matched tasks/participants to run it credibly. This document is the recipe, not a result.
+Status: broad causal study protocol — not yet run at confirmatory scale. Running this full comparison is future work, gated on enough matched tasks/participants to run it credibly. A smaller bounded receipt-comparison surface now exists (`osc prove compare`) and the first source-labeled naked-Codex fixture lives under `examples/proof/scaffold-vs-naked-codex/`; that fixture is a useful proof artifact, but it does not replace this broader controlled study.
 
 ## Why this exists
 

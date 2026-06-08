@@ -1,0 +1,21 @@
+{
+  "schema": "open-scaffold.proof-receipt.v1",
+  "arm": "scaffolded",
+  "replicate": 3,
+  "model": "gpt-5.5",
+  "runtime": "codex-cli 0.136.0",
+  "sandbox": "read-only",
+  "prompt_bytes": 1308,
+  "codex_reported_total_tokens": 1983,
+  "wall_seconds": 9.009,
+  "quality_score": 5,
+  "quality_score_total": 5,
+  "quality_checks": {
+    "action_stop_or_human_closeout": true,
+    "all_three_ac_pass": true,
+    "current_attempt_c": true,
+    "required_closeout_fields": true,
+    "boundary_no_approval_or_runtime": true
+  },
+  "source_note": "Parsed from local Codex CLI stdout/stderr and final-message receipt; raw private logs are not committed."
+}

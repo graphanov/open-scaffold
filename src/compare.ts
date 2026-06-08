@@ -1,81 +1,32 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { basename, isAbsolute, join, normalize, resolve, sep } from 'node:path';
+import { basename, dirname, isAbsolute, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const ATTEMPT_COMPARISON_SCHEMA = 'open-scaffold.attempt-comparison.v1';
 
 type AttemptFileName = 'diff.patch' | 'rationale.txt' | 'transcript.md' | 'ac-status.json';
 
-export interface AttemptCriterionStatus {
-  id: string;
-  text: string;
-  status: string | null;
-}
+export interface AttemptCriterionStatus { id: string; text: string; status: string | null; }
+type AttemptFileState = { present: boolean; bytes: number };
 
 export interface BareAttemptSummary {
-  name: string;
-  path: string;
-  files: Record<AttemptFileName, { present: boolean; bytes: number }>;
-  diff: {
-    present: boolean;
-    changedFiles: string[];
-    additions: number;
-    deletions: number;
-  };
-  rationale: {
-    present: boolean;
-    text: string;
-  };
-  transcript: {
-    present: boolean;
-    bytes: number;
-  };
-  acStatus: {
-    present: boolean;
-    score: number | null;
-    scoreLabel: string | null;
-    criteria: AttemptCriterionStatus[];
-  };
+  name: string; path: string; files: Record<AttemptFileName, AttemptFileState>;
+  diff: { present: boolean; changedFiles: string[]; additions: number; deletions: number };
+  rationale: { present: boolean; text: string }; transcript: AttemptFileState;
+  acStatus: { present: boolean; score: number | null; scoreLabel: string | null; criteria: AttemptCriterionStatus[] };
   warnings: string[];
 }
 
-export interface AttemptCriterionDelta {
-  id: string;
-  text: string;
-  aStatus: string | null;
-  bStatus: string | null;
-}
+export interface AttemptCriterionDelta { id: string; text: string; aStatus: string | null; bStatus: string | null; }
 
 export interface BareAttemptComparison {
   schema: typeof ATTEMPT_COMPARISON_SCHEMA;
-  attempts: {
-    a: BareAttemptSummary;
-    b: BareAttemptSummary;
-  };
-  summary: {
-    changedFiles: string[];
-    additionsDelta: number;
-    deletionsDelta: number;
-    scoreDelta: number | null;
-  };
-  diff: {
-    changedFiles: string[];
-    onlyInA: string[];
-    onlyInB: string[];
-    inBoth: string[];
-  };
-  acceptanceCriteria: {
-    rows: AttemptCriterionDelta[];
-    aPresent: boolean;
-    bPresent: boolean;
-  };
+  attempts: { a: BareAttemptSummary; b: BareAttemptSummary };
+  summary: { changedFiles: string[]; additionsDelta: number; deletionsDelta: number; scoreDelta: number | null };
+  diff: { changedFiles: string[]; onlyInA: string[]; onlyInB: string[]; inBoth: string[] };
+  acceptanceCriteria: { rows: AttemptCriterionDelta[]; aPresent: boolean; bPresent: boolean };
   warnings: string[];
-  boundary: {
-    runtimeSpawning: false;
-    automaticScoring: false;
-    modelBenchmarking: false;
-    frontierPromotion: false;
-  };
+  boundary: { runtimeSpawning: false; automaticScoring: false; modelBenchmarking: false; frontierPromotion: false };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -317,51 +268,24 @@ export function compareBareAttempts(attemptAPath: string, attemptBPath: string):
   };
 }
 
-function formatScore(score: number | null): string {
-  return score === null ? '—' : Number(score.toFixed(6)).toString();
-}
+function formatScore(score: number | null): string { return score === null ? '—' : Number(score.toFixed(6)).toString(); }
 
 function formatDelta(delta: number | null): string {
-  if (delta === null) return '—';
-  const rounded = Number(delta.toFixed(6));
-  if (rounded === 0) return '0';
-  return `${rounded > 0 ? '+' : ''}${rounded} ${rounded > 0 ? '▲' : '▼'}`;
+  const rounded = delta === null ? null : Number(delta.toFixed(6));
+  return rounded === null ? '—' : rounded === 0 ? '0' : `${rounded > 0 ? '+' : ''}${rounded} ${rounded > 0 ? '▲' : '▼'}`;
 }
 
-function formatCountDelta(delta: number): string {
-  if (delta === 0) return '0';
-  return `${delta > 0 ? '+' : ''}${delta}`;
-}
+function formatCountDelta(delta: number): string { return delta === 0 ? '0' : `${delta > 0 ? '+' : ''}${delta}`; }
 
 function formatStatus(status: string | null): string {
-  switch (status) {
-    case 'pass':
-      return '✓ pass';
-    case 'fail':
-      return '✗ fail';
-    case 'partial':
-      return '◐ partial';
-    case 'blocked':
-      return 'blocked';
-    case 'not_evaluated':
-      return 'not evaluated';
-    case null:
-      return '—';
-    default:
-      return status;
-  }
+  return status === null ? '—' : ({ pass: '✓ pass', fail: '✗ fail', partial: '◐ partial', blocked: 'blocked', not_evaluated: 'not evaluated' }[status] ?? status);
 }
 
 function statusMarker(aStatus: string | null, bStatus: string | null): string {
-  if (aStatus === bStatus || bStatus === null) return '';
-  if (bStatus === 'pass' && aStatus !== 'pass') return ' ▲';
-  if (aStatus === 'pass' && bStatus !== 'pass') return ' ▼';
-  return ' changed';
+  return aStatus === bStatus || bStatus === null ? '' : bStatus === 'pass' && aStatus !== 'pass' ? ' ▲' : aStatus === 'pass' && bStatus !== 'pass' ? ' ▼' : ' changed';
 }
 
-function escapeCell(value: string): string {
-  return value.replace(/\|/g, '\\|').replace(/\n/g, '<br>');
-}
+function escapeCell(value: string): string { return value.replace(/\|/g, '\\|').replace(/\n/g, '<br>'); }
 
 function diffText(attempt: BareAttemptSummary): string {
   const files = attempt.diff.changedFiles.length > 0 ? attempt.diff.changedFiles.join(', ') : '—';
@@ -424,4 +348,58 @@ export function renderAttemptComparisonMarkdown(comparison: BareAttemptCompariso
 
 export function renderAttemptComparisonJson(comparison: BareAttemptComparison): string {
   return `${JSON.stringify(comparison, null, 2)}\n`;
+}
+
+export const PROOF_COMPARISON_SCHEMA = 'open-scaffold.proof-comparison.v1', PROOF_COMPARISON_RESULT_SCHEMA = 'open-scaffold.proof-comparison-result.v1';
+export type ProofRenderFormat = 'terminal' | 'markdown' | 'json';
+type ProofCategory = 'quality' | 'tokens' | 'speed' | 'evolution'; type ProofDirection = 'higher' | 'lower'; type ProofWinner = 'scaffolded' | 'control' | 'tie';
+type ProofIssue = { level: 'fail' | 'warn'; code: string; message: string; path?: string }; type ProofValidationResult = { failures: ProofIssue[]; warnings: ProofIssue[] };
+type ProofMetric = { id: string; label: string; category: ProofCategory; unit: string; direction: ProofDirection; control: number; scaffolded: number; source_refs: string[]; notes?: string | null };
+const PROOF_CATEGORIES: ProofCategory[] = ['quality', 'tokens', 'speed', 'evolution'];
+const proofStrings = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : [];
+const proofIssue = (level: 'fail' | 'warn', code: string, message: string, path?: string): ProofIssue => ({ level, code, message, path });
+const proofArm = (value: unknown, fallback: string) => { const raw = isRecord(value) ? value : {}; return { id: asString(raw.id)?.trim() || fallback, label: asString(raw.label)?.trim() || fallback, runtime: asString(raw.runtime) }; };
+const proofRefIsPrivate = (ref: string) => /^[a-z]+:\/\//i.test(ref) || isAbsolute(ref) || normalizeRelativePath(ref).startsWith('../') || ['.git/', '.osc/state/', '.osc/research/', '.hermes/', 'node_modules/'].some((prefix) => normalizeRelativePath(ref) === prefix.slice(0, -1) || normalizeRelativePath(ref).startsWith(prefix));
+const proofRefExists = (manifestDir: string, ref: string) => existsSync(resolve(manifestDir, ref)) && statSync(resolve(manifestDir, ref)).isFile();
+function proofMetric(value: unknown, index: number, manifestDir: string, failures: ProofIssue[], warnings: ProofIssue[]): ProofMetric | null {
+  const path = `metrics[${index}]`;
+  if (!isRecord(value)) { failures.push(proofIssue('fail', 'invalid-metric', 'Metric must be an object.', path)); return null; }
+  const id = asString(value.id)?.trim() || null, label = asString(value.label)?.trim() || null, category = asString(value.category) as ProofCategory | null, unit = asString(value.unit)?.trim() || null, direction = asString(value.direction) as ProofDirection | null, control = asNumber(value.control), scaffolded = asNumber(value.scaffolded), refs = proofStrings(value.source_refs);
+  for (const [bad, code, message, suffix] of [[!id, 'missing-metric-id', 'Metric must include id.', 'id'], [!label, 'missing-metric-label', 'Metric must include label.', 'label'], [!category || !PROOF_CATEGORIES.includes(category), 'invalid-category', `Metric category must be one of: ${PROOF_CATEGORIES.join(', ')}.`, 'category'], [!unit, 'missing-unit', 'Metric must include unit.', 'unit'], [!direction || !['higher', 'lower'].includes(direction), 'invalid-direction', 'Metric direction must be higher or lower.', 'direction'], [control === null, 'invalid-control-value', 'Metric control value must be a finite number.', 'control'], [scaffolded === null, 'invalid-scaffolded-value', 'Metric scaffolded value must be a finite number.', 'scaffolded'], [refs.length === 0, 'missing-source-ref', 'Metric must include at least one source_refs entry.', 'source_refs']] as const) if (bad) failures.push(proofIssue('fail', code, message, `${path}.${suffix}`));
+  for (const ref of refs) proofRefIsPrivate(ref) ? failures.push(proofIssue('fail', 'private-source-ref', `Source ref must be repo/public-safe and relative, not private: ${ref}`, `${path}.source_refs`)) : !proofRefExists(manifestDir, ref) && failures.push(proofIssue('fail', 'missing-source-ref', `Source ref does not exist: ${ref}`, `${path}.source_refs`));
+  if (category === 'tokens' && direction !== 'lower') warnings.push(proofIssue('warn', 'unexpected-token-direction', 'Token metrics normally use direction: lower.', `${path}.direction`));
+  if (category === 'speed' && direction !== 'lower') warnings.push(proofIssue('warn', 'unexpected-speed-direction', 'Speed metrics normally use direction: lower.', `${path}.direction`));
+  return id && label && category && PROOF_CATEGORIES.includes(category) && unit && direction && ['higher', 'lower'].includes(direction) && control !== null && scaffolded !== null ? { id, label, category, unit, direction, control, scaffolded, source_refs: refs, notes: asString(value.notes) } : null;
+}
+function validateProofRaw(raw: unknown, manifestDir: string): ProofValidationResult {
+  const failures: ProofIssue[] = [], warnings: ProofIssue[] = [];
+  if (!isRecord(raw)) return { failures: [proofIssue('fail', 'invalid-manifest', 'Proof comparison manifest must be a JSON object.')], warnings };
+  if (raw.schema !== PROOF_COMPARISON_SCHEMA) failures.push(proofIssue('fail', 'invalid-schema', `Manifest must declare schema: ${PROOF_COMPARISON_SCHEMA}.`, 'schema'));
+  for (const key of ['comparison_id', 'title', 'question']) if (!asString(raw[key])?.trim()) failures.push(proofIssue('fail', `missing-${key.replace('_', '-')}`, `Manifest must include ${key}.`, key));
+  const arms = isRecord(raw.arms) ? raw.arms : null;
+  if (!arms) failures.push(proofIssue('fail', 'missing-arms', 'Manifest must include arms.control and arms.scaffolded.', 'arms'));
+  else for (const label of ['control', 'scaffolded']) { const arm = arms[label]; if (!isRecord(arm)) failures.push(proofIssue('fail', 'invalid-arm', `${label} arm must be an object.`, `arms.${label}`)); else for (const field of ['id', 'label']) if (!asString(arm[field])?.trim()) failures.push(proofIssue('fail', `missing-arm-${field}`, `${label} arm must include ${field}.`, `arms.${label}.${field}`)); }
+  if (!Array.isArray(raw.metrics) || raw.metrics.length === 0) failures.push(proofIssue('fail', 'missing-metrics', 'Manifest must include at least one metric.', 'metrics'));
+  else { const categories = new Set<ProofCategory>(); raw.metrics.forEach((metric, index) => { const parsed = proofMetric(metric, index, manifestDir, failures, warnings); if (parsed) categories.add(parsed.category); }); for (const category of PROOF_CATEGORIES) if (!categories.has(category)) failures.push(proofIssue('fail', 'missing-required-category', `Manifest must include a ${category} metric.`, 'metrics')); }
+  return { failures, warnings };
+}
+export function validateProofManifestFile(pathArg: string): ProofValidationResult {
+  try { const manifestPath = resolve(pathArg); return validateProofRaw(JSON.parse(readFileSync(manifestPath, 'utf8')) as unknown, dirname(manifestPath)); } catch (error) { return { failures: [proofIssue('fail', 'unreadable-manifest', error instanceof Error ? error.message : String(error), pathArg)], warnings: [] }; }
+}
+const proofWinner = (metric: ProofMetric): ProofWinner => metric.scaffolded === metric.control ? 'tie' : metric.direction === 'higher' ? (metric.scaffolded > metric.control ? 'scaffolded' : 'control') : (metric.scaffolded < metric.control ? 'scaffolded' : 'control');
+const proofRatio = (metric: ProofMetric, winner: ProofWinner) => { if (winner === 'tie') return 1; const baseline = winner === 'scaffolded' ? metric.control : metric.scaffolded, improved = winner === 'scaffolded' ? metric.scaffolded : metric.control, ratio = metric.direction === 'higher' ? (baseline === 0 ? null : improved / baseline) : (improved === 0 ? null : baseline / improved); return ratio === null ? null : Number(ratio.toFixed(6)); };
+function proofCategoryStatus(metrics: Array<ProofMetric & { winner: ProofWinner }>, category: ProofCategory) { const scoped = metrics.filter((metric) => metric.category === category); return scoped.length === 0 ? 'missing' : scoped.some((metric) => metric.winner === 'control') ? 'regressed' : scoped.some((metric) => metric.winner === 'scaffolded') ? 'improved' : 'tied'; }
+export function compareProofManifest(pathArg: string) {
+  const manifestPath = resolve(pathArg), manifestDir = dirname(manifestPath), raw = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>, validation = validateProofRaw(raw, manifestDir);
+  if (validation.failures.length > 0) throw new Error(`Invalid proof comparison manifest: ${validation.failures.map((failure) => failure.code).join(', ')}`);
+  const metrics = ((raw.metrics as unknown[]) ?? []).map((metric, index) => proofMetric(metric, index, manifestDir, [], [])).filter((metric): metric is ProofMetric => Boolean(metric)).map((metric) => { const winner = proofWinner(metric); return { ...metric, winner, delta: Number((metric.scaffolded - metric.control).toFixed(6)), improvementRatio: proofRatio(metric, winner), sourceRefs: metric.source_refs }; });
+  const categories = Object.fromEntries(PROOF_CATEGORIES.map((category) => [category, proofCategoryStatus(metrics, category)])) as Record<ProofCategory, 'improved' | 'regressed' | 'tied' | 'missing'>, scaffoldedWins = metrics.filter((metric) => metric.winner === 'scaffolded').length, controlWins = metrics.filter((metric) => metric.winner === 'control').length, ties = metrics.filter((metric) => metric.winner === 'tie').length;
+  const boundedProof = categories.quality === 'improved' && categories.evolution === 'improved' && categories.tokens !== 'regressed' && categories.speed !== 'regressed' && controlWins === 0;
+  return { schema: PROOF_COMPARISON_RESULT_SCHEMA, comparisonId: asString(raw.comparison_id) ?? 'proof-comparison', title: asString(raw.title) ?? 'Proof comparison', question: asString(raw.question) ?? 'Does the scaffolded arm improve the bounded comparison?', arms: { control: proofArm(isRecord(raw.arms) ? raw.arms.control : null, 'control'), scaffolded: proofArm(isRecord(raw.arms) ? raw.arms.scaffolded : null, 'scaffolded') }, metrics, summary: { scaffoldedWins, controlWins, ties, categories, boundedProof, verdict: boundedProof ? 'PASS: bounded source-labeled comparison favors the scaffolded arm on quality and evolution without token/speed regression.' : 'FAIL/INCONCLUSIVE: this bounded comparison does not show the scaffolded arm is better; inspect metric regressions or missing categories.' }, caveats: proofStrings(raw.caveats).length > 0 ? proofStrings(raw.caveats) : ['Bounded comparison only; not a universal benchmark or model-ranking claim.'], validation };
+}
+const proofFmt = (value: number | null) => value === null ? 'n/a' : Number.isInteger(value) ? String(value) : String(Number(value.toFixed(6)));
+export function renderProofComparison(result: ReturnType<typeof compareProofManifest>, format: ProofRenderFormat = 'terminal'): string {
+  if (format === 'json') return `${JSON.stringify(result, null, 2)}\n`;
+  const lines = [format === 'markdown' ? `# ${result.title}` : result.title, '', `Question: ${result.question}`, `Control arm: ${result.arms.control.label} (${result.arms.control.id})`, `Scaffolded arm: ${result.arms.scaffolded.label} (${result.arms.scaffolded.id})`, '', `Bounded proof verdict: ${result.summary.boundedProof ? 'PASS' : 'FAIL/INCONCLUSIVE'}`, result.summary.verdict, `Category status: ${PROOF_CATEGORIES.map((category) => `${category}=${result.summary.categories[category]}`).join(', ')}`, `Wins: scaffolded=${result.summary.scaffoldedWins}, control=${result.summary.controlWins}, ties=${result.summary.ties}`, '', '| Metric | Category | Control | Scaffolded | Winner | Ratio | Sources |', '|---|---|---:|---:|---|---:|---|', ...result.metrics.map((metric) => `| ${metric.id} | ${metric.category} | ${proofFmt(metric.control)} ${metric.unit} | ${proofFmt(metric.scaffolded)} ${metric.unit} | ${metric.winner} | ${metric.improvementRatio === null ? 'n/a' : `${proofFmt(metric.improvementRatio)}x`} | ${metric.sourceRefs.join('<br>')} |`), '', 'Caveats', ...result.caveats.map((caveat) => `- ${caveat}`), '- This report compares the supplied receipts only. It does not prove all tasks, all models, or all operators will improve; it does not make models smarter, rank models, certify correctness, or authorize release/merge/deploy actions.'];
+  return `${lines.join('\n')}\n`;
 }

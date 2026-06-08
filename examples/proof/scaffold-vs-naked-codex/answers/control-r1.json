@@ -1,0 +1,31 @@
+{
+  "action": "request_human_approval",
+  "reasons": [
+    "attempt-c is current frontier with AC1/AC2/AC3 all pass and improvement.route=close",
+    "loop stop_condition requires human_approval=true before closing",
+    "operator evaluation approval is explicitly evidence only: scorer.approval_authority=false and boundary.approval_or_release_decision=false"
+  ],
+  "resume": {
+    "loop_id": "20260522T100000Z-reviewable-csv-importer-evolution",
+    "current_attempt": "attempt-c",
+    "current_run": "attempt-c",
+    "current_evaluation": "eval-attempt-c",
+    "score": 0.94,
+    "evidence_refs": [
+      "docs/evidence/attempt-c-proof.md",
+      "docs/evidence/attempt-c-evaluation.json"
+    ]
+  },
+  "acceptance": {
+    "AC1": "pass",
+    "AC2": "pass",
+    "AC3": "pass"
+  },
+  "required_next_fields": [
+    "human_approval.status",
+    "human_approval.approver",
+    "human_approval.recorded_at",
+    "human_approval.rationale"
+  ],
+  "boundary_note": "Do not treat frontier promotion or evaluation approval as merge, publish, release, compliance, model-ranking, or runtime-spawning authority."
+}

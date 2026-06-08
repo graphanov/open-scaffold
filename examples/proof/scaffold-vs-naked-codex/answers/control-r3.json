@@ -1,0 +1,24 @@
+{
+  "action": "request_human_approval",
+  "reasons": [
+    "current frontier is attempt-c with AC1/AC2/AC3 all passing",
+    "attempt-c evaluation improvement.route is close",
+    "loop stop_condition requires human_approval=true",
+    "loop scorer approval_authority=false and frontier notes say promotion is not automatic approval"
+  ],
+  "resume": "Resume from attempt-c/frontier current; do not retry attempt-b prompt rewrite; close only after an authority-bearing human approval is recorded.",
+  "acceptance": [
+    "AC1 pass: quoted embedded commas parse correctly",
+    "AC2 pass: malformed rows report row and column",
+    "AC3 pass: UTF-8 BOM stripped from first field"
+  ],
+  "required_next_fields": [
+    "approval.approver",
+    "approval.authority=true",
+    "approval.decision",
+    "approval.recorded_at",
+    "approval.rationale",
+    "close.evidence_refs"
+  ],
+  "boundary_note": "Do not spawn runtimes, benchmark models, certify compliance, or treat frontier promotion/operator scoring as merge, release, or approval authority."
+}
