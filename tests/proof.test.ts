@@ -107,6 +107,15 @@ describe('proof comparison harness', () => {
     expect(result.summary.verdict).toContain('bounded');
   });
 
+  it('keeps shipped raw quality ties from becoming quality wins', () => {
+    const result = compareProofManifest(resolve(repoRoot, 'examples/proof/scaffold-vs-naked-codex/manifest.json'));
+
+    expect(result.summary.categories.quality).toBe('tied');
+    expect(result.summary.categories.tokens).toBe('improved');
+    expect(result.summary.boundedProof).toBe(true);
+    expect(result.summary.verdict).toContain('preserves decision quality');
+  });
+
   it('renders an honest markdown report with source refs and non-universal caveats', () => {
     const root = fixtureRoot();
     const result = compareProofManifest(manifest(root));

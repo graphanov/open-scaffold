@@ -53,7 +53,7 @@ The report passes for this fixture because Open Scaffold preserved decision qual
 - `npm run osc -- prove check examples/proof/scaffold-vs-naked-codex/manifest.json` — PASS, 0 warnings
 - `npm run osc -- prove compare --format markdown examples/proof/scaffold-vs-naked-codex/manifest.json --out /tmp/scaffold-vs-naked-proof.md` — PASS, report written
 - `./verify.sh --strict` — PASS (10 pass, 0 fail, 0 warn)
-- `npm test -- --run` — PASS (44 files, 488 tests)
+- `npm test -- --run` — PASS (44 files, 489 tests)
 - `npm run build` — PASS
 - `npm run osc -- doctor --check secret-scan` — PASS
 - Independent review after fixes — PASS; checked source refs, proof CLI argument handling, public fixture paths, and proof tests/build.

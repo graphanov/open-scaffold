@@ -38,7 +38,7 @@
     {
       "id": "quality.score_per_1k_codex_tokens",
       "label": "Decision quality per 1k Codex-reported tokens",
-      "category": "quality",
+      "category": "tokens",
       "unit": "points / 1k tokens",
       "direction": "higher",
       "control": 0.141323,
