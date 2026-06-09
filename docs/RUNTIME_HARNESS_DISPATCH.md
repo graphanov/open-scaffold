@@ -1,8 +1,8 @@
 # Runtime Harness Dispatch Pattern
 
-> Status: historical dispatch-pattern evidence and adapter-boundary guidance. This is not a v1 promise that Open Scaffold core launches agents.
+> Status: adapter-boundary guidance. `$work` can now launch a bounded runtime adapter only when explicit backend authority is passed. Open Scaffold records the work package, gates, receipts, logs, and evidence; humans keep owner authority.
 
-Open Scaffold core defines the portable contract for semi-autonomous work. It does **not** own the local launcher/controller that starts agents. A coordinator or runtime-specific binding — external launch glue — consumes `.osc/runs/<run_id>/run.json` and dispatches the selected harness, meaning the workflow wrapper around the chosen agent.
+Open Scaffold defines the portable contract for semi-autonomous work. A runtime adapter consumes `.osc/runs/<run_id>/run.json`, executes the selected bounded package when allowed, and writes a repo-relative receipt back under the same run directory.
 
 This page captures a **private deployment example**: an owner-local Command Center used Hermes Kanban -> OMX `$ralplan` to prove the dispatch shape. It translates that private dogfood pattern into the public Open Scaffold model; the private deployment is not required to adopt Open Scaffold. The detailed adapter/binding responsibilities live in [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md), trust/safety boundaries live in [`docs/TRUST_BOUNDARIES.md`](TRUST_BOUNDARIES.md), and reference labels live in [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md).
 
@@ -10,11 +10,12 @@ This page captures a **private deployment example**: an owner-local Command Cent
 
 ```text
 Open Scaffold packages.
-A task bridge — external work queue/status board — coordinates.
-A harness — workflow wrapper around an agent — executes.
-An operator surface — chat/dashboard for humans — observes.
-GitHub publishes.
-Evidence proves.
+A runtime adapter executes only after explicit backend authority.
+A task bridge — external work queue/status board — may coordinate.
+A harness — workflow wrapper around an agent — does bounded work.
+An operator surface — chat/dashboard for humans — observes and answers gates.
+GitHub publishes after owner gates.
+Evidence records what happened; it does not approve the result.
 ```
 
 ## Where we are right now
@@ -44,10 +45,13 @@ flowchart TD
 
 Current state:
 
-- A **private deployment example** has proven Hermes Kanban dispatching a task into detached OMX `$ralplan` and preserving run evidence; it is dogfood evidence, not an adoption requirement.
+- `$work` writes a controlled work package and a runtime receipt for every executable run.
+- Without `--allow-spawn`, `$work` stops at a dry-run receipt and no adapter process starts.
+- With `--allow-spawn`, `$work` can launch the selected runtime adapter, parse its final marker, write bounded/redacted logs, and update status/gates.
+- The built-in Codex adapter path is provider-neutral at the contract level: it is one adapter implementation, not a hard dependency on Codex internals.
+- A **private deployment example** proved Hermes Kanban dispatching a task into detached OMX `$ralplan` and preserving run evidence; it is dogfood evidence, not an adoption requirement.
 - Open Scaffold already has the generic `task_id` / `run_id` / `operator_surface` schema.
-- This Open Scaffold slice documents the bridge as a public, runtime-neutral dispatch pattern.
-- The next adapter/product step is an OMX/OMC binding that consumes `.osc/runs/<run_id>/run.json` and performs real launch/postflight outside core. The v1 public contract for this is [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
+- Later adapter/product work can add more coordinators and richer control-room transport without changing the core owner boundary.
 
 ## Layer ownership
 
@@ -75,7 +79,7 @@ ROADMAP item / issue / task
 
 ## What Open Scaffold core should generate
 
-Open Scaffold core should generate or preserve enough information for a launcher to act without guessing:
+Open Scaffold should generate or preserve enough information for an adapter to act without guessing:
 
 ```json
 {
@@ -106,7 +110,7 @@ Open Scaffold core should generate or preserve enough information for a launcher
 }
 ```
 
-`spawning: false` is deliberate. Core writes the black-box recorder package; a coordinator or adapter launches the harness.
+`spawning: false` means the package has not been granted backend launch authority yet. `$work --allow-spawn` records explicit authority before launching a runtime adapter, and the adapter receipt becomes the evidence of that launch.
 
 ## What the coordinator/adapter should do
 
@@ -147,7 +151,7 @@ into a bounded OMX launch such as:
 $ralplan "Read .osc/runs/<run_id>/package.md. Plan only. Do not implement, commit, push, deploy, or publish. If blocked, emit BLOCKED with a question_id. If ready, emit READY_FOR_POSTFLIGHT and cite evidence paths."
 ```
 
-The exact launch mechanics — tmux, Codex auth, update prompts, hooks, watchdogs, and runtime logs — belong in an OMX binding or coordinator, not Open Scaffold core.
+The exact launch mechanics for a richer coordinator — tmux, Codex auth refresh, update prompts, hooks, watchdogs, and long-lived session logs — belong in an OMX binding or coordinator. The `$work` adapter path here stays bounded: one process, one run package, strict markers, bounded logs, and a repo receipt.
 
 ## Anti-patterns
 
@@ -157,8 +161,9 @@ Avoid:
 - making Discord the task database;
 - letting OMX/OMC runtime state replace `.osc/runs` evidence;
 - dispatching a harness from vague prose without a `run.json` work package (run packet);
+- launching an adapter without explicit backend authority such as `--allow-spawn`;
 - letting a chat reply answer a question without `question_id -> run_id` correlation;
-- treating `spawning: false` as a limitation instead of the core boundary.
+- treating a dry-run `spawning: false` receipt as a failed feature instead of the default safety boundary.
 
 ## Product implication
 

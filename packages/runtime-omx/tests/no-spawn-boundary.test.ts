@@ -15,8 +15,10 @@ const coreForbiddenPatterns = [
 
 const coreProcessAllowedFiles = new Set([
   join(coreSrcRoot, 'evidence.ts'),
-  // Dispatch may invoke an explicitly reviewed local adapter command for an existing run packet; adapter launch policy remains outside core.
+  // Dispatch may invoke an explicitly reviewed local adapter command for an existing run packet.
   join(coreSrcRoot, 'dispatch.ts'),
+  // Controlled $work may launch exactly one bounded runtime adapter behind explicit --allow-spawn.
+  join(coreSrcRoot, 'runtimes.ts'),
 ]);
 
 const runtimeForbiddenPatterns = [
@@ -45,14 +47,16 @@ function isCoreProcessAllowedFile(file: string): boolean {
 }
 
 describe('runtime-omx source boundary', () => {
-  it('only allowlists the intended core evidence, dispatch, and local git-reading collector files', () => {
+  it('only allowlists the intended core evidence, dispatch, runtime adapter, and local git-reading collector files', () => {
     expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'evidence.ts'))).toBe(true);
     expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'dispatch.ts'))).toBe(true);
+    expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'runtimes.ts'))).toBe(true);
     expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'nested', 'evidence.ts'))).toBe(false);
     expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'nested', 'dispatch.ts'))).toBe(false);
+    expect(isCoreProcessAllowedFile(join(coreSrcRoot, 'nested', 'runtimes.ts'))).toBe(false);
   });
 
-  it('Open Scaffold core source remains free of runtime process launching code', () => {
+  it('Open Scaffold core source only uses process launching in reviewed adapter/evidence files', () => {
     const files = sourceFiles(coreSrcRoot);
     expect(files.length).toBeGreaterThan(0);
     const violations: string[] = [];

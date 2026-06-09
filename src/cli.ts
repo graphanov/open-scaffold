@@ -90,6 +90,7 @@ Harness command surface:
   osc harness '$interview ...' [--json]
   osc harness '$plan ...' [--json]
   osc harness '$work ...' [--json]
+  osc harness '$work ... --adapter <id> --allow-spawn [--timeout-ms <n>] [--max-log-bytes <n>]' [--json]
   osc harness '$team ...' [--json]
   osc harness status <run-id> [--json]
   osc harness answer <run-id> --gate <id> --answer <text> [--json]
@@ -797,7 +798,7 @@ function runtimesCommand(args: string[]): void {
 }
 
 function harnessCommand(args: string[]): void {
-  if (isHelpArg(args[0])) { console.log("Usage: osc harness '$interview|$plan|$work|$team ...' [--json]\n  osc harness status <run-id> [--json]\n  osc harness answer <run-id> --gate <id> --answer <text> [--json]"); return; }
+  if (isHelpArg(args[0])) { console.log("Usage: osc harness '$interview|$plan|$work|$team ...' [--json]\n  osc harness '$work ... --adapter <id> --allow-spawn [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>]' [--json]\n  osc harness status <run-id> [--json]\n  osc harness answer <run-id> --gate <id> --answer <text> [--json]\n\nFor $work, omit --allow-spawn to write a dry-run receipt without launching the adapter. Gate answers are task input, not owner approval."); return; }
   const json = has(args, '--json');
   try {
     if (args[0] === 'status') {

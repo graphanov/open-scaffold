@@ -19,12 +19,12 @@ Controlled work runtime package
   run.json, human gates, worker lanes, status, events
         │
         ▼
-Runtime adapter boundary
-  Codex first; Hermes / Claude / desktop adapters later
+Runtime adapter launch (explicit authority only)
+  Codex first; project-local adapters for tests/custom paths
         │
         ▼
 Evidence receipt back to repo
-  postflight.md, feedback.jsonl, benchmark aggregates, handoff packets
+  runtime-receipt.json, bounded logs, postflight.md, feedback.jsonl, benchmark aggregates, handoff packets
         │
         ▼
 Feedback / improvement loop
@@ -57,6 +57,12 @@ Events are JSONL records with `schema: "osc.harness-event.v1"`. Current event ty
 - `command_started`
 - `human_gate`
 - `human_gate_answered`
+- `runtime_dry_run`
+- `runtime_completed`
+- `runtime_needs_human`
+- `runtime_blocked`
+- `runtime_failed`
+- `runtime_resume_started`
 - `command_blocked`
 - `command_completed`
 
@@ -106,21 +112,34 @@ Future surfaces should display these links, not paste entire logs by default.
 
 ## Runtime adapters
 
-Open Scaffold core owns:
+Open Scaffold owns:
 
 - command parsing,
 - run package creation,
+- explicit spawn-authority checks,
+- marker parsing,
 - gates,
 - status/events,
+- bounded/redacted runtime logs,
+- repo-relative adapter receipts,
 - feedback records,
 - benchmark/proof receipts.
 
 Adapters own:
 
-- process spawning,
+- the external runtime command,
 - model/provider selection,
-- sandboxing,
-- long-running worker lifecycle,
-- tool-specific logs.
+- sandbox/tool behavior while alive,
+- the actual work attempted inside the bounded package.
 
-This keeps the core portable across CLI, Codex plugin, Hermes, and future app surfaces.
+`$work` refuses to launch an adapter unless the command includes explicit backend authority such as `--allow-spawn`. Without that flag, it still writes a dry-run receipt so the handoff is reviewable.
+
+A successful process exit is not enough. Runtime stdout must end with exactly one standalone marker:
+
+- `LOMEIN_COMPLETE` → completed receipt, still not owner approval or correctness proof.
+- `LOMEIN_NEEDS_HUMAN` → pending human gate; the gate answer resumes the same run as task input.
+- `LOMEIN_BLOCKED` → blocked receipt, not success.
+
+Missing, duplicated, non-final, timed-out, signaled, or non-zero output fails closed.
+
+This keeps the core portable across CLI, Codex plugin, Hermes, and future app surfaces while preserving owner authority.

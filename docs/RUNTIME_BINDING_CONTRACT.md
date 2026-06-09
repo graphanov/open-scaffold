@@ -1,24 +1,24 @@
 # Runtime Binding Contract
 
-This is the execution boundary layer: the rules for what external launchers may do after Open Scaffold creates a package. Runtime selection chooses a lane; runtime profiles describe that lane; the binding contract says what an external adapter/coordinator must do with the `run.json` package (run packet).
+This is the execution boundary layer: the rules for what runtime adapters may do after Open Scaffold creates a package. Runtime selection chooses a lane; runtime profiles describe that lane; the binding contract says what an adapter/coordinator must do with the `run.json` package (run packet).
 
 Named harnesses in this contract, including OMC and OMX, are runtime lanes or adapter candidates rather than Open Scaffold core dependencies. Use [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) for public/private/future reference labels.
 
-Open Scaffold core creates bounded run packages. Runtime bindings — external launch glue/adapters for a chosen lane — consume those packages and launch outside core. This document defines the contract between the repo-native Open Scaffold package and any coordinator, adapter, harness, agent, or human lane that executes it.
+Open Scaffold creates bounded run packages and records receipts. Runtime adapters — external launch glue or built-in bounded adapter paths for a chosen lane — consume those packages, execute only when explicit backend authority is present, and write evidence back under `.osc/runs`. This document defines the contract between the repo-native Open Scaffold package and any coordinator, adapter, harness, agent, or human lane that executes it.
 
-For the accepted executable architecture direction, see [`docs/AGENTIC_RUNTIME_LAYER.md`](AGENTIC_RUNTIME_LAYER.md): Open Scaffold starts execution support through explicit in-repo agentic runtime packages, with `packages/runtime-omx/` as the first target package and `$ralplan` as the first OMX workflow to prove. That path refers to the GitHub source tree; it is not included in the root `open-scaffold` npm package today.
+For the accepted executable architecture direction, see [`docs/AGENTIC_RUNTIME_LAYER.md`](AGENTIC_RUNTIME_LAYER.md). The current root-package `$work --adapter codex --allow-spawn` path is bounded: one run package, one adapter process, strict markers, bounded logs, and a repo receipt. Richer runtime packages such as `packages/runtime-omx/` remain useful adapter tracks and publication remains owner-gated.
 
 ## Executive rule
 
 ```text
-Open Scaffold core packages.
-A coordinator/adapter launches outside core.
-A harness or human executes.
+Open Scaffold packages and records.
+A runtime adapter executes only after explicit backend authority.
+A harness or human does bounded work.
 Evidence returns.
 Postflight closes.
 ```
 
-`spawning: false` in `run.json` means core did not launch a real agent/process. It is not a missing feature. It is the boundary that keeps generic Open Scaffold portable while runtime packages prove execution behavior explicitly.
+`spawning: false` in `run.json` means this run has not been granted backend launch authority. `$work` without `--allow-spawn` writes a dry-run receipt and stops. `$work --allow-spawn` records that explicit authority before the selected adapter launches.
 
 ## What is a runtime binding?
 
@@ -41,7 +41,7 @@ A binding is not the Open Scaffold core. It may be a separate repo, plugin, bot,
 
 | Layer | Owns | Must not own |
 |---|---|---|
-| Open Scaffold core | plan/spec/run package, package-quality fields, prompt artifacts, evidence locations, commit policy | runtime auth, process lifecycle, autonomous spawning |
+| Open Scaffold core | plan/spec/run package, package-quality fields, prompt artifacts, evidence locations, adapter receipts, bounded log paths, commit policy | runtime auth, autonomous authority, merge/publish approval |
 | Coordinator/task bridge | selecting work, choosing lane, assigning owner, retry/block/review state | final evidence by itself |
 | Runtime binding / agentic runtime package | translating package to a specific handoff or launch, attaching runtime metadata, returning artifacts | project truth, hidden default spawning, merge authority unless granted |
 | Harness/agent/human lane | execution while alive | canonical task database, approval gate |
@@ -65,23 +65,24 @@ A binding is not the Open Scaffold core. It may be a separate repo, plugin, bot,
 12. Close, retry, amend, block, or create next slice
 ```
 
-## Future `osc work` controller contract
+## `$work --allow-spawn` bounded controller contract
 
-A future `osc work --execute --allow-spawn` controller is allowed to orchestrate the lifecycle around a binding; it is not allowed to become the binding. Core may create and update run-bound controller state under `.osc/runs/<run_id>/`:
+`$work --allow-spawn` is allowed to launch one bounded adapter process for one run. It is not allowed to grant owner authority or become a long-lived task bridge. The run directory keeps the record:
 
 ```text
 run.json
-automation.json
-automation-events.jsonl
-dispatch-receipt.json
-adapter-output-manifest.json
-dispatch/*.log
-evidence/*
+runtime-receipt.json
+runtime/stdout.log
+runtime/stderr.log
+human-gates.json
+events.jsonl
+postflight.md
+feedback.jsonl
 ```
 
-`automation.json` records lifecycle status, selected adapter, granted authority, human gates, approval/question IDs, receipt/log/evidence paths, verification results, and portable blocker/failure codes. It must not record secrets, credentials, raw runtime transcripts, provider-local state, hidden session memory, or unbounded logs.
+`runtime-receipt.json` records lifecycle status, selected adapter, granted authority, human gates, receipt/log/evidence paths, exit state, marker state, timeout/kill result, and portable blocker/failure codes. It must not record secrets, credentials, raw full runtime transcripts, provider-local state, hidden session memory, unbounded logs, or absolute local paths.
 
-A binding used by that controller must provide a structured adapter output manifest in addition to any dispatch receipt. Minimum manifest facts: adapter ID/version, consumed run packet path, spawn declaration, authority used, environment keys actually passed, log paths, artifact/evidence paths, verification outputs if any, timeout/kill result, and portable failure code.
+A binding used by the controller must provide enough structured facts for that receipt: adapter ID/version when available, consumed run packet path, spawn declaration, authority used, log paths, artifact/evidence paths, timeout/kill result, final marker state, and portable failure code.
 
 Security floor for executable bindings:
 

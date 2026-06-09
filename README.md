@@ -84,6 +84,8 @@ For shell, CI, tests, and adapter integrations, use the backend CLI:
 osc harness '$interview "clarify this work"' --json
 osc harness '$plan "add the harness docs" --slug harness-docs'
 osc harness '$work "implement one bounded slice" --context "plan is ready"' --json
+# Explicit backend authority is required before any adapter launch:
+osc harness '$work "implement one bounded slice" --context "plan is ready" --adapter codex --allow-spawn' --json
 osc harness '$team "split implementation docs review" --worker implementation --worker docs --worker review'
 ```
 
