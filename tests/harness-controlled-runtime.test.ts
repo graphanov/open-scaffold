@@ -64,6 +64,29 @@ describe('controlled $work runtime parity', () => {
     }
   });
 
+  it('treats explicit false spawn authority as dry-run', () => {
+    const root = tempScaffold();
+    try {
+      writeMarkerAdapter(root, 'fake-complete', `
+import { writeFileSync } from 'node:fs';
+writeFileSync('.osc/adapter-was-spawned-false.txt', 'spawned');
+console.log('LOMEIN_COMPLETE');
+`);
+
+      const result = routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "explicit false spawn" --context "repo truth" --adapter fake-complete --allow-spawn false',
+      });
+
+      expect(result.status.state).toBe('ready');
+      expect(existsSync(join(root, '.osc/adapter-was-spawned-false.txt'))).toBe(false);
+      expect(readRunJson(root, result.runId).runtime).toMatchObject({ spawning: false, spawnAuthority: false });
+      expect(readRuntimeReceipt(root, result.runId)).toMatchObject({ status: 'dry_run', failure: { code: 'spawn_authority_missing' } });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('keeps executable $work in dry-run unless explicit spawn authority is present', () => {
     const root = tempScaffold();
     try {

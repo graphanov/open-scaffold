@@ -175,7 +175,7 @@ function optionList(parsed: ParsedHarnessCommand, name: string): string[] {
 }
 
 function optionFlag(parsed: ParsedHarnessCommand, name: string): boolean {
-  return (parsed.options[name] ?? []).some((value) => value === 'true' || value === '1' || value === 'yes') || Object.prototype.hasOwnProperty.call(parsed.options, name);
+  return (parsed.options[name] ?? []).some((value) => value === 'true' || value === '1' || value === 'yes');
 }
 
 function runIdFor(command: HarnessCommandName, intent: string): string {
