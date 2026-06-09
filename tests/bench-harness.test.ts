@@ -129,6 +129,77 @@ describe('harness benchmark and reproduction machinery', () => {
     }
   });
 
+  it('writes distinct live work packages for non-handoff control, harness, and ablation lanes', () => {
+    const root = tempScaffold('osc-live-lane-prompts-');
+    try {
+      writeMarkerAdapter(root, 'complete-marker', `console.log('bounded benchmark answer');\nconsole.log('LOMEIN_COMPLETE');\n`);
+      runBenchSuite({
+        repoRoot: root,
+        mode: 'live',
+        outDir: '.osc/bench/lane-prompts',
+        fixtureIds: ['debugging-protocol-improvement'],
+        includeAblations: true,
+        ablationFixtureIds: ['debugging-protocol-improvement'],
+        allowSpawn: true,
+        adapterId: 'complete-marker',
+      });
+
+      const suiteId = 'bench-lane-prompts';
+      const base = `${suiteId}-debugging-protocol-improvement`;
+      const control = JSON.parse(readFileSync(join(root, `.osc/runs/${base}-control/run.json`), 'utf8'));
+      const harness = JSON.parse(readFileSync(join(root, `.osc/runs/${base}-harness/run.json`), 'utf8'));
+      const ablation = JSON.parse(readFileSync(join(root, `.osc/runs/${base}-ablation-naked-explicit-acceptance-criteria/run.json`), 'utf8'));
+
+      expect(control.workPackage.context).not.toBe(harness.workPackage.context);
+      expect(ablation.workPackage.context).not.toBe(harness.workPackage.context);
+      expect(control.workPackage.acceptanceCriteria).not.toEqual(harness.workPackage.acceptanceCriteria);
+      expect(ablation.workPackage.context).toContain('Explicit acceptance criteria');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('uses runtime-reported token usage when live adapter output provides it', () => {
+    const root = tempScaffold('osc-live-token-usage-');
+    try {
+      writeMarkerAdapter(root, 'token-usage-marker', `console.error('OPEN_SCAFFOLD_TOKEN_USAGE: {"promptTokens": 80, "completionTokens": 20, "totalTokens": 100}');\nconsole.log('root cause reproduction verification');\nconsole.log('LOMEIN_COMPLETE');\n`);
+      const result = runBenchSuite({
+        repoRoot: root,
+        mode: 'live',
+        outDir: '.osc/bench/live-token-usage',
+        fixtureIds: ['debugging-protocol-improvement'],
+        allowSpawn: true,
+        adapterId: 'token-usage-marker',
+      });
+
+      expect(result.fixtures[0].control.tokens).toMatchObject({ value: 100, source: 'runtime_adapter_receipt', promptTokens: 80, completionTokens: 20 });
+      expect(result.fixtures[0].harness.tokens).toMatchObject({ value: 100, source: 'runtime_adapter_receipt', promptTokens: 80, completionTokens: 20 });
+      expect(result.fixtures[0].comparison.blockers).not.toContain('token_receipts_unavailable');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not treat stdout answer text as trusted token proof', () => {
+    const root = tempScaffold('osc-live-forged-token-usage-');
+    try {
+      writeMarkerAdapter(root, 'forged-stdout-token-marker', `console.log('OPEN_SCAFFOLD_TOKEN_USAGE: {"promptTokens": 1, "completionTokens": 1, "totalTokens": 2}');\nconsole.log('root cause reproduction verification');\nconsole.log('LOMEIN_COMPLETE');\n`);
+      const result = runBenchSuite({
+        repoRoot: root,
+        mode: 'live',
+        outDir: '.osc/bench/live-forged-token-usage',
+        fixtureIds: ['debugging-protocol-improvement'],
+        allowSpawn: true,
+        adapterId: 'forged-stdout-token-marker',
+      });
+
+      expect(result.fixtures[0].control.tokens).toMatchObject({ value: null, source: 'not_reported_by_runtime_adapter' });
+      expect(result.fixtures[0].comparison.blockers).toContain('token_receipts_unavailable');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('does not count an equal-duration live quality tie as partial reproduction', () => {
     const root = tempScaffold('osc-live-no-directional-win-');
     const originalNow = Date.now;

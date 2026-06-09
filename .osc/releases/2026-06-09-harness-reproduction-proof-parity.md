@@ -2,11 +2,11 @@
 
 Plan: `.osc/plans/active/157-reproduction-proof-parity.md`
 Branch: `feat/harness-reproduction-proof-parity`
-PR: pending
+PR: `#196`
 
 ## Summary
 
-Open Scaffold now has its own reproduction aggregate/report path for plan 157. The run evidence partially reproduced the source-prototype signal: targeted compact handoff completed cleanly with tied quality and lower wall-clock duration, but representative live did not reproduce the signal. Token receipts were unavailable, representative live had dirty/blocked lanes, and ablations did not isolate a harness-only effect.
+Open Scaffold now has its own reproduction aggregate/report path for plan 157. After review hardening, non-handoff live control/harness/ablation lanes use distinct work packages and runtime receipts can carry adapter-reported token usage. The run evidence partially reproduced the source-prototype signal: targeted compact handoff completed cleanly but did not reproduce an efficiency win in this rerun, while representative live found one clean quality-preserving faster fixture. Token receipts were still unavailable from the current live Codex adapter output, representative live had dirty/blocked lanes, and ablations did not isolate a harness-only effect.
 
 ## Traceability
 
@@ -78,12 +78,12 @@ Result:
 - Ablation runs: 5
 - Clean completion: yes for all targeted lanes
 - Quality: control 7, harness 7, delta 0
-- Duration: control 12,842 ms, harness 8,993 ms, delta -3,849 ms
+- Duration: control 8,675 ms, harness 9,223 ms, delta +548 ms
 - Tokens: unavailable from Open Scaffold adapter receipts; prompt/output bytes are proxy-only and not token proof
-- Reproduction verdict: `partially_reproduced`
+- Reproduction verdict: `not_reproduced`
 - Proof gate: `not_proven`
 - Broad dominance: `mixed_not_proven`
-- Main blockers: insufficient fixture count, unavailable token receipts, and ablation confounds.
+- Main blockers: insufficient fixture count, unavailable token receipts, duration regression, and ablation confounds.
 
 ### D. Representative live
 
@@ -96,14 +96,14 @@ Result:
 - Fixtures: `token-efficient-handoff-resume`, `debugging-protocol-improvement`, `blocker-handling-missing-context`
 - Lane runs: 6
 - Ablation runs: 15
-- Clean completion: no; 7 live/ablation lanes were blocked/dirty by `runtime_blocked` or `runtime_marker_blocked`
-- Quality aggregate: control 17, harness 16
-- Duration aggregate: control 26,133 ms, harness 27,666 ms
+- Clean completion: no; 6 live/ablation lanes were blocked/dirty by `runtime_blocked` or `runtime_marker_blocked`
+- Quality aggregate: control 15, harness 16
+- Duration aggregate: control 31,531 ms, harness 29,358 ms
 - Tokens: unavailable from Open Scaffold adapter receipts; prompt/output bytes are proxy-only and not token proof
-- Reproduction verdict: `not_reproduced`
+- Reproduction verdict: `partially_reproduced`
 - Proof gate: `not_proven`
 - Broad dominance: `mixed_not_proven`
-- Main blockers: insufficient fixture count, token receipts unavailable, quality/duration regressions, dirty/blocked live lanes, and ablation confounds.
+- Main blockers: insufficient fixture count, token receipts unavailable, one fixture duration regression, dirty/blocked live lanes, and ablation confounds.
 
 ## Reproduction verdict
 
@@ -111,14 +111,13 @@ Open Scaffold partially reproduced the source-prototype signal.
 
 What reproduced:
 
-- The targeted compact handoff lane completed cleanly.
-- Targeted quality tied at 7/7.
-- The targeted compact handoff lane had lower harness wall-clock duration in this rerun.
+- Representative live included a clean `debugging-protocol-improvement` pair with better harness quality and lower harness wall-clock duration.
+- Representative aggregate quality and wall-clock duration were better for harness than control, but this is still partial because other gates stayed blocked.
 
 What did not reproduce cleanly:
 
-- Runtime token receipts were not available from the Open Scaffold adapter, so the source token-efficiency signal was not proven.
-- Representative live did not reproduce the source signal: aggregate quality and duration regressed.
+- Runtime token receipts were not available from the current live Codex adapter output, so the source token-efficiency signal was not proven. Runtime receipts now support adapter-reported token markers when available.
+- Targeted compact handoff did not reproduce an efficiency win in this rerun: quality tied but duration regressed.
 - Representative live included dirty/blocked lanes.
 - Ablations did not isolate a harness-specific causal effect.
 - Fixture count stayed below the broad proof gate.
@@ -138,7 +137,7 @@ Failed or partial reproduction wrote benchmark feedback under local run paths. T
 ## Remaining owner gates
 
 - Decide whether to run a full live suite. This is not run here because full live is cost/runtime significant and owner-gated.
-- Decide whether token capture should be added to the adapter before rerunning a proof suite.
+- Decide whether the live Codex adapter should emit the supported `OPEN_SCAFFOLD_TOKEN_USAGE` marker before rerunning a proof suite.
 - Decide whether dirty representative lanes should be repaired first or treated as evidence for the next slice.
 - Merge remains owner-gated.
 - npm publish and GitHub Release creation are not authorized by this evidence.

@@ -411,6 +411,7 @@ export interface HarnessRuntimeReceipt {
   marker: (LomeinRuntimeMarkerParse | { state: 'not_run'; marker: null; count: 0; finalStandalone: false; context: '' });
   evidencePaths: Array<{ role: string; path: string; schema?: string }>;
   logs: Array<{ role: 'stdout' | 'stderr'; path: string; maxBytes: number; truncated: boolean }>;
+  tokenUsage: { promptTokens: number | null; completionTokens: number | null; totalTokens: number; source: 'adapter_stderr_marker' } | null;
   failure: { code: HarnessRuntimeFailureCode | null; message: string | null };
   boundary: {
     runtime_adapter_executes: true;
@@ -628,7 +629,7 @@ export function classifyRuntimeOutcome(outcome: RuntimeProcessOutcome): RuntimeO
   return { status: 'failed', failureCode: 'runtime_marker_missing', marker };
 }
 
-function receiptBase(options: RunHarnessRuntimeOptions, adapter: RuntimeAdapterDefinition, spawned: boolean): Omit<HarnessRuntimeReceipt, 'status' | 'exit' | 'marker' | 'failure' | 'logs' | 'evidencePaths'> {
+function receiptBase(options: RunHarnessRuntimeOptions, adapter: RuntimeAdapterDefinition, spawned: boolean): Omit<HarnessRuntimeReceipt, 'status' | 'exit' | 'marker' | 'failure' | 'logs' | 'evidencePaths' | 'tokenUsage'> {
   return {
     schema: HARNESS_RUNTIME_RECEIPT_SCHEMA,
     runId: options.runId,
@@ -693,6 +694,7 @@ function dryRunReceipt(options: RunHarnessRuntimeOptions): HarnessRuntimeReceipt
     exit: { status: null, signal: null, timedOut: false },
     marker: { state: 'not_run', marker: null, count: 0, finalStandalone: false, context: '' },
     logs: [],
+    tokenUsage: null,
     evidencePaths: [{ role: 'runtime_receipt', path: receiptPath, schema: HARNESS_RUNTIME_RECEIPT_SCHEMA }],
     failure: { code: 'spawn_authority_missing', message: failureMessage('spawn_authority_missing') },
   });
@@ -706,9 +708,35 @@ function adapterErrorReceipt(options: RunHarnessRuntimeOptions, adapterId: strin
     exit: { status: null, signal: null, timedOut: false },
     marker: { state: 'not_run', marker: null, count: 0, finalStandalone: false, context: '' },
     logs: [],
+    tokenUsage: null,
     evidencePaths: [{ role: 'runtime_receipt', path: `.osc/runs/${options.runId}/runtime-receipt.json`, schema: HARNESS_RUNTIME_RECEIPT_SCHEMA }],
     failure: { code, message: sanitizeRuntimeText(message, options.repoRoot) },
   });
+}
+
+function readTokenNumber(record: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const value = record[key];
+    if (Number.isInteger(value) && typeof value === 'number' && value >= 0) return value;
+  }
+  return null;
+}
+
+function parseRuntimeTokenUsage(stderr: string): HarnessRuntimeReceipt['tokenUsage'] {
+  const matches = [...stderr.matchAll(/^OPEN_SCAFFOLD_TOKEN_USAGE:\s*(\{.*\})\s*$/gm)];
+  const latest = matches.at(-1)?.[1];
+  if (!latest) return null;
+  try {
+    const parsed = JSON.parse(latest) as Record<string, unknown>;
+    const promptTokens = readTokenNumber(parsed, ['promptTokens', 'prompt_tokens', 'inputTokens', 'input_tokens', 'prompt', 'input']);
+    const completionTokens = readTokenNumber(parsed, ['completionTokens', 'completion_tokens', 'outputTokens', 'output_tokens', 'completion', 'output']);
+    const explicitTotal = readTokenNumber(parsed, ['totalTokens', 'total_tokens', 'total']);
+    const totalTokens = explicitTotal ?? (promptTokens !== null && completionTokens !== null ? promptTokens + completionTokens : null);
+    if (totalTokens !== null) return { promptTokens, completionTokens, totalTokens, source: 'adapter_stderr_marker' };
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 export function runHarnessRuntimeAdapter(options: RunHarnessRuntimeOptions): HarnessRuntimeReceipt {
@@ -753,6 +781,7 @@ export function runHarnessRuntimeAdapter(options: RunHarnessRuntimeOptions): Har
   const processSpawned = !result.error || timedOut || spawnErrorCode === 'ENOBUFS' || result.status !== null || result.signal !== null;
   const rawStdout = String(result.stdout ?? '');
   const rawStderr = [String(result.stderr ?? ''), result.error && !timedOut ? `[open-scaffold: runtime process error] ${result.error.message}` : ''].filter(Boolean).join('\n');
+  const tokenUsage = parseRuntimeTokenUsage(rawStderr);
   const stdout = truncateRuntimeLog(sanitizeRuntimeText(rawStdout, options.repoRoot), adapter.maxStdoutBytes);
   const stderr = truncateRuntimeLog(sanitizeRuntimeText(rawStderr, options.repoRoot), adapter.maxStderrBytes);
   const stdoutPath = `.osc/runs/${options.runId}/runtime/stdout.log`;
@@ -785,6 +814,7 @@ export function runHarnessRuntimeAdapter(options: RunHarnessRuntimeOptions): Har
     exit: { status: result.status, signal: result.signal, timedOut },
     marker: classification.marker,
     logs,
+    tokenUsage,
     evidencePaths,
     failure: { code: classification.failureCode, message: failureMessage(classification.failureCode) },
   });

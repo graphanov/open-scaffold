@@ -48,7 +48,15 @@ Generated `.osc/bench/...` and `.osc/runs/...` evidence is local run evidence. K
 - benchmark feedback and repair hypothesis when reproduction is failed or partial;
 - one reproduction verdict: `reproduced`, `partially_reproduced`, or `not_reproduced`.
 
-If runtime token usage is unavailable, the aggregate records token values as `null` and includes prompt/output byte counts as proxy-only context. Proxy bytes are not token proof.
+If runtime token usage is unavailable, the aggregate records token values as `null` and includes prompt/output byte counts as proxy-only context. Proxy bytes are not token proof. Trusted runtime adapters may report token usage by printing a standalone stderr side-channel line shaped as:
+
+```text
+OPEN_SCAFFOLD_TOKEN_USAGE: {"promptTokens": 80, "completionTokens": 20, "totalTokens": 100}
+```
+
+When that marker is present in stderr, the runtime receipt and benchmark aggregate record `promptTokens`, `completionTokens`, and `totalTokens` from the adapter instead of treating tokens as unavailable. The same text in stdout/model answer content is ignored so benchmark prompts cannot forge token proof.
+
+Live control, harness, and ablation lanes must receive distinct work packages. Representative/full live runs are invalid for proof if non-handoff fixtures send the same prompt to control, harness, and ablation lanes, because deltas would be runtime noise rather than scaffold-vs-control evidence.
 
 ## Proof gate
 
@@ -103,6 +111,8 @@ This scope hardens the reproduction machinery:
 - simulated suite with aggregate/report/feedback;
 - handoff lab with all 15 candidates;
 - live-mode spawn gate and lane receipts;
+- distinct control/harness/ablation work packages for non-handoff live fixtures;
+- adapter-reported token usage capture in runtime receipts when available;
 - dirty live completion handling for timeouts, signals, non-zero exits, missing/non-final/duplicate markers, blocked/needs-human markers, and incomplete evidence;
 - explicit ablation fixture selection with no silent cap when supplied;
 - reproduction verdicts that stay `not_reproduced` or `partially_reproduced` unless strict gates clear;

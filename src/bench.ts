@@ -29,6 +29,8 @@ type MetricValue = {
   source: string;
   unit?: string;
   note?: string;
+  promptTokens?: number;
+  completionTokens?: number;
   promptBytes?: number;
   outputBytes?: number;
 };
@@ -276,11 +278,52 @@ function liveWorkPackage(fixtureId: string, laneId: string, ablationId?: string)
       acceptanceCriteria: ['Write failing test first.', 'Watch RED fail.', 'Implement minimal GREEN.', 'Run full suite.', 'Avoid testing after only.'],
     },
   };
-  return generic[fixtureId] ?? {
+  const base = generic[fixtureId] ?? {
     task: `Answer benchmark fixture ${fixtureId}.`,
     context: 'Keep the answer bounded, evidence-backed, and honest about unknowns.',
     acceptanceCriteria: ['Bound the claim.', 'Mention evidence.', 'Avoid owner approval claims.', 'Give next action.'],
   };
+
+  const controlPackage: LiveWorkPackage = {
+    task: `Answer directly without Open Scaffold scaffolding: ${base.task}`,
+    context: `${base.context}\n\nLane: naked control. Respond as a capable agent from the prompt alone. Do not use Open Scaffold-specific feedback inheritance, handoff compiler structure, or benchmark proof-gate language unless the task itself requires it.`,
+    acceptanceCriteria: ['Answer the user task directly.', 'Do not pretend missing context is known.', 'Do not claim owner approval or broad proof.'],
+  };
+  const harnessPackage: LiveWorkPackage = {
+    task: base.task,
+    context: `${base.context}\n\nLane: Open Scaffold harness. Use the scaffold protocol: state the boundary, preserve evidence references, identify blockers, name the repair or verification step, and keep claims bounded.`,
+    acceptanceCriteria: base.acceptanceCriteria,
+  };
+  const ablationPackages: Record<string, LiveWorkPackage> = {
+    'naked-explicit-acceptance-criteria': {
+      task: `Naked prompt with explicit acceptance criteria: ${base.task}`,
+      context: `${base.context}\n\nAblation: no Open Scaffold feedback inheritance or handoff compiler. Explicit acceptance criteria are provided directly to test whether the criteria alone explain the result.`,
+      acceptanceCriteria: base.acceptanceCriteria,
+    },
+    'osc-no-feedback-inheritance': {
+      task: base.task,
+      context: `${base.context}\n\nAblation: Open Scaffold structure remains, but do not use prior feedback or repair hypotheses. Produce the answer from the current task packet only.`,
+      acceptanceCriteria: base.acceptanceCriteria.filter((criterion) => !/feedback|repair/i.test(criterion)),
+    },
+    'osc-no-handoff-compiler': {
+      task: base.task,
+      context: `${base.context}\n\nAblation: use plain scaffold bullets without the handoff compiler or section-normalization benefits. Keep evidence and authority boundaries explicit.`,
+      acceptanceCriteria: base.acceptanceCriteria,
+    },
+    'naked-equally-compact-prompt': {
+      task: `Compact naked prompt: ${base.task}`,
+      context: `${base.context}\n\nAblation: compact control prompt with similar length to the harness lane, but without Open Scaffold routing, feedback inheritance, or handoff semantics.`,
+      acceptanceCriteria: controlPackage.acceptanceCriteria,
+    },
+    'osc-same-token-budget-proxy': {
+      task: base.task,
+      context: `${harnessPackage.context.slice(0, Math.min(harnessPackage.context.length, controlPackage.context.length))}\n\nAblation: Open Scaffold semantics under a control-sized prompt budget proxy.`,
+      acceptanceCriteria: base.acceptanceCriteria,
+    },
+  };
+  if (ablationId) return ablationPackages[ablationId] ?? harnessPackage;
+  if (laneId === 'control') return controlPackage;
+  return harnessPackage;
 }
 
 function scoreLiveAnswer(fixtureId: string, answer: string, maxChars = 1600): MetricValue & { maxScore: number } {
@@ -332,6 +375,23 @@ function writeLiveRunPacket(repoRoot: string, runId: string, fixtureId: string, 
   return { path, promptBytes: Buffer.byteLength(JSON.stringify(packet), 'utf8') };
 }
 
+function tokenMetricFromReceipt(receipt: HarnessRuntimeReceipt, packet: { promptBytes: number }, answer: string): MetricValue {
+  if (receipt.tokenUsage) {
+    return metric(receipt.tokenUsage.totalTokens, 'runtime_adapter_receipt', 'tokens', {
+      note: 'Token usage was reported by the runtime adapter receipt.',
+      promptTokens: receipt.tokenUsage.promptTokens ?? undefined,
+      completionTokens: receipt.tokenUsage.completionTokens ?? undefined,
+      promptBytes: packet.promptBytes,
+      outputBytes: Buffer.byteLength(answer, 'utf8'),
+    });
+  }
+  return metric(null, 'not_reported_by_runtime_adapter', 'tokens', {
+    note: 'Codex/provider token usage was not available from this Open Scaffold adapter receipt; prompt/output bytes are recorded as proxy-only context, not token proof.',
+    promptBytes: packet.promptBytes,
+    outputBytes: Buffer.byteLength(answer, 'utf8'),
+  });
+}
+
 function runLiveLane({ repoRoot, suiteId, fixtureId, laneId, laneLabel, adapterId, allowSpawn, timeoutMs, maxLogBytes, model, effort, ablationId }: Required<Pick<BenchSuiteOptions, 'repoRoot' | 'adapterId' | 'allowSpawn'>> & Pick<BenchSuiteOptions, 'timeoutMs' | 'maxLogBytes' | 'model' | 'effort'> & { suiteId: string; fixtureId: string; laneId: string; laneLabel: string; ablationId?: string }): BenchLane {
   const runId = safeId(`${suiteId}-${fixtureId}-${laneId}${ablationId ? `-${ablationId}` : ''}`, 'bench-lane');
   const packet = writeLiveRunPacket(repoRoot, runId, fixtureId, laneId, laneLabel, ablationId);
@@ -345,11 +405,7 @@ function runLiveLane({ repoRoot, suiteId, fixtureId, laneId, laneLabel, adapterI
     laneId: ablationId ?? laneId,
     label: laneLabel,
     quality,
-    tokens: metric(null, 'not_reported_by_runtime_adapter', 'tokens', {
-      note: 'Codex/provider token usage was not available from this Open Scaffold adapter receipt; prompt/output bytes are recorded as proxy-only context, not token proof.',
-      promptBytes: packet.promptBytes,
-      outputBytes: Buffer.byteLength(answer, 'utf8'),
-    }),
+    tokens: tokenMetricFromReceipt(receipt, packet, answer),
     duration: metric(durationMs, 'wall_clock_measured_by_open_scaffold', 'ms'),
     rounds: metric(receipt.spawned ? 1 : null, receipt.spawned ? 'single_runtime_process' : 'not_spawned', 'rounds'),
     completion,
