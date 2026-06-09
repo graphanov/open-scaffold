@@ -47,6 +47,23 @@ function readRuntimeReceipt(root: string, runId: string): any {
 }
 
 describe('controlled $work runtime parity', () => {
+  it('rejects unsafe runtime override caps before spawn', () => {
+    const root = tempScaffold();
+    try {
+      writeMarkerAdapter(root, 'fake-complete', `console.log('LOMEIN_COMPLETE');\n`);
+      expect(() => routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "timeout cap" --context "repo truth" --adapter fake-complete --allow-spawn --timeout-ms 1800001',
+      })).toThrow(/timeout-ms.*at most/i);
+      expect(() => routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "log cap" --context "repo truth" --adapter fake-complete --allow-spawn --max-log-bytes 2000001',
+      })).toThrow(/max-log-bytes.*at most/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('keeps executable $work in dry-run unless explicit spawn authority is present', () => {
     const root = tempScaffold();
     try {

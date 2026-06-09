@@ -252,11 +252,12 @@ function writePostflight(repoRoot: string, runId: string, command: HarnessComman
   ].join('\n'), 'harness postflight path');
 }
 
-function numericOption(parsed: ParsedHarnessCommand, name: string): number | undefined {
+function numericOption(parsed: ParsedHarnessCommand, name: string, max: number): number | undefined {
   const raw = option(parsed, name);
   if (raw === undefined) return undefined;
   const value = Number(raw);
   if (!Number.isInteger(value) || value <= 0) throw new Error(`${name} must be a positive integer`);
+  if (value > max) throw new Error(`${name} must be at most ${max}`);
   return value;
 }
 
@@ -440,8 +441,8 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
   const humanGates = context.length ? [] : [missingContextGate('work')];
   const allowSpawn = optionFlag(parsed, 'allow-spawn');
   const adapterId = option(parsed, 'adapter') ?? option(parsed, 'runtime') ?? 'codex';
-  const timeoutMs = numericOption(parsed, 'timeout-ms');
-  const maxLogBytes = numericOption(parsed, 'max-log-bytes');
+  const timeoutMs = numericOption(parsed, 'timeout-ms', 30 * 60 * 1000);
+  const maxLogBytes = numericOption(parsed, 'max-log-bytes', 2_000_000);
   const state: HarnessState = humanGates.length ? 'waiting_on_human' : 'ready';
   const artifacts = [...baseArtifacts(runId), artifact(runId, 'run_packet', 'run.json', 'osc.controlled-work-run.v1'), artifact(runId, 'work_package', 'work-package.md'), ...runtimeArtifacts(runId)];
   const improvements = inheritedImprovements(repoRoot, parsed).map((item) => ({ slug: item.slug, path: item.path, summary: item.content.split('\n').slice(0, 8).join('\n') }));
