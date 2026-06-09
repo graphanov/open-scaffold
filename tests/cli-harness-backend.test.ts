@@ -61,6 +61,21 @@ describe('CLI harness backend', () => {
     expect(analysis.repairHypotheses[0].hypothesis).toContain('proof wording');
   });
 
+  it('prints bench suite help without writing default benchmark evidence', () => {
+    const root = tempScaffold();
+    const suite = spawnSync(tsx, [cli, 'bench', 'suite', '--help'], { cwd: root, encoding: 'utf8' });
+
+    expect(suite.status).toBe(0);
+    expect(suite.stdout).toContain('Usage: osc bench suite');
+    expect(suite.stdout).toContain('--max-log-bytes <n>');
+    expect(existsSync(join(root, '.osc/bench/simulated-runtime-smoke/aggregate.json'))).toBe(false);
+
+    const lab = spawnSync(tsx, [cli, 'bench', 'handoff-lab', '--help'], { cwd: root, encoding: 'utf8' });
+    expect(lab.status).toBe(0);
+    expect(lab.stdout).toContain('Usage: osc bench handoff-lab');
+    expect(existsSync(join(root, '.osc/bench/handoff-lab-15/aggregate.json'))).toBe(false);
+  });
+
   it('runs simulated benchmark and handoff-lab backend smokes', () => {
     const root = tempScaffold();
     const suite = spawnSync(tsx, [cli, 'bench', 'suite', '--mode', 'simulated', '--out', '.osc/bench/simulated-runtime-smoke'], { cwd: root, encoding: 'utf8' });

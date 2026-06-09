@@ -6,6 +6,8 @@ Status: lab/experimental, source-labeled, bounded comparison surface.
 
 The command does not run Codex, call an LLM, rank models, approve work, or certify correctness. It reads a committed manifest plus source-labeled receipts and renders the comparison honestly, including ties and regressions.
 
+For Open Scaffold-owned reproduction runs, use `osc bench suite` and `osc bench handoff-lab` instead. `osc prove` compares checked-in proof receipts; `osc bench` creates local reproduction evidence and must still report `reproduced`, `partially_reproduced`, or `not_reproduced` without promoting source-prototype evidence into Open Scaffold proof.
+
 ```bash
 osc prove check examples/proof/scaffold-vs-naked-codex/manifest.json
 osc prove compare examples/proof/scaffold-vs-naked-codex/manifest.json --format markdown
