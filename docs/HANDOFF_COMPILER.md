@@ -1,40 +1,71 @@
 # Handoff compiler
 
-The harness handoff compiler creates compact continuation packets for future workers without dumping raw logs into chat or docs.
+The handoff compiler writes a compact resume packet. It is for continuing work after context loss, not for proving the work passed.
 
-Schema: `osc.handoff-compiler.v1`
+A packet must stay under a hard character budget and include these sections:
 
-## Required sections
+1. State
+2. Decisions
+3. Blockers / Open Questions
+4. Evidence refs
+5. Next Actions
 
-A valid packet must include:
+The compiler keeps evidence links instead of raw logs.
 
-1. `State`
-2. `Decisions`
-3. `Blockers / Open Questions`
-4. `Evidence refs`
-5. `Next Actions`
+## `$work` integration
 
-It must also stay within the configured character budget.
+`$work` can request a continuation packet:
 
-## Why it exists
+```bash
+osc harness '$work "handoff continuation runtime" --context "repo truth" --adapter <id> --allow-spawn --handoff --handoff-max-chars 950' --json
+```
 
-Long AI runs often leave useful work hidden in logs, chat, or scattered notes. The handoff compiler preserves the minimum resume context:
+The packet is written to:
 
-- current state,
-- decisions and rationale,
-- blockers/open questions,
-- evidence references,
+```text
+.osc/runs/<run-id>/handoff.md
+```
+
+The run packet records the handoff receipt:
+
+```json
+{
+  "handoff": {
+    "requested": true,
+    "path": ".osc/runs/<run-id>/handoff.md",
+    "schema": "osc.handoff-compiler.v1",
+    "maxChars": 950,
+    "validation": { "status": "pass" }
+  }
+}
+```
+
+## What goes into the packet
+
+The packet summarizes:
+
+- current run state;
+- adapter/runtime status when there was a runtime attempt;
+- decisions that matter for continuation;
+- blockers or repair hypotheses when the run failed or blocked;
+- repo-relative evidence refs;
 - next actions.
 
-It explicitly avoids raw-log dumping. Evidence links point at repo-local artifacts or external URLs instead.
+It should not include raw stdout, private local paths, secrets, or broad proof claims.
 
-## Boundary
+The compiler redacts common local path and token-like strings before writing the packet. Evidence refs should still be repo-relative paths or public URLs.
 
-A handoff packet is not proof, approval, or a release note. It is a compact resume aid. Future workers must still verify referenced artifacts before claiming pass.
+## Validation
+
+`validateHandoffPacket` checks the required sections and character budget. A packet that misses sections or exceeds the budget fails validation. `$work --handoff-max-chars` refuses budgets below 900 characters because the required section headings and minimum bullets need room to survive. If a generated `$work` handoff still fails validation, `$work` fails closed instead of returning a successful handoff.
+
+The handoff file can be useful even after a failed run: it points the next worker to the repair hypothesis and old evidence without overwriting the failed attempt. A ready dry-run handoff is different: it tells the next worker to execute or delegate the packaged `$work` task, not retry a failed attempt.
+
+If a runtime pauses with `LOMEIN_NEEDS_HUMAN`, the handoff lists the pending human-gate prompt under Blockers / Open Questions and tells the next worker to resume the same run after bounded task input. Long gate prompts are truncated inside the handoff so the run still surfaces the human gate instead of failing packet validation.
 
 ## Handoff lab
 
-`osc bench handoff-lab` scores 15 deterministic candidates and writes:
+`osc bench handoff-lab` still exists for deterministic compiler experiments. It scores 15 candidates and writes:
 
 ```text
 .osc/bench/handoff-lab-15/aggregate.json
@@ -43,4 +74,8 @@ A handoff packet is not proof, approval, or a release note. It is a compact resu
 .osc/bench/handoff-lab-15/methods/<method>/score.json
 ```
 
-The lab can show a narrow compiler candidate that fits the packet budget. It cannot prove broad Open Scaffold dominance over naked Codex.
+The lab can show that a narrow candidate fits the packet budget. It cannot prove broad Open Scaffold dominance over naked Codex.
+
+## Boundary
+
+A handoff packet is a continuation aid. It is not owner approval, not a verification result, and not evidence that Open Scaffold reproduced the source prototype signal.

@@ -200,6 +200,66 @@ console.log('LOMEIN_COMPLETE');
     }
   });
 
+  it('writes a bounded $work continuation handoff packet when requested', () => {
+    const root = tempScaffold();
+    try {
+      writeMarkerAdapter(root, 'fake-complete', `
+console.log('runtime work done');
+console.log('LOMEIN_COMPLETE');
+`);
+
+      const result = routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "handoff continuation runtime" --context "repo truth" --adapter fake-complete --allow-spawn --handoff --handoff-max-chars 950',
+      });
+
+      expect(result.status.state).toBe('completed');
+      expect(result.artifacts.find((artifact) => artifact.role === 'handoff_packet')).toMatchObject({
+        path: `.osc/runs/${result.runId}/handoff.md`,
+        schema: 'osc.handoff-compiler.v1',
+      });
+      const handoff = readFileSync(join(root, `.osc/runs/${result.runId}/handoff.md`), 'utf8');
+      expect(handoff.length).toBeLessThanOrEqual(950);
+      for (const section of ['State', 'Decisions', 'Blockers / Open Questions', 'Evidence refs', 'Next Actions']) {
+        expect(handoff).toContain(section);
+      }
+      const handoffReceipt = readRunJson(root, result.runId).handoff;
+      expect(handoffReceipt).toMatchObject({ requested: true, path: `.osc/runs/${result.runId}/handoff.md`, maxChars: 950, validation: { status: 'pass' } });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('writes ready handoffs as continuation packets, not retry packets', () => {
+    const root = tempScaffold();
+    try {
+      const result = routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "ready handoff package" --context "repo truth" --handoff --handoff-max-chars 950',
+      });
+
+      expect(result.status.state).toBe('ready');
+      const handoff = readFileSync(join(root, `.osc/runs/${result.runId}/handoff.md`), 'utf8');
+      expect(handoff).toContain('Execute or delegate the packaged $work task.');
+      expect(handoff).not.toContain('Retry with the repair hypothesis');
+      expect(readRunJson(root, result.runId).handoff.validation.status).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects handoff budgets too small to preserve required sections', () => {
+    const root = tempScaffold();
+    try {
+      expect(() => routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "tiny handoff" --context "repo truth" --handoff --handoff-max-chars 500',
+      })).toThrow(/handoff-max-chars.*at least/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('records spawn errors without claiming a runtime process actually launched', () => {
     const root = tempScaffold();
     try {
@@ -279,7 +339,7 @@ if (!answered) {
 
       const blocked = routeHarnessCommand({
         repoRoot: root,
-        input: '$work "runtime human gate" --context "repo truth" --adapter needs-then-complete --allow-spawn',
+        input: '$work "runtime human gate" --context "repo truth" --adapter needs-then-complete --allow-spawn --handoff --handoff-max-chars 1200',
       });
 
       expect(blocked.status.state).toBe('waiting_on_human');
@@ -288,6 +348,10 @@ if (!answered) {
       expect(blocked.humanGates[0].prompt).toContain('Pick README.md');
       const needsReceipt = readRuntimeReceipt(root, blocked.runId);
       expect(needsReceipt).toMatchObject({ status: 'needs_human', marker: { state: 'needs_human' } });
+      const handoff = readFileSync(join(root, `.osc/runs/${blocked.runId}/handoff.md`), 'utf8');
+      expect(handoff).toContain('Pick README.md');
+      expect(handoff).not.toContain('No known blockers.');
+      expect(handoff).toMatch(/Answer pending human gate|human task input/i);
 
       const answered = answerHumanGate({
         repoRoot: root,
@@ -303,6 +367,31 @@ if (!answered) {
       expect(packet.status).toBe('completed');
       expect(packet.humanGates[0]).toMatchObject({ status: 'satisfied' });
       expect(readRuntimeReceipt(root, blocked.runId)).toMatchObject({ status: 'completed', marker: { state: 'complete' } });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('bounds long runtime human-gate prompts before compiling handoffs', () => {
+    const root = tempScaffold();
+    try {
+      writeMarkerAdapter(root, 'long-needs-human', `
+console.log('Need bounded choice before continuing. ' + 'A'.repeat(3200));
+console.log('LOMEIN_NEEDS_HUMAN');
+`);
+
+      const result = routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "long runtime human gate" --context "repo truth" --adapter long-needs-human --allow-spawn --handoff --handoff-max-chars 1200',
+      });
+
+      expect(result.status.state).toBe('waiting_on_human');
+      expect(result.humanGates[0].prompt).toContain('Need bounded choice');
+      const handoff = readFileSync(join(root, `.osc/runs/${result.runId}/handoff.md`), 'utf8');
+      expect(handoff.length).toBeLessThanOrEqual(1200);
+      expect(handoff).toContain('Need bounded choice');
+      expect(handoff).toContain('## Next Actions');
+      expect(readRunJson(root, result.runId).handoff.validation.status).toBe('pass');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

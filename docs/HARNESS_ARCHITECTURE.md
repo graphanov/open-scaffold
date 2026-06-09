@@ -64,6 +64,9 @@ Events are JSONL records with `schema: "osc.harness-event.v1"`. Current event ty
 - `runtime_needs_human`
 - `runtime_blocked`
 - `runtime_failed`
+- `feedback_recorded`
+- `retry_created`
+- `handoff_packet_written`
 - `runtime_resume_started`
 - `command_blocked`
 - `command_completed`
@@ -143,5 +146,11 @@ A successful process exit is not enough. Runtime stdout must end with exactly on
 - `LOMEIN_BLOCKED` → blocked receipt, not success.
 
 Missing, duplicated, non-final, timed-out, signaled, or non-zero output fails closed.
+
+For failed and blocked outcomes, `$work` records feedback before the next attempt. The feedback file carries the repair hypothesis and repo-relative evidence refs. `--retry-of <run-id>` starts a sibling run that links to the old evidence and inherits the newest actionable repair hypothesis instead of overwriting it. If the parent has no feedback yet, the retry packet keeps moving with a bounded fallback repair hypothesis and the same evidence-linking rules.
+
+When requested, `$work --handoff --handoff-max-chars <n>` writes `.osc/runs/<run-id>/handoff.md` with required resume sections under the budget. This packet is a continuation aid only.
+
+`$team` keeps parity with the same loop: shared evidence, shared feedback path, accepted improvement inheritance when requested, repair hypotheses for blocked worker lanes, and one postflight record.
 
 This keeps the core portable across CLI, Codex plugin, Hermes, and future app surfaces while preserving owner authority.

@@ -2,18 +2,18 @@
 
 ## Status
 
-backlog
+done
 
 ## PR association
 
-- Planned PR slot: #194, or the next available GitHub PR number.
+- Planned PR slot: #195, or the next available GitHub PR number.
 - Branch: `feat/feedback-handoff-improvement-parity`.
 - Title: `feat: wire feedback and handoff improvement loop`.
-- Base: fresh `main` after PR #193 merges.
+- Base: fresh `main` after PR #194 merges.
 
 ## Context
 
-PR #192 adds feedback files, accepted-improvement primitives, and a handoff lab. PR #193 should make `$work` execute through a real controlled runtime. This PR makes the loop behave like the serious part of the source prototype:
+PR #192 adds feedback files, accepted-improvement primitives, and a handoff lab. PR #194 made `$work` execute through a real controlled runtime. This PR makes the loop behave like the serious part of the source prototype:
 
 ```text
 run -> verify -> feedback -> repair hypothesis -> retry or accepted lesson -> next run inherits it
@@ -49,7 +49,7 @@ Make feedback, repair hypotheses, retries, accepted improvements, and compact ha
 
 | ID | Task | Dependencies | Parallel group |
 | --- | --- | --- | --- |
-| T1 | Read PR #193 runtime receipt/status shape. | None | A |
+| T1 | Read PR #194 runtime receipt/status shape. | None | A |
 | T2 | Write failing tests for failed/rejected/blocked runs creating feedback records and repair hypotheses. | T1 | B |
 | T3 | Write failing tests for retry inheriting the repair hypothesis. | T2 | B |
 | T4 | Write failing tests for accepted improvements being stored and relevant future runs loading only matching lessons. | T2 | B |
@@ -64,7 +64,7 @@ Make feedback, repair hypotheses, retries, accepted improvements, and compact ha
 
 ### Parallel groups
 
-- **Group A** (discovery): T1 reads the runtime receipt/status shape from PR #193.
+- **Group A** (discovery): T1 reads the runtime receipt/status shape from PR #194.
 - **Group B** (TDD red): T2-T6 define feedback, retry, improvement, handoff, and team parity behavior.
 - **Group C** (implementation): T7-T10 wire feedback, retry, accepted lessons, and handoff packets into real runs.
 - **Group D** (docs): T11 updates plain-language docs and examples.
@@ -72,21 +72,21 @@ Make feedback, repair hypotheses, retries, accepted improvements, and compact ha
 
 ### Dependencies
 
-- This PR depends on real runtime outcomes from PR #193.
-- Retry semantics depend on stable run ID / attempt ID decisions from PR #193.
+- This PR depends on real runtime outcomes from PR #194.
+- Retry semantics depend on stable run ID / attempt ID decisions from PR #194.
 - Handoff compiler integration must not bypass proof gates; it writes evidence, not marketing claims.
 
 ## Acceptance criteria
 
-- [ ] A failed, rejected, blocked, benchmark-failed, or reviewer-failed run creates an `osc.feedback.v1` record.
-- [ ] Feedback records include source, verdict, scope, what happened, why it matters, repair hypothesis, evidence paths, and next action.
-- [ ] Repair hypotheses can be attached to a retry attempt.
-- [ ] Retry attempts preserve the old evidence and write new attempt evidence instead of overwriting history.
-- [ ] Accepted improvements persist under `.osc/improvements/applied/...`.
-- [ ] Future runs load only relevant accepted improvements.
-- [ ] `$work` can emit a bounded handoff packet with required sections and hard character budget.
-- [ ] `$team` has feedback path, shared repair hypotheses, accepted improvement inheritance, and shared postflight parity.
-- [ ] Docs explain that feedback is not approval.
+- [x] A failed, rejected, blocked, benchmark-failed, or reviewer-failed run creates an `osc.feedback.v1` record.
+- [x] Feedback records include source, verdict, scope, what happened, why it matters, repair hypothesis, evidence paths, and next action.
+- [x] Repair hypotheses can be attached to a retry attempt.
+- [x] Retry attempts preserve the old evidence and write new attempt evidence instead of overwriting history.
+- [x] Accepted improvements persist under `.osc/improvements/applied/...`.
+- [x] Future runs load only relevant accepted improvements.
+- [x] `$work` can emit a bounded handoff packet with required sections and hard character budget.
+- [x] `$team` has feedback path, shared repair hypotheses, accepted improvement inheritance, and shared postflight parity.
+- [x] Docs explain that feedback is not approval.
 
 ## Verification steps
 

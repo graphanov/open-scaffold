@@ -91,7 +91,8 @@ Harness command surface:
   osc harness '$plan ...' [--json]
   osc harness '$work ...' [--json]
   osc harness '$work ... --adapter <id> --allow-spawn [--timeout-ms <n>] [--max-log-bytes <n>]' [--json]
-  osc harness '$team ...' [--json]
+  osc harness '$work ... --retry-of <run-id> [--handoff --handoff-max-chars <n>]' [--json]
+  osc harness '$team ... [--worker-outcome <worker>:blocked --repair-hypothesis <text>]' [--json]
   osc harness status <run-id> [--json]
   osc harness answer <run-id> --gate <id> --answer <text> [--json]
   osc feedback record <run-id> --source <human|tests|reviewer|benchmark|runtime|codex|hermes> --verdict <pass|retry|reject|block|improve> --scope <run|plan|command|docs|benchmark|runtime> --what-happened <text> --why-it-matters <text> [--repair-hypothesis <text>] [--evidence-path <path>]... --next-action <text> [--json]
@@ -798,7 +799,7 @@ function runtimesCommand(args: string[]): void {
 }
 
 function harnessCommand(args: string[]): void {
-  if (isHelpArg(args[0])) { console.log("Usage: osc harness '$interview|$plan|$work|$team ...' [--json]\n  osc harness '$work ... --adapter <id> --allow-spawn [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>]' [--json]\n  osc harness status <run-id> [--json]\n  osc harness answer <run-id> --gate <id> --answer <text> [--json]\n\nFor $work, omit --allow-spawn to write a dry-run receipt without launching the adapter. Gate answers are task input, not owner approval."); return; }
+  if (isHelpArg(args[0])) { console.log("Usage: osc harness '$interview|$plan|$work|$team ...' [--json]\n  osc harness '$work ... --adapter <id> --allow-spawn [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>]' [--json]\n  osc harness '$work ... --retry-of <run-id> [--handoff --handoff-max-chars <n>]' [--json]\n  osc harness '$team ... [--worker-outcome <worker>:blocked --repair-hypothesis <text>]' [--json]\n  osc harness status <run-id> [--json]\n  osc harness answer <run-id> --gate <id> --answer <text> [--json]\n\nFor $work, omit --allow-spawn to write a dry-run receipt without launching the adapter. Gate answers, feedback, repair hypotheses, and handoff packets are task input, not owner approval."); return; }
   const json = has(args, '--json');
   try {
     if (args[0] === 'status') {

@@ -24,6 +24,23 @@ describe('handoff compiler', () => {
     expect(compiled.validation.status).toBe('pass');
   });
 
+  it('redacts local paths and token-like secrets from compact packets', () => {
+    const token = ['sk', 'abcdefghijklmnopqrstuvwxyz1234567890'].join('-');
+    const compiled = compileHandoffPacket({
+      state: `The worker inspected /Users/danimal/private/project and saw token ${token}.`,
+      decisions: ['Keep /private/tmp/raw-log.txt out of the handoff.'],
+      evidenceRefs: ['.osc/runs/run-1/status.json'],
+      nextActions: ['Continue without leaking local files.'],
+      maxChars: 900,
+    });
+
+    expect(compiled.content).not.toContain('/Users/danimal');
+    expect(compiled.content).not.toContain('/private/tmp/raw-log.txt');
+    expect(compiled.content).not.toContain(token);
+    expect(compiled.content).toMatch(/local-path omitted|secret omitted/);
+    expect(compiled.validation.status).toBe('pass');
+  });
+
   it('reports missing required sections instead of treating vague handoffs as valid', () => {
     const validation = validateHandoffPacket('# Resume\n\nContinue from before.\n', { maxChars: 1600 });
 
