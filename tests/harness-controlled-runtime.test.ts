@@ -38,6 +38,20 @@ function writeMarkerAdapter(root: string, id: string, body: string, extra: Recor
   trustAdapterConfig(root, id);
 }
 
+function writeMissingCommandAdapter(root: string, id: string): void {
+  const adapterDir = join(root, '.osc/adapters');
+  mkdirSync(adapterDir, { recursive: true });
+  writeFileSync(join(adapterDir, `${id}.json`), JSON.stringify({
+    schemaVersion: 'open-scaffold.adapter.v1',
+    id,
+    command: ['open-scaffold-missing-runtime-for-test'],
+    timeoutMs: 1_000,
+    maxStdoutBytes: 1_000,
+    maxStderrBytes: 1_000,
+  }, null, 2) + '\n', 'utf8');
+  trustAdapterConfig(root, id);
+}
+
 function readRunJson(root: string, runId: string): any {
   return JSON.parse(readFileSync(join(root, `.osc/runs/${runId}/run.json`), 'utf8'));
 }
@@ -83,6 +97,7 @@ console.log('LOMEIN_COMPLETE');
       });
 
       expect(result.status.state).toBe('ready');
+      expect(result.status.boundary.core_runtime_spawning).toBe(false);
       expect(existsSync(join(root, '.osc/adapter-was-spawned-false.txt'))).toBe(false);
       expect(readRunJson(root, result.runId).runtime).toMatchObject({ spawning: false, spawnAuthority: false });
       expect(readRuntimeReceipt(root, result.runId)).toMatchObject({ status: 'dry_run', failure: { code: 'spawn_authority_missing' } });
@@ -107,6 +122,7 @@ console.log('LOMEIN_COMPLETE');
       });
 
       expect(result.status.state).toBe('ready');
+      expect(result.status.boundary.core_runtime_spawning).toBe(false);
       expect(existsSync(join(root, '.osc/adapter-was-spawned.txt'))).toBe(false);
       const packet = readRunJson(root, result.runId);
       expect(packet.runtime).toMatchObject({ adapter: 'fake-complete', spawning: false, spawnAuthority: false });
@@ -120,6 +136,32 @@ console.log('LOMEIN_COMPLETE');
         failure: { code: 'spawn_authority_missing' },
       });
       expect(receipt.evidencePaths.every((entry: any) => entry.path.startsWith('.osc/runs/'))).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps no-authority placeholder adapters as dry-run receipts without resolving adapter config', () => {
+    const root = tempScaffold();
+    try {
+      const result = routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "placeholder adapter preview" --context "repo truth" --adapter future-runtime',
+      });
+
+      expect(result.status.state).toBe('ready');
+      expect(result.status.boundary.core_runtime_spawning).toBe(false);
+      const packet = readRunJson(root, result.runId);
+      expect(packet.runtime).toMatchObject({ adapter: 'future-runtime', spawning: false, spawnAuthority: false });
+      const receipt = readRuntimeReceipt(root, result.runId);
+      expect(receipt).toMatchObject({
+        adapterName: 'future-runtime',
+        spawned: false,
+        status: 'dry_run',
+        failure: { code: 'spawn_authority_missing' },
+      });
+      expect(receipt.failure.code).not.toBe('adapter_not_found');
+      expect(receipt.logs).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -139,6 +181,7 @@ console.log('LOMEIN_COMPLETE');
       });
 
       expect(result.status.state).toBe('completed');
+      expect(result.status.boundary.core_runtime_spawning).toBe(true);
       const receipt = readRuntimeReceipt(root, result.runId);
       expect(receipt).toMatchObject({
         adapterName: 'fake-complete',
@@ -152,6 +195,30 @@ console.log('LOMEIN_COMPLETE');
       expect(JSON.stringify(receipt)).not.toContain(root);
       expect(JSON.stringify(receipt.commandSummary)).not.toMatch(/\/Users\//);
       expect(receipt.evidencePaths.map((entry: any) => entry.path)).toContain(`.osc/runs/${result.runId}/runtime/stdout.log`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('records spawn errors without claiming a runtime process actually launched', () => {
+    const root = tempScaffold();
+    try {
+      writeMissingCommandAdapter(root, 'missing-command');
+
+      const result = routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "missing adapter binary" --context "repo truth" --adapter missing-command --allow-spawn',
+      });
+
+      expect(result.status.state).toBe('failed');
+      expect(result.status.boundary.core_runtime_spawning).toBe(false);
+      const receipt = readRuntimeReceipt(root, result.runId);
+      expect(receipt).toMatchObject({
+        adapterName: 'missing-command',
+        spawned: false,
+        status: 'failed',
+        failure: { code: 'runtime_spawn_error' },
+      });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

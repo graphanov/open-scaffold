@@ -46,7 +46,7 @@ flowchart TD
 Current state:
 
 - `$work` writes a controlled work package and a runtime receipt for every executable run.
-- Without `--allow-spawn`, `$work` stops at a dry-run receipt and no adapter process starts.
+- Without `--allow-spawn`, `$work` stops at a dry-run receipt and no adapter process starts or project-local adapter config is resolved.
 - With `--allow-spawn`, `$work` can launch the selected runtime adapter, parse its final marker, write bounded/redacted logs, and update status/gates.
 - The built-in Codex adapter path is provider-neutral at the contract level: it is one adapter implementation, not a hard dependency on Codex internals.
 - A **private deployment example** proved Hermes Kanban dispatching a task into detached OMX `$ralplan` and preserving run evidence; it is dogfood evidence, not an adoption requirement.

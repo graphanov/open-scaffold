@@ -52,6 +52,8 @@ Every harness run writes a compact status contract:
 }
 ```
 
+`core_runtime_spawning` is false for dry-run/status-only packages and true after `$work --allow-spawn` actually launches a runtime adapter for that run.
+
 Events are JSONL records with `schema: "osc.harness-event.v1"`. Current event types include:
 
 - `command_started`

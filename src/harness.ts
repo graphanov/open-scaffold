@@ -59,7 +59,7 @@ export interface HarnessStatus {
   workers: WorkerStatus[];
   boundary: {
     feedback_is_not_approval: true;
-    core_runtime_spawning: false;
+    core_runtime_spawning: boolean;
     human_owns_merge_publish_release: true;
   };
 }
@@ -196,7 +196,7 @@ function writeStatus(repoRoot: string, status: HarnessStatus): void {
   writeJsonUnder(repoRoot, `.osc/runs/${status.runId}/status.json`, status, 'harness status path');
 }
 
-function makeStatus({ runId, command, state, humanGates = [], artifacts = [], workers = [] }: { runId: string; command: HarnessCommandName; state: HarnessState; humanGates?: HumanGate[]; artifacts?: HarnessArtifactLink[]; workers?: WorkerStatus[] }): HarnessStatus {
+function makeStatus({ runId, command, state, humanGates = [], artifacts = [], workers = [], runtimeSpawned = false }: { runId: string; command: HarnessCommandName; state: HarnessState; humanGates?: HumanGate[]; artifacts?: HarnessArtifactLink[]; workers?: WorkerStatus[]; runtimeSpawned?: boolean }): HarnessStatus {
   return {
     schema: HARNESS_STATUS_SCHEMA,
     runId,
@@ -208,7 +208,7 @@ function makeStatus({ runId, command, state, humanGates = [], artifacts = [], wo
     workers,
     boundary: {
       feedback_is_not_approval: true,
-      core_runtime_spawning: false,
+      core_runtime_spawning: runtimeSpawned,
       human_owns_merge_publish_release: true,
     },
   };
@@ -323,7 +323,7 @@ function applyRuntimeReceipt(repoRoot: string, runId: string, receipt: HarnessRu
   writeJsonUnder(repoRoot, `.osc/runs/${runId}/human-gates.json`, nextGates, 'human gates path');
   updatePacketWithRuntime(repoRoot, runId, nextState, nextGates, receipt);
   writePostflight(repoRoot, runId, 'work', nextState);
-  const status = makeStatus({ runId, command: 'work', state: nextState, humanGates: nextGates, artifacts: nextArtifacts });
+  const status = makeStatus({ runId, command: 'work', state: nextState, humanGates: nextGates, artifacts: nextArtifacts, runtimeSpawned: receipt.spawned });
   writeStatus(repoRoot, status);
   writeEvent(repoRoot, runId, `runtime_${receipt.status}`, { receiptPath: `.osc/runs/${runId}/runtime-receipt.json`, failure: receipt.failure, marker: receipt.marker });
   writeEvent(repoRoot, runId, nextState === 'waiting_on_human' ? 'command_blocked' : nextState === 'completed' ? 'command_completed' : 'command_blocked', { state: nextState });
@@ -583,7 +583,7 @@ export function answerHumanGate({ repoRoot = process.cwd(), runId, gateId, answe
   writeEvent(repoRoot, safe, 'human_gate_answered', { gateId, boundary: gate.answer.boundary });
 
   if (shouldResumeRuntime && runtime) {
-    const runningStatus = makeStatus({ runId: safe, command: 'work', state: 'running', humanGates: gates, artifacts: status.artifacts, workers: status.workers });
+    const runningStatus = makeStatus({ runId: safe, command: 'work', state: 'running', humanGates: gates, artifacts: status.artifacts, workers: status.workers, runtimeSpawned: true });
     writeStatus(repoRoot, runningStatus);
     writeEvent(repoRoot, safe, 'runtime_resume_started', { gateId, adapter: runtime.adapter });
     const timeoutMs = typeof runtime.timeoutMs === 'number' ? runtime.timeoutMs : undefined;

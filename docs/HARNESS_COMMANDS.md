@@ -23,7 +23,7 @@ osc harness '$work "implement one bounded slice" --context "plan is ready" --ada
 osc harness '$team "split implementation docs review" --worker implementation --worker docs --worker review'
 ```
 
-`$work` is dry-run by default. Without `--allow-spawn`, it writes a work package and `runtime-receipt.json` with `status: "dry_run"` and `failure.code: "spawn_authority_missing"`; no adapter process is launched.
+`$work` is dry-run by default. Without `--allow-spawn`, it writes a work package and `runtime-receipt.json` with `status: "dry_run"` and `failure.code: "spawn_authority_missing"`; no adapter process is launched, and project-local adapter config is not read or trusted yet.
 
 With `--allow-spawn`, the selected adapter may execute the bounded work package. The first built-in path is `--adapter codex`, which launches a Codex CLI command through the provider-neutral runtime adapter contract. Project-local fake or custom adapters can also live under `.osc/adapters/<id>.json` and must be locally trusted before execution.
 

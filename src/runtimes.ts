@@ -670,8 +670,8 @@ function failureMessage(code: HarnessRuntimeFailureCode | null): string | null {
   return messages[code];
 }
 
-function adapterErrorReceipt(options: RunHarnessRuntimeOptions, adapterId: string, code: HarnessRuntimeFailureCode, message: string): HarnessRuntimeReceipt {
-  const fallback: RuntimeAdapterDefinition = {
+function fallbackRuntimeAdapter(options: RunHarnessRuntimeOptions, adapterId = options.adapterId): RuntimeAdapterDefinition {
+  return {
     id: adapterId,
     name: adapterId,
     command: [],
@@ -683,6 +683,23 @@ function adapterErrorReceipt(options: RunHarnessRuntimeOptions, adapterId: strin
     kind: 'project',
     appendRunPacketArg: true,
   };
+}
+
+function dryRunReceipt(options: RunHarnessRuntimeOptions): HarnessRuntimeReceipt {
+  const receiptPath = `.osc/runs/${options.runId}/runtime-receipt.json`;
+  return writeReceipt(options.repoRoot, options.runId, {
+    ...receiptBase(options, fallbackRuntimeAdapter(options), false),
+    status: 'dry_run',
+    exit: { status: null, signal: null, timedOut: false },
+    marker: { state: 'not_run', marker: null, count: 0, finalStandalone: false, context: '' },
+    logs: [],
+    evidencePaths: [{ role: 'runtime_receipt', path: receiptPath, schema: HARNESS_RUNTIME_RECEIPT_SCHEMA }],
+    failure: { code: 'spawn_authority_missing', message: failureMessage('spawn_authority_missing') },
+  });
+}
+
+function adapterErrorReceipt(options: RunHarnessRuntimeOptions, adapterId: string, code: HarnessRuntimeFailureCode, message: string): HarnessRuntimeReceipt {
+  const fallback = fallbackRuntimeAdapter(options, adapterId);
   return writeReceipt(options.repoRoot, options.runId, {
     ...receiptBase(options, fallback, false),
     status: 'failed',
@@ -695,6 +712,8 @@ function adapterErrorReceipt(options: RunHarnessRuntimeOptions, adapterId: strin
 }
 
 export function runHarnessRuntimeAdapter(options: RunHarnessRuntimeOptions): HarnessRuntimeReceipt {
+  if (!options.allowSpawn) return dryRunReceipt(options);
+
   let adapter: RuntimeAdapterDefinition;
   try {
     adapter = resolveHarnessRuntimeAdapter(options);
@@ -704,19 +723,8 @@ export function runHarnessRuntimeAdapter(options: RunHarnessRuntimeOptions): Har
     return adapterErrorReceipt(options, options.adapterId, code, message);
   }
 
-  const base = receiptBase(options, adapter, options.allowSpawn);
+  const base = receiptBase(options, adapter, true);
   const receiptPath = `.osc/runs/${options.runId}/runtime-receipt.json`;
-  if (!options.allowSpawn) {
-    return writeReceipt(options.repoRoot, options.runId, {
-      ...base,
-      status: 'dry_run',
-      exit: { status: null, signal: null, timedOut: false },
-      marker: { state: 'not_run', marker: null, count: 0, finalStandalone: false, context: '' },
-      logs: [],
-      evidencePaths: [{ role: 'runtime_receipt', path: receiptPath, schema: HARNESS_RUNTIME_RECEIPT_SCHEMA }],
-      failure: { code: 'spawn_authority_missing', message: failureMessage('spawn_authority_missing') },
-    });
-  }
 
   if (adapter.kind === 'project') {
     try {
@@ -741,6 +749,8 @@ export function runHarnessRuntimeAdapter(options: RunHarnessRuntimeOptions): Har
   });
 
   const timedOut = (result.error as { code?: unknown } | undefined)?.code === 'ETIMEDOUT';
+  const spawnErrorCode = (result.error as { code?: unknown } | undefined)?.code;
+  const processSpawned = !result.error || timedOut || spawnErrorCode === 'ENOBUFS' || result.status !== null || result.signal !== null;
   const rawStdout = String(result.stdout ?? '');
   const rawStderr = [String(result.stderr ?? ''), result.error && !timedOut ? `[open-scaffold: runtime process error] ${result.error.message}` : ''].filter(Boolean).join('\n');
   const stdout = truncateRuntimeLog(sanitizeRuntimeText(rawStdout, options.repoRoot), adapter.maxStdoutBytes);
@@ -770,6 +780,7 @@ export function runHarnessRuntimeAdapter(options: RunHarnessRuntimeOptions): Har
   ];
   return writeReceipt(options.repoRoot, options.runId, {
     ...base,
+    spawned: processSpawned,
     status: classification.status,
     exit: { status: result.status, signal: result.signal, timedOut },
     marker: classification.marker,
