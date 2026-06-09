@@ -19,6 +19,7 @@ Desktop.ini
 .osc/state/
 .osc/research/
 .osc/runs/
+.osc/bench/
 .osc/reviews/.tmp/
 
 # Node/TypeScript CLI artifacts

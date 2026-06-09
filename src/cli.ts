@@ -97,7 +97,7 @@ Harness command surface:
   osc harness answer <run-id> --gate <id> --answer <text> [--json]
   osc feedback record <run-id> --source <human|tests|reviewer|benchmark|runtime|codex|hermes> --verdict <pass|retry|reject|block|improve> --scope <run|plan|command|docs|benchmark|runtime> --what-happened <text> --why-it-matters <text> [--repair-hypothesis <text>] [--evidence-path <path>]... --next-action <text> [--json]
   osc feedback analyze <run-id> [--json]
-  osc bench suite [--mode simulated|live] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--out <dir>] [--json]
+  osc bench suite [--mode simulated|live] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--allow-spawn] [--adapter <id>] [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>] [--out <dir>] [--json]
   osc bench handoff-lab [--out <dir>] [--json]
   Backend commands are for CI/scripts/repro. The human-facing grammar stays the four $commands.
 
@@ -864,6 +864,22 @@ function feedbackCommand(args: string[]): void {
 
 function benchCommand(args: string[]): void {
   const sub = args[0] ?? die('Usage: osc bench suite|handoff-lab ...', 2);
+  if (sub === 'suite' && isHelpArg(args[1])) {
+    console.log('Usage: osc bench suite [--mode simulated|live] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--allow-spawn] [--adapter <id>] [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>] [--out <dir>] [--json]');
+    return;
+  }
+  if (sub === 'handoff-lab' && isHelpArg(args[1])) {
+    console.log('Usage: osc bench handoff-lab [--out <dir>] [--json]');
+    return;
+  }
+  const numeric = (flag: string): number | undefined => {
+    const raw = value(args, flag);
+    if (raw === undefined) return undefined;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsed)) die(`${flag} must be a positive integer`, 2);
+    return parsed;
+  };
+  const flag = (name: string): boolean => has(args, name) && value(args, name) !== 'false';
   try {
     if (sub === 'suite') {
       const mode = choice(value(args, '--mode') ?? 'simulated', ['simulated', 'live'] as const, '--mode');
@@ -874,12 +890,19 @@ function benchCommand(args: string[]): void {
         fixtureIds: values(args, '--fixture'),
         includeAblations: has(args, '--include-ablations'),
         ablationFixtureIds: values(args, '--ablation-fixture'),
+        allowSpawn: flag('--allow-spawn'),
+        adapterId: value(args, '--adapter') ?? 'codex',
+        timeoutMs: numeric('--timeout-ms'),
+        maxLogBytes: numeric('--max-log-bytes'),
+        model: value(args, '--model'),
+        effort: value(args, '--effort'),
       });
       if (has(args, '--json')) console.log(JSON.stringify(result, null, 2));
       else {
         console.log(`Wrote benchmark aggregate: ${result.aggregatePath}`);
         console.log(`Wrote benchmark report: ${result.reportPath}`);
-        console.log(`Broad dominance: ${result.proofGate.status}`);
+        console.log(`Reproduction verdict: ${result.reproductionVerdict.status}`);
+        console.log(`Broad dominance: ${result.boundary.broadDominance}`);
       }
       return;
     }
