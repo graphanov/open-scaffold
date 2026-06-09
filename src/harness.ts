@@ -1,7 +1,8 @@
-import { existsSync } from 'node:fs';
+import { existsSync, lstatSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadAcceptedImprovements } from './feedback.js';
-import { appendJsonLineUnder, createSafeOutputRoot, readJsonlUnder, readJsonUnder, toPosix, writeFileUnder, writeJsonUnder } from './path-safety.js';
+import { appendJsonLineUnder, createSafeOutputRoot, readJsonlUnder, readJsonUnder, writeFileUnder, writeJsonUnder } from './path-safety.js';
+import { HARNESS_RUNTIME_RECEIPT_SCHEMA, runHarnessRuntimeAdapter, type HarnessRuntimeReceipt } from './runtimes.js';
 
 export const HARNESS_COMMAND_RESULT_SCHEMA = 'osc.harness-command-result.v1';
 export const HARNESS_EVENT_SCHEMA = 'osc.harness-event.v1';
@@ -58,7 +59,7 @@ export interface HarnessStatus {
   workers: WorkerStatus[];
   boundary: {
     feedback_is_not_approval: true;
-    core_runtime_spawning: false;
+    core_runtime_spawning: boolean;
     human_owns_merge_publish_release: true;
   };
 }
@@ -91,6 +92,15 @@ function slugify(value: string, fallback = 'item'): string {
 function safeRunId(value: string): string {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(value) || value === '.' || value === '..') throw new Error(`run id must be safe: ${value}`);
   return value;
+}
+
+function lexicalExists(path: string): boolean {
+  try {
+    lstatSync(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function tokenize(input: string): string[] {
@@ -165,7 +175,7 @@ function optionList(parsed: ParsedHarnessCommand, name: string): string[] {
 }
 
 function optionFlag(parsed: ParsedHarnessCommand, name: string): boolean {
-  return (parsed.options[name] ?? []).some((value) => value === 'true' || value === '1' || value === 'yes') || Object.prototype.hasOwnProperty.call(parsed.options, name);
+  return (parsed.options[name] ?? []).some((value) => value === 'true' || value === '1' || value === 'yes');
 }
 
 function runIdFor(command: HarnessCommandName, intent: string): string {
@@ -186,7 +196,7 @@ function writeStatus(repoRoot: string, status: HarnessStatus): void {
   writeJsonUnder(repoRoot, `.osc/runs/${status.runId}/status.json`, status, 'harness status path');
 }
 
-function makeStatus({ runId, command, state, humanGates = [], artifacts = [], workers = [] }: { runId: string; command: HarnessCommandName; state: HarnessState; humanGates?: HumanGate[]; artifacts?: HarnessArtifactLink[]; workers?: WorkerStatus[] }): HarnessStatus {
+function makeStatus({ runId, command, state, humanGates = [], artifacts = [], workers = [], runtimeSpawned = false }: { runId: string; command: HarnessCommandName; state: HarnessState; humanGates?: HumanGate[]; artifacts?: HarnessArtifactLink[]; workers?: WorkerStatus[]; runtimeSpawned?: boolean }): HarnessStatus {
   return {
     schema: HARNESS_STATUS_SCHEMA,
     runId,
@@ -198,7 +208,7 @@ function makeStatus({ runId, command, state, humanGates = [], artifacts = [], wo
     workers,
     boundary: {
       feedback_is_not_approval: true,
-      core_runtime_spawning: false,
+      core_runtime_spawning: runtimeSpawned,
       human_owns_merge_publish_release: true,
     },
   };
@@ -240,6 +250,84 @@ function writePostflight(repoRoot: string, runId: string, command: HarnessComman
     'This is a local Open Scaffold harness receipt. It is not merge, publish, release, deployment, or broad benchmark proof.',
     '',
   ].join('\n'), 'harness postflight path');
+}
+
+function numericOption(parsed: ParsedHarnessCommand, name: string, max: number): number | undefined {
+  const raw = option(parsed, name);
+  if (raw === undefined) return undefined;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value <= 0) throw new Error(`${name} must be a positive integer`);
+  if (value > max) throw new Error(`${name} must be at most ${max}`);
+  return value;
+}
+
+function runtimeArtifacts(runId: string): HarnessArtifactLink[] {
+  return [
+    artifact(runId, 'runtime_receipt', 'runtime-receipt.json', HARNESS_RUNTIME_RECEIPT_SCHEMA),
+  ];
+}
+
+function mergeRuntimeEvidenceArtifacts(artifacts: HarnessArtifactLink[], receipt: HarnessRuntimeReceipt): HarnessArtifactLink[] {
+  const seen = new Set(artifacts.map((item) => item.path));
+  const merged = [...artifacts];
+  for (const entry of receipt.evidencePaths) {
+    if (seen.has(entry.path)) continue;
+    seen.add(entry.path);
+    merged.push({ role: entry.role, path: entry.path, schema: entry.schema });
+  }
+  return merged;
+}
+
+function runtimeState(receipt: HarnessRuntimeReceipt): HarnessState {
+  if (receipt.status === 'completed') return 'completed';
+  if (receipt.status === 'needs_human') return 'waiting_on_human';
+  if (receipt.status === 'blocked') return 'blocked';
+  if (receipt.status === 'failed') return 'failed';
+  return 'ready';
+}
+
+function runtimeMessage(receipt: HarnessRuntimeReceipt): string {
+  if (receipt.status === 'completed') return 'Runtime adapter completed and wrote a receipt. Verification and owner gates still remain.';
+  if (receipt.status === 'needs_human') return 'Runtime adapter paused for human task input.';
+  if (receipt.status === 'blocked') return 'Runtime adapter reported a blocked receipt.';
+  if (receipt.status === 'failed') return `Runtime adapter failed closed: ${receipt.failure.code ?? 'unknown_failure'}.`;
+  return 'Work package ready; no runtime spawned because backend authority was not passed.';
+}
+
+function runtimeHumanGate(receipt: HarnessRuntimeReceipt, existing: HumanGate[]): HumanGate {
+  const marker = receipt.marker;
+  const context = 'context' in marker ? marker.context.trim() : '';
+  let id = 'runtime-needs-human';
+  let counter = 2;
+  while (existing.some((gate) => gate.id === id)) id = `runtime-needs-human-${counter++}`;
+  return {
+    id,
+    required: true,
+    status: 'pending',
+    prompt: context || 'Runtime adapter needs human task input before this same run can continue.',
+  };
+}
+
+function updatePacketWithRuntime(repoRoot: string, runId: string, state: HarnessState, humanGates: HumanGate[], receipt?: HarnessRuntimeReceipt): void {
+  const packet = readJsonUnder<Record<string, unknown>>(repoRoot, `.osc/runs/${runId}/run.json`, 'work run packet path');
+  packet.status = state;
+  packet.humanGates = humanGates;
+  if (receipt) packet.runtimeReceipt = { path: `.osc/runs/${runId}/runtime-receipt.json`, status: receipt.status, failureCode: receipt.failure.code };
+  writeJsonUnder(repoRoot, `.osc/runs/${runId}/run.json`, packet, 'work run packet path');
+}
+
+function applyRuntimeReceipt(repoRoot: string, runId: string, receipt: HarnessRuntimeReceipt, humanGates: HumanGate[], artifacts: HarnessArtifactLink[]): HarnessCommandResult {
+  const nextGates = receipt.status === 'needs_human' ? [...humanGates, runtimeHumanGate(receipt, humanGates)] : humanGates;
+  const nextState = runtimeState(receipt);
+  const nextArtifacts = mergeRuntimeEvidenceArtifacts(artifacts, receipt);
+  writeJsonUnder(repoRoot, `.osc/runs/${runId}/human-gates.json`, nextGates, 'human gates path');
+  updatePacketWithRuntime(repoRoot, runId, nextState, nextGates, receipt);
+  writePostflight(repoRoot, runId, 'work', nextState);
+  const status = makeStatus({ runId, command: 'work', state: nextState, humanGates: nextGates, artifacts: nextArtifacts, runtimeSpawned: receipt.spawned });
+  writeStatus(repoRoot, status);
+  writeEvent(repoRoot, runId, `runtime_${receipt.status}`, { receiptPath: `.osc/runs/${runId}/runtime-receipt.json`, failure: receipt.failure, marker: receipt.marker });
+  writeEvent(repoRoot, runId, nextState === 'waiting_on_human' ? 'command_blocked' : nextState === 'completed' ? 'command_completed' : 'command_blocked', { state: nextState });
+  return resultFor(repoRoot, runId, 'work', status, nextGates, nextArtifacts, [], runtimeMessage(receipt));
 }
 
 function routeInterview(repoRoot: string, parsed: ParsedHarnessCommand): HarnessCommandResult {
@@ -351,10 +439,14 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
   ensureRunDir(repoRoot, runId);
   const context = optionList(parsed, 'context');
   const humanGates = context.length ? [] : [missingContextGate('work')];
+  const allowSpawn = optionFlag(parsed, 'allow-spawn');
+  const adapterId = option(parsed, 'adapter') ?? option(parsed, 'runtime') ?? 'codex';
+  const timeoutMs = numericOption(parsed, 'timeout-ms', 30 * 60 * 1000);
+  const maxLogBytes = numericOption(parsed, 'max-log-bytes', 2_000_000);
   const state: HarnessState = humanGates.length ? 'waiting_on_human' : 'ready';
-  const artifacts = [...baseArtifacts(runId), artifact(runId, 'run_packet', 'run.json', 'osc.controlled-work-run.v1'), artifact(runId, 'work_package', 'work-package.md')];
+  const artifacts = [...baseArtifacts(runId), artifact(runId, 'run_packet', 'run.json', 'osc.controlled-work-run.v1'), artifact(runId, 'work_package', 'work-package.md'), ...runtimeArtifacts(runId)];
   const improvements = inheritedImprovements(repoRoot, parsed).map((item) => ({ slug: item.slug, path: item.path, summary: item.content.split('\n').slice(0, 8).join('\n') }));
-  writeEvent(repoRoot, runId, 'command_started', { command: 'work', intent: parsed.intent });
+  writeEvent(repoRoot, runId, 'command_started', { command: 'work', intent: parsed.intent, adapter: adapterId, allowSpawn });
   if (humanGates.length) writeEvent(repoRoot, runId, 'human_gate', { gates: humanGates });
   writeJsonUnder(repoRoot, `.osc/runs/${runId}/human-gates.json`, humanGates, 'human gates path');
   const runPacket = {
@@ -364,11 +456,20 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
     intent: parsed.intent,
     context,
     status: state,
-    runtime: { adapter: option(parsed, 'adapter') ?? 'codex', spawning: false, note: 'Open Scaffold core packages controlled work; adapters or coordinators execute it.' },
+    runtime: {
+      adapter: adapterId,
+      spawning: allowSpawn && humanGates.length === 0,
+      spawnAuthority: allowSpawn,
+      timeoutMs: timeoutMs ?? null,
+      maxLogBytes: maxLogBytes ?? null,
+      model: option(parsed, 'model') ?? null,
+      effort: option(parsed, 'effort') ?? null,
+      note: 'Runtime adapters execute bounded work while Open Scaffold records evidence. Human gates do not grant owner authority.',
+    },
     humanGates,
-    evidence: { events: `.osc/runs/${runId}/events.jsonl`, postflight: `.osc/runs/${runId}/postflight.md`, feedback: `.osc/runs/${runId}/feedback.jsonl` },
+    evidence: { events: `.osc/runs/${runId}/events.jsonl`, postflight: `.osc/runs/${runId}/postflight.md`, feedback: `.osc/runs/${runId}/feedback.jsonl`, runtimeReceipt: `.osc/runs/${runId}/runtime-receipt.json` },
     improvements: { inherited: improvements },
-    boundary: { feedback_is_not_approval: true, human_owns_merge_publish_release: true, no_core_runtime_spawn: true },
+    boundary: { feedback_is_not_approval: true, human_owns_merge_publish_release: true, runtime_adapter_executes: true, open_scaffold_records_evidence: true },
   };
   writeJsonUnder(repoRoot, `.osc/runs/${runId}/run.json`, runPacket, 'work run packet path');
   writeFileUnder(repoRoot, `.osc/runs/${runId}/work-package.md`, [
@@ -377,18 +478,24 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
     `Run ID: ${runId}`,
     `Intent: ${parsed.intent}`,
     '',
-    '## Boundary',
+    '## Runtime boundary',
     '',
-    '- Open Scaffold core does not spawn a runtime in this command.',
+    `- Adapter: ${adapterId}`,
+    `- Spawn authority passed: ${allowSpawn ? 'yes' : 'no'}`,
+    '- Runtime adapters execute bounded work while Open Scaffold writes status, receipts, gates, and evidence links.',
     '- Human gate answers are task input, not approval.',
-    '- Feedback can create repair hypotheses and accepted improvements for later runs.',
+    '- Commit, push, merge, publish, release, deploy, credentials, and history rewrite remain owner-controlled.',
     '',
   ].join('\n'), 'work package path');
   writePostflight(repoRoot, runId, 'work', state);
-  const status = makeStatus({ runId, command: 'work', state, humanGates, artifacts });
-  writeStatus(repoRoot, status);
-  writeEvent(repoRoot, runId, state === 'waiting_on_human' ? 'command_blocked' : 'command_completed', { state });
-  return resultFor(repoRoot, runId, 'work', status, humanGates, artifacts, [], state === 'waiting_on_human' ? 'Work package paused for missing context.' : 'Work package ready for adapter/coordinator execution.');
+  if (humanGates.length) {
+    const status = makeStatus({ runId, command: 'work', state, humanGates, artifacts });
+    writeStatus(repoRoot, status);
+    writeEvent(repoRoot, runId, 'command_blocked', { state });
+    return resultFor(repoRoot, runId, 'work', status, humanGates, artifacts, [], 'Work package paused for missing context.');
+  }
+  const receipt = runHarnessRuntimeAdapter({ repoRoot, runId, runPacketPath: `.osc/runs/${runId}/run.json`, adapterId, allowSpawn, timeoutMs, maxLogBytes, model: option(parsed, 'model'), effort: option(parsed, 'effort') });
+  return applyRuntimeReceipt(repoRoot, runId, receipt, humanGates, artifacts);
 }
 
 function routeTeam(repoRoot: string, parsed: ParsedHarnessCommand): HarnessCommandResult {
@@ -427,7 +534,7 @@ export const createHarnessRun = routeHarnessCommand;
 export function getHarnessStatus({ repoRoot = process.cwd(), runId }: { repoRoot?: string; runId: string }) {
   const safe = safeRunId(runId);
   const status = readJsonUnder<HarnessStatus>(repoRoot, `.osc/runs/${safe}/status.json`, 'harness status path');
-  const gates = existsSync(join(repoRoot, `.osc/runs/${safe}/human-gates.json`))
+  const gates = lexicalExists(join(repoRoot, `.osc/runs/${safe}/human-gates.json`))
     ? readJsonUnder<HumanGate[]>(repoRoot, `.osc/runs/${safe}/human-gates.json`, 'human gates path')
     : [];
   return { ...status, pendingHumanGates: gates.filter((gate) => gate.required && gate.status === 'pending') };
@@ -436,12 +543,18 @@ export function getHarnessStatus({ repoRoot = process.cwd(), runId }: { repoRoot
 export function answerHumanGate({ repoRoot = process.cwd(), runId, gateId, answer }: { repoRoot?: string; runId: string; gateId: string; answer: string }): HarnessCommandResult {
   const safe = safeRunId(runId);
   const gates = readJsonUnder<HumanGate[]>(repoRoot, `.osc/runs/${safe}/human-gates.json`, 'human gates path');
+  const status = readJsonUnder<HarnessStatus>(repoRoot, `.osc/runs/${safe}/status.json`, 'harness status path');
+  const runPacketPath = join(repoRoot, `.osc/runs/${safe}/run.json`);
+  const hasRunPacket = lexicalExists(runPacketPath);
+  const packet = hasRunPacket ? readJsonUnder<Record<string, unknown>>(repoRoot, `.osc/runs/${safe}/run.json`, 'work run packet path') : null;
   const gate = gates.find((item) => item.id === gateId);
   if (!gate) throw new Error(`human gate not found: ${gateId}`);
   if (gate.status === 'satisfied') throw new Error(`human gate already satisfied: ${gateId}`);
+  const summary = String(answer ?? '').trim();
+  if (!summary) throw new Error('human gate answer is required');
   gate.status = 'satisfied';
   gate.answer = {
-    summary: String(answer ?? '').trim(),
+    summary,
     answeredAt: nowIso(),
     boundary: {
       answer_is_task_input: true,
@@ -449,19 +562,40 @@ export function answerHumanGate({ repoRoot = process.cwd(), runId, gateId, answe
       does_not_grant_commit_push_merge_publish_release: true,
     },
   };
-  if (!gate.answer.summary) throw new Error('human gate answer is required');
-  writeJsonUnder(repoRoot, `.osc/runs/${safe}/human-gates.json`, gates, 'human gates path');
-  const status = readJsonUnder<HarnessStatus>(repoRoot, `.osc/runs/${safe}/status.json`, 'harness status path');
   const pending = gates.filter((item) => item.required && item.status === 'pending');
+  const runtime = packet && typeof packet.runtime === 'object' && packet.runtime !== null ? packet.runtime as Record<string, unknown> : null;
+  const shouldResumeRuntime = status.command === 'work'
+    && gateId.startsWith('runtime-needs-human')
+    && pending.length === 0
+    && runtime?.spawnAuthority === true
+    && typeof runtime.adapter === 'string';
+
+  if (packet) {
+    const context = Array.isArray(packet.context) ? packet.context.map((item) => String(item)) : [];
+    context.push(`Human answer for ${gate.id}: ${summary}`);
+    packet.context = context;
+    packet.humanGates = gates;
+    packet.status = shouldResumeRuntime ? 'running' : (pending.length ? 'waiting_on_human' : 'ready');
+  }
+
+  writeJsonUnder(repoRoot, `.osc/runs/${safe}/human-gates.json`, gates, 'human gates path');
+  if (packet) writeJsonUnder(repoRoot, `.osc/runs/${safe}/run.json`, packet, 'work run packet path');
+  writeEvent(repoRoot, safe, 'human_gate_answered', { gateId, boundary: gate.answer.boundary });
+
+  if (shouldResumeRuntime && runtime) {
+    const runningStatus = makeStatus({ runId: safe, command: 'work', state: 'running', humanGates: gates, artifacts: status.artifacts, workers: status.workers, runtimeSpawned: true });
+    writeStatus(repoRoot, runningStatus);
+    writeEvent(repoRoot, safe, 'runtime_resume_started', { gateId, adapter: runtime.adapter });
+    const timeoutMs = typeof runtime.timeoutMs === 'number' ? runtime.timeoutMs : undefined;
+    const maxLogBytes = typeof runtime.maxLogBytes === 'number' ? runtime.maxLogBytes : undefined;
+    const model = typeof runtime.model === 'string' ? runtime.model : undefined;
+    const effort = typeof runtime.effort === 'string' ? runtime.effort : undefined;
+    const receipt = runHarnessRuntimeAdapter({ repoRoot, runId: safe, runPacketPath: `.osc/runs/${safe}/run.json`, adapterId: String(runtime.adapter), allowSpawn: true, timeoutMs, maxLogBytes, model, effort });
+    return applyRuntimeReceipt(repoRoot, safe, receipt, gates, status.artifacts);
+  }
+
   const nextState: HarnessState = pending.length ? 'waiting_on_human' : 'ready';
   const nextStatus = makeStatus({ runId: safe, command: status.command, state: nextState, humanGates: gates, artifacts: status.artifacts, workers: status.workers });
   writeStatus(repoRoot, nextStatus);
-  if (existsSync(join(repoRoot, `.osc/runs/${safe}/run.json`))) {
-    const packet = readJsonUnder<Record<string, unknown>>(repoRoot, `.osc/runs/${safe}/run.json`, 'work run packet path');
-    packet.status = nextState;
-    packet.humanGates = gates;
-    writeJsonUnder(repoRoot, `.osc/runs/${safe}/run.json`, packet, 'work run packet path');
-  }
-  writeEvent(repoRoot, safe, 'human_gate_answered', { gateId, boundary: gate.answer.boundary });
   return resultFor(repoRoot, safe, status.command, nextStatus, gates, status.artifacts, status.workers, 'Human gate answer recorded as task input.');
 }

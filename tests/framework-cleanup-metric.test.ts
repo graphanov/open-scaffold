@@ -7,8 +7,8 @@ const repoRoot = resolve(import.meta.dirname, '..');
 const maintainedRoots = ['src', 'packages/runtime-omx/src'] as const;
 const cleanupBaselineLoc = 20_890;
 // Harness command-surface integration deliberately adds maintained backend/router code.
-// Keep the cap explicit so future growth must update this test with intent.
-const cleanupTargetLoc = 13_758;
+// Controlled runtime parity deliberately adds one bounded adapter launcher and Codex review hardening; keep the cap explicit so future growth must update this test with intent.
+const cleanupTargetLoc = 14_355;
 const cleanupTargetFiles = 38;
 
 interface MaintainedSourceFile {
@@ -51,7 +51,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(13_758);
+    expect(cleanupTargetLoc).toBe(14_355);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

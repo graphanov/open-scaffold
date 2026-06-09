@@ -139,22 +139,20 @@ In v0:
 - Profiles are JSON data only.
 - Open Scaffold core validates profiles before use.
 - `install.auto` must be `false`.
-- `launch.spawning` must be `false`.
-- Open Scaffold may display `install.humanHint` or `launch.commandTemplate`, but it does not execute them.
-- Profiles cannot grant commit, push, merge, or publish authority.
+- Profile metadata cannot grant commit, push, merge, or publish authority.
 - Runtime-local logs/session state are forensic — useful for investigation, not durable project truth — until promoted into `.osc/runs`, tracked evidence docs, GitHub artifacts, or release notes.
 
-This is deliberate. Open Scaffold's job is to preserve the source-of-truth chain and package dispatchable intent. Runtime-specific adapters own installation, authentication, session lifecycle, tmux/process management, and provider-specific launch details.
+This is deliberate. Runtime profile data describes lanes and defaults; the bounded `$work --allow-spawn` path decides whether an adapter may actually launch for one run. A runtime adapter still owns installation, authentication, sandbox/tool behavior while alive, and provider-specific launch details.
 
 ## OMC, Codex, OMX, GSD, and custom runtimes
 
-OMC, Codex, and OMX are built-in adapter-candidate profiles — selectable lane metadata with fake/local fixture coverage for their lane tokens, not certified launch integrations and not evidence that OMC/OMX/Codex processes were run.
+OMC, Codex, and OMX are built-in adapter-candidate profiles — selectable lane metadata with fake/local fixture coverage for their lane tokens. A profile is not certification that a runtime will solve the task.
 
-The current Codex-first naming decision is: `codex` is the broad user-facing preset; `omx` is the explicit harness-name preset; both map to `omx-codex` and the same `$ralplan` workflow token today.
+The current Codex-first naming decision is: `codex` is the broad user-facing preset; `omx` is the explicit harness-name preset; both map to `omx-codex` and the same `$ralplan` workflow token for run-package profile metadata.
 
-The accepted first executable package track is [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx): an in-repo GitHub source package that consumes the `codex` or `omx` profile data, validates `$ralplan` as the first workflow, writes receipt/evidence without spawning by default, and launches only through an explicit `--allow-spawn` package gate. It is not included in the root `open-scaffold` npm payload today; separate runtime-package publication remains owner-gated.
+`$work --adapter codex --allow-spawn` is the first root-package bounded adapter path: it launches Codex CLI through a provider-neutral adapter contract, requires strict final markers, writes `runtime-receipt.json`, and keeps owner gates outside the runtime. Project-local adapters under `.osc/adapters/<id>.json` can be used for tests or custom lanes after local trust.
 
-A separate direct `runtime-codex` package is deferred until source-grounded evidence shows a cleaner direct Codex adapter that preserves the same no-spawn and dispatch-receipt boundaries.
+The older `packages/runtime-omx/` source package remains a useful OMX binding reference and separate runtime-package track. Separate runtime-package publication remains owner-gated.
 
 GSD and other frameworks can be represented as project-local `user-defined` profiles today. They should not be described as certified or built-in integrations until an adapter has passed the conformance expectations and produced public evidence.
 

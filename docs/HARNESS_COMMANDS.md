@@ -19,8 +19,35 @@ Use the backend when a shell, CI job, Codex plugin, Hermes worker, or future des
 osc harness '$interview "tighten the task"' --json
 osc harness '$plan "add the harness docs" --slug harness-docs --acceptance "Docs explain gates"'
 osc harness '$work "implement one bounded slice" --context "plan is ready"' --json
+osc harness '$work "implement one bounded slice" --context "plan is ready" --adapter codex --allow-spawn --timeout-ms 600000' --json
 osc harness '$team "split implementation docs review" --worker implementation --worker docs --worker review'
 ```
+
+`$work` is dry-run by default. Without `--allow-spawn`, it writes a work package and `runtime-receipt.json` with `status: "dry_run"` and `failure.code: "spawn_authority_missing"`; no adapter process is launched, and project-local adapter config is not read or trusted yet.
+
+With `--allow-spawn`, the selected adapter may execute the bounded work package. The first built-in path is `--adapter codex`, which launches a Codex CLI command through the provider-neutral runtime adapter contract. Project-local fake or custom adapters can also live under `.osc/adapters/<id>.json` and must be locally trusted before execution.
+
+The adapter receipt is repo-relative and bounded:
+
+```text
+.osc/runs/<run-id>/runtime-receipt.json
+.osc/runs/<run-id>/runtime/stdout.log
+.osc/runs/<run-id>/runtime/stderr.log
+```
+
+The receipt records adapter name, command summary, timeout, exit state, final marker state, bounded log paths, evidence paths, and portable failure code. It is evidence of what ran, not proof that the work is correct.
+
+## Runtime marker contract
+
+A spawned runtime must end stdout with exactly one final standalone marker line:
+
+| Marker | Meaning |
+| --- | --- |
+| `LOMEIN_COMPLETE` | The adapter says the bounded run finished. Open Scaffold records `completed`; verification and owner gates still remain. |
+| `LOMEIN_NEEDS_HUMAN` | The adapter needs task input. Open Scaffold preserves the question/context before the marker and creates a pending human gate. |
+| `LOMEIN_BLOCKED` | The adapter is blocked. Open Scaffold records a blocked receipt, not success. |
+
+Missing markers, duplicate markers, non-final markers, timeouts, signals, and non-zero exits fail closed.
 
 Human gates use the backend too:
 

@@ -2,14 +2,14 @@
 
 ## Status
 
-backlog
+done
 
 ## PR association
 
-- Planned PR slot: #193, or the next available GitHub PR number.
+- Current PR slot: #194 candidate.
 - Branch: `feat/controlled-runtime-parity`.
 - Title: `feat: add controlled runtime parity`.
-- Base: fresh `main` after PR #192 merges. If Daniel explicitly chooses stacked work, base on `feat/harness-command-surface` instead.
+- Base: fresh `main` with the harness foundation on trunk and plan 154 closed.
 
 ## Context
 
@@ -71,7 +71,7 @@ Make `$work` execute one bounded slice through a provider-neutral runtime adapte
 ### Dependencies
 
 - Marker parsing must exist before runtime status can be trusted.
-- Gate resume must use the same run ID; retries that create new run IDs belong in PR #194.
+- Gate resume must use the same run ID; retries that create new run IDs belong in the feedback/handoff improvement parity follow-up.
 - The live temp smoke must use a disposable fixture repo and must not commit generated `.osc/runs/...` residue.
 
 ### Delegation notes
