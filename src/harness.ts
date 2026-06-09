@@ -1,6 +1,7 @@
 import { existsSync, lstatSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadAcceptedImprovements } from './feedback.js';
+import { compileHandoffPacket } from './handoff.js';
+import { analyzeFeedback, loadAcceptedImprovements, recordFeedback, type FeedbackRecord, type FeedbackSource, type FeedbackVerdict } from './feedback.js';
 import { appendJsonLineUnder, createSafeOutputRoot, readJsonlUnder, readJsonUnder, writeFileUnder, writeJsonUnder } from './path-safety.js';
 import { HARNESS_RUNTIME_RECEIPT_SCHEMA, runHarnessRuntimeAdapter, type HarnessRuntimeReceipt } from './runtimes.js';
 
@@ -182,6 +183,16 @@ function runIdFor(command: HarnessCommandName, intent: string): string {
   return `harness-${command}-${slugify(intent || command)}-${timestampId()}`;
 }
 
+function uniqueRunIdFor(repoRoot: string, command: HarnessCommandName, intent: string): string {
+  const base = runIdFor(command, intent);
+  if (!lexicalExists(join(repoRoot, `.osc/runs/${base}`))) return base;
+  for (let counter = 2; counter < 1000; counter += 1) {
+    const candidate = `${base}-${counter}`;
+    if (!lexicalExists(join(repoRoot, `.osc/runs/${candidate}`))) return candidate;
+  }
+  throw new Error(`could not create unique run id for ${command}`);
+}
+
 function artifact(runId: string, role: string, file: string, schema?: string): HarnessArtifactLink {
   return { role, path: `.osc/runs/${runId}/${file}`, schema };
 }
@@ -240,16 +251,26 @@ function baseArtifacts(runId: string): HarnessArtifactLink[] {
   ];
 }
 
-function writePostflight(repoRoot: string, runId: string, command: HarnessCommandName, state: HarnessState): void {
-  writeFileUnder(repoRoot, `.osc/runs/${runId}/postflight.md`, [
+function writePostflight(repoRoot: string, runId: string, command: HarnessCommandName, state: HarnessState, details: { feedbackPath?: string; acceptedImprovementCount?: number; repairHypotheses?: string[]; handoffPath?: string } = {}): void {
+  const lines = [
     `# Harness postflight: ${command}`,
     '',
     `Run ID: ${runId}`,
     `State: ${state}`,
     '',
     'This is a local Open Scaffold harness receipt. It is not merge, publish, release, deployment, or broad benchmark proof.',
+    'Feedback is task input and learning signal, not owner approval.',
     '',
-  ].join('\n'), 'harness postflight path');
+  ];
+  if (details.feedbackPath) lines.push(`Feedback: ${details.feedbackPath}`);
+  if (details.acceptedImprovementCount !== undefined) lines.push(`Accepted improvements inherited: ${details.acceptedImprovementCount}`);
+  if (details.handoffPath) lines.push(`Handoff packet: ${details.handoffPath}`);
+  if (details.repairHypotheses?.length) {
+    lines.push('', '## Repair hypotheses', '');
+    for (const hypothesis of details.repairHypotheses) lines.push(`- ${hypothesis}`);
+  }
+  lines.push('');
+  writeFileUnder(repoRoot, `.osc/runs/${runId}/postflight.md`, lines.join('\n'), 'harness postflight path');
 }
 
 function numericOption(parsed: ParsedHarnessCommand, name: string, max: number): number | undefined {
@@ -294,6 +315,120 @@ function runtimeMessage(receipt: HarnessRuntimeReceipt): string {
   return 'Work package ready; no runtime spawned because backend authority was not passed.';
 }
 
+function runtimeRepairHypothesis(receipt: HarnessRuntimeReceipt): string {
+  const code = receipt.failure.code ?? receipt.marker.state;
+  if (receipt.status === 'blocked') {
+    return `Repair runtime_blocked by resolving the blocker captured in the runtime receipt before retrying: ${receipt.marker.context || receipt.failure.message || 'No runtime context supplied.'}`;
+  }
+  return `Repair ${code} before retrying: inspect the runtime receipt/logs, fix the adapter output or task package, then retry without overwriting this attempt's evidence.`;
+}
+
+function recordRuntimeOutcomeFeedback(repoRoot: string, runId: string, receipt: HarnessRuntimeReceipt): FeedbackRecord | null {
+  if (receipt.status !== 'failed' && receipt.status !== 'blocked') return null;
+  const code = receipt.failure.code ?? receipt.marker.state;
+  const verdict: FeedbackVerdict = receipt.status === 'blocked' ? 'block' : 'retry';
+  const nextAction = receipt.status === 'blocked' ? 'block' : 'retry';
+  const whatHappened = receipt.status === 'blocked'
+    ? `Runtime adapter blocked (${code}). ${receipt.marker.context || receipt.failure.message || 'See runtime receipt.'}`
+    : `Runtime adapter failed closed (${code}). ${receipt.failure.message || receipt.marker.context || 'See runtime receipt.'}`;
+  const recorded = recordFeedback({
+    repoRoot,
+    runId,
+    source: 'runtime',
+    verdict,
+    scope: 'runtime',
+    whatHappened,
+    whyItMatters: 'A failed or blocked runtime attempt must become repair input instead of being treated as success or approval.',
+    repairHypothesis: runtimeRepairHypothesis(receipt),
+    evidencePaths: receipt.evidencePaths.map((entry) => entry.path),
+    nextAction,
+  });
+  return recorded.record;
+}
+
+function collectEvidencePathsFromStatus(status: HarnessStatus): string[] {
+  return status.artifacts.map((item) => item.path);
+}
+
+function parentRetryAttempt(repoRoot: string, parentRunId: string): number {
+  try {
+    const packet = readJsonUnder<Record<string, unknown>>(repoRoot, `.osc/runs/${safeRunId(parentRunId)}/run.json`, 'parent run packet path');
+    const retry = packet.retry && typeof packet.retry === 'object' ? packet.retry as Record<string, unknown> : null;
+    return typeof retry?.attempt === 'number' ? retry.attempt + 1 : 2;
+  } catch {
+    return 2;
+  }
+}
+
+function buildRetryMetadata(repoRoot: string, parsed: ParsedHarnessCommand): { parentRunId: string; attempt: number; repairHypothesis: string; previousEvidencePaths: string[] } | null {
+  const parentRunId = option(parsed, 'retry-of');
+  if (!parentRunId) return null;
+  const safeParent = safeRunId(parentRunId);
+  const explicit = option(parsed, 'repair-hypothesis');
+  const analysis = explicit ? null : analyzeFeedback({ repoRoot, runId: safeParent, writeCandidates: false });
+  const repairHypothesis = explicit ?? analysis?.repairHypotheses[0]?.hypothesis ?? 'Retry with a bounded repair hypothesis and preserve the previous attempt evidence.';
+  const parentStatus = readJsonUnder<HarnessStatus>(repoRoot, `.osc/runs/${safeParent}/status.json`, 'parent harness status path');
+  const evidence = new Set(collectEvidencePathsFromStatus(parentStatus));
+  evidence.add(`.osc/runs/${safeParent}/runtime-receipt.json`);
+  evidence.add(`.osc/runs/${safeParent}/feedback.jsonl`);
+  evidence.add(`.osc/runs/${safeParent}/postflight.md`);
+  return {
+    parentRunId: safeParent,
+    attempt: parentRetryAttempt(repoRoot, safeParent),
+    repairHypothesis,
+    previousEvidencePaths: [...evidence],
+  };
+}
+
+function handoffMaxChars(parsed: ParsedHarnessCommand): number {
+  const value = numericOption(parsed, 'handoff-max-chars', 20_000) ?? 1600;
+  if (value < 900) throw new Error('handoff-max-chars must be at least 900 so required sections survive the budget');
+  return value;
+}
+
+function handoffRequested(parsed: ParsedHarnessCommand): boolean {
+  return optionFlag(parsed, 'handoff') || option(parsed, 'handoff-max-chars') !== undefined;
+}
+
+function maybeWriteHandoffPacket(repoRoot: string, runId: string, command: HarnessCommandName, state: HarnessState, artifacts: HarnessArtifactLink[], receipt?: HarnessRuntimeReceipt): { artifacts: HarnessArtifactLink[]; handoffPath?: string; repairHypotheses: string[] } {
+  const packet = readJsonUnder<Record<string, unknown>>(repoRoot, `.osc/runs/${runId}/run.json`, 'work run packet path');
+  const request = packet.handoff && typeof packet.handoff === 'object' ? packet.handoff as Record<string, unknown> : null;
+  if (request?.requested !== true) return { artifacts, repairHypotheses: [] };
+  const maxChars = typeof request.maxChars === 'number' ? request.maxChars : 1600;
+  let repairHypotheses: string[] = [];
+  try {
+    repairHypotheses = analyzeFeedback({ repoRoot, runId }).repairHypotheses.map((item) => item.hypothesis);
+  } catch {
+    repairHypotheses = [];
+  }
+  const evidenceRefs = [...new Set([...artifacts.map((item) => item.path), ...(receipt?.evidencePaths.map((item) => item.path) ?? [])])];
+  const compiled = compileHandoffPacket({
+    state: `Run ${runId} for $${command} is ${state}. Intent: ${String(packet.intent ?? '').trim() || 'not recorded'}. Runtime status: ${receipt?.status ?? 'not run'}.`,
+    decisions: [
+      'Keep evidence refs instead of raw logs.',
+      'Feedback and handoff packets are not owner approval.',
+      `Runtime adapter: ${receipt?.adapterId ?? (packet.runtime && typeof packet.runtime === 'object' ? String((packet.runtime as Record<string, unknown>).adapter ?? 'none') : 'none')}.`,
+    ],
+    blockers: state === 'failed' || state === 'blocked' ? (repairHypotheses.length ? repairHypotheses : ['Runtime attempt needs repair before retry.']) : [],
+    evidenceRefs,
+    nextActions: state === 'completed'
+      ? ['Run verification before claiming pass.', 'Owner decides commit, push, PR, merge, publish, and release gates.']
+      : ['Retry with the repair hypothesis if still in scope.', 'Preserve this run evidence and write new attempt evidence.'],
+    maxChars,
+    reason: 'requested by $work handoff option',
+  });
+  const path = `.osc/runs/${runId}/handoff.md`;
+  if (compiled.validation.status !== 'pass') {
+    throw new Error(`handoff packet failed validation: missing sections ${compiled.validation.missingSections.join(', ') || 'none'}, length ${compiled.validation.length}/${compiled.validation.maxChars}`);
+  }
+  writeFileUnder(repoRoot, path, compiled.content, 'harness handoff path');
+  packet.handoff = { requested: true, path, schema: compiled.schema, maxChars, budget: compiled.budget, validation: compiled.validation };
+  writeJsonUnder(repoRoot, `.osc/runs/${runId}/run.json`, packet, 'work run packet path');
+  writeEvent(repoRoot, runId, 'handoff_packet_written', { path, validation: compiled.validation });
+  const nextArtifacts = artifacts.some((item) => item.path === path) ? artifacts : [...artifacts, { role: 'handoff_packet', path, schema: compiled.schema }];
+  return { artifacts: nextArtifacts, handoffPath: path, repairHypotheses };
+}
+
 function runtimeHumanGate(receipt: HarnessRuntimeReceipt, existing: HumanGate[]): HumanGate {
   const marker = receipt.marker;
   const context = 'context' in marker ? marker.context.trim() : '';
@@ -319,19 +454,28 @@ function updatePacketWithRuntime(repoRoot: string, runId: string, state: Harness
 function applyRuntimeReceipt(repoRoot: string, runId: string, receipt: HarnessRuntimeReceipt, humanGates: HumanGate[], artifacts: HarnessArtifactLink[]): HarnessCommandResult {
   const nextGates = receipt.status === 'needs_human' ? [...humanGates, runtimeHumanGate(receipt, humanGates)] : humanGates;
   const nextState = runtimeState(receipt);
-  const nextArtifacts = mergeRuntimeEvidenceArtifacts(artifacts, receipt);
+  let nextArtifacts = mergeRuntimeEvidenceArtifacts(artifacts, receipt);
+  const feedback = recordRuntimeOutcomeFeedback(repoRoot, runId, receipt);
+  const handoff = maybeWriteHandoffPacket(repoRoot, runId, 'work', nextState, nextArtifacts, receipt);
+  nextArtifacts = handoff.artifacts;
+  const feedbackPath = `.osc/runs/${runId}/feedback.jsonl`;
   writeJsonUnder(repoRoot, `.osc/runs/${runId}/human-gates.json`, nextGates, 'human gates path');
   updatePacketWithRuntime(repoRoot, runId, nextState, nextGates, receipt);
-  writePostflight(repoRoot, runId, 'work', nextState);
+  writePostflight(repoRoot, runId, 'work', nextState, {
+    feedbackPath: feedback ? feedbackPath : undefined,
+    repairHypotheses: handoff.repairHypotheses.length ? handoff.repairHypotheses : (feedback?.repairHypothesis ? [feedback.repairHypothesis] : []),
+    handoffPath: handoff.handoffPath,
+  });
   const status = makeStatus({ runId, command: 'work', state: nextState, humanGates: nextGates, artifacts: nextArtifacts, runtimeSpawned: receipt.spawned });
   writeStatus(repoRoot, status);
   writeEvent(repoRoot, runId, `runtime_${receipt.status}`, { receiptPath: `.osc/runs/${runId}/runtime-receipt.json`, failure: receipt.failure, marker: receipt.marker });
+  if (feedback) writeEvent(repoRoot, runId, 'feedback_recorded', { feedbackId: feedback.id, feedbackPath });
   writeEvent(repoRoot, runId, nextState === 'waiting_on_human' ? 'command_blocked' : nextState === 'completed' ? 'command_completed' : 'command_blocked', { state: nextState });
   return resultFor(repoRoot, runId, 'work', status, nextGates, nextArtifacts, [], runtimeMessage(receipt));
 }
 
 function routeInterview(repoRoot: string, parsed: ParsedHarnessCommand): HarnessCommandResult {
-  const runId = runIdFor('interview', parsed.intent);
+  const runId = uniqueRunIdFor(repoRoot, 'interview', parsed.intent);
   ensureRunDir(repoRoot, runId);
   const context = optionList(parsed, 'context');
   const humanGates = context.length ? [] : [missingContextGate('interview')];
@@ -407,7 +551,7 @@ function planMarkdown(slug: string, parsed: ParsedHarnessCommand): string {
 }
 
 function routePlan(repoRoot: string, parsed: ParsedHarnessCommand): HarnessCommandResult {
-  const runId = runIdFor('plan', parsed.intent);
+  const runId = uniqueRunIdFor(repoRoot, 'plan', parsed.intent);
   ensureRunDir(repoRoot, runId);
   const slug = slugify(option(parsed, 'slug') ?? parsed.intent, 'harness-plan');
   const planPath = `.osc/plans/active/${slug}.md`;
@@ -431,20 +575,31 @@ function routePlan(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
 }
 
 function inheritedImprovements(repoRoot: string, parsed: ParsedHarnessCommand) {
-  return optionFlag(parsed, 'inherit-improvements') ? loadAcceptedImprovements({ repoRoot, query: parsed.intent }) : [];
+  return optionFlag(parsed, 'inherit-improvements') ? loadAcceptedImprovements({ repoRoot, query: parsed.intent, requireQuery: true }) : [];
 }
 
 function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessCommandResult {
-  const runId = runIdFor('work', parsed.intent);
+  const runId = uniqueRunIdFor(repoRoot, 'work', parsed.intent);
   ensureRunDir(repoRoot, runId);
-  const context = optionList(parsed, 'context');
+  const retry = buildRetryMetadata(repoRoot, parsed);
+  const context = [
+    ...optionList(parsed, 'context'),
+    ...(retry ? [`Repair hypothesis from ${retry.parentRunId}: ${retry.repairHypothesis}`] : []),
+  ];
   const humanGates = context.length ? [] : [missingContextGate('work')];
   const allowSpawn = optionFlag(parsed, 'allow-spawn');
   const adapterId = option(parsed, 'adapter') ?? option(parsed, 'runtime') ?? 'codex';
   const timeoutMs = numericOption(parsed, 'timeout-ms', 30 * 60 * 1000);
   const maxLogBytes = numericOption(parsed, 'max-log-bytes', 2_000_000);
   const state: HarnessState = humanGates.length ? 'waiting_on_human' : 'ready';
-  const artifacts = [...baseArtifacts(runId), artifact(runId, 'run_packet', 'run.json', 'osc.controlled-work-run.v1'), artifact(runId, 'work_package', 'work-package.md'), ...runtimeArtifacts(runId)];
+  const handoff = handoffRequested(parsed) ? { requested: true, maxChars: handoffMaxChars(parsed), path: `.osc/runs/${runId}/handoff.md`, schema: 'osc.handoff-compiler.v1' } : { requested: false };
+  const artifacts = [
+    ...baseArtifacts(runId),
+    artifact(runId, 'run_packet', 'run.json', 'osc.controlled-work-run.v1'),
+    artifact(runId, 'work_package', 'work-package.md'),
+    ...(retry ? [artifact(runId, 'retry_attempt', 'retry.json', 'osc.harness-retry.v1')] : []),
+    ...runtimeArtifacts(runId),
+  ];
   const improvements = inheritedImprovements(repoRoot, parsed).map((item) => ({ slug: item.slug, path: item.path, summary: item.content.split('\n').slice(0, 8).join('\n') }));
   writeEvent(repoRoot, runId, 'command_started', { command: 'work', intent: parsed.intent, adapter: adapterId, allowSpawn });
   if (humanGates.length) writeEvent(repoRoot, runId, 'human_gate', { gates: humanGates });
@@ -469,9 +624,24 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
     humanGates,
     evidence: { events: `.osc/runs/${runId}/events.jsonl`, postflight: `.osc/runs/${runId}/postflight.md`, feedback: `.osc/runs/${runId}/feedback.jsonl`, runtimeReceipt: `.osc/runs/${runId}/runtime-receipt.json` },
     improvements: { inherited: improvements },
+    retry,
+    handoff,
     boundary: { feedback_is_not_approval: true, human_owns_merge_publish_release: true, runtime_adapter_executes: true, open_scaffold_records_evidence: true },
   };
   writeJsonUnder(repoRoot, `.osc/runs/${runId}/run.json`, runPacket, 'work run packet path');
+  if (retry) {
+    writeJsonUnder(repoRoot, `.osc/runs/${runId}/retry.json`, {
+      schema: 'osc.harness-retry.v1',
+      runId,
+      ...retry,
+      boundary: {
+        retry_preserves_previous_evidence: true,
+        retry_writes_new_attempt_evidence: true,
+        repair_hypothesis_is_not_approval: true,
+      },
+    }, 'retry attempt path');
+    writeEvent(repoRoot, runId, 'retry_created', { parentRunId: retry.parentRunId, attempt: retry.attempt, previousEvidencePaths: retry.previousEvidencePaths });
+  }
   writeFileUnder(repoRoot, `.osc/runs/${runId}/work-package.md`, [
     '# Controlled work package',
     '',
@@ -485,9 +655,11 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
     '- Runtime adapters execute bounded work while Open Scaffold writes status, receipts, gates, and evidence links.',
     '- Human gate answers are task input, not approval.',
     '- Commit, push, merge, publish, release, deploy, credentials, and history rewrite remain owner-controlled.',
+    ...(retry ? ['', '## Repair hypothesis for this retry', '', retry.repairHypothesis] : []),
+    ...(improvements.length ? ['', '## Relevant accepted improvements', '', ...improvements.map((item) => `- ${item.slug}: ${item.path}`)] : []),
     '',
   ].join('\n'), 'work package path');
-  writePostflight(repoRoot, runId, 'work', state);
+  writePostflight(repoRoot, runId, 'work', state, { acceptedImprovementCount: improvements.length, repairHypotheses: retry ? [retry.repairHypothesis] : [] });
   if (humanGates.length) {
     const status = makeStatus({ runId, command: 'work', state, humanGates, artifacts });
     writeStatus(repoRoot, status);
@@ -498,27 +670,85 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
   return applyRuntimeReceipt(repoRoot, runId, receipt, humanGates, artifacts);
 }
 
+interface TeamOutcome {
+  workerId: string;
+  rawOutcome: string;
+  source: FeedbackSource;
+  verdict: FeedbackVerdict;
+  nextAction: string;
+  state: WorkerStatus['state'];
+}
+
+function parseTeamOutcome(raw: string): TeamOutcome {
+  const [workerRaw, outcomeRaw] = raw.split(':');
+  const workerId = slugify(workerRaw ?? '', 'worker');
+  const outcome = (outcomeRaw ?? '').trim().toLowerCase();
+  if (!workerId || !outcome) throw new Error('worker-outcome must use <worker>:<blocked|failed|rejected|benchmark-failed|reviewer-failed>');
+  if (outcome === 'blocked') return { workerId, rawOutcome: outcome, source: 'runtime', verdict: 'block', nextAction: 'retry-team', state: 'blocked' };
+  if (outcome === 'benchmark-failed') return { workerId, rawOutcome: outcome, source: 'benchmark', verdict: 'retry', nextAction: 'retry-team', state: 'blocked' };
+  if (outcome === 'reviewer-failed' || outcome === 'rejected') return { workerId, rawOutcome: outcome, source: 'reviewer', verdict: 'retry', nextAction: 'retry-team', state: 'blocked' };
+  if (outcome === 'failed') return { workerId, rawOutcome: outcome, source: 'runtime', verdict: 'retry', nextAction: 'retry-team', state: 'blocked' };
+  throw new Error(`unsupported worker-outcome: ${outcome}`);
+}
+
 function routeTeam(repoRoot: string, parsed: ParsedHarnessCommand): HarnessCommandResult {
-  const runId = runIdFor('team', parsed.intent);
+  const runId = uniqueRunIdFor(repoRoot, 'team', parsed.intent);
   ensureRunDir(repoRoot, runId);
-  const workers = (optionList(parsed, 'worker').length ? optionList(parsed, 'worker') : ['implementation', 'review']).map((id): WorkerStatus => ({
-    id: slugify(id, 'worker'),
-    role: id,
-    state: 'ready',
-    evidencePath: `.osc/runs/${runId}/workers/${slugify(id, 'worker')}/evidence.md`,
-  }));
+  const teamOutcomes = optionList(parsed, 'worker-outcome').map(parseTeamOutcome);
+  const outcomeByWorker = new Map(teamOutcomes.map((outcome) => [outcome.workerId, outcome]));
+  const workers = (optionList(parsed, 'worker').length ? optionList(parsed, 'worker') : ['implementation', 'review']).map((id): WorkerStatus => {
+    const workerId = slugify(id, 'worker');
+    return {
+      id: workerId,
+      role: id,
+      state: outcomeByWorker.get(workerId)?.state ?? 'ready',
+      evidencePath: `.osc/runs/${runId}/workers/${workerId}/evidence.md`,
+    };
+  });
+  for (const outcome of teamOutcomes) {
+    if (!workers.some((worker) => worker.id === outcome.workerId)) throw new Error(`worker-outcome references unknown worker: ${outcome.workerId}`);
+  }
   const artifacts = [...baseArtifacts(runId), artifact(runId, 'team_run', 'team.json', 'osc.team-run.v1'), artifact(runId, 'shared_evidence', 'shared-evidence.md'), artifact(runId, 'feedback', 'feedback.jsonl', 'osc.feedback.v1')];
   const improvements = inheritedImprovements(repoRoot, parsed).map((item) => ({ slug: item.slug, path: item.path, summary: item.content.split('\n').slice(0, 8).join('\n') }));
+  const repairHypothesis = option(parsed, 'repair-hypothesis') ?? 'Summarize the failed worker lane, preserve shared evidence, and retry only the bounded team scope.';
+  const state: HarnessState = teamOutcomes.length ? 'blocked' : 'ready';
   writeEvent(repoRoot, runId, 'command_started', { command: 'team', intent: parsed.intent, workers: workers.map((worker) => worker.id) });
   for (const worker of workers) writeFileUnder(repoRoot, worker.evidencePath, `# Worker evidence: ${worker.id}\n\nState: ${worker.state}\n`, 'worker evidence path');
   writeFileUnder(repoRoot, `.osc/runs/${runId}/shared-evidence.md`, '# Shared team evidence\n\nOne evidence record for the coordinated team run.\n\nFeedback path: feedback.jsonl\n', 'shared team evidence path');
-  writeJsonUnder(repoRoot, `.osc/runs/${runId}/team.json`, { schema: 'osc.team-run.v1', runId, intent: parsed.intent, workers, feedback: { path: `.osc/runs/${runId}/feedback.jsonl`, schema: 'osc.feedback.v1', feedback_is_not_approval: true }, improvements: { inherited: improvements }, boundary: { one_shared_evidence_record: true, core_runtime_spawning: false, feedback_is_not_approval: true } }, 'team run path');
+  const feedbackRecords = teamOutcomes.map((outcome) => recordFeedback({
+    repoRoot,
+    runId,
+    source: outcome.source,
+    verdict: outcome.verdict,
+    scope: 'run',
+    whatHappened: `Team worker ${outcome.workerId} reported ${outcome.rawOutcome}.`,
+    whyItMatters: 'A shared team run must preserve worker failure feedback and repair input before retrying.',
+    repairHypothesis,
+    evidencePaths: [`.osc/runs/${runId}/shared-evidence.md`, `.osc/runs/${runId}/workers/${outcome.workerId}/evidence.md`],
+    nextAction: outcome.nextAction,
+  }).record);
+  if (feedbackRecords.length) writeEvent(repoRoot, runId, 'feedback_recorded', { feedbackPath: `.osc/runs/${runId}/feedback.jsonl`, feedbackIds: feedbackRecords.map((record) => record.id) });
+  const repairHypotheses = feedbackRecords.map((record) => ({ hypothesis: record.repairHypothesis ?? repairHypothesis, evidenceIds: [record.id] }));
+  writeJsonUnder(repoRoot, `.osc/runs/${runId}/team.json`, {
+    schema: 'osc.team-run.v1',
+    runId,
+    intent: parsed.intent,
+    workers,
+    feedback: { path: `.osc/runs/${runId}/feedback.jsonl`, schema: 'osc.feedback.v1', feedback_is_not_approval: true },
+    repairHypotheses,
+    improvements: { inherited: improvements },
+    boundary: { one_shared_evidence_record: true, shared_postflight: true, core_runtime_spawning: false, feedback_is_not_approval: true },
+  }, 'team run path');
   writeJsonUnder(repoRoot, `.osc/runs/${runId}/human-gates.json`, [], 'human gates path');
-  writePostflight(repoRoot, runId, 'team', 'ready');
-  const status = makeStatus({ runId, command: 'team', state: 'ready', artifacts, workers });
+  writePostflight(repoRoot, runId, 'team', state, {
+    feedbackPath: `.osc/runs/${runId}/feedback.jsonl`,
+    acceptedImprovementCount: improvements.length,
+    repairHypotheses: repairHypotheses.map((item) => item.hypothesis),
+  });
+  const status = makeStatus({ runId, command: 'team', state, artifacts, workers });
   writeStatus(repoRoot, status);
-  writeEvent(repoRoot, runId, 'command_completed', { state: 'ready' });
-  return resultFor(repoRoot, runId, 'team', status, [], artifacts, workers, 'Team run packaged with worker lanes and shared evidence.');
+  writeEvent(repoRoot, runId, state === 'blocked' ? 'command_blocked' : 'command_completed', { state });
+  return resultFor(repoRoot, runId, 'team', status, [], artifacts, workers, state === 'blocked' ? 'Team run packaged with shared feedback and repair hypothesis.' : 'Team run packaged with worker lanes and shared evidence.');
 }
 
 export function routeHarnessCommand({ repoRoot = process.cwd(), input }: { repoRoot?: string; input: string }): HarnessCommandResult {

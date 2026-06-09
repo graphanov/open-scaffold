@@ -9,6 +9,7 @@ import {
   parseHarnessCommand,
   routeHarnessCommand,
 } from '../src/harness.js';
+import { persistAcceptedImprovement, readFeedback } from '../src/feedback.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -102,6 +103,42 @@ describe('harness command surface', () => {
     expect(existsSync(join(root, sharedEvidence!.path))).toBe(true);
     const team = JSON.parse(readFileSync(join(root, `.osc/runs/${result.runId}/team.json`), 'utf8'));
     expect(team.feedback).toMatchObject({ schema: 'osc.feedback.v1', feedback_is_not_approval: true });
+  });
+
+  it('gives $team a shared feedback path, repair hypothesis, accepted lessons, and postflight parity', () => {
+    const root = tempScaffold();
+    persistAcceptedImprovement({
+      repoRoot: root,
+      slug: 'team-handoff-budget',
+      title: 'Team handoff budget',
+      lesson: 'Future team handoff runs should keep shared continuation notes compact and cite shared evidence.',
+      evidencePaths: ['.osc/runs/team-example/shared-evidence.md'],
+    });
+    persistAcceptedImprovement({
+      repoRoot: root,
+      slug: 'unrelated-runtime-marker',
+      title: 'Runtime marker discipline',
+      lesson: 'Future runtime marker runs should end with exactly one standalone marker.',
+      evidencePaths: ['.osc/runs/runtime-example/runtime-receipt.json'],
+    });
+
+    const result = routeHarnessCommand({
+      repoRoot: root,
+      input: '$team "team handoff budget repair" --context "plan is ready" --worker implementation --worker review --inherit-improvements --worker-outcome review:blocked --repair-hypothesis "Review lane should summarize blockers in shared evidence before retry."',
+    });
+
+    expect(result.command).toBe('team');
+    expect(result.status.state).toBe('blocked');
+    const team = JSON.parse(readFileSync(join(root, `.osc/runs/${result.runId}/team.json`), 'utf8'));
+    expect(team.improvements.inherited.map((item: { slug: string }) => item.slug)).toEqual(['team-handoff-budget']);
+    expect(team.repairHypotheses[0].hypothesis).toContain('Review lane should summarize blockers');
+    expect(team.feedback).toMatchObject({ schema: 'osc.feedback.v1', feedback_is_not_approval: true });
+    const feedback = readFeedback({ repoRoot: root, runId: result.runId });
+    expect(feedback[0]).toMatchObject({ source: 'runtime', verdict: 'block', scope: 'run', nextAction: 'retry-team' });
+    const postflight = readFileSync(join(root, `.osc/runs/${result.runId}/postflight.md`), 'utf8');
+    expect(postflight).toContain(`Feedback: .osc/runs/${result.runId}/feedback.jsonl`);
+    expect(postflight).toContain('Accepted improvements inherited: 1');
+    expect(postflight).toContain('Feedback is task input and learning signal, not owner approval.');
   });
 
   it('rejects unsafe run ids and symlinked status reads before gate resume', () => {

@@ -86,6 +86,7 @@ osc harness '$plan "add the harness docs" --slug harness-docs'
 osc harness '$work "implement one bounded slice" --context "plan is ready"' --json
 # Explicit backend authority is required before any adapter launch:
 osc harness '$work "implement one bounded slice" --context "plan is ready" --adapter codex --allow-spawn' --json
+osc harness '$work "retry failed slice" --context "repo truth" --retry-of <old-run-id> --handoff' --json
 osc harness '$team "split implementation docs review" --worker implementation --worker docs --worker review'
 ```
 

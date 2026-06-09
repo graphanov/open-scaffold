@@ -20,7 +20,9 @@ osc harness '$interview "tighten the task"' --json
 osc harness '$plan "add the harness docs" --slug harness-docs --acceptance "Docs explain gates"'
 osc harness '$work "implement one bounded slice" --context "plan is ready"' --json
 osc harness '$work "implement one bounded slice" --context "plan is ready" --adapter codex --allow-spawn --timeout-ms 600000' --json
+osc harness '$work "retry failed slice" --context "repo truth" --retry-of <old-run-id> --handoff --handoff-max-chars 1200' --json
 osc harness '$team "split implementation docs review" --worker implementation --worker docs --worker review'
+osc harness '$team "shared repair" --worker implementation --worker review --worker-outcome review:blocked --repair-hypothesis "Summarize blocker before retry."'
 ```
 
 `$work` is dry-run by default. Without `--allow-spawn`, it writes a work package and `runtime-receipt.json` with `status: "dry_run"` and `failure.code: "spawn_authority_missing"`; no adapter process is launched, and project-local adapter config is not read or trusted yet.
@@ -48,6 +50,8 @@ A spawned runtime must end stdout with exactly one final standalone marker line:
 | `LOMEIN_BLOCKED` | The adapter is blocked. Open Scaffold records a blocked receipt, not success. |
 
 Missing markers, duplicate markers, non-final markers, timeouts, signals, and non-zero exits fail closed.
+
+Failed and blocked runtime outcomes also create `.osc/runs/<run-id>/feedback.jsonl`. That feedback includes a repair hypothesis and evidence refs to the receipt/logs. A retry uses a new run id and can inherit the hypothesis through `--retry-of <run-id>` so old evidence is preserved.
 
 Human gates use the backend too:
 
@@ -79,6 +83,8 @@ osc bench handoff-lab --out .osc/bench/handoff-lab-15
 ```
 
 The backend commands write repo-local receipts. They do not spawn Codex from core, rank models, certify correctness, or grant owner approval.
+
+Accepted improvements live under `.osc/improvements/applied/`. `$work` and `$team` only load them when `--inherit-improvements` is passed, and the loader filters by the current intent instead of injecting every old lesson.
 
 ## Transport boundary
 

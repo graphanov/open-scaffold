@@ -29,10 +29,12 @@ Use `osc schemas list --json` for the machine-readable list. Representative sche
 - `open-scaffold.trace.v1` — local work-record replay.
 - `open-scaffold.audit-envelope.v1` — digest-only audit envelope for curated local artifacts.
 - `open-scaffold.evaluation.v1` — acceptance-criteria evaluation envelope scaffold / external scorer reference.
-- `osc.harness-status.v1` and `osc.harness-event.v1` — transport-neutral harness status and progress events.
+- `osc.harness-status.v1` and `osc.harness-event.v1` — transport-neutral harness status and progress events, including feedback, retry, and handoff events.
 - `osc.controlled-work-run.v1` and `osc.team-run.v1` — `$work` and `$team` run-package receipts.
 - `osc.feedback.v1` and `osc.feedback-analysis.v1` — feedback records and repair hypotheses.
-- `osc.handoff-compiler.v1` — compact continuation packet contract.
+- `osc.harness-retry.v1` — retry attempt links that preserve old evidence.
+- `osc.accepted-improvement.v1` — accepted lesson files for relevant future-run inheritance.
+- `osc.handoff-compiler.v1` — compact continuation packet contract, including `$work --handoff` packets.
 - `osc.bench-suite-aggregate.v1` and `osc.handoff-lab-aggregate.v1` — benchmark/proof smoke aggregates with no-overclaim gates.
 
 ## Adding a schema

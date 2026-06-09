@@ -200,6 +200,48 @@ console.log('LOMEIN_COMPLETE');
     }
   });
 
+  it('writes a bounded $work continuation handoff packet when requested', () => {
+    const root = tempScaffold();
+    try {
+      writeMarkerAdapter(root, 'fake-complete', `
+console.log('runtime work done');
+console.log('LOMEIN_COMPLETE');
+`);
+
+      const result = routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "handoff continuation runtime" --context "repo truth" --adapter fake-complete --allow-spawn --handoff --handoff-max-chars 950',
+      });
+
+      expect(result.status.state).toBe('completed');
+      expect(result.artifacts.find((artifact) => artifact.role === 'handoff_packet')).toMatchObject({
+        path: `.osc/runs/${result.runId}/handoff.md`,
+        schema: 'osc.handoff-compiler.v1',
+      });
+      const handoff = readFileSync(join(root, `.osc/runs/${result.runId}/handoff.md`), 'utf8');
+      expect(handoff.length).toBeLessThanOrEqual(950);
+      for (const section of ['State', 'Decisions', 'Blockers / Open Questions', 'Evidence refs', 'Next Actions']) {
+        expect(handoff).toContain(section);
+      }
+      const handoffReceipt = readRunJson(root, result.runId).handoff;
+      expect(handoffReceipt).toMatchObject({ requested: true, path: `.osc/runs/${result.runId}/handoff.md`, maxChars: 950, validation: { status: 'pass' } });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects handoff budgets too small to preserve required sections', () => {
+    const root = tempScaffold();
+    try {
+      expect(() => routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "tiny handoff" --context "repo truth" --handoff --handoff-max-chars 500',
+      })).toThrow(/handoff-max-chars.*at least/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('records spawn errors without claiming a runtime process actually launched', () => {
     const root = tempScaffold();
     try {

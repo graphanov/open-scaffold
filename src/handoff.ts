@@ -1,3 +1,5 @@
+import { redactSecrets } from './redaction.js';
+
 export const HANDOFF_COMPILER_SCHEMA = 'osc.handoff-compiler.v1';
 
 const REQUIRED_SECTIONS = ['State', 'Decisions', 'Blockers / Open Questions', 'Evidence refs', 'Next Actions'] as const;
@@ -20,8 +22,14 @@ export interface HandoffValidation {
   overBudget: boolean;
 }
 
+function redactLocalText(value: string): string {
+  return redactSecrets(String(value ?? ''))
+    .replace(/\/(?:Users|home|tmp|private|var|Volumes)\/[^\s`'"),;]+/g, '[local-path omitted]')
+    .replace(/[A-Za-z]:\\Users\\[^\s`'"),;]+/g, '[local-path omitted]');
+}
+
 function clean(value: string, fallback = 'Not recorded.'): string {
-  const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+  const text = redactLocalText(value).replace(/\s+/g, ' ').trim();
   return text || fallback;
 }
 

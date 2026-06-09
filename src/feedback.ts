@@ -1,9 +1,11 @@
+import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { appendJsonLineUnder, isInside, readJsonlUnder, toPosix, writeJsonUnder, writeFileUnder } from './path-safety.js';
 
 export const FEEDBACK_SCHEMA = 'osc.feedback.v1';
 export const FEEDBACK_ANALYSIS_SCHEMA = 'osc.feedback-analysis.v1';
+export const ACCEPTED_IMPROVEMENT_SCHEMA = 'osc.accepted-improvement.v1';
 
 export type FeedbackSource = 'human' | 'tests' | 'reviewer' | 'benchmark' | 'runtime' | 'codex' | 'hermes';
 export type FeedbackVerdict = 'pass' | 'retry' | 'reject' | 'block' | 'improve';
@@ -56,8 +58,26 @@ function slugify(value: string, fallback = 'item'): string {
 }
 
 function safeRunId(runId: string): string {
-  if (!/^[a-zA-Z0-9_.-]+$/.test(runId)) throw new Error(`runId must be a safe id: ${runId}`);
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(runId) || runId === '.' || runId === '..') throw new Error(`runId must be a safe id: ${runId}`);
   return runId;
+}
+
+function queryTerms(query: string): string[] {
+  const stop = new Set(['the', 'and', 'for', 'with', 'from', 'this', 'that', 'next', 'run', 'runs', 'future', 'slice', 'work', 'team']);
+  return [...new Set(query.toLowerCase().split(/[^a-z0-9]+/).filter((term) => term.length >= 3 && !stop.has(term)))];
+}
+
+function acceptedImprovementSearchText(content: string, slug: string): string {
+  const title = content.split(/\r?\n/, 1)[0] ?? '';
+  const lesson = /(?:^|\n)## Lesson\s*\n([\s\S]*?)(?:\n## |$)/.exec(content)?.[1] ?? '';
+  return `${slug}\n${title}\n${lesson}`.toLowerCase();
+}
+
+function acceptedImprovementMatches(content: string, slug: string, terms: string[]): boolean {
+  if (terms.length === 0) return false;
+  const searchText = acceptedImprovementSearchText(content, slug);
+  const matches = terms.filter((term) => searchText.includes(term)).length;
+  return terms.length === 1 ? matches === 1 : matches >= Math.min(2, terms.length);
 }
 
 function safeRef(ref: string): string {
@@ -97,8 +117,8 @@ export function recordFeedback(input: FeedbackInput) {
   if (!whatHappened) throw new Error('what happened is required');
   if (!whyItMatters) throw new Error('why it matters is required');
   const evidencePaths = (input.evidencePaths ?? []).map(safeRef);
-  const basis = `${input.runId}\n${input.source}\n${input.verdict}\n${whatHappened}\n${Date.now()}`;
-  const id = `feedback-${slugify(basis).slice(0, 32)}`;
+  const basis = `${input.runId}\n${input.source}\n${input.verdict}\n${input.scope}\n${whatHappened}\n${whyItMatters}\n${input.repairHypothesis ?? ''}\n${Date.now()}\n${Math.random()}`;
+  const id = `feedback-${slugify(`${input.source}-${input.verdict}-${input.scope}-${whatHappened}`, 'feedback').slice(0, 40)}-${createHash('sha256').update(basis).digest('hex').slice(0, 10)}`;
   const record: FeedbackRecord = {
     schema: FEEDBACK_SCHEMA,
     id,
@@ -135,7 +155,7 @@ function inferRepairHypothesis(records: FeedbackRecord[]): string {
     ?? `Repair the ${actionable.scope} issue from ${actionable.source}: ${actionable.whatHappened}. This matters because ${actionable.whyItMatters}.`;
 }
 
-export function analyzeFeedback({ repoRoot = process.cwd(), runId }: { repoRoot?: string; runId: string }) {
+export function analyzeFeedback({ repoRoot = process.cwd(), runId, writeCandidates = true }: { repoRoot?: string; runId: string; writeCandidates?: boolean }) {
   const records = readFeedback({ repoRoot, runId });
   if (!records.length) throw new Error(`No feedback recorded for run ${runId}`);
   const repairHypothesis = inferRepairHypothesis(records);
@@ -161,7 +181,7 @@ export function analyzeFeedback({ repoRoot = process.cwd(), runId }: { repoRoot?
       accepted_improvements_require_review: true,
     },
   };
-  writeJsonUnder(repoRoot, `.osc/runs/${safeRunId(runId)}/improvement-candidates.json`, analysis, 'improvement candidates path');
+  if (writeCandidates) writeJsonUnder(repoRoot, `.osc/runs/${safeRunId(runId)}/improvement-candidates.json`, analysis, 'improvement candidates path');
   return analysis;
 }
 
@@ -173,7 +193,7 @@ export function persistAcceptedImprovement({ repoRoot = process.cwd(), slug, tit
     `# ${compactText(title, 120) || safeSlug}`,
     '',
     `Status: accepted`,
-    `Schema: osc.accepted-improvement.v1`,
+    `Schema: ${ACCEPTED_IMPROVEMENT_SCHEMA}`,
     '',
     '## Lesson',
     '',
@@ -193,13 +213,15 @@ export function persistAcceptedImprovement({ repoRoot = process.cwd(), slug, tit
   return { status: 'applied' as const, slug: safeSlug, path };
 }
 
-export function loadAcceptedImprovements({ repoRoot = process.cwd(), query = '' }: { repoRoot?: string; query?: string } = {}) {
+export function loadAcceptedImprovements({ repoRoot = process.cwd(), query = '', requireQuery = false }: { repoRoot?: string; query?: string; requireQuery?: boolean } = {}) {
   const dir = join(repoRoot, '.osc/improvements/applied');
   if (!existsSync(dir)) return [];
   const root = realpathSync.native(repoRoot);
   const dirReal = realpathSync.native(dir);
   if (!isInside(root, dirReal)) throw new Error('accepted improvements directory must stay inside repo root');
-  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const hasQuery = query.trim().length > 0;
+  const terms = queryTerms(query);
+  if (requireQuery && (!hasQuery || terms.length === 0)) return [];
   return readdirSync(dir)
     .filter((name) => name.endsWith('.md'))
     .map((name) => {
@@ -212,5 +234,5 @@ export function loadAcceptedImprovements({ repoRoot = process.cwd(), query = '' 
       const slug = name.replace(/\.md$/, '');
       return { slug, path, content };
     })
-    .filter((item) => terms.length === 0 || terms.some((term) => item.content.toLowerCase().includes(term) || item.slug.includes(term)));
+    .filter((item) => !hasQuery || acceptedImprovementMatches(item.content, item.slug, terms));
 }
