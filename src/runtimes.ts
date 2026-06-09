@@ -494,6 +494,8 @@ function loadProjectRuntimeAdapter(repoRoot: string, adapterId: string): Runtime
   };
 }
 
+export const CODEX_RUNTIME_ENV_ALLOWLIST = ['PATH', 'HOME', 'OPENAI_API_KEY'] as const;
+
 function builtInCodexRuntimeAdapter(options: RunHarnessRuntimeOptions): RuntimeAdapterDefinition {
   const model = options.model?.trim() || 'gpt-5.5';
   const effort = options.effort?.trim() || 'xhigh';
@@ -505,7 +507,7 @@ function builtInCodexRuntimeAdapter(options: RunHarnessRuntimeOptions): RuntimeA
     maxStdoutBytes: options.maxLogBytes ?? defaultHarnessRuntimeLogBytes,
     maxStderrBytes: options.maxLogBytes ?? defaultHarnessRuntimeLogBytes,
     env: {},
-    envAllowlist: ['PATH', 'HOME'],
+    envAllowlist: [...CODEX_RUNTIME_ENV_ALLOWLIST],
     kind: 'builtin-codex',
     appendRunPacketArg: false,
   };

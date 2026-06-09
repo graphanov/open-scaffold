@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, 
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { answerHumanGate, getHarnessStatus, routeHarnessCommand } from '../src/harness.js';
-import { classifyRuntimeOutcome, parseLomeinRuntimeMarker } from '../src/runtimes.js';
+import { CODEX_RUNTIME_ENV_ALLOWLIST, classifyRuntimeOutcome, parseLomeinRuntimeMarker } from '../src/runtimes.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -47,6 +47,10 @@ function readRuntimeReceipt(root: string, runId: string): any {
 }
 
 describe('controlled $work runtime parity', () => {
+  it('keeps OpenAI API key available only to the built-in Codex child process', () => {
+    expect(CODEX_RUNTIME_ENV_ALLOWLIST).toEqual(expect.arrayContaining(['PATH', 'HOME', 'OPENAI_API_KEY']));
+  });
+
   it('rejects unsafe runtime override caps before spawn', () => {
     const root = tempScaffold();
     try {
