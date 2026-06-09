@@ -105,6 +105,47 @@ describe('harness feedback and self-improvement loop', () => {
     expect(first.record.id).not.toBe(second.record.id);
   });
 
+  it('uses the newest actionable repair hypothesis when retry metadata is inferred', () => {
+    const root = tempScaffold();
+    try {
+      const parent = routeHarnessCommand({ repoRoot: root, input: '$work "retry newest repair" --context "repo truth"' });
+      recordFeedback({
+        repoRoot: root,
+        runId: parent.runId,
+        source: 'tests',
+        verdict: 'retry',
+        scope: 'run',
+        whatHappened: 'The first failure was broad and early.',
+        whyItMatters: 'A retry needs repair context.',
+        repairHypothesis: 'Old broad repair hypothesis.',
+        nextAction: 'retry',
+      });
+      recordFeedback({
+        repoRoot: root,
+        runId: parent.runId,
+        source: 'reviewer',
+        verdict: 'retry',
+        scope: 'run',
+        whatHappened: 'The reviewer found the exact retry blocker.',
+        whyItMatters: 'The latest review is more specific than the first failure.',
+        repairHypothesis: 'Latest specific repair hypothesis.',
+        nextAction: 'retry',
+      });
+
+      const analysis = analyzeFeedback({ repoRoot: root, runId: parent.runId });
+      expect(analysis.repairHypotheses[0].hypothesis).toBe('Latest specific repair hypothesis.');
+
+      const retry = routeHarnessCommand({
+        repoRoot: root,
+        input: `$work "retry newest repair" --context "repo truth" --retry-of ${parent.runId}`,
+      });
+      const retryPacket = readJson(root, `.osc/runs/${retry.runId}/run.json`);
+      expect(retryPacket.retry.repairHypothesis).toBe('Latest specific repair hypothesis.');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('turns failed and blocked runtime outcomes into feedback records with repair hypotheses', () => {
     const root = tempScaffold();
     try {

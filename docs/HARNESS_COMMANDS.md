@@ -51,7 +51,7 @@ A spawned runtime must end stdout with exactly one final standalone marker line:
 
 Missing markers, duplicate markers, non-final markers, timeouts, signals, and non-zero exits fail closed.
 
-Failed and blocked runtime outcomes also create `.osc/runs/<run-id>/feedback.jsonl`. That feedback includes a repair hypothesis and evidence refs to the receipt/logs. A retry uses a new run id and can inherit the hypothesis through `--retry-of <run-id>` so old evidence is preserved.
+Failed and blocked runtime outcomes also create `.osc/runs/<run-id>/feedback.jsonl`. That feedback includes a repair hypothesis and evidence refs to the receipt/logs. A retry uses a new run id and can inherit the newest actionable hypothesis through `--retry-of <run-id>` so old evidence is preserved.
 
 Human gates use the backend too:
 

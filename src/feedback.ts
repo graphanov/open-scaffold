@@ -147,8 +147,9 @@ export function readFeedback({ repoRoot = process.cwd(), runId }: { repoRoot?: s
 }
 
 function inferRepairHypothesis(records: FeedbackRecord[]): string {
-  const actionable = records.find((record) => ['retry', 'reject', 'block', 'improve'].includes(record.verdict) && record.repairHypothesis)
-    ?? records.find((record) => ['retry', 'reject', 'block', 'improve'].includes(record.verdict))
+  const newestFirst = [...records].reverse();
+  const actionable = newestFirst.find((record) => ['retry', 'reject', 'block', 'improve'].includes(record.verdict) && record.repairHypothesis)
+    ?? newestFirst.find((record) => ['retry', 'reject', 'block', 'improve'].includes(record.verdict))
     ?? records.at(-1);
   if (!actionable) return 'No feedback yet; keep the next run bounded and evidence-backed.';
   return actionable.repairHypothesis
