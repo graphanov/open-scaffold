@@ -61,7 +61,7 @@ The compiler redacts common local path and token-like strings before writing the
 
 The handoff file can be useful even after a failed run: it points the next worker to the repair hypothesis and old evidence without overwriting the failed attempt.
 
-If a runtime pauses with `LOMEIN_NEEDS_HUMAN`, the handoff lists the pending human-gate prompt under Blockers / Open Questions and tells the next worker to resume the same run after bounded task input. It should not imply a retry is needed when the run is only waiting for human input.
+If a runtime pauses with `LOMEIN_NEEDS_HUMAN`, the handoff lists the pending human-gate prompt under Blockers / Open Questions and tells the next worker to resume the same run after bounded task input. Long gate prompts are truncated inside the handoff so the run still surfaces the human gate instead of failing packet validation.
 
 ## Handoff lab
 

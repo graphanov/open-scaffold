@@ -33,9 +33,9 @@ function clean(value: string, fallback = 'Not recorded.'): string {
   return text || fallback;
 }
 
-function bullets(values: string[] | undefined, fallback: string): string[] {
+function bullets(values: string[] | undefined, fallback: string, maxChars = 220): string[] {
   const cleaned = (values ?? []).map((item) => clean(item, '')).filter(Boolean);
-  return (cleaned.length ? cleaned : [fallback]).map((item) => `- ${item}`);
+  return (cleaned.length ? cleaned : [fallback]).map((item) => `- ${truncate(item, maxChars)}`);
 }
 
 function truncate(value: string, max: number): string {
@@ -54,16 +54,16 @@ function render(input: Required<Omit<HandoffCompilerInput, 'maxChars' | 'reason'
     truncate(input.state, stateChars),
     '',
     '## Decisions',
-    ...bullets(input.decisions, 'No durable decisions recorded yet.'),
+    ...bullets(input.decisions, 'No durable decisions recorded yet.', 180),
     '',
     '## Blockers / Open Questions',
-    ...bullets(input.blockers, 'No known blockers.'),
+    ...bullets(input.blockers, 'No known blockers.', 260),
     '',
     '## Evidence refs',
-    ...bullets(input.evidenceRefs, 'No evidence refs yet.'),
+    ...bullets(input.evidenceRefs, 'No evidence refs yet.', 180),
     '',
     '## Next Actions',
-    ...bullets(input.nextActions, 'Verify the referenced work before claiming pass.'),
+    ...bullets(input.nextActions, 'Verify the referenced work before claiming pass.', 180),
     '',
     `Compiler reason: ${truncate(input.reason, 90)}`,
   ];

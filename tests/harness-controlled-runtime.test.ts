@@ -354,6 +354,31 @@ if (!answered) {
     }
   });
 
+  it('bounds long runtime human-gate prompts before compiling handoffs', () => {
+    const root = tempScaffold();
+    try {
+      writeMarkerAdapter(root, 'long-needs-human', `
+console.log('Need bounded choice before continuing. ' + 'A'.repeat(3200));
+console.log('LOMEIN_NEEDS_HUMAN');
+`);
+
+      const result = routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "long runtime human gate" --context "repo truth" --adapter long-needs-human --allow-spawn --handoff --handoff-max-chars 1200',
+      });
+
+      expect(result.status.state).toBe('waiting_on_human');
+      expect(result.humanGates[0].prompt).toContain('Need bounded choice');
+      const handoff = readFileSync(join(root, `.osc/runs/${result.runId}/handoff.md`), 'utf8');
+      expect(handoff.length).toBeLessThanOrEqual(1200);
+      expect(handoff).toContain('Need bounded choice');
+      expect(handoff).toContain('## Next Actions');
+      expect(readRunJson(root, result.runId).handoff.validation.status).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('bounds and redacts runtime logs without absolute local path leaks', () => {
     const root = tempScaffold();
     try {
