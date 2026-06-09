@@ -59,7 +59,7 @@ The compiler redacts common local path and token-like strings before writing the
 
 `validateHandoffPacket` checks the required sections and character budget. A packet that misses sections or exceeds the budget fails validation. `$work --handoff-max-chars` refuses budgets below 900 characters because the required section headings and minimum bullets need room to survive. If a generated `$work` handoff still fails validation, `$work` fails closed instead of returning a successful handoff.
 
-The handoff file can be useful even after a failed run: it points the next worker to the repair hypothesis and old evidence without overwriting the failed attempt.
+The handoff file can be useful even after a failed run: it points the next worker to the repair hypothesis and old evidence without overwriting the failed attempt. A ready dry-run handoff is different: it tells the next worker to execute or delegate the packaged `$work` task, not retry a failed attempt.
 
 If a runtime pauses with `LOMEIN_NEEDS_HUMAN`, the handoff lists the pending human-gate prompt under Blockers / Open Questions and tells the next worker to resume the same run after bounded task input. Long gate prompts are truncated inside the handoff so the run still surfaces the human gate instead of failing packet validation.
 

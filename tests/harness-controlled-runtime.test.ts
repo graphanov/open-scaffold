@@ -230,6 +230,24 @@ console.log('LOMEIN_COMPLETE');
     }
   });
 
+  it('writes ready handoffs as continuation packets, not retry packets', () => {
+    const root = tempScaffold();
+    try {
+      const result = routeHarnessCommand({
+        repoRoot: root,
+        input: '$work "ready handoff package" --context "repo truth" --handoff --handoff-max-chars 950',
+      });
+
+      expect(result.status.state).toBe('ready');
+      const handoff = readFileSync(join(root, `.osc/runs/${result.runId}/handoff.md`), 'utf8');
+      expect(handoff).toContain('Execute or delegate the packaged $work task.');
+      expect(handoff).not.toContain('Retry with the repair hypothesis');
+      expect(readRunJson(root, result.runId).handoff.validation.status).toBe('pass');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('rejects handoff budgets too small to preserve required sections', () => {
     const root = tempScaffold();
     try {

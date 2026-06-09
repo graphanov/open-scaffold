@@ -414,7 +414,9 @@ function maybeWriteHandoffPacket(repoRoot: string, runId: string, command: Harne
     ? ['Run verification before claiming pass.', 'Owner decides commit, push, PR, merge, publish, and release gates.']
     : state === 'waiting_on_human'
       ? ['Answer pending human gate as bounded task input, not approval.', 'Resume the same run after the answer; preserve current evidence.']
-      : ['Retry with the repair hypothesis if still in scope.', 'Preserve this run evidence and write new attempt evidence.'];
+      : state === 'ready'
+        ? ['Execute or delegate the packaged $work task.', 'Preserve this run packet and evidence refs while continuing.']
+        : ['Retry with the repair hypothesis if still in scope.', 'Preserve this run evidence and write new attempt evidence.'];
   const compiled = compileHandoffPacket({
     state: `Run ${runId} for $${command} is ${state}. Intent: ${String(packet.intent ?? '').trim() || 'not recorded'}. Runtime status: ${receipt?.status ?? 'not run'}.`,
     decisions: [
