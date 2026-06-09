@@ -147,7 +147,7 @@ A successful process exit is not enough. Runtime stdout must end with exactly on
 
 Missing, duplicated, non-final, timed-out, signaled, or non-zero output fails closed.
 
-For failed and blocked outcomes, `$work` records feedback before the next attempt. The feedback file carries the repair hypothesis and repo-relative evidence refs. `--retry-of <run-id>` starts a sibling run that links to the old evidence and inherits the newest actionable repair hypothesis instead of overwriting it.
+For failed and blocked outcomes, `$work` records feedback before the next attempt. The feedback file carries the repair hypothesis and repo-relative evidence refs. `--retry-of <run-id>` starts a sibling run that links to the old evidence and inherits the newest actionable repair hypothesis instead of overwriting it. If the parent has no feedback yet, the retry packet keeps moving with a bounded fallback repair hypothesis and the same evidence-linking rules.
 
 When requested, `$work --handoff --handoff-max-chars <n>` writes `.osc/runs/<run-id>/handoff.md` with required resume sections under the budget. This packet is a continuation aid only.
 

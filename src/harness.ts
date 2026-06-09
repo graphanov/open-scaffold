@@ -365,8 +365,15 @@ function buildRetryMetadata(repoRoot: string, parsed: ParsedHarnessCommand): { p
   if (!parentRunId) return null;
   const safeParent = safeRunId(parentRunId);
   const explicit = option(parsed, 'repair-hypothesis');
-  const analysis = explicit ? null : analyzeFeedback({ repoRoot, runId: safeParent, writeCandidates: false });
-  const repairHypothesis = explicit ?? analysis?.repairHypotheses[0]?.hypothesis ?? 'Retry with a bounded repair hypothesis and preserve the previous attempt evidence.';
+  let inferredRepairHypothesis: string | undefined;
+  if (!explicit) {
+    try {
+      inferredRepairHypothesis = analyzeFeedback({ repoRoot, runId: safeParent, writeCandidates: false }).repairHypotheses[0]?.hypothesis;
+    } catch {
+      inferredRepairHypothesis = undefined;
+    }
+  }
+  const repairHypothesis = explicit ?? inferredRepairHypothesis ?? 'Retry with a bounded repair hypothesis and preserve the previous attempt evidence.';
   const parentStatus = readJsonUnder<HarnessStatus>(repoRoot, `.osc/runs/${safeParent}/status.json`, 'parent harness status path');
   const evidence = new Set(collectEvidencePathsFromStatus(parentStatus));
   evidence.add(`.osc/runs/${safeParent}/runtime-receipt.json`);

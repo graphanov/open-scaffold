@@ -105,6 +105,23 @@ describe('harness feedback and self-improvement loop', () => {
     expect(first.record.id).not.toBe(second.record.id);
   });
 
+  it('falls back to a bounded repair hypothesis when retry parent has no feedback', () => {
+    const root = tempScaffold();
+    try {
+      const parent = routeHarnessCommand({ repoRoot: root, input: '$work "retry without feedback" --context "repo truth"' });
+      const retry = routeHarnessCommand({
+        repoRoot: root,
+        input: `$work "retry without feedback" --context "repo truth" --retry-of ${parent.runId}`,
+      });
+      const retryPacket = readJson(root, `.osc/runs/${retry.runId}/run.json`);
+      expect(retryPacket.retry).toMatchObject({ parentRunId: parent.runId, attempt: 2 });
+      expect(retryPacket.retry.repairHypothesis).toContain('bounded repair hypothesis');
+      expect(retryPacket.retry.previousEvidencePaths).toContain(`.osc/runs/${parent.runId}/status.json`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('uses the newest actionable repair hypothesis when retry metadata is inferred', () => {
     const root = tempScaffold();
     try {
