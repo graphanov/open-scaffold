@@ -112,6 +112,7 @@ This scope hardens the reproduction machinery:
 - handoff lab with all 15 candidates;
 - live-mode spawn gate and lane receipts;
 - distinct control/harness/ablation work packages for non-handoff live fixtures;
+- collision-safe live run ids that preserve lane/ablation uniqueness even with long suite or fixture names;
 - adapter-reported token usage capture in runtime receipts when available;
 - dirty live completion handling for timeouts, signals, non-zero exits, missing/non-final/duplicate markers, blocked/needs-human markers, and incomplete evidence;
 - explicit ablation fixture selection with no silent cap when supplied;

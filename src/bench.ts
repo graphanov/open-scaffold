@@ -117,6 +117,23 @@ function safeId(value: string, fallback = 'item'): string {
   return slug || fallback;
 }
 
+function shortHash(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(36).padStart(7, '0');
+}
+
+function liveRunId(suiteId: string, fixtureId: string, laneId: string, ablationId?: string): string {
+  const laneSuffix = safeId(ablationId ? `ablation-${ablationId}` : laneId, 'lane').slice(0, 48);
+  const hash = shortHash(`${suiteId}\0${fixtureId}\0${laneId}\0${ablationId ?? ''}`);
+  const maxStem = Math.max(12, 96 - laneSuffix.length - hash.length - 2);
+  const stem = safeId(`${suiteId}-${fixtureId}`, 'bench-lane').slice(0, maxStem).replace(/[-._]+$/g, '') || 'bench-lane';
+  return `${stem}-${hash}-${laneSuffix}`;
+}
+
 function suiteRunId(outDir: string): string {
   return `bench-${safeId(outDir.replace(/^\.osc\/bench\//, ''), 'suite')}`;
 }
@@ -393,7 +410,7 @@ function tokenMetricFromReceipt(receipt: HarnessRuntimeReceipt, packet: { prompt
 }
 
 function runLiveLane({ repoRoot, suiteId, fixtureId, laneId, laneLabel, adapterId, allowSpawn, timeoutMs, maxLogBytes, model, effort, ablationId }: Required<Pick<BenchSuiteOptions, 'repoRoot' | 'adapterId' | 'allowSpawn'>> & Pick<BenchSuiteOptions, 'timeoutMs' | 'maxLogBytes' | 'model' | 'effort'> & { suiteId: string; fixtureId: string; laneId: string; laneLabel: string; ablationId?: string }): BenchLane {
-  const runId = safeId(`${suiteId}-${fixtureId}-${laneId}${ablationId ? `-${ablationId}` : ''}`, 'bench-lane');
+  const runId = liveRunId(suiteId, fixtureId, laneId, ablationId);
   const packet = writeLiveRunPacket(repoRoot, runId, fixtureId, laneId, laneLabel, ablationId);
   const started = Date.now();
   const receipt = runHarnessRuntimeAdapter({ repoRoot, runId, runPacketPath: packet.path, adapterId, allowSpawn, timeoutMs, maxLogBytes, model, effort });

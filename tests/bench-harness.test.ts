@@ -133,7 +133,7 @@ describe('harness benchmark and reproduction machinery', () => {
     const root = tempScaffold('osc-live-lane-prompts-');
     try {
       writeMarkerAdapter(root, 'complete-marker', `console.log('bounded benchmark answer');\nconsole.log('LOMEIN_COMPLETE');\n`);
-      runBenchSuite({
+      const result = runBenchSuite({
         repoRoot: root,
         mode: 'live',
         outDir: '.osc/bench/lane-prompts',
@@ -143,12 +143,12 @@ describe('harness benchmark and reproduction machinery', () => {
         allowSpawn: true,
         adapterId: 'complete-marker',
       });
-
-      const suiteId = 'bench-lane-prompts';
-      const base = `${suiteId}-debugging-protocol-improvement`;
-      const control = JSON.parse(readFileSync(join(root, `.osc/runs/${base}-control/run.json`), 'utf8'));
-      const harness = JSON.parse(readFileSync(join(root, `.osc/runs/${base}-harness/run.json`), 'utf8'));
-      const ablation = JSON.parse(readFileSync(join(root, `.osc/runs/${base}-ablation-naked-explicit-acceptance-criteria/run.json`), 'utf8'));
+      const runPacketPath = (receiptPath: string) => receiptPath.replace(/runtime-receipt\.json$/, 'run.json');
+      const control = JSON.parse(readFileSync(join(root, runPacketPath(result.fixtures[0].control.receiptPath!)), 'utf8'));
+      const harness = JSON.parse(readFileSync(join(root, runPacketPath(result.fixtures[0].harness.receiptPath!)), 'utf8'));
+      const ablationReceipt = result.ablations.find((item) => item.ablationId === 'naked-explicit-acceptance-criteria')?.evidencePaths.find((item) => item.role === 'runtime_receipt')?.path;
+      expect(ablationReceipt).toBeTruthy();
+      const ablation = JSON.parse(readFileSync(join(root, runPacketPath(ablationReceipt!)), 'utf8'));
 
       expect(control.workPackage.context).not.toBe(harness.workPackage.context);
       expect(ablation.workPackage.context).not.toBe(harness.workPackage.context);
@@ -195,6 +195,37 @@ describe('harness benchmark and reproduction machinery', () => {
 
       expect(result.fixtures[0].control.tokens).toMatchObject({ value: null, source: 'not_reported_by_runtime_adapter' });
       expect(result.fixtures[0].comparison.blockers).toContain('token_receipts_unavailable');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps live run ids distinct for long suite and fixture names', () => {
+    const root = tempScaffold('osc-live-long-run-id-');
+    try {
+      writeMarkerAdapter(root, 'complete-marker', `console.log('bounded benchmark answer');\nconsole.log('LOMEIN_COMPLETE');\n`);
+      const longFixture = 'debugging-protocol-improvement-with-extra-characters-that-would-have-truncated-away-lane-suffixes';
+      const result = runBenchSuite({
+        repoRoot: root,
+        mode: 'live',
+        outDir: '.osc/bench/very-long-reproduction-suite-name-that-would-have-caused-run-id-truncation-collisions',
+        fixtureIds: [longFixture],
+        includeAblations: true,
+        ablationFixtureIds: [longFixture],
+        allowSpawn: true,
+        adapterId: 'complete-marker',
+      });
+
+      const receiptPaths = [
+        result.fixtures[0].control.receiptPath,
+        result.fixtures[0].harness.receiptPath,
+        ...result.ablations.map((ablation) => ablation.evidencePaths.find((item) => item.role === 'runtime_receipt')?.path),
+      ];
+      expect(new Set(receiptPaths).size).toBe(receiptPaths.length);
+      for (const receiptPath of receiptPaths) {
+        expect(receiptPath).toBeTruthy();
+        expect(existsSync(join(root, receiptPath!))).toBe(true);
+      }
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
