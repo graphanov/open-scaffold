@@ -61,6 +61,8 @@ The compiler redacts common local path and token-like strings before writing the
 
 The handoff file can be useful even after a failed run: it points the next worker to the repair hypothesis and old evidence without overwriting the failed attempt.
 
+If a runtime pauses with `LOMEIN_NEEDS_HUMAN`, the handoff lists the pending human-gate prompt under Blockers / Open Questions and tells the next worker to resume the same run after bounded task input. It should not imply a retry is needed when the run is only waiting for human input.
+
 ## Handoff lab
 
 `osc bench handoff-lab` still exists for deterministic compiler experiments. It scores 15 candidates and writes:

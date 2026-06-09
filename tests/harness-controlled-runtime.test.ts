@@ -321,7 +321,7 @@ if (!answered) {
 
       const blocked = routeHarnessCommand({
         repoRoot: root,
-        input: '$work "runtime human gate" --context "repo truth" --adapter needs-then-complete --allow-spawn',
+        input: '$work "runtime human gate" --context "repo truth" --adapter needs-then-complete --allow-spawn --handoff --handoff-max-chars 1200',
       });
 
       expect(blocked.status.state).toBe('waiting_on_human');
@@ -330,6 +330,10 @@ if (!answered) {
       expect(blocked.humanGates[0].prompt).toContain('Pick README.md');
       const needsReceipt = readRuntimeReceipt(root, blocked.runId);
       expect(needsReceipt).toMatchObject({ status: 'needs_human', marker: { state: 'needs_human' } });
+      const handoff = readFileSync(join(root, `.osc/runs/${blocked.runId}/handoff.md`), 'utf8');
+      expect(handoff).toContain('Pick README.md');
+      expect(handoff).not.toContain('No known blockers.');
+      expect(handoff).toMatch(/Answer pending human gate|human task input/i);
 
       const answered = answerHumanGate({
         repoRoot: root,

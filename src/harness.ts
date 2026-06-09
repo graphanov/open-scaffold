@@ -390,7 +390,7 @@ function handoffRequested(parsed: ParsedHarnessCommand): boolean {
   return optionFlag(parsed, 'handoff') || option(parsed, 'handoff-max-chars') !== undefined;
 }
 
-function maybeWriteHandoffPacket(repoRoot: string, runId: string, command: HarnessCommandName, state: HarnessState, artifacts: HarnessArtifactLink[], receipt?: HarnessRuntimeReceipt): { artifacts: HarnessArtifactLink[]; handoffPath?: string; repairHypotheses: string[] } {
+function maybeWriteHandoffPacket(repoRoot: string, runId: string, command: HarnessCommandName, state: HarnessState, artifacts: HarnessArtifactLink[], receipt?: HarnessRuntimeReceipt, humanGates: HumanGate[] = []): { artifacts: HarnessArtifactLink[]; handoffPath?: string; repairHypotheses: string[] } {
   const packet = readJsonUnder<Record<string, unknown>>(repoRoot, `.osc/runs/${runId}/run.json`, 'work run packet path');
   const request = packet.handoff && typeof packet.handoff === 'object' ? packet.handoff as Record<string, unknown> : null;
   if (request?.requested !== true) return { artifacts, repairHypotheses: [] };
@@ -402,6 +402,19 @@ function maybeWriteHandoffPacket(repoRoot: string, runId: string, command: Harne
     repairHypotheses = [];
   }
   const evidenceRefs = [...new Set([...artifacts.map((item) => item.path), ...(receipt?.evidencePaths.map((item) => item.path) ?? [])])];
+  const pendingGatePrompts = humanGates
+    .filter((gate) => gate.status === 'pending')
+    .map((gate) => `Human gate ${gate.id}: ${gate.prompt}`);
+  const blockers = state === 'waiting_on_human'
+    ? (pendingGatePrompts.length ? pendingGatePrompts : ['Runtime adapter needs human task input before this run can continue.'])
+    : state === 'failed' || state === 'blocked'
+      ? (repairHypotheses.length ? repairHypotheses : ['Runtime attempt needs repair before retry.'])
+      : [];
+  const nextActions = state === 'completed'
+    ? ['Run verification before claiming pass.', 'Owner decides commit, push, PR, merge, publish, and release gates.']
+    : state === 'waiting_on_human'
+      ? ['Answer pending human gate as bounded task input, not approval.', 'Resume the same run after the answer; preserve current evidence.']
+      : ['Retry with the repair hypothesis if still in scope.', 'Preserve this run evidence and write new attempt evidence.'];
   const compiled = compileHandoffPacket({
     state: `Run ${runId} for $${command} is ${state}. Intent: ${String(packet.intent ?? '').trim() || 'not recorded'}. Runtime status: ${receipt?.status ?? 'not run'}.`,
     decisions: [
@@ -409,11 +422,9 @@ function maybeWriteHandoffPacket(repoRoot: string, runId: string, command: Harne
       'Feedback and handoff packets are not owner approval.',
       `Runtime adapter: ${receipt?.adapterId ?? (packet.runtime && typeof packet.runtime === 'object' ? String((packet.runtime as Record<string, unknown>).adapter ?? 'none') : 'none')}.`,
     ],
-    blockers: state === 'failed' || state === 'blocked' ? (repairHypotheses.length ? repairHypotheses : ['Runtime attempt needs repair before retry.']) : [],
+    blockers,
     evidenceRefs,
-    nextActions: state === 'completed'
-      ? ['Run verification before claiming pass.', 'Owner decides commit, push, PR, merge, publish, and release gates.']
-      : ['Retry with the repair hypothesis if still in scope.', 'Preserve this run evidence and write new attempt evidence.'],
+    nextActions,
     maxChars,
     reason: 'requested by $work handoff option',
   });
@@ -456,7 +467,7 @@ function applyRuntimeReceipt(repoRoot: string, runId: string, receipt: HarnessRu
   const nextState = runtimeState(receipt);
   let nextArtifacts = mergeRuntimeEvidenceArtifacts(artifacts, receipt);
   const feedback = recordRuntimeOutcomeFeedback(repoRoot, runId, receipt);
-  const handoff = maybeWriteHandoffPacket(repoRoot, runId, 'work', nextState, nextArtifacts, receipt);
+  const handoff = maybeWriteHandoffPacket(repoRoot, runId, 'work', nextState, nextArtifacts, receipt, nextGates);
   nextArtifacts = handoff.artifacts;
   const feedbackPath = `.osc/runs/${runId}/feedback.jsonl`;
   writeJsonUnder(repoRoot, `.osc/runs/${runId}/human-gates.json`, nextGates, 'human gates path');
