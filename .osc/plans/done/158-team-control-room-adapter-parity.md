@@ -2,7 +2,7 @@
 
 ## Status
 
-backlog
+done
 
 ## PR association
 
@@ -69,14 +69,14 @@ Make `$team` coordinate multiple controlled worker lanes with one shared plan, s
 
 ## Acceptance criteria
 
-- [ ] `$team` can create multiple worker lanes from one plan/goal.
-- [ ] Each lane has status, adapter metadata, evidence links, and failure code when blocked.
-- [ ] All lanes write to one shared `.osc/runs/<run-id>/` evidence/postflight record.
-- [ ] Human gates from any lane appear in the shared status.
-- [ ] Feedback from any lane can produce shared repair hypotheses.
-- [ ] Accepted improvements can be inherited by team runs with relevance filtering.
-- [ ] Event/status output can be consumed by CLI, chat/plugin, Hermes, or future desktop surfaces without depending on any of them.
-- [ ] Docs describe the future control-room UI as direction, not shipped desktop implementation.
+- [x] `$team` can create multiple worker lanes from one plan/goal.
+- [x] Each lane has status, adapter metadata, evidence links, and failure code when blocked.
+- [x] All lanes write to one shared `.osc/runs/<run-id>/` evidence/postflight record.
+- [x] Human gates from any lane appear in the shared status.
+- [x] Feedback from any lane can produce shared repair hypotheses.
+- [x] Accepted improvements can be inherited by team runs with relevance filtering.
+- [x] Event/status output can be consumed by CLI, chat/plugin, Hermes, or future desktop surfaces without depending on any of them.
+- [x] Docs describe the future control-room UI as direction, not shipped desktop implementation.
 
 ## Verification steps
 

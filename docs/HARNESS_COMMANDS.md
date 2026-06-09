@@ -21,8 +21,10 @@ osc harness '$plan "add the harness docs" --slug harness-docs --acceptance "Docs
 osc harness '$work "implement one bounded slice" --context "plan is ready"' --json
 osc harness '$work "implement one bounded slice" --context "plan is ready" --adapter codex --allow-spawn --timeout-ms 600000' --json
 osc harness '$work "retry failed slice" --context "repo truth" --retry-of <old-run-id> --handoff --handoff-max-chars 1200' --json
-osc harness '$team "split implementation docs review" --worker implementation --worker docs --worker review'
-osc harness '$team "shared repair" --worker implementation --worker review --worker-outcome review:blocked --repair-hypothesis "Summarize blocker before retry."'
+osc harness '$team "split implementation docs review" --plan .osc/plans/active/team-plan.md --worker implementation --worker docs --worker review'
+osc harness '$team "two lane smoke" --worker implementation --worker review --worker-outcome implementation:complete --worker-outcome review:needs-human --worker-question review:"Pick README.md before review continues."' --json
+osc harness '$team "shared repair" --worker implementation --worker review --worker-adapter review:plain --worker-outcome review:blocked --repair-hypothesis "Summarize blocker before retry."' --json
+osc harness answer <team-run-id> --gate worker-review-needs-human --answer "Use README.md first. This is task input only." --json
 ```
 
 `$work` is dry-run by default. Without `--allow-spawn`, it writes a work package and `runtime-receipt.json` with `status: "dry_run"` and `failure.code: "spawn_authority_missing"`; no adapter process is launched, and project-local adapter config is not read or trusted yet.
@@ -94,5 +96,7 @@ The router takes command text and returns event/status/artifact shapes. It is tr
 - A Codex plugin can call it and render the same status/events.
 - Hermes can call it and preserve the same run record.
 - A future desktop/control-room app can call it without changing the core protocol.
+
+`$team` uses the same boundary. Worker lanes may name adapters with `--worker-adapter <worker>:<adapter>`, but the metadata is a capability and authority contract, not permission to merge or publish. Worker outcomes can be recorded with `--worker-outcome <worker>:complete|needs-human|blocked|failed|benchmark-failed|reviewer-failed`; human-gate outcomes appear in the shared status and are answered through the same backend `osc harness answer` command.
 
 Runtime execution remains adapter-owned. Open Scaffold core packages controlled work, preserves receipts, and exposes gates; it does not become an autonomous authority.
