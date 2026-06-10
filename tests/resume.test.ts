@@ -270,6 +270,33 @@ describe('osc resume packet compiler', () => {
     expect(packet).toContain('osc harness answer harness-work-demo-1 --gate missing-required-context');
   });
 
+  it('redacts sensitive run and gate identifiers before emitting resume output', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-sensitive-run');
+    const runDir = join(root, '.osc', 'runs', 'harness-work-sensitive');
+    mkdirSync(runDir, { recursive: true });
+    writeFileSync(join(runDir, 'status.json'), JSON.stringify({
+      schema: 'osc.harness-status.v1',
+      runId: 'harness-work-sk-abcdefghijklmnopqrstuvwxyz012345-/Users/someone/secrets',
+      command: 'work',
+      state: 'waiting_on_human',
+      updatedAt: '2026-06-10T10:00:00.000Z',
+      pendingHumanGates: [{ id: 'gate-sk-abcdefghijklmnopqrstuvwxyz012345-/Users/someone/secrets', required: true, status: 'pending' }],
+    }), 'utf8');
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summaryJson).not.toContain('sk-abcdefghijklmnopqrstuvwxyz012345');
+    expect(summaryJson).not.toContain('/Users/someone');
+    expect(packet).not.toContain('sk-abcdefghijklmnopqrstuvwxyz012345');
+    expect(packet).not.toContain('/Users/someone');
+    expect(summary.latest_run?.run_id).toContain('sk-[redacted]');
+    expect(summary.latest_run?.pending_gate_ids[0]).toContain('sk-[redacted]');
+    expect(summary.next_commands.join('\n')).toContain('sk-[redacted]');
+  });
+
   it('routes a failed run to a repair-hypothesis retry', () => {
     const root = tempRepo();
     writeMission(root);

@@ -61,6 +61,10 @@ export interface ResumeResult {
   packet: string;
 }
 
+interface InternalResumeLatestRun extends ResumeLatestRun {
+  raw_run_id: string;
+}
+
 interface RunStatusFile {
   runId?: string;
   command?: string;
@@ -127,23 +131,25 @@ function planAcceptanceCriteria(root: string, plan: PlanSummary): { parsed: Retu
   return { parsed, criteria };
 }
 
-function latestHarnessRun(root: string): ResumeLatestRun | null {
+function latestHarnessRun(root: string): InternalResumeLatestRun | null {
   const dir = join(root, '.osc', 'runs');
   if (!existsSync(dir)) return null;
-  let best: ResumeLatestRun | null = null;
+  let best: InternalResumeLatestRun | null = null;
   for (const name of readdirSync(dir).sort()) {
     const statusPath = join(dir, name, 'status.json');
     if (!existsSync(statusPath)) continue;
     try {
       if (!statSync(statusPath).isFile()) continue;
       const parsed = JSON.parse(readFileSync(statusPath, 'utf8')) as RunStatusFile;
+      const rawRunId = typeof parsed.runId === 'string' ? parsed.runId : name;
       const gates = Array.isArray(parsed.pendingHumanGates) ? parsed.pendingHumanGates : [];
-      const candidate: ResumeLatestRun = {
-        run_id: typeof parsed.runId === 'string' ? parsed.runId : name,
-        command: typeof parsed.command === 'string' ? parsed.command : null,
+      const candidate: InternalResumeLatestRun = {
+        raw_run_id: rawRunId,
+        run_id: redactPacketText(rawRunId, 160),
+        command: typeof parsed.command === 'string' ? redactPacketText(parsed.command, 80) : null,
         state: typeof parsed.state === 'string' ? parsed.state : 'unknown',
         pending_gates: gates.length,
-        pending_gate_ids: gates.map((gate) => (typeof gate?.id === 'string' ? gate.id : 'unknown')).slice(0, 5),
+        pending_gate_ids: gates.map((gate) => redactPacketText(typeof gate?.id === 'string' ? gate.id : 'unknown', 120)).slice(0, 5),
         updated_at: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null,
       };
       if (!best || (candidate.updated_at ?? '') >= (best.updated_at ?? '')) best = candidate;
@@ -154,11 +160,11 @@ function latestHarnessRun(root: string): ResumeLatestRun | null {
   return best;
 }
 
-function latestRepairHypothesis(root: string, run: ResumeLatestRun | null): string | null {
+function latestRepairHypothesis(root: string, run: InternalResumeLatestRun | null): string | null {
   if (!run) return null;
   if (!['failed', 'blocked', 'waiting_on_human'].includes(run.state)) return null;
   try {
-    const records = readFeedback({ repoRoot: root, runId: run.run_id });
+    const records = readFeedback({ repoRoot: root, runId: run.raw_run_id });
     const newest = [...records].reverse().find((record) => record.repairHypothesis);
     return newest?.repairHypothesis ? redactPacketText(newest.repairHypothesis, 300) : null;
   } catch {
@@ -331,6 +337,16 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
 
   const run = latestHarnessRun(root);
   const repairHypothesis = latestRepairHypothesis(root, run);
+  const publicRun: ResumeLatestRun | null = run
+    ? {
+        run_id: run.run_id,
+        command: run.command,
+        state: run.state,
+        pending_gates: run.pending_gates,
+        pending_gate_ids: run.pending_gate_ids,
+        updated_at: run.updated_at,
+      }
+    : null;
   const lessonsList = scaffoldPresent ? loadAcceptedImprovements({ repoRoot: root }) : [];
   const amendments = listAmendments(root, picked);
   const next = deriveNextAction({
@@ -355,7 +371,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
     status: statusLine({ scaffoldPresent, missionDefined: scaffold.mission.defined, plan: activePlan, backlogCount: scaffold.plans.backlog?.length ?? 0 }),
     next_bounded_action: next.action,
     other_active_plans: others,
-    latest_run: run,
+    latest_run: publicRun,
     repair_hypothesis: repairHypothesis,
     lessons: { count: lessonsList.length, slugs: lessonsList.map((lesson) => lesson.slug) },
     next_commands: next.commands,
