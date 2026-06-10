@@ -2,11 +2,11 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
-The harness release-readiness work and plan closeout are now on `main`. The repo has clearer public docs plus package-visible CLI help parity for `osc feedback --help` and `osc bench --help`, but npm and GitHub Latest Release still point at `0.31.0`. The owner approved publishing the next package and GitHub Release.
+At plan start, the harness release-readiness work and plan closeout were on `main`. The repo had clearer public docs plus package-visible CLI help parity for `osc feedback --help` and `osc bench --help`, while npm and GitHub Latest Release still pointed at `0.31.0`. The owner approved publishing the next package and GitHub Release; the release follow-through now points npm `latest` and GitHub Latest Release at `0.31.1`.
 
 ## Goal
 
@@ -30,12 +30,12 @@ Publish `open-scaffold@0.31.1` with dist-tag `latest`, verify the fresh package 
 
 ## Acceptance criteria
 
-- [ ] `package.json`, `package-lock.json`, and the root lockfile package version all read `0.31.1`.
-- [ ] Release-truth docs distinguish candidate repo state from live npm/GitHub Release state before publish, then record verified live state after publish.
-- [ ] Local release gates pass: `git diff --check`, `./verify.sh --strict`, `npm test -- --run`, `npm run build`, `npm run osc -- doctor --check secret-scan`, `npm pack --dry-run --json`, and `npm publish --dry-run --tag latest`.
-- [ ] Release-sync PR CI is green and review/thread state is clean before merge.
-- [ ] Trusted publishing workflow publishes `open-scaffold@0.31.1` with `latest`, and fresh isolated-cache `npx open-scaffold@latest` proves the package surface from outside the repository.
-- [ ] GitHub Release `v0.31.1` exists, targets the merged `origin/main` release commit, is marked Latest, and uses release notes grounded in verified PR/evidence facts.
+- [x] `package.json`, `package-lock.json`, and the root lockfile package version all read `0.31.1`.
+- [x] Release-truth docs distinguish candidate repo state from live npm/GitHub Release state before publish, then record verified live state after publish.
+- [x] Local release gates pass: `git diff --check`, `./verify.sh --strict`, `npm test -- --run`, `npm run build`, `npm run osc -- doctor --check secret-scan`, `npm pack --dry-run --json`, and `npm publish --dry-run --tag latest`.
+- [x] Release-sync PR CI is green and review/thread state is clean before merge.
+- [x] Trusted publishing workflow publishes `open-scaffold@0.31.1` with `latest`, and fresh isolated-cache `npx open-scaffold@latest` proves the package surface from outside the repository.
+- [x] GitHub Release `v0.31.1` exists, targets the merged `origin/main` release commit, is marked Latest, and uses release notes grounded in verified PR/evidence facts.
 
 ## Verification steps
 
