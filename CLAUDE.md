@@ -2,87 +2,35 @@
 
 # Project Context
 
-This project is [open-scaffold](https://github.com/graphanov/open-scaffold), a repo-native work record for AI-assisted work. It keeps mission, roadmap, plans, amendments, evidence, run packets, and session handover practices in git-tracked files so any capable agent or orchestrator can enter this repository without relying on vanished chat context. Read this file first, then consult `MISSION.md` for what the project actually is.
+This is the [open-scaffold](https://github.com/graphanov/open-scaffold) product repository: a harness for AI-assisted work that keeps the whole work record — mission, plans, run records, evidence, feedback, lessons — in git-tracked files. The repo dogfoods its own protocol. Read this file first, then run the protocol below.
 
 ## Layered architecture
 
-open-scaffold has multiple layers. The **core system** is framework-agnostic repo discipline: mission, roadmap, plans, amendments, evidence, run packets, operator reports, and handover. **Orchestrators/agents** such as Hermes, Claw/OpenClaw, Claude Code, Codex, and Gemini can operate against that substrate. **Runtime harnesses** such as OMC and OMX extend Claude Code/Codex with workflow modes; they are not equivalent to orchestrators like Hermes or Claw. Consult `docs/OPEN_SCAFFOLD_SYSTEM.md` for the ontology, `docs/TASK_RUN_MODEL.md` for task/run/operator-surface identity, `docs/GITHUB_WORKFLOW.md` for issue/PR/Codex-review traceability, and `docs/WORKFLOW.md` for phase guidance.
+The **harness** (this product) owns the loop: clarify, plan, package, gate, dispatch through explicit adapters, and record. **Runtime adapters** translate run packages for Claude Code, Codex, OMC/OMX, shells, or humans and return receipts. **The work record** (`.osc/`, `MISSION.md`, `ROADMAP.md`) is the substrate every layer reads and writes. Full ontology: `docs/OPEN_SCAFFOLD_SYSTEM.md`; identity model: `docs/TASK_RUN_MODEL.md`; GitHub traceability: `docs/GITHUB_WORKFLOW.md`.
 
-## Where things live
+## Open Scaffold protocol
 
-- **`MISSION.md`** — the project's mission, goals, and non-goals. The source of truth for *what* we're building. Contains an explicit `## Changelog` section that records every scope pivot.
-- **`ROADMAP.md`** — product/system milestones and the self-dogfood chain from roadmap item to issue/task, plan, run packet, PR, and release note.
-- **`docs/OPEN_SCAFFOLD_SYSTEM.md`** — boundary map for Open Scaffold core, orchestrators/agents, OMC/OMX runtime harnesses, task bridges, glass-cockpit surfaces, and GitHub.
-- **`docs/TASK_RUN_MODEL.md`** — task/run/operator-surface identity model: `task_id`, `run_id`, `question_id`, runtime bindings, and chat/thread bindings.
-- **`docs/SLICE_CLOSE_PROTOCOL.md`** — evidence receipts, postflight decisions, approval strength, correction routing, and next-slice inheritance.
-- **`docs/RUNTIME_BINDING_CONTRACT.md`** — lifecycle/responsibilities for OMC/OMX/plain-agent/human bindings that consume run packets outside core.
-- **`docs/GITHUB_WORKFLOW.md`** — GitHub issue, PR template, Codex connector review, CI, and merge/release traceability.
-- **`.osc/plans/`** — plan files organized in stage subfolders (`active/`, `backlog/`, `done/`, `blocked/`). The folder IS the status. Plans are **immutable** once committed. New learnings become amendment files named `<slug>-amendment-<n>.md` in the same stage folder as the parent. The handoff template in `.osc/plans/handoff-template.md` defines the exact Status + seven content-heading schema every plan follows. See `.osc/plans/WORKFLOW.md` for movement rules between stage folders.
-- **`docs/decisions/`** — `README.md` is the public design-choices page (paired views, immutable plans, adapter-mediated orchestration). The full ADR records that back these decisions live internally in `.osc-dev/decisions/` and do not ship with the public template.
-- **`.osc/releases/`** — scaffold-native release/evidence notes for meaningful product slices. Each note should cite the roadmap item, issue/task, plan, run ID, PR, verification, and follow-up work.
-- **Stability and launch docs** — `docs/STABILITY.md`, `docs/CHANGELOG.md`, and `docs/index.html` explain the current package-contract boundary, curated release history, and landing-page adoption path. Treat `package.json`, npm latest, and GitHub Releases as separate public truth surfaces; repo version alone does not prove publication.
-- **`.osc-dev/`** (gitignored; populated only when working on open-scaffold itself, not in cloned templates) — owner's internal workspace holding `plans/`, `decisions/` (full ADR records), `specs/`, and `snapshots/`. **Before proposing architectural changes to the scaffold itself, read `.osc-dev/plans/` and `.osc-dev/decisions/` first** — many design questions are already investigated there, and re-deriving a rejected decision wastes a session. Grep/Glob tools skip gitignored paths by default; include `.osc-dev/` explicitly when searching.
-- **`docs/WORKFLOW.md`** — the phase-to-tool-to-command cheat-sheet. Where to reach for which agent/skill at each development phase.
-- **`bootstrap.sh`** — optional idempotent day-one setup. Creates lazy dirs (`.osc/research/`, `.osc/state/`) and stamps MISSION.md's changelog with the bootstrap date.
-- **Lifecycle helpers** — prefer `osc amend <plan-slug> --message "<what changed>"` and `osc close <plan-slug> --message "<what shipped>"` for the npm/day-two path. Shell fallbacks remain `./amend.sh <plan-slug>` and `./close.sh <plan-slug>`; the scripts keep their script-specific flags such as `--stage` and `--backlog`.
-- **`.osc/RULES.md`** — compact non-negotiable principles. Re-read before any major action on project structure.
+1. Before any work, run `osc resume` (source checkout: `npm run osc -- resume`) and follow the packet: it states the goal, acceptance criteria, and next bounded action.
+2. The CLI writes the files — never hand-write plans, amendments, or evidence skeletons.
+3. New work: `osc plan new <slug> --stage active`; clarify fuzzy intent first with `osc harness '$interview "..."'`.
+4. Scope change: `osc amend <slug> --message "what changed"`. Committed plans are immutable.
+5. Bounded execution: `osc harness '$work "..." --context "..."'`; a runtime spawns only with `--adapter <id> --allow-spawn`.
+6. Evidence before done: `osc evidence new <slug>`, then `osc verify` and `./verify.sh --strict`.
+7. Close: `osc close <slug> --message "what shipped"`.
+8. Failures become feedback with a repair hypothesis; retry with `--retry-of <run-id>` instead of looping blind.
+9. Chat is working context, not truth. If it matters, it goes in a repo file.
+10. Compliance gate: run `./verify.sh --quick --quiet` before non-trivial changes; on a non-zero exit, stop and fix the mission or plan first.
 
-## Compliance checks
+## Compliance check behavior
 
-Before any non-trivial code change, run `./verify.sh --quick --quiet` and check the exit code:
+On exit 0 of the compliance gate, proceed silently. On exit 1, hard-block on the first failing check: if the mission is undefined (`<!-- mission:unset -->` or `TODO: define mission` present), help the user define it before anything else; if the mission is defined but no plan exists, create one with the user before implementation. The user can always override explicitly. Without shell access, check those two conditions by reading `MISSION.md` and `.osc/plans/` directly.
 
-- **Exit 0 (all checks pass) →** Proceed silently. Do not mention verification to the user.
-- **Exit 1 (any check fails) →** Read the failure output, then hard-block on the first failing check:
-  - **Mission undefined →** Stop. Say: "Your mission isn't defined yet. Let's define it now — what is this project?" Guide the user through MISSION.md fill-in (or run `./bootstrap.sh`). Do not proceed until the mission is defined or the user explicitly says to skip. Note: the plan check is gated behind the mission check — it will not appear until the mission is defined (progressive disclosure).
-  - **No plan file →** (only appears after mission is defined) Stop. Say: "There's no plan for this work. Let's create one — what are you trying to build?" Create a plan in `.osc/plans/` using the handoff template. Do not proceed until a plan exists or the user explicitly says to skip.
+## Working on open-scaffold itself
 
-The `--quiet` flag suppresses output when all checks pass (zero noise on success) but still prints failure details when something is wrong. The user can always override with "skip verification", "just do it", or similar. Respect their autonomy, but the default is to fix violations first.
-
-If you cannot execute shell commands, check directly: first check that `MISSION.md` does not contain `<!-- mission:unset -->`. Only if the mission is defined, then check that `.osc/plans/` and its stage subfolders (`active/`, `backlog/`, `done/`, `blocked/`) contain at least one `.md` plan file besides `README.md` and `handoff-template.md`.
-
-## How to verify
-
-- Run `./verify.sh` (or `./verify.sh --strict` for full compliance) to check methodology adherence. Runtime harness handoffs may wrap verification, but acceptance-criteria evidence and `./verify.sh` remain the source of truth.
-- MISSION.md ships with the marker `<!-- mission:unset -->` and literal `TODO: define mission`. Verification tooling should treat the presence of either as "mission not yet defined." Remove both only when the real mission is written.
-- For any feature slice, verification must trace back to the acceptance criteria in the plan file under `.osc/plans/`.
-
-## Scope evolution protocol
-
-Legitimate scope evolution (the "I got smarter" case — new information changes what we should build) is captured via the amendment protocol, not silent edits. The full protocol is documented in `.osc/plans/README.md` (under 200 words). Short version:
-
-1. Plans in `.osc/plans/` are immutable once committed.
-2. New learnings become `<plan-slug>-amendment-<n>.md` files in the same stage folder as the parent — **scaffolded by `osc amend <plan-slug> --message "<what changed>"` or `./amend.sh <plan-slug>`**, not hand-written.
-3. MISSION.md's `## Changelog` section gets a one-line entry per amendment — **stamped by the helper**, not hand-edited.
-4. Agents and humans read the original plan PLUS all amendments in numeric order.
-
-Do NOT edit plans in place. Do NOT hand-edit amendment files or MISSION.md's changelog for amendment bookkeeping — let `osc amend` or `amend.sh` do the mechanical work. Do NOT add features not traceable to a plan file or amendment. If a new requirement arrives, write an amendment first, then implement.
-
-### Agent-driven amendment flow
-
-When the user signals an "I got smarter" moment (new information changes a plan's goal, constraints, or acceptance criteria), drive the amendment conversationally:
-
-1. Ask the user what specifically changed since the plan was written and why it changes scope. Summarize their words back in their voice before writing anything.
-2. Run `osc amend <plan-slug> --message "<what changed>"` or `./amend.sh <plan-slug>` from the repo root. The helper autonumbers the amendment, scaffolds the 5-section schema (Parent / Date / Learning / New direction / Impact on acceptance criteria), and stamps MISSION.md's changelog.
-3. Fill in the three `TODO:` sections in the new amendment file using the user's summary. Do not touch MISSION.md directly — the helper already stamped it.
-4. Show the user the diff of the new amendment file and the MISSION.md changelog line for review before staging. If using the shell fallback, pass `--stage` on a rerun, or stage manually after they approve.
-5. Never hand-author amendment files, never manually edit MISSION.md's changelog for amendments, and never modify the parent plan file.
-
-## Delegation detection
-
-When executing a plan from `.osc/plans/`, check whether it contains an `## Execution strategy` section. If present:
-
-1. **Read the parallel groups and dependencies.** Identify which tasks can run concurrently and which must wait for prerequisites.
-2. **Propose delegation to the user:**
-   - **With OMC harness:** Suggest Claude Code/OMC workflows such as `/team`, `/ultrawork`, or `/ralph` for suitable groups. Name the groups and tasks explicitly.
-   - **With OMX harness:** Suggest Codex/OMX workflows such as `$team`, `$ralph`, `$ultrawork`, or `$ralplan`, promoting runtime evidence back into the scaffold chain.
-   - **Without a runtime harness:** Describe the parallelism opportunity in plain text (e.g., "Tasks T1 and T5 are independent and could be run in separate sessions"). The user decides how to act on it.
-3. **Warn on risky parallelization.** If tasks marked as parallel in the Execution Strategy share files listed in the plan's "Files to touch" section, or if a task's dependency is in the same parallel group, flag the conflict before proceeding.
-4. **Bind harness execution to a run package.** When execution needs OMC/OMX or another harness, create or request a bound run package (`osc run <plan> --task-id ... --executor ...`) rather than treating the chat thread or runtime session as canonical state. For code/public-doc changes, carry the same trace into the GitHub PR template and trigger Codex review when available.
-
-If the plan has no Execution Strategy section, proceed normally — the section is optional and only present for multi-agent or parallel work.
-
-For users without a capable agent (local LLMs, manual workflows), the `./delegate.sh <plan-path>` script reads the Execution Strategy section and generates actionable prompts that can be pasted into separate terminal sessions.
-
-## Workflow
-
-See `docs/WORKFLOW.md` for the phase-to-tool cheat-sheet (deep interview, planning, OMC `/ralph`/`/team`, OMX `$ralph`/`$team`, adapter handoffs, verify, amendment capture).
+- `MISSION.md` — goals, non-goals, and a changelog of every scope pivot. `ROADMAP.md` — milestones and the self-dogfood chain.
+- `.osc/plans/` — immutable plans in stage folders (`active/`, `backlog/`, `done/`, `blocked/`; the folder IS the status). Schema lives in `.osc/plans/handoff-template.md`, movement rules in `.osc/plans/WORKFLOW.md`, quick rules in `.osc/RULES.md` — re-read before structural changes.
+- Amendment flow (the "I got smarter" case): ask the user what changed and why, summarize it back in their voice, run `osc amend <slug> --message "..."`, fill the generated `TODO:` sections, show the diff before staging. Never edit the parent plan; never hand-stamp MISSION.md's changelog.
+- `.osc-dev/` (gitignored, owner-only) holds full ADRs and internal plans. Read `.osc-dev/decisions/` before proposing architectural changes — re-deriving a rejected decision wastes a session. Search tools skip gitignored paths by default; include `.osc-dev/` explicitly.
+- Plans with an `## Execution strategy` section advertise parallel groups: propose delegation (OMC `/team`, OMX `$team`, or separate sessions), warn when parallel tasks share files, and bind harness execution to a run package instead of treating the chat thread as canonical state.
+- Verification floor: `./verify.sh --strict`, `npm run build`, `npm test`. Public PRs cite the plan, evidence note, verification commands, and owner gates. Humans own merge, publish, and release.
+- Key docs: `docs/OPEN_SCAFFOLD_SYSTEM.md` (ontology), `docs/HARNESS_ARCHITECTURE.md` (loop wiring and events), `docs/STABILITY.md` (maturity contract and honest limits), `docs/WORKFLOW.md` (phase-to-tool cheat sheet).

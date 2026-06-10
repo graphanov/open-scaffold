@@ -33,6 +33,13 @@ function clean(value: string, fallback = 'Not recorded.'): string {
   return text || fallback;
 }
 
+export function redactPacketText(value: string, max = 220, fallback = ''): string {
+  const text = redactLocalText(String(value ?? '')).replace(/\s+/g, ' ').trim();
+  if (!text) return fallback;
+  if (text.length <= max) return text;
+  return `${text.slice(0, Math.max(0, max - 1)).trim()}…`;
+}
+
 function bullets(values: string[] | undefined, fallback: string, maxChars = 220): string[] {
   const cleaned = (values ?? []).map((item) => clean(item, '')).filter(Boolean);
   return (cleaned.length ? cleaned : [fallback]).map((item) => `- ${truncate(item, maxChars)}`);

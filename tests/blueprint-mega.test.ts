@@ -247,7 +247,7 @@ describe('blueprint redaction and doctor secret scan', () => {
 
 describe('blueprint registry and schema surfaces', () => {
   it('exposes command maturity and schema registries through CLI output', () => {
-    const help = spawnSync(tsx, [cli, '--help'], { cwd: repoRoot, encoding: 'utf8' });
+    const help = spawnSync(tsx, [cli, 'help', '--all'], { cwd: repoRoot, encoding: 'utf8' });
     expect(help.status).toBe(0);
     expect(help.stdout).toContain('Command maturity: stable day-one/day-two commands first; lab and advanced commands are labeled.');
     expect(help.stdout).toContain('osc first-run --non-interactive --slug <slug> --mission <text> --goal <text>');

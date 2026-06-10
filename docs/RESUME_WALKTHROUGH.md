@@ -1,156 +1,70 @@
 # Zero-Context Resume Walkthrough
 
-Status: historical/repositioned walkthrough after the framework cleanup. The durable resume concept remains valid through `osc status`, `osc trace`, run packets, evidence notes, and plans, but the previous consolidated resume composer was removed from maintained source.
+This walkthrough shows how a fresh AI agent — or you, a week later — resumes bounded work straight from the repo after total chat-context loss. One read-only command compiles the working memory.
 
-This walkthrough shows how a fresh AI agent, or its solo-developer operator, can resume bounded work straight from the repo after total chat-context loss — no re-explaining needed.
-
-The example uses the committed mid-flight fixture at `examples/resume-demo/`. The command output below is historical fixture output from an earlier local CLI build.
-
-> **Disclaimer:** The consolidated resume summary shown at the end was reconstructed by retired test tooling. It is not emitted by a shipped stable command today, and Open Scaffold core still does not spawn an agent.
-
----
+The example uses the committed mid-flight fixture at [`examples/resume-demo/`](../examples/resume-demo/): one active plan with mixed acceptance criteria, one amendment, one closed slice, and one evidence note.
 
 ## The scenario
 
-You open a repo you have not touched in a week. There is no open chat context. The agent has no memory of previous discussion. The only source of truth is the repository.
+You open a repo you have not touched in a week. There is no chat context. The agent has no memory of previous discussion. The only source of truth is the repository.
 
-The repo contains:
+## One command
 
-- one active plan: `demo-add-greeting`;
-- one amendment: `demo-add-greeting-amendment-1`;
-- one closed slice: `scaffold-init`;
-- one evidence note under `.osc/releases/`.
-
----
-
-## Step 1 — Check what is in flight
-
-Run `osc status` from the fixture root:
-
-```text
-$ cd examples/resume-demo
-$ node ../../dist/cli.js status
-Open Scaffold status
-Namespace: .osc
-Mission: defined
-active: 1
-  - demo-add-greeting
-backlog: 0
-blocked: 0
-done: 1
-  - scaffold-init
+```bash
+cd examples/resume-demo
+osc resume        # source checkout: node ../../dist/cli.js resume
 ```
 
-The repo tells the fresh reader that there is exactly one active slice and one completed setup slice.
-
----
-
-## Step 2 — Replay the work-record chain
-
-Run `osc trace demo-add-greeting` to inspect the active plan:
+Output:
 
 ```text
-$ node ../../dist/cli.js trace demo-add-greeting
-Open Scaffold trace: demo-add-greeting
-Status: active
-Stage: active
-Path: .osc/plans/active/demo-add-greeting.md
+# Resume Packet
+
+Status: active plan demo-add-greeting; 1/3 acceptance criteria complete
+
+## Mission
+
+Build a demo greeting project to serve as an Open Scaffold resume-proof fixture.
+
+## Active plan: demo-add-greeting
+
 Goal: Implement a greeting module that returns "Hello, <name>!" and records each greeting to the releases folder.
 
-Acceptance criteria:
-  - AC1 [x] Greeting module exports a greet function that returns the string "Hello, <name>!".
-  - AC2 [ ] Greeting history is written to the releases folder as an evidence note on each run.
-  - AC3 [ ] All greeting tests pass (npm test exits 0).
+Acceptance criteria (1/3 complete):
+- [ ] Greeting history is written to the releases folder as an evidence note on each run.
+- [ ] All greeting tests pass (npm test exits 0).
+- [x] Greeting module exports a greet function that returns the string "Hello, <name>!".
 
-Links:
-  [local] plan_file: .osc/plans/active/demo-add-greeting.md — Plan file found in local scaffold stage.
-  [local] acceptance_criterion: AC1 — Greeting module exports a greet function that returns the string "Hello, <name>!".
-  [local] acceptance_criterion: AC2 — Greeting history is written to the releases folder as an evidence note on each run. (unchecked)
-  [local] acceptance_criterion: AC3 — All greeting tests pass (npm test exits 0). (unchecked)
-  [missing] run_packet: .osc/runs/*/run.json — No local run packet found for demo-add-greeting.
-  [missing] release_note: .osc/releases/*-demo-add-greeting.md — No local release/evidence note found for demo-add-greeting.
+Amendments (read in order after the plan): demo-add-greeting-amendment-1
 
-Summary: local=4, external=0, missing=2, unverified=0
+## Next actions
+
+1. Greeting history is written to the releases folder as an evidence note on each run.
+2. `osc plan validate demo-add-greeting --strict`
+3. `node -e "import('./src/greet.js').then(m => console.log(m.greet('World')))" → prints Hello, World!`
+
+Boundary: read-only packet compiled from repo truth. It is not approval and grants no merge, publish, release, or spawn authority.
 ```
 
-The next bounded action is the first unchecked acceptance criterion:
+A fresh agent now knows the goal, what is already done, what is open, the next bounded action, and how to verify — without reading any other file and without a word of re-explaining.
 
-```text
-Greeting history is written to the releases folder as an evidence note on each run.
+## What the packet contains
+
+- A mission digest from `MISSION.md`.
+- The active plan (highest-numbered when several are active; pick explicitly with `--plan <slug>`), its goal, and checklist acceptance criteria with their checked state.
+- Amendments in numeric order — the plan is immutable; learnings layer on top.
+- The latest harness run when one exists: state, pending human gates, and the recorded repair hypothesis for failed or blocked runs, with a ready `--retry-of` recipe.
+- Accepted lessons from `.osc/improvements/applied/` so future runs inherit them.
+- The next bounded action, chosen by precedence: answer a pending gate → repair a failed run → complete the first unchecked acceptance criterion → verify and close → create or promote a plan.
+
+## Machine-readable form
+
+```bash
+osc resume --json
 ```
 
----
+Emits the `open-scaffold.resume.v1` summary. The fixture's expected output is committed at [`examples/resume-demo/expected-resume-summary.json`](../examples/resume-demo/expected-resume-summary.json) and locked by the resume test suite.
 
-## Step 3 — Reconstructed resume summary
+## Budget and boundaries
 
-The resume summary below is reconstructed by `src/resume.ts`, a test-only helper that reuses existing scaffold/trace internals, and verified deterministically by `tests/resume-snapshot.test.ts` against `examples/resume-demo/expected-resume-summary.json`.
-
-```json
-{
-  "schema": "open-scaffold.resume.v1",
-  "mission": {
-    "defined": true
-  },
-  "active_plan": {
-    "slug": "demo-add-greeting",
-    "stage": "active",
-    "status": "active",
-    "goal": "Implement a greeting module that returns \"Hello, <name>!\" and records each greeting to the releases folder.",
-    "acceptance_criteria": [
-      {
-        "text": "Greeting module exports a greet function that returns the string \"Hello, <name>!\".",
-        "checked": true
-      },
-      {
-        "text": "Greeting history is written to the releases folder as an evidence note on each run.",
-        "checked": false
-      },
-      {
-        "text": "All greeting tests pass (npm test exits 0).",
-        "checked": false
-      }
-    ]
-  },
-  "amendments": {
-    "count": 1,
-    "ids": [
-      "demo-add-greeting-amendment-1"
-    ]
-  },
-  "work_done": {
-    "done_slices": [
-      "scaffold-init"
-    ],
-    "evidence": [
-      ".osc/releases/2026-05-10-scaffold-init.md"
-    ]
-  },
-  "status": "active plan demo-add-greeting; 1/3 acceptance criteria complete",
-  "next_bounded_action": "Greeting history is written to the releases folder as an evidence note on each run."
-}
-```
-
-The `next_bounded_action` value is derived deterministically from the first unchecked acceptance criterion of the single active plan. The snapshot test asserts it does not drift.
-
----
-
-## What the agent does next
-
-With this summary, a fresh agent knows:
-
-1. **Mission:** defined — no need to ask what the project is for.
-2. **Active work:** one plan, `demo-add-greeting`, with a scope clarification in `demo-add-greeting-amendment-1`.
-3. **Progress:** one of three criteria is done; the greeting export does not need to be repeated.
-4. **Next step:** implement evidence-note writing: `Greeting history is written to the releases folder as an evidence note on each run.`
-5. **Prior art:** the closed `scaffold-init` slice and its evidence note show the starting structure already exists.
-
-No chat history. No re-explaining. The repo is the context.
-
----
-
-## Links
-
-- Fixture: [`examples/resume-demo/`](../examples/resume-demo/)
-- Golden file: [`examples/resume-demo/expected-resume-summary.json`](../examples/resume-demo/expected-resume-summary.json)
-- Historical/repositioned: the test-only resume composer and snapshot test were removed from maintained source during the framework cleanup; use `osc trace`, run packets, and evidence notes for current handover.
-- Front door: [`docs/START_HERE.md`](START_HERE.md)
+The packet is budgeted (default 4,000 characters; tune with `--max-chars`), deterministic for a given repo state, and redacts secrets and local absolute paths. It is compiled read-only from repo truth: it spawns nothing, approves nothing, and replaces chat archaeology — not human judgment.

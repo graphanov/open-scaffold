@@ -37,7 +37,6 @@ const removedCommandPatterns = [
   /osc doctor --fix/g,
   /osc commands(?=\s|`|<|"|$)/g,
   /src\/command-maturity\.ts/g,
-  /src\/resume\.ts/g,
   /tests\/resume-snapshot\.test\.ts/g,
   /\.osc\/tasks\.db/g,
   /open-scaffold\.compact-evidence\.v1/g,

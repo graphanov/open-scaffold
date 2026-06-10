@@ -44,6 +44,7 @@ These surfaces are intended to remain usable across the current pre-1.0 hardenin
 The stable day-two CLI surface is:
 
 - `osc init`
+- `osc resume` as the read-only resume packet that lets a fresh session continue from repo truth
 - `osc status`
 - `osc plan new`
 - `osc plan validate`

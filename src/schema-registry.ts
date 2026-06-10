@@ -7,6 +7,7 @@ export interface SchemaRegistryEntry {
 }
 
 export const SCHEMA_REGISTRY: SchemaRegistryEntry[] = [
+  { id: 'open-scaffold.resume.v1', owner: 'src/resume.ts', maturity: 'stable', emittedBy: ['osc resume --json'], shape: 'Read-only resume summary compiled from repo truth: mission state, active plan with checklist acceptance criteria, amendments, done slices and evidence, latest harness run state, repair hypothesis, accepted lessons, status line, and next bounded action.' },
   { id: 'open-scaffold.run.v1', owner: 'src/artifacts.ts', maturity: 'stable', emittedBy: ['osc run', 'osc delegate', 'osc review', 'osc ultrareview'], shape: 'Run packet under .osc/runs/<run_id>/run.json with plan, runtime selection, bindings, artifacts, questions, and commit policy.' },
   { id: 'open-scaffold.adapter.v1', owner: 'src/dispatch.ts', maturity: 'stable', emittedBy: ['project-local .osc/adapters/<id>.json'], shape: 'Project-local adapter command config with id, command tokens, env allowlist, explicit env, timeout/log caps, and optional worktree-isolation requirement.' },
   { id: 'open-scaffold.trusted_adapters.v1', owner: 'src/adapter-trust.ts', maturity: 'stable', emittedBy: ['osc adapter trust'], shape: 'Gitignored local trust records keyed by adapter id and adapter config sha256 digest.' },
