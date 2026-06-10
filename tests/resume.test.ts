@@ -543,6 +543,25 @@ describe('osc resume packet compiler', () => {
     expect(packet).not.toContain('external-lesson-secret');
   });
 
+
+  it('skips symlinked accepted-lessons directories even when the target is inside the repo', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-inrepo-lesson-dir-symlink');
+    const docsDir = join(root, 'docs');
+    mkdirSync(docsDir, { recursive: true });
+    writeFileSync(join(docsDir, 'external-inrepo-lesson-secret.md'), '# Internal docs are not accepted lessons\n', 'utf8');
+    mkdirSync(join(root, '.osc', 'improvements'), { recursive: true });
+    symlinkSync(docsDir, join(root, '.osc', 'improvements', 'applied'), 'dir');
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.lessons).toEqual({ count: 0, slugs: [] });
+    expect(summaryJson).not.toContain('external-inrepo-lesson-secret');
+    expect(packet).not.toContain('external-inrepo-lesson-secret');
+  });
+
   it('skips symlinked accepted-lesson files during resume', () => {
     const root = tempRepo();
     writeMission(root);

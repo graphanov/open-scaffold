@@ -335,6 +335,10 @@ function compileHasRealScaffold(root: string): boolean {
 
 function safeAcceptedLessons(root: string): ReturnType<typeof loadAcceptedImprovements> {
   try {
+    const improvementsDir = join(root, '.osc', 'improvements');
+    if (existsSync(improvementsDir) && !lstatSync(improvementsDir).isDirectory()) return [];
+    const appliedDir = join(improvementsDir, 'applied');
+    if (existsSync(appliedDir) && !lstatSync(appliedDir).isDirectory()) return [];
     return loadAcceptedImprovements({ repoRoot: root });
   } catch {
     return [];
