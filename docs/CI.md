@@ -106,3 +106,25 @@ act workflow_dispatch -W .github/workflows/stale-plans.yml
 ```
 
 `act` does not perfectly emulate GitHub tokens, issue creation, or npm publication. Treat local `act` runs as syntax and shell-flow checks, then rely on GitHub Actions for the final integration proof.
+
+## Lifecycle E2E smoke
+
+`npm run smoke:e2e` proves a fresh downstream project can complete the core Open Scaffold lifecycle without private infrastructure:
+
+```text
+fresh temp/downstream project
+  -> mission defined
+  -> active plan created
+  -> tiny implementation or fixture change verified
+  -> evidence/release note written
+  -> plan closed
+  -> final scaffold verification passes
+```
+
+The smoke asserts project-specific mission state, one active plan before close, real verification output, an evidence note, `close.sh` movement to `done/`, empty `active/` except `.gitkeep`, and final `./verify.sh --standard`.
+
+It must not require Discord, Hermes, OMC/OMX, Codex connector review, GitHub PR creation, credentials, network access, or hosted dashboards.
+
+Anti-cheat checks: fresh temp project per run, artifacts newer than the smoke start marker, no copied maintainer mission/history/private `.osc-dev/`, active plan absent after close, evidence linked to plan and verification, changelog stamped, final verifier green, and no writes outside the temp directory.
+
+Smoke ladder: core lifecycle -> GitHub workflow -> simulated operator surface -> real operator transport -> runtime harness.

@@ -66,7 +66,7 @@ osc run .osc/plans/active/<plan>.md \
   --branch feat/<slug>
 ```
 
-Generic Open Scaffold writes the package and does not spawn the runtime. A coordinator or adapter consumes the package and launches OMC, OMX, a plain agent, or a human lane. OMC/OMX are runtime lanes or adapter candidates, not Open Scaffold core dependencies; see [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md). Use `--issue`/`--pr` for typed GitHub bindings and repeat `--source-ref` for additional freeform references.
+Generic Open Scaffold writes the package and does not spawn the runtime. A coordinator or adapter consumes the package and launches OMC, OMX, a plain agent, or a human lane. OMC/OMX are runtime lanes or adapter candidates, not Open Scaffold core dependencies; see [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools). Use `--issue`/`--pr` for typed GitHub bindings and repeat `--source-ref` for additional freeform references.
 
 ## Branch and PR policy
 
@@ -180,3 +180,24 @@ These are operator-surface events. They should link back to GitHub issue/PR numb
 - If CI fails, classify whether it is code, test, or external integration/access before changing code.
 - If review requires changes, either amend the same branch or create a new run packet for a substantial retry.
 - If a runtime session produced useful output but no PR, promote artifacts into `.osc/runs/` and explain why no PR was opened.
+
+## Structural PR review with Open Scaffold
+
+`osc pr check` gives reviewers a compact structural read of a PR's work record:
+
+```bash
+osc pr check <plan-slug>
+osc pr check <plan-slug> --format json
+osc pr check <plan-slug> --online-github
+```
+
+Reviewers should look for:
+
+- plan path and stage;
+- acceptance criteria and checked/unchecked state;
+- evidence note presence and whether it is still a skeleton;
+- run-packet references when execution was delegated;
+- close-decision fields, including approval status and rationale;
+- verification commands and results.
+
+The GitHub template is `.github/workflows/open-scaffold-pr-check.yml`. It keeps fork PR checks read-only and makes comment mutation opt-in via `OSC_PR_CHECK_COMMENT=true`.

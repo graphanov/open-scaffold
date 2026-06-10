@@ -4,7 +4,7 @@ A fresh reader can clone Open Scaffold, read the protocol docs, and still walk a
 
 The point is not the script. The point is the **second session**: a fresh human or agent can open the repo later, read the mission, plan folders, and evidence note, and know whether work is active, done, blocked, or ready for a new slice without asking for old chat history.
 
-The same fixture is exercised mechanically by `npm run smoke:e2e` (see [`E2E_SMOKE.md`](../E2E_SMOKE.md)). This page narrates the same lifecycle so a human can read it in one sitting, copy the artifacts, and decide whether Open Scaffold pays for itself on their next task.
+The same fixture is exercised mechanically by `npm run smoke:e2e` (see [`../CI.md#lifecycle-e2e-smoke`](../CI.md#lifecycle-e2e-smoke)). This page narrates the same lifecycle so a human can read it in one sitting, copy the artifacts, and decide whether Open Scaffold pays for itself on their next task.
 
 No private credentials, no private coordinator, no chat surface, no runtime harness, and no network access are required.
 
@@ -370,7 +370,7 @@ A reasonable rule of thumb: adopt Open Scaffold when at least one of {multi-sess
 ## Where to go next
 
 - [`docs/EXAMPLES.md`](../EXAMPLES.md) — the 60-second reading-path version of the same loop on Open Scaffold itself.
-- [`docs/E2E_SMOKE.md`](../E2E_SMOKE.md) — the automated smoke that exercises this fixture mechanically.
+- [`../CI.md#lifecycle-e2e-smoke`](../CI.md#lifecycle-e2e-smoke) — the automated smoke that exercises this fixture mechanically.
 - [`docs/RUNTIME_BINDING_CONTRACT.md`](../RUNTIME_BINDING_CONTRACT.md) — the contract any external runtime, coordinator, or harness uses when consuming `.osc/runs/<run_id>/run.json`.
 - [`docs/WORKFLOW.md`](../WORKFLOW.md) — phase-to-tool guide.
 - [`docs/SLICE_CLOSE_PROTOCOL.md`](../SLICE_CLOSE_PROTOCOL.md) — what makes a work slice truly closed instead of merely merged.

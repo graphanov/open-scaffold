@@ -114,7 +114,7 @@ describe('osc init CLI', () => {
     }
 
     const readme = readFileSync(join(target, 'README.md'), 'utf8');
-    const minimum = readFileSync(join(target, 'docs/MINIMUM_VIABLE_SCAFFOLD.md'), 'utf8');
+    const startHere = readFileSync(join(target, 'docs/START_HERE.md'), 'utf8');
     const agents = readFileSync(join(target, 'AGENTS.md'), 'utf8');
     expect(readme).toContain('TODO: replace this with your project overview.');
     expect(agents).toContain('This repository uses Open Scaffold. It is not the Open Scaffold product repository.');
@@ -122,9 +122,9 @@ describe('osc init CLI', () => {
     expect(readme).toContain('npx open-scaffold evidence new');
     expect(readme).toContain('cp .osc/plans/handoff-template.md');
     expect(readme).toContain('Optional Dev Container');
-    expect(minimum).toContain('npx open-scaffold plan new');
-    expect(minimum).toContain('npx open-scaffold evidence new');
-    expect(minimum).toContain('copy `.osc/plans/handoff-template.md`');
+    expect(startHere).toContain('npx open-scaffold plan new');
+    expect(startHere).toContain('npx open-scaffold evidence new');
+    expect(startHere).toContain('copy `.osc/plans/handoff-template.md`');
     expect(existsSync(join(target, '.devcontainer/devcontainer.json'))).toBe(true);
     expect(existsSync(join(target, '.devcontainer/Dockerfile'))).toBe(true);
     expect(existsSync(join(target, 'docs/DEV_CONTAINER.md'))).toBe(true);

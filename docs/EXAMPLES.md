@@ -4,7 +4,7 @@ Short examples for understanding Open Scaffold without reading every protocol pa
 
 For four worked operating modes — solo developer, team control-room, GitHub-only workflow, and runtime harness handoff — see [`examples/README.md`](examples/README.md). For the evolution-ledger wedge, see [`examples/evolution-loop-compare.md`](examples/evolution-loop-compare.md): two attempts, `osc evolve compare`, and a PR-ready frontier rationale. For a fixture you can run locally, see [`examples/evolution-ledger-demo/`](../examples/evolution-ledger-demo/) — `osc evolve check` and `osc evolve compare` against committed loop, attempts, frontier, and evaluation files.
 
-For the next reproducible proof layer, see [Lifecycle E2E Smoke Strategy](E2E_SMOKE.md). It defines and links the local smoke test that proves a fresh downstream project can move through mission → plan → verification → evidence → close without Hermes, Discord, or private infrastructure.
+For the next reproducible proof layer, see [Lifecycle E2E Smoke Strategy](CI.md#lifecycle-e2e-smoke). It defines and links the local smoke test that proves a fresh downstream project can move through mission → plan → verification → evidence → close without Hermes, Discord, or private infrastructure.
 
 Run the smoke:
 

@@ -166,3 +166,32 @@ The owner must explicitly approve and perform or authorize these external side e
 - Any website deployment or public launch announcement.
 
 A version is live only after the registry/package smoke checks and GitHub Release truth are verified.
+
+## Command maturity
+
+The core surface is `osc help`; the full backend/lab surface is `osc help --all`.
+
+Labels:
+
+- `stable` — day-one/day-two workflow path; safe for normal examples.
+- `lab` — useful backend surface still proving product shape, runtime behavior, or evidence value.
+- `advanced` — specialized maintenance, analysis, or power-user surface.
+- `future` — direction only; not a current stable behavior.
+
+Rules:
+
+- Stable commands appear first in top-level help.
+- Lab commands say what is experimental or structurally limited.
+- Runtime/spawn-capable commands point at the trust boundaries.
+- Help wording must not imply semantic correctness, compliance, merge/publish authority, or default runtime spawning.
+
+Harness backend maturity:
+
+| Surface | Current maturity |
+|---|---|
+| `$interview`, `$plan`, no-spawn `$work`, `$team` via `osc harness` | lab backend |
+| `$work --allow-spawn --adapter <id>` | experimental adapter-owned execution |
+| `osc feedback record/analyze` | lab backend |
+| `osc bench suite` / `osc bench handoff-lab` | lab/backend reproduction tools |
+
+Removed/repositioned command migration notes live here: use `osc plan new/validate/move`, `osc evidence collect`, `osc trace`, `osc verify --evidence-chain`, external task trackers, and current harness backend routes instead of retired framework-cleanup commands.

@@ -46,6 +46,64 @@ npx open-scaffold@latest compare \
 | See how the loop is wired | [`HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md) |
 | Pick or write a runtime adapter | [`ADAPTERS.md`](ADAPTERS.md) |
 | Check what is stable vs experimental | [`STABILITY.md`](STABILITY.md) |
-| Understand the version story | [`VERSION_TRUTH.md`](VERSION_TRUTH.md) |
+| Understand the version story | [`STABILITY.md#release-status`](STABILITY.md#release-status) |
 | Look up unfamiliar terms | [`GLOSSARY.md`](GLOSSARY.md) |
 | Read the system boundary map | [`OPEN_SCAFFOLD_SYSTEM.md`](OPEN_SCAFFOLD_SYSTEM.md) |
+
+## Why this exists
+
+AI-assisted work often dissolves into chat logs, terminal sessions, and PR comments. Weeks later, nobody can reconstruct what was asked, what changed, what was verified, or who approved it.
+
+Open Scaffold makes the repository the shared memory:
+
+```text
+MISSION.md
+  -> .osc/plans/...
+  -> .osc/runs/<run_id>/run.json or amendment
+  -> verification
+  -> .osc/releases/...
+  -> next slice
+```
+
+The scaffold helps when losing context is expensive: multi-session AI work, client delivery, audit-sensitive handoffs, and multi-agent review. It is overkill for disposable one-off scripts or clean single-session tasks.
+
+## Adopt the minimum scaffold
+
+Greenfield:
+
+```bash
+npx open-scaffold init --tier min --target <repo>
+# or: --tier standard / --tier max
+```
+
+Brownfield:
+
+```bash
+npx open-scaffold init --from-existing --tier min --target .
+```
+
+Source checkout fallback:
+
+```bash
+git clone https://github.com/graphanov/open-scaffold open-scaffold
+cd open-scaffold
+npm install
+npm run build
+node dist/cli.js init --tier min --target <repo>
+```
+
+Minimum loop:
+
+1. Define `MISSION.md`.
+2. Create one active plan with acceptance criteria and verification: `npx open-scaffold plan new <slug> --stage active`, or `osc plan new <slug> --stage active` if installed locally. Shell fallback: copy `.osc/plans/handoff-template.md` into `.osc/plans/active/<slug>.md`.
+3. Execute the slice and run project checks plus `./verify.sh --standard`.
+4. Record evidence with `npx open-scaffold evidence new <slug>` or `osc evidence new <slug>`.
+5. Amend when learning changes the plan with `npx open-scaffold amend <slug> --message "<what changed>"` / `osc amend <slug> --message "<what changed>"`; close when verified with `npx open-scaffold close <slug> --message "<what shipped>"` / `osc close <slug> --message "<what shipped>"`. Shell fallback: `./amend.sh <slug>` and `./close.sh <slug> --message "<what shipped>"`.
+
+First-user checklist:
+
+- `MISSION.md` is project-specific.
+- `.osc/plans/active/` has one current plan before work starts.
+- `.osc/plans/done/` does not contain unrelated maintainer history.
+- `.osc/releases/` contains only downstream evidence or clearly labeled examples.
+- `./verify.sh --standard` passes.

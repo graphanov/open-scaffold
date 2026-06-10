@@ -32,7 +32,7 @@ Highlights:
 
 - Publishes the framework cleanup shrink from PR #183 plus closeout PR #184 to the public `npx open-scaffold@latest` package surface.
 - Reduces the maintained TypeScript source surface from the 20,890 LOC baseline to 12,520 LOC while preserving the protected repo-native work-record loop and runtime-neutral boundaries.
-- Repositions removed or contracted commands behind shipped migration/help docs such as `docs/COMMAND_MATURITY.md` instead of ignored local evidence paths.
+- Repositions removed or contracted commands behind shipped migration/help docs such as `STABILITY.md#command-maturity` instead of ignored local evidence paths.
 - Keeps Open Scaffold pre-1.0: this release tightens and reduces package-visible surfaces, and users depending on experimental/lab command shapes should pin exact versions and read the migration notes.
 
 Evidence:

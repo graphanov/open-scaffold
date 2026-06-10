@@ -236,10 +236,10 @@ what is stable, what is experimental, what is future — lives in one place:
 - [`docs/HARNESS_COMMANDS.md`](docs/HARNESS_COMMANDS.md) — the four verbs in detail.
 - [`docs/HARNESS_ARCHITECTURE.md`](docs/HARNESS_ARCHITECTURE.md) — how the loop is wired.
 - [`docs/ADAPTERS.md`](docs/ADAPTERS.md) — choosing and writing runtime adapters.
-- [`docs/FEEDBACK_IMPROVEMENT_LOOP.md`](docs/FEEDBACK_IMPROVEMENT_LOOP.md) — feedback, retries, lessons.
+- [`docs/HARNESS_COMMANDS.md#feedback-retry-and-accepted-lessons`](docs/HARNESS_COMMANDS.md#feedback-retry-and-accepted-lessons) — feedback, retries, lessons.
 - [`docs/RESUME_WALKTHROUGH.md`](docs/RESUME_WALKTHROUGH.md) — zero-context resume, narrated.
 - [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) — the proof fixture and its boundaries.
-- [`docs/PR_REVIEW_WITH_OSC.md`](docs/PR_REVIEW_WITH_OSC.md) — PRs that carry intent and evidence.
+- [`docs/GITHUB_WORKFLOW.md#structural-pr-review-with-open-scaffold`](docs/GITHUB_WORKFLOW.md#structural-pr-review-with-open-scaffold) — PRs that carry intent and evidence.
 - [`docs/EXAMPLES.md`](docs/EXAMPLES.md) — worked examples and demos.
 - [`docs/STABILITY.md`](docs/STABILITY.md) — the maturity contract and honest limits.
 - [`docs/FAQ.md`](docs/FAQ.md) — deeper questions.

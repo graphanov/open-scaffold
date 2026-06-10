@@ -12,12 +12,12 @@ This document is the full ontology. Most readers do not need every protocol page
 
 - New here? Read the [README](../README.md), then [`docs/EXAMPLES.md`](EXAMPLES.md) for the 60-second viewer demo.
 - Wiring task/run identity into a coordinator or task system: [`docs/TASK_RUN_MODEL.md`](TASK_RUN_MODEL.md).
-- Using repo-local tasks before an external tracker: [`docs/TASKS.md`](TASKS.md).
+- Using repo-local tasks before an external tracker: [`WORKFLOW.md#task-trackers-and-plans`](WORKFLOW.md#task-trackers-and-plans).
 - Understanding runtime handoff progressively: choosing a runtime via [`docs/ADAPTERS.md`](ADAPTERS.md), then [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md) and [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md) for adapter/runtime responsibilities.
 - Closing a slice and producing evidence: [`docs/SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md).
 - Recording multi-attempt improvement loops and frontier promotion: [`docs/EVOLUTION_LOOP.md`](EVOLUTION_LOOP.md).
 - Exposing repo truth to MCP-capable tools: [`docs/MCP.md`](MCP.md).
-- Reading public mentions of named tools (Hermes, OMC, OMX, Discord, etc.): [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) for the public/private/adapter labels.
+- Reading public mentions of named tools (Hermes, OMC, OMX, Discord, etc.): [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools) for the public/private/adapter labels.
 
 ## Layers
 
@@ -36,7 +36,7 @@ Open Scaffold core owns the portable project substrate:
 - `docs/SLICE_CLOSE_PROTOCOL.md` — evidence receipts, postflight decisions, approval strength, correction routing, and next-slice inheritance.
 - `docs/EVOLUTION_LOOP.md` — multi-attempt loop state, attempt journals, frontier promotion, and improvement routing.
 - `osc mcp serve` / `osc-mcp` — optional stdio MCP server that exposes local mission, plan, evidence, status, rules, and roadmap state to MCP-capable tools without requiring each agent to parse markdown directly.
-- External trackers / GitHub Issues — optional work-queue bindings around the repo record. Historical/repositioned note: the earlier `osc task` local SQLite bridge and `.osc/tasks.db` store were removed from the reduced maintained CLI; see [`docs/TASKS.md`](TASKS.md) for retired design context.
+- External trackers / GitHub Issues — optional work-queue bindings around the repo record. Historical/repositioned note: the earlier `osc task` local SQLite bridge and `.osc/tasks.db` store were removed from the reduced maintained CLI; see [`WORKFLOW.md#task-trackers-and-plans`](WORKFLOW.md#task-trackers-and-plans) for retired design context.
 - `verify.sh` / `osc verify` — methodology compliance and evidence-chain structural checks.
 - `osc trace` — read-only local work-record replay for one plan.
 - `.github/` templates — issue and PR traceability for GitHub-centered workflows.
@@ -110,7 +110,7 @@ Examples:
 - historical/repositioned local `.osc/tasks.db` task queues from the retired `osc task` bridge
 - a custom orchestrator board
 
-Open Scaffold should define how roadmap items and plans link to these systems, but it should not assume one board is universal. The dispatch pattern is documented in [`docs/RUNTIME_HARNESS_DISPATCH.md`](RUNTIME_HARNESS_DISPATCH.md): core creates the package, coordinators/task bridges choose and launch the harness, and evidence returns to `.osc/runs`, GitHub, or release notes.
+Open Scaffold should define how roadmap items and plans link to these systems, but it should not assume one board is universal. The dispatch pattern is documented in [`ADAPTERS.md#runtime-dispatch-pattern`](ADAPTERS.md#runtime-dispatch-pattern): core creates the package, coordinators/task bridges choose and launch the harness, and evidence returns to `.osc/runs`, GitHub, or release notes.
 
 A live task should dispatch work through a canonical run record instead of through a chat thread or runtime transcript directly. See [`docs/TASK_RUN_MODEL.md`](TASK_RUN_MODEL.md) for the v1 task/run/operator-surface schema. A task or run should close through the evidence-backed slice-close protocol in [`docs/SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md), not merely because a runtime or chat message says "done".
 
@@ -172,7 +172,7 @@ A mature Open Scaffold workflow should make GitHub artifacts traceable to roadma
 
 ## Correct boundary statements
 
-Use [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) when deciding whether a named tool is a public example, private deployment example, adapter candidate, runtime lane, operator surface, or historical/unmigrated repository.
+Use [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools) when deciding whether a named tool is a public example, private deployment example, adapter candidate, runtime lane, operator surface, or historical/unmigrated repository.
 
 Use these statements in product docs and agent prompts:
 

@@ -42,15 +42,16 @@ const standardOnlyFiles = [
   'amend.sh',
   'docs/DEV_CONTAINER.md',
   'docs/WORKFLOW.md',
-  'docs/TASKS.md',
-  'docs/MINIMUM_VIABLE_SCAFFOLD.md',
+  'docs/START_HERE.md',
+  'docs/TASK_RUN_MODEL.md',
   'docs/SLICE_CLOSE_PROTOCOL.md',
 ] as const;
 
 const maxOnlyFiles = [
   'docs/GITHUB_WORKFLOW.md',
+  'docs/ADAPTERS.md',
+  'docs/HARNESS_ARCHITECTURE.md',
   'docs/RUNTIME_BINDING_CONTRACT.md',
-  'docs/TASK_RUN_MODEL.md',
   'docs/OPEN_SCAFFOLD_SYSTEM.md',
   'delegate.sh',
   '.osc/runs/.gitkeep',
@@ -290,7 +291,7 @@ function downstreamAgentInstructionsTemplate(file: 'AGENTS.md' | 'CLAUDE.md'): s
 
 function downstreamMinimumScaffoldDocTemplate(): string {
   return [
-    '# Minimum Viable Scaffold',
+    '# Start Here',
     '',
     'This repo has the minimum Open Scaffold loop needed for a human and an agent to answer:',
     '',
@@ -316,6 +317,31 @@ function downstreamMinimumScaffoldDocTemplate(): string {
     '- [ ] `.osc/plans/done/` contains only this project\'s completed work.',
     '- [ ] `.osc/releases/` contains only this project\'s evidence notes.',
     '- [ ] `./verify.sh --standard` passes.',
+  ].join('\n') + '\n';
+}
+
+function downstreamTaskRunModelDocTemplate(): string {
+  return [
+    '# Task, Run, and Operator-Surface Model',
+    '',
+    'Open Scaffold standard tier keeps work identity simple:',
+    '',
+    '```text',
+    'Task owns intent/lifecycle.',
+    'Run owns one execution attempt.',
+    'Operator surface mirrors status, questions, and approvals; it is not canonical truth.',
+    'Evidence owns proof.',
+    '```',
+    '',
+    '## Standard-tier rule',
+    '',
+    '- Use `.osc/plans/` for durable slice intent and stage state.',
+    '- If you delegate work, record the run attempt and evidence path in the plan or evidence note.',
+    '- Route blocking questions with explicit IDs when multiple runs are alive; never rely on the latest chat message.',
+    '- Keep approvals in evidence or PR review, not only chat.',
+    '',
+    'For the local workflow, see [`WORKFLOW.md`](WORKFLOW.md) and [`SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md).',
+    'Adapter/runtime binding details live in the upstream Open Scaffold docs or the max tier.',
   ].join('\n') + '\n';
 }
 
@@ -457,7 +483,8 @@ function downstreamTemplateFor(file: string, tier: ScaffoldTier): string | null 
   if (tier === 'min') return null;
   if (file === 'README.md') return downstreamReadmeTemplate();
   if (file === 'ROADMAP.md') return downstreamRoadmapTemplate();
-  if (file === 'docs/MINIMUM_VIABLE_SCAFFOLD.md') return downstreamMinimumScaffoldDocTemplate();
+  if (file === 'docs/START_HERE.md') return downstreamMinimumScaffoldDocTemplate();
+  if (file === 'docs/TASK_RUN_MODEL.md' && tier === 'standard') return downstreamTaskRunModelDocTemplate();
   return null;
 }
 

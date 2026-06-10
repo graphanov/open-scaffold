@@ -40,8 +40,15 @@ describe('tiered scaffold initialization', () => {
     expect(result.filesCreated.sort()).toEqual([...tierFiles.standard].sort());
     for (const file of tierFiles.min) expect(result.filesCreated).toContain(file);
     expect(readFileSync(join(target, 'README.md'), 'utf8')).toContain('Open Scaffold');
-    expect(readFileSync(join(target, 'docs/MINIMUM_VIABLE_SCAFFOLD.md'), 'utf8')).toContain('minimum viable scaffold');
-    expect(readFileSync(join(target, 'docs/TASKS.md'), 'utf8')).toContain('Local Tasks');
+    expect(readFileSync(join(target, 'docs/START_HERE.md'), 'utf8')).toContain('minimum viable scaffold');
+    const taskRunModel = readFileSync(join(target, 'docs/TASK_RUN_MODEL.md'), 'utf8');
+    expect(taskRunModel).toContain('Task owns intent/lifecycle');
+    expect(taskRunModel).toContain('[`WORKFLOW.md`](WORKFLOW.md)');
+    expect(taskRunModel).toContain('[`SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md)');
+    expect(taskRunModel).not.toContain('RUNTIME_BINDING_CONTRACT.md');
+    expect(taskRunModel).not.toContain('HARNESS_ARCHITECTURE.md');
+    expect(taskRunModel).not.toContain('ADAPTERS.md');
+    expect(readFileSync(join(target, 'docs/WORKFLOW.md'), 'utf8')).not.toContain('ADAPTERS.md#reference-labels-for-named-tools');
     expect(existsSync(join(target, '.devcontainer/devcontainer.json'))).toBe(true);
     expect(existsSync(join(target, '.devcontainer/Dockerfile'))).toBe(true);
     expect(existsSync(join(target, '.devcontainer/README.md'))).toBe(true);
@@ -68,6 +75,12 @@ describe('tiered scaffold initialization', () => {
     expect(result.filesCreated.sort()).toEqual([...tierFiles.max].sort());
     for (const file of tierFiles.standard) expect(result.filesCreated).toContain(file);
     expect(readFileSync(join(target, 'docs/OPEN_SCAFFOLD_SYSTEM.md'), 'utf8')).toContain('Open Scaffold');
+    const maxTaskRunModel = readFileSync(join(target, 'docs/TASK_RUN_MODEL.md'), 'utf8');
+    expect(maxTaskRunModel).toContain('RUNTIME_BINDING_CONTRACT.md');
+    expect(maxTaskRunModel).toContain('HARNESS_ARCHITECTURE.md');
+    expect(maxTaskRunModel).toContain('ADAPTERS.md#runtime-dispatch-pattern');
+    expect(existsSync(join(target, 'docs/ADAPTERS.md'))).toBe(true);
+    expect(existsSync(join(target, 'docs/HARNESS_ARCHITECTURE.md'))).toBe(true);
     expect(readFileSync(join(target, '.osc/runs/.gitkeep'), 'utf8')).toBe('');
   });
 

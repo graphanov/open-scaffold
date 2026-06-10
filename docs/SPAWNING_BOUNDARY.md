@@ -1,6 +1,6 @@
 # Spawning Boundary and Runtime Adapter Contract
 
-Open Scaffold Milestone 16 asks whether core should remain non-spawning, add thin adapter invocation, move execution into adapter packages, or eventually grow a native runtime. Here, `spawning` means launching real agent/runtime processes. This document records the current boundary decision and the contract shape for the next safe step. Public/private tool labels are defined in [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md).
+Open Scaffold Milestone 16 asks whether core should remain non-spawning, add thin adapter invocation, move execution into adapter packages, or eventually grow a native runtime. Here, `spawning` means launching real agent/runtime processes. This document records the current boundary decision and the contract shape for the next safe step. Public/private tool labels are defined in [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools).
 
 ## Current decision
 
