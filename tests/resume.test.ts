@@ -240,6 +240,113 @@ describe('osc resume packet compiler', () => {
     expect(packet).not.toContain('external-plan-secret');
   });
 
+
+  it('ignores symlinked plan stage directories before scanning plan files', () => {
+    const root = tempRepo();
+    writeMission(root);
+    const outsideActive = join(tempRepo(), 'active');
+    mkdirSync(outsideActive, { recursive: true });
+    writeFileSync(join(outsideActive, '001-external-stage-plan.md'), [
+      '# Plan: external-stage-plan',
+      '',
+      '## Status',
+      '',
+      'active',
+      '',
+      '## Context',
+      '',
+      'External context.',
+      '',
+      '## Goal',
+      '',
+      'Leak external stage plan text external-stage-secret.',
+      '',
+      '## Constraints / Out of scope',
+      '',
+      '- None.',
+      '',
+      '## Files to touch',
+      '',
+      '- `src/x.ts` — x.',
+      '',
+      '## Acceptance criteria',
+      '',
+      '- [ ] External stage criterion external-stage-secret.',
+      '',
+      '## Verification steps',
+      '',
+      '1. Run `npm test`.',
+      '',
+      '## Open questions',
+      '',
+      '- None.',
+      '',
+    ].join('\n'), 'utf8');
+    const plansDir = join(root, '.osc', 'plans');
+    mkdirSync(plansDir, { recursive: true });
+    symlinkSync(outsideActive, join(plansDir, 'active'), 'dir');
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.active_plan).toBeNull();
+    expect(summaryJson).not.toContain('external-stage-secret');
+    expect(packet).not.toContain('external-stage-secret');
+  });
+
+  it('ignores a symlinked plans root before scanning plan stages', () => {
+    const root = tempRepo();
+    writeMission(root);
+    const outsidePlans = join(tempRepo(), 'plans');
+    const outsideActive = join(outsidePlans, 'active');
+    mkdirSync(outsideActive, { recursive: true });
+    writeFileSync(join(outsideActive, '001-external-root-plan.md'), [
+      '# Plan: external-root-plan',
+      '',
+      '## Status',
+      '',
+      'active',
+      '',
+      '## Context',
+      '',
+      'External context.',
+      '',
+      '## Goal',
+      '',
+      'Leak external root plan text external-root-secret.',
+      '',
+      '## Constraints / Out of scope',
+      '',
+      '- None.',
+      '',
+      '## Files to touch',
+      '',
+      '- `src/x.ts` — x.',
+      '',
+      '## Acceptance criteria',
+      '',
+      '- [ ] External root criterion external-root-secret.',
+      '',
+      '## Verification steps',
+      '',
+      '1. Run `npm test`.',
+      '',
+      '## Open questions',
+      '',
+      '- None.',
+      '',
+    ].join('\n'), 'utf8');
+    mkdirSync(join(root, '.osc'), { recursive: true });
+    symlinkSync(outsidePlans, join(root, '.osc', 'plans'), 'dir');
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.active_plan).toBeNull();
+    expect(summaryJson).not.toContain('external-root-secret');
+    expect(packet).not.toContain('external-root-secret');
+  });
+
   it('orders final-slice resume actions as evidence before verify before close', () => {
     const root = tempRepo();
     writeMission(root);

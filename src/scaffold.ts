@@ -107,6 +107,22 @@ function readText(path: string): string {
   return readFileSync(path, 'utf8');
 }
 
+function isRealDirectory(path: string): boolean {
+  try {
+    return lstatSync(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function isRealFile(path: string): boolean {
+  try {
+    return lstatSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
 export function inspectMission(root: string): MissionState {
   const path = join(root, 'MISSION.md');
   if (!existsSync(path)) return { path, defined: false, reason: 'MISSION.md not found' };
@@ -128,15 +144,17 @@ export function inspectScaffold(root = process.cwd()): ScaffoldState {
     blocked: [],
     done: [],
   };
+  const plansRoot = join(root, OSC_NAMESPACE, 'plans');
+  if (!isRealDirectory(plansRoot)) return { root, namespace: OSC_NAMESPACE, mission: inspectMission(root), plans };
   for (const stage of PLAN_STAGES) {
-    const dir = join(root, OSC_NAMESPACE, 'plans', stage);
-    if (!existsSync(dir)) continue;
+    const dir = join(plansRoot, stage);
+    if (!isRealDirectory(dir)) continue;
     for (const file of readdirSync(dir).sort()) {
       if (!file.endsWith('.md')) continue;
       if (file === 'README.md' || file === 'WORKFLOW.md' || file === 'handoff-template.md') continue;
       if (isPlanAmendmentFile(file)) continue;
       const full = join(dir, file);
-      if (!lstatSync(full).isFile()) continue;
+      if (!isRealFile(full)) continue;
       plans[stage].push({ slug: basename(file, '.md'), path: relative(root, full), stage });
     }
   }
@@ -337,8 +355,9 @@ function planStageSearchDirs(root: string, stages: readonly (PlanStage | 'root')
 
 function findPlanBySlug(root: string, slug: string, stages: readonly (PlanStage | 'root')[]): FoundPlan | null {
   for (const { stage, dir } of planStageSearchDirs(root, stages)) {
+    if (!isRealDirectory(dir)) continue;
     const path = join(dir, `${slug}.md`);
-    if (existsSync(path) && lstatSync(path).isFile()) return { path, dir, stage };
+    if (isRealFile(path)) return { path, dir, stage };
   }
   return null;
 }
