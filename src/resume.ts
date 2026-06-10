@@ -139,9 +139,11 @@ function latestHarnessRun(root: string): InternalResumeLatestRun | null {
   if (!existsSync(dir)) return null;
   let best: InternalResumeLatestRun | null = null;
   for (const name of readdirSync(dir).sort()) {
-    const statusPath = join(dir, name, 'status.json');
-    if (!existsSync(statusPath)) continue;
+    const runDir = join(dir, name);
     try {
+      if (!lstatSync(runDir).isDirectory()) continue;
+      const statusPath = join(runDir, 'status.json');
+      if (!existsSync(statusPath)) continue;
       if (!lstatSync(statusPath).isFile()) continue;
       const parsed = JSON.parse(readFileSync(statusPath, 'utf8')) as RunStatusFile;
       const rawRunId = typeof parsed.runId === 'string' ? parsed.runId : name;
