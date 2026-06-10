@@ -82,7 +82,10 @@ function pickActivePlan(actives: PlanSummary[], requested?: string): { picked: P
   if (!actives.length) return { picked: null, others: [] };
   if (requested) {
     const found = actives.find((plan) => plan.slug === requested);
-    if (!found) throw new Error(`No active plan named ${requested}. Active plans: ${actives.map((plan) => plan.slug).join(', ')}`);
+    if (!found) {
+      const safeActivePlans = actives.map((plan) => redactPacketText(plan.slug, 160)).join(', ');
+      throw new Error(`No active plan named ${redactPacketText(requested, 160)}. Active plans: ${safeActivePlans}`);
+    }
     return { picked: found, others: actives.filter((plan) => plan.slug !== requested).map((plan) => plan.slug) };
   }
   const sorted = [...actives].sort((a, b) => planNumber(b.slug) - planNumber(a.slug) || a.slug.localeCompare(b.slug));

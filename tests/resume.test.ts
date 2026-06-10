@@ -175,6 +175,15 @@ describe('osc resume packet compiler', () => {
     expect(summary.status).toContain('sk-[redacted]');
   });
 
+  it('redacts plan identifiers in missing-plan errors', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-sk-abcdefghijklmnopqrstuvwxyz012345-plan');
+
+    expect(() => compileResume(root, { planSlug: 'missing-sk-abcdefghijklmnopqrstuvwxyz012345' })).toThrow(/sk-\[redacted\]/);
+    expect(() => compileResume(root, { planSlug: 'missing-sk-abcdefghijklmnopqrstuvwxyz012345' })).not.toThrow(/sk-abcdefghijklmnopqrstuvwxyz012345/);
+  });
+
   it('orders final-slice resume actions as evidence before verify before close', () => {
     const root = tempRepo();
     writeMission(root);
