@@ -320,6 +320,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
   const scaffoldPresent = existsSync(join(root, '.osc', 'plans'));
   const scaffold = inspectScaffold(root);
   const { picked, others } = pickActivePlan(scaffold.plans.active ?? [], options.planSlug);
+  const publicOtherActivePlans = others.map((slug) => redactPacketText(slug, 160));
 
   let activePlan: ResumeActivePlan | null = null;
   let verificationSteps: string[] = [];
@@ -327,7 +328,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
     const { parsed, criteria } = planAcceptanceCriteria(root, picked);
     verificationSteps = parsed.verificationSteps.map((stepText) => redactPacketText(stepText.replace(/`/g, ''), 160));
     activePlan = {
-      slug: picked.slug,
+      slug: redactPacketText(picked.slug, 160),
       stage: picked.stage,
       status: parsed.status || picked.stage,
       goal: redactPacketText(parsed.goal, 1000),
@@ -348,7 +349,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
       }
     : null;
   const lessonsList = scaffoldPresent ? loadAcceptedImprovements({ repoRoot: root }) : [];
-  const amendments = listAmendments(root, picked);
+  const amendments = listAmendments(root, picked).map((id) => redactPacketText(id, 180));
   const next = deriveNextAction({
     scaffoldPresent,
     missionDefined: scaffold.mission.defined,
@@ -365,15 +366,15 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
     active_plan: activePlan,
     amendments: { count: amendments.length, ids: amendments },
     work_done: {
-      done_slices: (scaffold.plans.done ?? []).map((plan) => plan.slug),
-      evidence: listEvidence(root),
+      done_slices: (scaffold.plans.done ?? []).map((plan) => redactPacketText(plan.slug, 160)),
+      evidence: listEvidence(root).map((evidencePath) => redactPacketText(evidencePath, 220)),
     },
     status: statusLine({ scaffoldPresent, missionDefined: scaffold.mission.defined, plan: activePlan, backlogCount: scaffold.plans.backlog?.length ?? 0 }),
     next_bounded_action: next.action,
-    other_active_plans: others,
+    other_active_plans: publicOtherActivePlans,
     latest_run: publicRun,
     repair_hypothesis: repairHypothesis,
-    lessons: { count: lessonsList.length, slugs: lessonsList.map((lesson) => lesson.slug) },
+    lessons: { count: lessonsList.length, slugs: lessonsList.map((lesson) => redactPacketText(lesson.slug, 160)) },
     next_commands: next.commands,
     boundary: {
       read_only: true,

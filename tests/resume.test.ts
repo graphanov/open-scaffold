@@ -160,6 +160,21 @@ describe('osc resume packet compiler', () => {
     expect(summary.status).toBe('active plan 001-secret-test; 0/1 acceptance criteria complete');
   });
 
+  it('redacts plan identifiers before emitting resume output', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-sk-abcdefghijklmnopqrstuvwxyz012345-plan');
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summaryJson).not.toContain('sk-abcdefghijklmnopqrstuvwxyz012345');
+    expect(packet).not.toContain('sk-abcdefghijklmnopqrstuvwxyz012345');
+    expect(summary.active_plan?.slug).toContain('sk-[redacted]');
+    expect(summary.next_commands.join('\n')).toContain('sk-[redacted]');
+    expect(summary.status).toContain('sk-[redacted]');
+  });
+
   it('orders final-slice resume actions as evidence before verify before close', () => {
     const root = tempRepo();
     writeMission(root);
