@@ -13,7 +13,7 @@ The package-visible change is small and deliberate: public docs now explain curr
 - Source PRs: #192, #194, #195, #196, #197, #198, #199, and #200 in `graphanov/open-scaffold`.
 - Release-sync plan: `.osc/plans/active/160-harness-release-readiness-package-sync.md` before public proof; move to `done/` after publication proof.
 - Run ID / run packet: N/A for this scoped package/release sync.
-- Branch / PR: `release/0.31.1-harness-readiness-sync` / PR pending.
+- Branch / PR: `release/0.31.1-harness-readiness-sync` / https://github.com/graphanov/open-scaffold/pull/201.
 
 ## Verification
 
