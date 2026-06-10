@@ -2,7 +2,7 @@
 
 This is the execution boundary layer: the rules for what runtime adapters may do after Open Scaffold creates a package. Runtime selection chooses a lane; runtime profiles describe that lane; the binding contract says what an adapter/coordinator must do with the `run.json` package (run packet).
 
-Named harnesses in this contract, including OMC and OMX, are runtime lanes or adapter candidates rather than Open Scaffold core dependencies. Use [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) for public/private/future reference labels.
+Named harnesses in this contract, including OMC and OMX, are runtime lanes or adapter candidates rather than Open Scaffold core dependencies. Use [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools) for public/private/future reference labels.
 
 Open Scaffold creates bounded run packages and records receipts. Runtime adapters — external launch glue or built-in bounded adapter paths for a chosen lane — consume those packages, execute only when explicit backend authority is present, and write evidence back under `.osc/runs`. This document defines the contract between the repo-native Open Scaffold package and any coordinator, adapter, harness, agent, or human lane that executes it.
 
@@ -458,7 +458,7 @@ Avoid:
 ## Relationship to other protocols
 
 - `docs/TASK_RUN_MODEL.md` defines task/run/question/operator identity.
-- `docs/RUNTIME_HARNESS_DISPATCH.md` explains the high-level coordinator-to-harness flow.
+- `ADAPTERS.md#runtime-dispatch-pattern` explains the high-level coordinator-to-harness flow.
 - the harness event stream (docs/HARNESS_ARCHITECTURE.md) defines visible operator events emitted during binding execution.
 - `docs/SLICE_CLOSE_PROTOCOL.md` defines postflight, approval strength, correction routing, and next-slice inheritance.
 - `docs/GITHUB_WORKFLOW.md` defines the issue/branch/PR/review/release publication chain.
@@ -485,3 +485,25 @@ The dry-run example reads a generated `.osc/runs/<run_id>/run.json`, validates t
 The fake/local adapter conformance fixture goes one step further: it consumes the same run packet, writes an `open-scaffold.dispatch-receipt.v1` receipt and a deterministic evidence artifact, and still exits without launching any runtime, reading credentials, or requiring network access. `packages/runtime-omx/` applies that pattern to the OMX `$ralplan` lane specifically. These prove structural handoff/evidence behavior only; task correctness, runtime availability, and adapter production support remain separate gates.
 
 These examples are intentionally not a supported adapter SDK and not Open Scaffold launchers. They are reference proofs that run packets are concrete enough for external coordinators, runtime bindings, or humans to consume while core remains runtime-neutral.
+
+## Coordinator dispatch contract
+
+A coordinator or runtime-specific binding should:
+
+1. Read `.osc/runs/<run_id>/run.json`.
+2. Refuse dispatch unless `packageQuality.executable` is true.
+3. Validate executor lane, harness skill, adapter trust, timeout, environment allowlist, and launch authority.
+4. Create an isolated session or worktree when needed.
+5. Launch the selected harness with the generated package.
+6. Attach runtime bindings back to the run record: process/session id, worktree, branch, bounded log paths, operator thread/comment id.
+7. Route blocking questions by `question_id -> run_id`, never by latest chat message.
+8. Promote final artifacts, status, verification, and evidence back into `.osc/runs`, PRs, or release notes.
+9. Leave commit, push, merge, publish, release, deploy, and credential changes owner-gated unless separately authorized.
+
+Example adapter prompt:
+
+```text
+Read .osc/runs/<run_id>/package.md. Do not commit, push, deploy, or publish.
+If blocked, emit BLOCKED with a question_id.
+If ready, emit READY_FOR_POSTFLIGHT and cite evidence paths.
+```

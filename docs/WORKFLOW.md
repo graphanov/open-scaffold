@@ -4,13 +4,13 @@ A phase-to-tool reference for agent-orchestrated development. This file is the o
 
 The stable core is the file protocol and lifecycle helpers. Lab surfaces such as evolution ledgers, cockpit webhooks, runtime profiles, and adapter dispatch glue are optional layers around that record; they do not replace the plan/evidence/verification/close chain. Historical helpers removed from the reduced maintained CLI, such as `osc work`, `osc dashboard`, `osc task`, `osc plan wizard`, `osc plan graph`, `osc metrics`, and broad `osc doctor --fix`, are migration references only unless a future plan restores them with fresh evidence.
 
-Named coordinators, harnesses, and status/approval channels (operator surfaces) in this guide are examples. Use [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md) to distinguish public examples, private deployment examples, runtime lanes, adapter candidates, and operator surfaces.
+Named coordinators, harnesses, and status/approval channels (operator surfaces) in this guide are examples. Use [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools) to distinguish public examples, private deployment examples, runtime lanes, adapter candidates, and operator surfaces.
 
 ## Development phases
 
 Every task moves through a natural progression. You do not need to use every phase — small fixes skip straight to Execute. The phases exist so you know where you are and what to reach for.
 
-For a no-setup first read, run `osc compare` against two recorded attempts to see the work-record idea before adopting the whole scaffold. For first-use setup, start with the [Minimum Viable Scaffold](MINIMUM_VIABLE_SCAFFOLD.md): choose a scaffold tier with `osc init --tier min|standard|max --target <repo>` for greenfield setup or `osc init --from-existing --tier min --target .` for an existing repo, define the mission, add one active plan, optionally create a run packet or amendment, verify, record evidence, and close.
+For a no-setup first read, run `osc compare` against two recorded attempts to see the work-record idea before adopting the whole scaffold. For first-use setup, start with the [Minimum Viable Scaffold](START_HERE.md#adopt-the-minimum-scaffold): choose a scaffold tier with `osc init --tier min|standard|max --target <repo>` for greenfield setup or `osc init --from-existing --tier min --target .` for an existing repo, define the mission, add one active plan, optionally create a run packet or amendment, verify, record evidence, and close.
 
 ### 1. Clarify (when the goal is fuzzy)
 
@@ -67,7 +67,7 @@ Then fill every TODO before implementation. The helpers create and move structur
 
 Implement what the plan says. Independent tasks can run in parallel. Every change must trace back to a plan file or amendment.
 
-Historical/repositioned migration note: the local `osc task` bridge was removed from the reduced maintained CLI. Use plan files for durable work, GitHub Issues or another shared tracker for team queues, and keep any local scratch task list outside the core contract. [`docs/TASKS.md`](TASKS.md) is retained as historical design context.
+Historical/repositioned migration note: the local `osc task` bridge was removed from the reduced maintained CLI. Use plan files for durable work, GitHub Issues or another shared tracker for team queues, and keep any local scratch task list outside the core contract. [`WORKFLOW.md#task-trackers-and-plans`](WORKFLOW.md#task-trackers-and-plans) is retained as historical design context.
 
 Before creating a durable run packet, preview what Open Scaffold would package:
 
@@ -205,3 +205,9 @@ Signs you should NOT parallelize: database migration + code that uses the new sc
 ## Verification marker convention
 
 MISSION.md in this template ships with a machine-detectable empty-mission marker: the HTML comment `<!-- mission:unset -->` plus the literal `TODO: define mission`. Verification tooling should treat the presence of either as **"mission not yet defined"** — a blocker for any scope-expanding work. open-scaffold defines the marker; consuming tools decide how to honor it. Remove both markers only when the real mission has been written and committed.
+
+### Task trackers and plans
+
+`osc task` and the local `.osc/tasks.db` bridge were retired from the reduced maintained CLI. Use `.osc/plans/` for durable work records, and use GitHub Issues, Linear, Jira, Hermes Kanban, or another coordinator-owned tracker for shared live task state.
+
+Local scratch task lists may still be useful, but they are not durable product proof. Promote meaningful work into plans, run packets, evidence notes, PRs, or issues when it needs review or reconstruction.

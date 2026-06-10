@@ -145,7 +145,7 @@ acceptance_gate:
   criteria:
     - id: AC1
       status: pass
-      evidence: docs/RUNTIME_HARNESS_DISPATCH.md
+      evidence: ADAPTERS.md#runtime-dispatch-pattern
     - id: AC2
       status: partial
       evidence: "Manual review: wording still needs example"
@@ -156,10 +156,10 @@ verification:
     result: pass
 artifacts:
   changed_files:
-    - docs/RUNTIME_HARNESS_DISPATCH.md
+    - ADAPTERS.md#runtime-dispatch-pattern
     - docs/TASK_RUN_MODEL.md
   outputs:
-    - docs/RUNTIME_HARNESS_DISPATCH.md#where-we-are-right-now
+    - ADAPTERS.md#runtime-dispatch-pattern#where-we-are-right-now
 known_gaps:
   - "Runtime binding starter kit remains future work."
 approval:

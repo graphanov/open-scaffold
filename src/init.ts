@@ -42,15 +42,14 @@ const standardOnlyFiles = [
   'amend.sh',
   'docs/DEV_CONTAINER.md',
   'docs/WORKFLOW.md',
-  'docs/TASKS.md',
-  'docs/MINIMUM_VIABLE_SCAFFOLD.md',
+  'docs/START_HERE.md',
+  'docs/TASK_RUN_MODEL.md',
   'docs/SLICE_CLOSE_PROTOCOL.md',
 ] as const;
 
 const maxOnlyFiles = [
   'docs/GITHUB_WORKFLOW.md',
   'docs/RUNTIME_BINDING_CONTRACT.md',
-  'docs/TASK_RUN_MODEL.md',
   'docs/OPEN_SCAFFOLD_SYSTEM.md',
   'delegate.sh',
   '.osc/runs/.gitkeep',
@@ -290,7 +289,7 @@ function downstreamAgentInstructionsTemplate(file: 'AGENTS.md' | 'CLAUDE.md'): s
 
 function downstreamMinimumScaffoldDocTemplate(): string {
   return [
-    '# Minimum Viable Scaffold',
+    '# Start Here',
     '',
     'This repo has the minimum Open Scaffold loop needed for a human and an agent to answer:',
     '',
@@ -457,7 +456,7 @@ function downstreamTemplateFor(file: string, tier: ScaffoldTier): string | null 
   if (tier === 'min') return null;
   if (file === 'README.md') return downstreamReadmeTemplate();
   if (file === 'ROADMAP.md') return downstreamRoadmapTemplate();
-  if (file === 'docs/MINIMUM_VIABLE_SCAFFOLD.md') return downstreamMinimumScaffoldDocTemplate();
+  if (file === 'docs/START_HERE.md') return downstreamMinimumScaffoldDocTemplate();
   return null;
 }
 

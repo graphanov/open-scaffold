@@ -112,3 +112,33 @@ The router takes command text and returns event/status/artifact shapes. It is tr
 `$team` uses the same boundary. Worker lanes may name adapters with `--worker-adapter <worker>:<adapter>`, but the metadata is a capability and authority contract, not permission to merge or publish. Worker outcomes can be recorded with `--worker-outcome <worker>:complete|needs-human|blocked|failed|benchmark-failed|reviewer-failed`; human-gate outcomes appear in the shared status and are answered through the same backend `osc harness answer` command.
 
 Runtime execution remains adapter-owned. Open Scaffold core packages controlled work, preserves receipts, and exposes gates; it does not become an autonomous authority.
+
+## Feedback, retry, and accepted lessons
+
+A failed or blocked `$work` runtime attempt writes:
+
+```text
+.osc/runs/<run-id>/feedback.jsonl
+```
+
+Each `osc.feedback.v1` record captures source, verdict, scope, what happened, why it matters, repair hypothesis, evidence paths, and next action.
+
+A retry is a new run linked to the parent, not a rewrite:
+
+```bash
+osc harness '$work "fix the failed slice" --context "repo truth" --retry-of <old-run-id> --adapter <id> --allow-spawn' --json
+```
+
+The retry writes:
+
+```text
+.osc/runs/<new-run-id>/retry.json
+```
+
+Accepted lessons live under:
+
+```text
+.osc/improvements/applied/<slug>.md
+```
+
+`$work` and `$team` load accepted lessons only when `--inherit-improvements` is passed, and they filter lessons by current intent. Feedback guides the next attempt; it is not owner approval.

@@ -15,7 +15,7 @@ If you want one complete non-recursive example first, start with [`downstream-wa
 
 Open Scaffold core ships the protocol, the `run.json` work-package schema (run packet schema), the verification scripts, and dry-run/conformance examples. It does not spawn agents, run a coordinator daemon, or own runtime credentials. Each mode below stays inside that boundary.
 
-For the labels used when these examples mention external coordinators, harnesses, or surfaces, see [`REFERENCE_TRUTH.md`](../REFERENCE_TRUTH.md).
+For the labels used when these examples mention external coordinators, harnesses, or surfaces, see [`../ADAPTERS.md#reference-labels-for-named-tools`](../../ADAPTERS.md#reference-labels-for-named-tools).
 
 ---
 

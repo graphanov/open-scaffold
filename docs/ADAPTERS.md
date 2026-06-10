@@ -10,7 +10,7 @@ This page uses precise language:
 - **Task/state bridges** — work queues/status boards — track live operational state.
 - **Operator surfaces** — chats/dashboards for human interaction — expose status and approvals.
 
-For the full taxonomy, see [`docs/OPEN_SCAFFOLD_SYSTEM.md`](OPEN_SCAFFOLD_SYSTEM.md). For public/private/future tool availability labels, see [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md).
+For the full taxonomy, see [`docs/OPEN_SCAFFOLD_SYSTEM.md`](OPEN_SCAFFOLD_SYSTEM.md). For public/private/future tool availability labels, see [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools).
 
 ## Choosing a runtime
 
@@ -210,3 +210,54 @@ GitHub = public/versioned implementation layer.
 ```
 
 Do not put runtime-specific hook logic into generic Open Scaffold core. Put harness-specific behavior in the runtime integration that owns that behavior.
+
+## Runtime dispatch pattern
+
+```text
+Open Scaffold packages.
+A runtime adapter executes only after explicit backend authority.
+A task bridge may coordinate live work state.
+A harness does bounded work.
+An operator surface observes and answers gates.
+GitHub publishes after owner gates.
+Evidence records what happened.
+```
+
+Canonical flow:
+
+```text
+roadmap / issue / task
+  -> plan or spec
+  -> .osc/runs/<run_id>/run.json
+  -> coordinator or adapter validates packageQuality.executable
+  -> selected harness executes in an isolated session/worktree
+  -> artifacts, logs, outputs, and verification return to .osc/runs and/or PR
+  -> postflight checks acceptance criteria
+  -> owner gates merge/release
+```
+
+Layer split:
+
+- Open Scaffold core owns the repo contract, run packet, evidence locations, and task/run identity.
+- Coordinators/task bridges own live queue state and dispatch decisions.
+- Runtime harnesses own execution while alive.
+- Operator surfaces mirror status/questions/approval requests.
+- GitHub owns public/versioned review and release state.
+
+Avoid dispatching vague prose, launching without `--allow-spawn`, using chat as the task database, routing replies without `question_id -> run_id`, or treating dry-run `spawning:false` as failure.
+
+## Reference labels for named tools
+
+Use these labels when docs mention external tools:
+
+| Label | Meaning |
+|---|---|
+| Public example | Publicly reachable tool/service/repo used as an example. |
+| Private deployment example | Private dogfood installation proving a pattern; not required for adoption. |
+| Coordinator/orchestrator | Selects, routes, supervises, or bridges work without becoming core truth. |
+| Adapter candidate | Optional/future adapter direction; no core dependency implied. |
+| Runtime lane | Executes bounded run packets outside Open Scaffold core. |
+| Operator surface | Chat, PR, CLI, dashboard, or notification layer; not source of truth. |
+| External anchor adapter | Optional future audit-envelope anchoring provider; not compliance certification. |
+
+Current examples: GitHub Issues/PRs/CI are public examples; Discord/Slack/Telegram/CLI dashboards are operator surfaces; Hermes/Command Center are private deployment examples; OMC/OMX are runtime lanes/adapter candidates.

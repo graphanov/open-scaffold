@@ -4,7 +4,7 @@ created: 2026-05-17
 updated: 2026-05-17
 type: concept
 tags: [open-scaffold, workflow, evidence, governance, public-boundary]
-sources: [docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/SLICE_CLOSE_PROTOCOL.md, docs/REFERENCE_TRUTH.md, ROADMAP.md]
+sources: [docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/SLICE_CLOSE_PROTOCOL.md, ../../ADAPTERS.md#reference-labels-for-named-tools, ROADMAP.md]
 confidence: medium
 contested: false
 ---
@@ -28,7 +28,7 @@ Humans keep explicit approval gates for taste, risk, publication, and merge.
 
 That means evaluation and audit trails are not simply "outside core." Core owns the portable loop and record shape. External tools, domain systems, and humans supply the judgment, execution, anchoring, and final authority.
 
-For runtime lane labels and public/private reference wording, use `docs/REFERENCE_TRUTH.md`. For execution boundaries, use `docs/RUNTIME_BINDING_CONTRACT.md` and `docs/SPAWNING_BOUNDARY.md`.
+For runtime lane labels and public/private reference wording, use `../../ADAPTERS.md#reference-labels-for-named-tools`. For execution boundaries, use `docs/RUNTIME_BINDING_CONTRACT.md` and `docs/SPAWNING_BOUNDARY.md`.
 
 ## Six-component map
 

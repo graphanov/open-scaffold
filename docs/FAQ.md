@@ -6,7 +6,7 @@ Questions that did not fit in the main README but are still worth answering.
 
 ### Is this useful for consulting, client delivery, or compliance/audit work?
 
-> Yes, with caveats. Consulting and client delivery benefit because the mission, plans, amendments, evidence receipts, and evidence-backed close protocol make it possible to answer "what did you actually do, why, and how do you know it worked?" months later without reconstructing a chat log. Compliance and audit work benefit because every meaningful change traces back to a plan, acceptance criteria, verification commands, and an approval decision — all in version control. **What this is not:** a substitute for SOC 2, ISO 27001, HIPAA, GDPR, or any formal compliance regime. The scaffold gives those processes durable, reviewable repo artifacts to point at; it does not implement controls, encryption, access policy, or auditor relationships. Use it as evidence substrate, not as the compliance program. See [Auditability boundary](AUDITABILITY.md).
+> Yes, with caveats. Consulting and client delivery benefit because the mission, plans, amendments, evidence receipts, and evidence-backed close protocol make it possible to answer "what did you actually do, why, and how do you know it worked?" months later without reconstructing a chat log. Compliance and audit work benefit because every meaningful change traces back to a plan, acceptance criteria, verification commands, and an approval decision — all in version control. **What this is not:** a substitute for SOC 2, ISO 27001, HIPAA, GDPR, or any formal compliance regime. The scaffold gives those processes durable, reviewable repo artifacts to point at; it does not implement controls, encryption, access policy, or auditor relationships. Use it as evidence substrate, not as the compliance program. See [Auditability boundary](TRUST_BOUNDARIES.md#auditability-boundary).
 
 ### When is Open Scaffold overkill?
 
@@ -14,7 +14,7 @@ Questions that did not fit in the main README but are still worth answering.
 
 ### Can I run this for 5 hours straight and come back to a finished product?
 
-> Not by Open Scaffold itself. Open Scaffold is not a hands-off product factory. What you *can* do: write a plan, give it to an outside tool or runner, and come back to work that still traces back to your acceptance criteria. Examples include a private coordinator deployment such as Hermes/Claw, OMC with `/autopilot`/`/ralph` for Claude Code, or OMX with `$team`/`$ralph`/`$ultrawork` for Codex. These are runtime lanes or private deployment examples, not Open Scaffold dependencies; see [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md). The difference the scaffold makes is **recoverability** — because the plan is on disk, you can read what the agent did, compare against the ACs, and know exactly where to resume. Without it, a long run is hard to audit.
+> Not by Open Scaffold itself. Open Scaffold is not a hands-off product factory. What you *can* do: write a plan, give it to an outside tool or runner, and come back to work that still traces back to your acceptance criteria. Examples include a private coordinator deployment such as Hermes/Claw, OMC with `/autopilot`/`/ralph` for Claude Code, or OMX with `$team`/`$ralph`/`$ultrawork` for Codex. These are runtime lanes or private deployment examples, not Open Scaffold dependencies; see [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools). The difference the scaffold makes is **recoverability** — because the plan is on disk, you can read what the agent did, compare against the ACs, and know exactly where to resume. Without it, a long run is hard to audit.
 
 ### Does this reduce token usage / cost?
 
@@ -95,3 +95,13 @@ Questions that did not fit in the main README but are still worth answering.
 ### What if I have to pivot hard and the mission is now wrong?
 
 > Rewrite `MISSION.md`, stamp the changelog with a "pivot" entry explaining why, and either amend the outstanding plans or mark them superseded. The protocol handles pivots fine — it just requires you to *document* them instead of silently changing direction. That documentation is the whole feature.
+
+### How does Open Scaffold compare to spec-kit, BMAD, Agent OS, and LangSmith?
+
+Treat this as orientation, not a live feature matrix. Those projects evolve quickly; verify current behavior upstream.
+
+Open Scaffold is the repo record layer: mission, immutable plans, amendments, run packets, evidence, verification, and approval traces as files beside the work. It can sit underneath or beside a spec workflow, role methodology, agent-context system, or observability platform.
+
+spec-kit, BMAD, and Agent OS are more prescriptive methodology/tooling stacks. LangSmith is closer to runtime tracing/evaluation/observability. Open Scaffold's differentiator is durable repo truth and runtime neutrality, not feature breadth or benchmarked productivity. adjacent layers are not enemies; Open Scaffold is a durable notebook next to the code.
+
+Use Open Scaffold when work needs to survive context loss across sessions, agents, PRs, or audits. Do not treat this comparison as a benchmark or final word.

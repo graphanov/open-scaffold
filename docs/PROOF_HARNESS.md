@@ -124,3 +124,15 @@ Live mode only counts as runtime evidence when `--allow-spawn` is present. Each 
 | Third-party or production adoption | not_demonstrated | No entries beyond placeholder in the adoption index |
 
 Live-lane reproduction has not yet fully succeeded; raw attempts are in `.osc/bench/`. Do not claim Open Scaffold broadly beats naked Codex from the current evidence.
+
+## Adoption proof entries
+
+When recording adoption proof, keep it factual and reproducible:
+
+- Project, date, reporter, labels, and Open Scaffold version or commit.
+- Scenario: what work was recorded and which part of the loop was exercised.
+- Reproduction commands for clone/install, scaffold inspection, tests/verifier, and trace/PR/evidence-chain checks.
+- Expected result and actual result.
+- Evidence refs: plan, run packet, evidence note, PR/check link, logs/artifacts.
+- Friction and caveats: manual, slow, flaky, private, environment-specific, or not reproducible parts.
+- Boundary statement: what the proof demonstrates, and what broader claim would need separate evidence.

@@ -40,8 +40,8 @@ describe('tiered scaffold initialization', () => {
     expect(result.filesCreated.sort()).toEqual([...tierFiles.standard].sort());
     for (const file of tierFiles.min) expect(result.filesCreated).toContain(file);
     expect(readFileSync(join(target, 'README.md'), 'utf8')).toContain('Open Scaffold');
-    expect(readFileSync(join(target, 'docs/MINIMUM_VIABLE_SCAFFOLD.md'), 'utf8')).toContain('minimum viable scaffold');
-    expect(readFileSync(join(target, 'docs/TASKS.md'), 'utf8')).toContain('Local Tasks');
+    expect(readFileSync(join(target, 'docs/START_HERE.md'), 'utf8')).toContain('minimum viable scaffold');
+    expect(readFileSync(join(target, 'docs/TASK_RUN_MODEL.md'), 'utf8')).toContain('Task owns intent/lifecycle');
     expect(existsSync(join(target, '.devcontainer/devcontainer.json'))).toBe(true);
     expect(existsSync(join(target, '.devcontainer/Dockerfile'))).toBe(true);
     expect(existsSync(join(target, '.devcontainer/README.md'))).toBe(true);

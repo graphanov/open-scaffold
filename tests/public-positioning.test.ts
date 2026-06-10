@@ -29,7 +29,7 @@ describe('public work-record positioning', () => {
   });
 
   it('documents auditability as evidence substrate, not a compliance program', () => {
-    const auditability = read('docs/AUDITABILITY.md');
+    const auditability = read('docs/TRUST_BOUNDARIES.md');
 
     expect(auditability).toContain('evidence substrate');
     expect(auditability).toContain('does not prove the work is correct');
@@ -88,8 +88,8 @@ describe('public work-record positioning', () => {
       'CLAUDE.md',
       'ROADMAP.md',
       'SECURITY.md',
-      'docs/AUDITABILITY.md',
-      'docs/COMPARISON.md',
+      'docs/TRUST_BOUNDARIES.md',
+      'docs/FAQ.md',
       'docs/wiki/concepts/repo-native-work-record.md',
       'docs/wiki/queries/what-is-open-scaffold-for.md',
     ];
@@ -153,7 +153,7 @@ describe('public work-record positioning', () => {
   });
 
   it('positions comparison tools as adjacent layers rather than enemies', () => {
-    const comparison = read('docs/COMPARISON.md');
+    const comparison = read('docs/FAQ.md');
 
     expect(comparison).toContain('adjacent layers');
     expect(comparison).toContain('not enemies');

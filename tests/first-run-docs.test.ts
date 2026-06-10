@@ -11,11 +11,11 @@ function read(path: string): string {
 describe('first-run documentation truth', () => {
   it('advertises the published guided first-run as the default adoption path', () => {
     expect(read('README.md')).toContain('npx open-scaffold@latest first-run');
-    expect(read('docs/MINIMUM_VIABLE_SCAFFOLD.md')).toContain('npx open-scaffold init --tier min');
+    expect(read('docs/START_HERE.md')).toContain('npx open-scaffold init --tier min');
   });
 
   it('keeps a source-checkout fallback path for users who do not want npx', () => {
-    const minimum = read('docs/MINIMUM_VIABLE_SCAFFOLD.md');
+    const minimum = read('docs/START_HERE.md');
 
     expect(minimum).toContain('git clone https://github.com/graphanov/open-scaffold');
     expect(minimum).toContain('npm install');
@@ -30,7 +30,7 @@ describe('first-run documentation truth', () => {
     }
 
     const docs = [
-      ['docs/MINIMUM_VIABLE_SCAFFOLD.md', read('docs/MINIMUM_VIABLE_SCAFFOLD.md')],
+      ['docs/START_HERE.md', read('docs/START_HERE.md')],
       ['docs/WORKFLOW.md', read('docs/WORKFLOW.md')],
     ] as const;
 
@@ -42,8 +42,8 @@ describe('first-run documentation truth', () => {
       expect(text, path).toContain('npx open-scaffold amend');
       expect(text, path).toContain('npx open-scaffold close');
     }
-    expect(read('docs/MINIMUM_VIABLE_SCAFFOLD.md')).toContain('copy `.osc/plans/handoff-template.md`');
-    expect(read('docs/MINIMUM_VIABLE_SCAFFOLD.md')).toContain('./close.sh');
+    expect(read('docs/START_HERE.md')).toContain('copy `.osc/plans/handoff-template.md`');
+    expect(read('docs/START_HERE.md')).toContain('./close.sh');
     expect(read('docs/WORKFLOW.md')).toContain('Shell scripts remain the day-zero floor');
   });
 

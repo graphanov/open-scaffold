@@ -95,3 +95,25 @@ Reusable workflows should:
 - avoid secrets for local structural checks;
 - never auto-trust arbitrary adapter configs from a PR;
 - never publish, release, merge, deploy, or run spawn-capable lanes without explicit owner approval.
+
+## Auditability boundary
+
+Open Scaffold is an evidence substrate: a structured place for goals, plans, handoffs, receipts, verification notes, amendments, approvals, and lessons.
+
+It does not prove the work is correct, replace human approval, or create a compliance program; it organizes project materials so reviewers can inspect them.
+
+It can help a reviewer answer:
+
+- What goal or mission was the work supposed to serve?
+- Which plan defined scope, constraints, files, acceptance criteria, and verification?
+- Which handoff package was given to an agent, runtime, teammate, or future session?
+- Which evidence note records checks, outputs, approvals, and remaining gates?
+- Which amendments explain scope changes?
+
+Useful chain:
+
+```text
+mission -> plan -> handoff/run packet -> receipt -> evidence -> human approval -> release note
+```
+
+The chain supports audit, client review, postmortem, and handoff by reducing reconstruction work. It does not replace those processes. The full compliance/security/correctness boundary lives in [`STABILITY.md#honest-limits`](STABILITY.md#honest-limits).

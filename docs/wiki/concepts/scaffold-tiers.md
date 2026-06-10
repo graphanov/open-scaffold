@@ -4,7 +4,7 @@ created: 2026-05-15
 updated: 2026-05-15
 type: concept
 tags: [open-scaffold, workflow, source-of-truth]
-sources: [docs/MINIMUM_VIABLE_SCAFFOLD.md, ROADMAP.md]
+sources: [../../START_HERE.md#adopt-the-minimum-scaffold, ROADMAP.md]
 confidence: medium
 contested: false
 ---
