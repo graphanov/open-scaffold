@@ -4,6 +4,25 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v0.31.1 — Harness release readiness package sync
+
+Status: release candidate in repo. `package.json` is prepared for `open-scaffold@0.31.1`, while live npm and GitHub Latest Release remain at `0.31.0` until owner-approved trusted publishing and GitHub Release follow-through complete.
+
+Highlights:
+
+- Prepares the final harness migration docs/readiness work from PR #199 plus plan closeout from PR #200 for the public `npx open-scaffold@latest` package surface.
+- Makes top-level help for `osc feedback --help` and `osc bench --help` available in the package so the command maturity docs match real CLI behavior.
+- Keeps the harness release honest: current reproduction remains `partially_reproduced`, broad dominance remains `mixed_not_proven`, and live runtime spawning stays experimental/owner-gated.
+- Keeps Open Scaffold pre-1.0: this is a patch release for package-visible readiness/docs/help, not a 1.0 maturity claim.
+
+Evidence:
+
+- Source plan: `.osc/plans/done/159-harness-release-readiness.md`
+- Source PR: https://github.com/graphanov/open-scaffold/pull/199
+- Source closeout PR: https://github.com/graphanov/open-scaffold/pull/200
+- Release-sync plan: `.osc/plans/active/160-harness-release-readiness-package-sync.md`
+- Release-sync evidence note: `.osc/releases/2026-06-10-160-harness-release-readiness-package-sync.md`
+
 ## v0.31.0 — Framework cleanup shrink release
 
 Status: published to npm as `open-scaffold@0.31.0`; GitHub Release `v0.31.0` is Latest after owner-approved trusted publishing and release follow-through.
