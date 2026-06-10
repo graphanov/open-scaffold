@@ -105,7 +105,7 @@ describe('osc resume packet compiler', () => {
     expect(() => compileResume(fixtureRoot, { maxChars: 10 })).toThrow(/maxChars/);
   });
 
-  it('never leaks secrets or local absolute paths into the packet', () => {
+  it('never leaks secrets or local absolute paths into packet or JSON summary text', () => {
     const root = tempRepo();
     writeMission(root);
     writePlan(root, '001-secret-test', [
@@ -121,7 +121,7 @@ describe('osc resume packet compiler', () => {
       '',
       '## Goal',
       '',
-      'Use token sk-proj-abcdefghijklmnopqrstuvwxyz012345 from /Users/someone/secrets.txt to call the API.',
+      'Use token sk-abcdefghijklmnopqrstuvwxyz012345 from /Users/someone/secrets.txt to call the API.',
       '',
       '## Constraints / Out of scope',
       '',
@@ -133,7 +133,7 @@ describe('osc resume packet compiler', () => {
       '',
       '## Acceptance criteria',
       '',
-      '- [ ] Works.',
+      '- [ ] Confirm sk-proj-abcdefghijklmnopqrstuvwxyz012345 never appears in logs under /Users/someone/secrets.txt.',
       '',
       '## Verification steps',
       '',
@@ -146,12 +146,69 @@ describe('osc resume packet compiler', () => {
     ].join('\n'));
 
     const { packet, summary } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
 
     expect(packet).not.toContain('sk-proj-abcdefghijklmnopqrstuvwxyz012345');
     expect(packet).not.toContain('/Users/someone');
     expect(packet).toContain('sk-[redacted]');
     expect(packet).toContain('local-path');
+    expect(summaryJson).not.toContain('sk-proj-abcdefghijklmnopqrstuvwxyz012345');
+    expect(summaryJson).not.toContain('/Users/someone');
+    expect(summaryJson).toContain('sk-[redacted]');
+    expect(summaryJson).toContain('local-path');
+    expect(summary.next_bounded_action).toContain('sk-[redacted]');
     expect(summary.status).toBe('active plan 001-secret-test; 0/1 acceptance criteria complete');
+  });
+
+  it('orders final-slice resume actions as evidence before verify before close', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-complete', [
+      '# Plan: 001-complete',
+      '',
+      '## Status',
+      '',
+      'active',
+      '',
+      '## Context',
+      '',
+      'Test.',
+      '',
+      '## Goal',
+      '',
+      'Complete the slice.',
+      '',
+      '## Constraints / Out of scope',
+      '',
+      '- None.',
+      '',
+      '## Files to touch',
+      '',
+      '- `src/x.ts` — x.',
+      '',
+      '## Acceptance criteria',
+      '',
+      '- [x] First criterion done.',
+      '- [x] Second criterion done.',
+      '',
+      '## Verification steps',
+      '',
+      '1. Run `npm test`.',
+      '',
+      '## Open questions',
+      '',
+      '- None.',
+      '',
+    ].join('\n'));
+
+    const { summary } = compileResume(root);
+
+    expect(summary.next_bounded_action).toContain('record and fill evidence, verify it, and close');
+    expect(summary.next_commands).toEqual([
+      'osc evidence new 001-complete',
+      'osc verify',
+      'osc close 001-complete --message "<what shipped>"',
+    ]);
   });
 
   it('reports a missing scaffold with the first-run bootstrap action', () => {

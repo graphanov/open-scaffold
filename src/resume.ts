@@ -225,10 +225,10 @@ function deriveNextAction(input: {
       };
     }
     return {
-      action: `All acceptance criteria are checked for ${input.plan.slug}: verify, record evidence, and close the slice.`,
+      action: `All acceptance criteria are checked for ${input.plan.slug}: record and fill evidence, verify it, and close the slice.`,
       commands: [
-        'osc verify',
         `osc evidence new ${input.plan.slug}`,
+        'osc verify',
         `osc close ${input.plan.slug} --message "<what shipped>"`,
       ],
     };
@@ -324,8 +324,8 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
       slug: picked.slug,
       stage: picked.stage,
       status: parsed.status || picked.stage,
-      goal: parsed.goal,
-      acceptance_criteria: criteria.map((item) => ({ text: item.text, checked: item.checked })),
+      goal: redactPacketText(parsed.goal, 1000),
+      acceptance_criteria: criteria.map((item) => ({ text: redactPacketText(item.text, 1000), checked: item.checked })),
     };
   }
 
