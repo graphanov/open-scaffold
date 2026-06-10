@@ -23,7 +23,7 @@ Use it when AI-assisted work needs **control**, **clarity**, **reviewability**, 
 
 It does not replace your agent, IDE, task tracker, CI, or compliance process. Those tools do the work or run the program. Open Scaffold records what was asked, what was handed off, what came back, what was checked, and what humans approved. For the boundary between structural evidence and process assurance, see [`docs/AUDITABILITY.md`](docs/AUDITABILITY.md) and [`docs/TRUST_BOUNDARIES.md`](docs/TRUST_BOUNDARIES.md).
 
-Open Scaffold does not make models smarter and one fixture is not universal benchmark proof. The current value claim under test is narrower: workflow control, handoff recovery, governance, and measured controller-output efficiency. Any efficiency claim needs a diagnostic/experimental before/after artifact such as `osc evolve analyze --efficiency` or a source-labeled proof manifest checked with `osc prove compare`; do not promote token, cost, or quality wins from prose alone. See [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) for the bounded naked-Codex comparison fixture.
+Open Scaffold does not make models smarter and one fixture is not universal benchmark proof. The current value claim under test is narrower: workflow control, handoff recovery, owner-gate clarity, and measured controller-output efficiency. Any efficiency claim needs a diagnostic/experimental before/after artifact such as `osc evolve analyze --efficiency` or a source-labeled proof manifest checked with `osc prove compare`; do not promote token, cost, or quality wins from prose alone. See [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) for the bounded naked-Codex comparison fixture.
 
 **First command for an existing repo:**
 
@@ -67,7 +67,15 @@ MISSION.md                         why this repo exists
 
 Open Scaffold is also a small-command harness for AI-assisted work:
 
-> Open Scaffold helps clarify the task, plan it in the repo, run controlled AI workers, preserve evidence, learn from feedback, and test whether the workflow actually helped.
+> Open Scaffold helps clarify the task, plan it in the repo, package controlled AI work, coordinate worker lanes, preserve evidence, learn from feedback, and test whether the workflow actually helped.
+
+A new reader only needs the shape below:
+
+```text
+clarify -> plan -> work or team -> evidence -> feedback -> retry/lesson -> benchmark readout
+```
+
+The harness writes files and status. It does not silently take over your repo.
 
 The human-facing grammar is intentionally small:
 
@@ -108,7 +116,16 @@ osc bench suite --mode simulated --out .osc/bench/simulated-runtime-smoke
 osc bench handoff-lab --out .osc/bench/handoff-lab-15
 ```
 
-Humans still own merge, publish, release, deployment, and approval gates. Open Scaffold core packages work and records receipts; adapters or humans execute it. Read more in [`docs/HARNESS_COMMANDS.md`](docs/HARNESS_COMMANDS.md), [`docs/HARNESS_ARCHITECTURE.md`](docs/HARNESS_ARCHITECTURE.md), [`docs/FEEDBACK_IMPROVEMENT_LOOP.md`](docs/FEEDBACK_IMPROVEMENT_LOOP.md), [`docs/HARNESS_REPRODUCIBILITY.md`](docs/HARNESS_REPRODUCIBILITY.md), [`docs/HANDOFF_COMPILER.md`](docs/HANDOFF_COMPILER.md), [`docs/CONTROL_ROOM_FOUNDATION.md`](docs/CONTROL_ROOM_FOUNDATION.md), and the source-prototype migration roadmap in [`docs/JOHN_LOMEIN_MIGRATION_ROADMAP.md`](docs/JOHN_LOMEIN_MIGRATION_ROADMAP.md).
+Humans still own merge, publish, release, deployment, and approval gates. Open Scaffold core packages work and records receipts; adapters or humans execute it.
+
+Current harness readiness in this source checkout:
+
+- `$interview`, `$plan`, no-spawn `$work`, `$team`, feedback, and simulated benchmark receipts are implemented and covered by tests.
+- `$work --allow-spawn`, live Codex/adapter runs, and broad reproduction claims remain experimental and owner-gated.
+- Open Scaffold-run reproduction evidence is currently `partially_reproduced`; broad Open Scaffold > naked Codex dominance remains `mixed_not_proven`. See [`docs/HARNESS_REPRODUCIBILITY.md`](docs/HARNESS_REPRODUCIBILITY.md) and `.osc/releases/2026-06-09-harness-reproduction-proof-parity.md`.
+- npm publish and GitHub Release updates are separate owner decisions, not automatic consequences of this docs/readiness work.
+
+Read more in [`docs/HARNESS_COMMANDS.md`](docs/HARNESS_COMMANDS.md), [`docs/HARNESS_ARCHITECTURE.md`](docs/HARNESS_ARCHITECTURE.md), [`docs/FEEDBACK_IMPROVEMENT_LOOP.md`](docs/FEEDBACK_IMPROVEMENT_LOOP.md), [`docs/HARNESS_REPRODUCIBILITY.md`](docs/HARNESS_REPRODUCIBILITY.md), [`docs/HANDOFF_COMPILER.md`](docs/HANDOFF_COMPILER.md), [`docs/CONTROL_ROOM_FOUNDATION.md`](docs/CONTROL_ROOM_FOUNDATION.md), and the source-prototype migration roadmap in [`docs/JOHN_LOMEIN_MIGRATION_ROADMAP.md`](docs/JOHN_LOMEIN_MIGRATION_ROADMAP.md).
 
 ---
 
@@ -381,7 +398,7 @@ Stable enough to rely on today:
 Still experimental:
 
 - Runtime profiles and runtime-selection helpers beyond no-spawn run-packet metadata.
-- `osc dispatch`, MCP, glass cockpit webhooks, runtime packages, and Python parser packaging. Historical/repositioned surfaces such as `osc work --dry-run`, local task database helpers, and TUI/web dashboards are not live maintained CLI commands after the framework cleanup.
+- `osc dispatch`, MCP, control-room webhook experiments, runtime packages, and Python parser packaging. Historical/repositioned surfaces such as `osc work --dry-run`, local task database helpers, and TUI/web dashboards are not live maintained CLI commands after the framework cleanup.
 
 Future / not included:
 
@@ -458,7 +475,7 @@ Skip it for:
 - [`docs/PR_REVIEW_WITH_OSC.md`](docs/PR_REVIEW_WITH_OSC.md) — `osc pr check` and fork-safe PR workflow template.
 - [`docs/TRUST_BOUNDARIES.md`](docs/TRUST_BOUNDARIES.md) — dispatch, adapter, evidence, webhook, PR-check, and runtime trust boundaries.
 - [`docs/RUNTIME_BETA_LANE.md`](docs/RUNTIME_BETA_LANE.md) — current Codex/OMX beta lane and no-overclaim boundaries.
-- [`docs/COMMAND_MATURITY.md`](docs/COMMAND_MATURITY.md) — historical/repositioned command maturity language for the reduced `osc help` surface.
+- [`docs/COMMAND_MATURITY.md`](docs/COMMAND_MATURITY.md) — current command-readiness guide for stable, lab, advanced, and future CLI surfaces.
 - [`docs/SCHEMA_REGISTRY.md`](docs/SCHEMA_REGISTRY.md) — emitted artifact schema IDs and owners.
 - [`docs/ADOPTION_PROOF_INDEX.md`](docs/ADOPTION_PROOF_INDEX.md) — honest adoption-proof labels and reproduction requirements.
 - [`docs/MINIMUM_VIABLE_SCAFFOLD.md`](docs/MINIMUM_VIABLE_SCAFFOLD.md) — smallest practical day-one adoption path.

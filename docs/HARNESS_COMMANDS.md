@@ -1,6 +1,14 @@
 # Harness command surface
 
-Open Scaffold now has a small command grammar for human-facing chat, plugin, CLI, and future app surfaces:
+Open Scaffold now has a small command grammar for human-facing chat, plugin, CLI, and future app surfaces.
+
+The plain model is:
+
+```text
+clarify the task -> write the plan -> package work -> record evidence -> learn from feedback -> test the claim
+```
+
+The harness writes repo files and status events. It does not make the agent smarter, prove the work is correct, or move owner approval gates.
 
 | Command | Use it for | What Open Scaffold records |
 | --- | --- | --- |
@@ -13,7 +21,7 @@ The product UX is the four `$commands`. The `osc` CLI is the backend surface for
 
 ## CLI backend
 
-Use the backend when a shell, CI job, Codex plugin, Hermes worker, or future desktop app needs a deterministic call:
+Use the backend when a shell, CI job, Codex plugin, Hermes worker, or future desktop app needs a deterministic call. Help is available at `osc harness --help`, `osc feedback --help`, and `osc bench --help`:
 
 ```bash
 osc harness '$interview "tighten the task"' --json
@@ -43,7 +51,7 @@ The receipt records adapter name, command summary, timeout, exit state, final ma
 
 ## Runtime marker contract
 
-A spawned runtime must end stdout with exactly one final standalone marker line:
+A spawned runtime must end stdout with exactly one final standalone marker line. These marker names are adapter wire strings kept for compatibility, not Open Scaffold product branding or human-facing commands:
 
 | Marker | Meaning |
 | --- | --- |
@@ -84,7 +92,7 @@ osc bench suite --mode simulated --out .osc/bench/simulated-runtime-smoke
 osc bench handoff-lab --out .osc/bench/handoff-lab-15
 ```
 
-The backend commands write repo-local receipts. They do not spawn Codex from core, rank models, certify correctness, or grant owner approval.
+The backend commands write repo-local receipts. They do not spawn Codex from core, rank models, certify correctness, or grant owner approval. In the current maturity model, simulated benchmark and feedback commands are useful backend tools; live runtime runs with `--allow-spawn` remain experimental and require an explicit operator decision.
 
 Accepted improvements live under `.osc/improvements/applied/`. `$work` and `$team` only load them when `--inherit-improvements` is passed, and the loader filters by the current intent instead of injecting every old lesson.
 

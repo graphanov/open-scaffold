@@ -6,7 +6,7 @@ This document describes the product direction. It does not mean this PR ships a 
 
 ## Direction
 
-A future Open Scaffold control room could feel like a small work cockpit:
+A future Open Scaffold control room could feel like a small status room:
 
 ```text
 left rail        center                  right rail

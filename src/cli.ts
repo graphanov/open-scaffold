@@ -828,8 +828,13 @@ function harnessCommand(args: string[]): void {
   }
 }
 
+function feedbackHelp(): string {
+  return 'Usage: osc feedback record|analyze ...\n  osc feedback record <run-id> --source <human|tests|reviewer|benchmark|runtime|codex|hermes> --verdict <pass|retry|reject|block|improve> --scope <run|plan|command|docs|benchmark|runtime> --what-happened <text> --why-it-matters <text> [--repair-hypothesis <text>] [--evidence-path <path>]... --next-action <text> [--json]\n  osc feedback analyze <run-id> [--json]\n\nFeedback is task input and repair signal. It is not owner approval.';
+}
+
 function feedbackCommand(args: string[]): void {
-  const sub = args[0] ?? die('Usage: osc feedback record|analyze ...', 2);
+  if (isHelpArg(args[0])) { console.log(feedbackHelp()); return; }
+  const sub = args[0] ?? die(feedbackHelp(), 2);
   const json = has(args, '--json');
   try {
     if (sub === 'record') {
@@ -859,11 +864,16 @@ function feedbackCommand(args: string[]): void {
     if (error instanceof Error) die(error.message, 2);
     throw error;
   }
-  die('Usage: osc feedback record|analyze ...', 2);
+  die(feedbackHelp(), 2);
+}
+
+function benchHelp(): string {
+  return 'Usage: osc bench suite|handoff-lab ...\n  osc bench suite [--mode simulated|live] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--allow-spawn] [--adapter <id>] [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>] [--out <dir>] [--json]\n  osc bench handoff-lab [--out <dir>] [--json]\n\nBench commands write local reproduction receipts. They do not grant broad proof or owner approval.';
 }
 
 function benchCommand(args: string[]): void {
-  const sub = args[0] ?? die('Usage: osc bench suite|handoff-lab ...', 2);
+  if (isHelpArg(args[0])) { console.log(benchHelp()); return; }
+  const sub = args[0] ?? die(benchHelp(), 2);
   if (sub === 'suite' && isHelpArg(args[1])) {
     console.log('Usage: osc bench suite [--mode simulated|live] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--allow-spawn] [--adapter <id>] [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>] [--out <dir>] [--json]');
     return;
@@ -920,7 +930,7 @@ function benchCommand(args: string[]): void {
     if (error instanceof Error) die(error.message, 2);
     throw error;
   }
-  die('Usage: osc bench suite|handoff-lab ...', 2);
+  die(benchHelp(), 2);
 }
 
 function removed(command: string): never {

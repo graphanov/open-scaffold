@@ -2,6 +2,8 @@
 
 Open Scaffold's harness is a transport-agnostic work-record layer for AI-assisted work.
 
+In plain terms: it turns a request into repo files a human can inspect later — plan, work package, status, evidence links, gates, feedback, and post-run notes.
+
 It is not a Codex-only plugin and not an autonomous agent. The core receives a command, writes repo-local truth, emits status/events, and hands bounded work to an adapter or human-controlled runtime.
 
 ## Layer diagram
@@ -143,7 +145,7 @@ Adapters own:
 
 `$work` refuses to launch an adapter unless the command includes explicit backend authority such as `--allow-spawn`. Without that flag, it still writes a dry-run receipt so the handoff is reviewable.
 
-A successful process exit is not enough. Runtime stdout must end with exactly one standalone marker:
+A successful process exit is not enough. Runtime stdout must end with exactly one standalone marker. These marker strings are adapter wire protocol, not product branding:
 
 - `LOMEIN_COMPLETE` → completed receipt, still not owner approval or correctness proof.
 - `LOMEIN_NEEDS_HUMAN` → pending human gate; the gate answer resumes the same run as task input.
@@ -169,3 +171,19 @@ All worker lanes stay inside one `.osc/runs/<run-id>/` directory. Worker evidenc
 A worker gate such as `worker-review-needs-human` appears in the shared `pendingHumanGates` list. Answering it through `osc harness answer` updates the same team run; the answer is task input, not approval.
 
 This keeps the core portable across CLI, Codex plugin, Hermes, and future app surfaces while preserving owner authority.
+
+## Release-readiness boundary
+
+Implemented now:
+
+- `$interview` writes a clarification/work-package draft and missing-context gates.
+- `$plan` writes or proposes repo-native plan files.
+- `$work` writes controlled work packages, dry-run/runtime receipts, human gates, feedback, retry links, and optional handoff packets.
+- `$team` writes shared worker-lane status, gates, evidence links, feedback, and postflight under one run folder.
+- `osc bench` writes simulated/live reproduction receipts and handoff-lab reports.
+
+Still experimental or owner-gated:
+
+- Live runtime spawning through `$work --allow-spawn`.
+- Full live reproduction suites and broad Open Scaffold > naked Codex claims.
+- npm publish, GitHub Release changes, merge, release, deploy, and force-push actions.

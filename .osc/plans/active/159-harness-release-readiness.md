@@ -2,18 +2,18 @@
 
 ## Status
 
-backlog
+active
 
 ## PR association
 
-- Planned PR slot: #197, or the next available GitHub PR number.
+- Expected GitHub PR slot: #199, unless another PR is opened first.
 - Branch: `docs/harness-release-readiness`.
 - Title: `docs: prepare harness release readiness`.
-- Base: fresh `main` after PR #195 and PR #196, unless Daniel chooses to release a smaller earlier milestone.
+- Base: fresh `main` after PRs #194, #195, #196, #197, and #198 are merged.
 
 ## Context
 
-Release polish should come after the harness is real. PR #192 creates the foundation, PR #193/#194 make the runtime and feedback loop work, PR #195 tests reproduction, and PR #196 makes `$team`/control-room contracts operational. Only then should public docs, command maturity, package notes, and release surfaces say Open Scaffold is a functioning AI work harness.
+Release polish follows the working harness chain. PR #192 created the command foundation, PRs #194-#195 made the runtime and feedback loop usable, PR #196 tested reproduction, PR #197 made `$team`/control-room contracts operational, and the #198 closeout moved the reproduction plan to `done/`. This slice makes public docs, command maturity, package notes, and release gates match that real state without overclaiming.
 
 ## Goal
 

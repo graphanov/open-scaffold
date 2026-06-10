@@ -23,13 +23,13 @@ Open Scaffold has landed the harness runtime chain through reproduction proof an
 | Reproduction proof PR | graphanov/open-scaffold#196 |
 | Team/control-room adapter PR | graphanov/open-scaffold#197 |
 | Closed plans | `.osc/plans/done/154-harness-command-surface.md`, `.osc/plans/done/155-controlled-runtime-parity.md`, `.osc/plans/done/156-feedback-handoff-improvement-parity.md`, `.osc/plans/done/157-reproduction-proof-parity.md`, `.osc/plans/done/158-team-control-room-adapter-parity.md` |
-| Status | Plans 154-158 are merged; the next remaining roadmap plan is `.osc/plans/backlog/159-harness-release-readiness.md`. |
+| Status | Plans 154-158 are merged; plan 159 is active at `.osc/plans/active/159-harness-release-readiness.md`. |
 | What it proves | Open Scaffold now has the `$interview`, `$plan`, `$work`, and `$team` command surface, controlled runtime receipts, feedback/improvement loop, handoff lab, benchmark/proof-gate machinery, and team/control-room status contracts. |
 | What it does not prove yet | Public package/release readiness is not complete, and broad dominance claims remain gated by Open Scaffold-run proof evidence. |
 
 The important boundary is this:
 
-> PR #192 was the foundation PR. PRs #194-#197 landed the runtime, feedback/handoff, reproduction, and team/control-room slices. Plan 159 is the remaining release-readiness step; it still does not authorize npm publish, GitHub Release updates, or broad dominance claims without owner gates.
+> PR #192 was the foundation PR. PRs #194-#197 landed the runtime, feedback/handoff, reproduction, and team/control-room slices. Plan 159 is the active release-readiness step; it still does not authorize npm publish, GitHub Release updates, or broad dominance claims without owner gates.
 
 ## End state
 
@@ -61,7 +61,7 @@ GitHub may assign a different number if another PR is opened first. The PR numbe
 | #195 | `156-feedback-handoff-improvement-parity` | `feat/feedback-handoff-improvement-parity` | `feat: wire feedback and handoff improvement loop` | Make feedback, repair hypotheses, accepted improvements, retries, and compact handoffs part of real `$work`/`$team` flows. | Merged; plan 156 moved to `done/`. |
 | #196 | `157-reproduction-proof-parity` | `feat/harness-reproduction-proof-parity` | `feat: reproduce source prototype proof lanes` | Run Open Scaffold-owned reproduction suites: targeted handoff, representative live fixtures, ablations, and strict proof report. | Merged; plan 157 moved to `done/`. |
 | #197 | `158-team-control-room-adapter-parity` | `feat/team-control-room-adapter-parity` | `feat: add team and control-room adapter contracts` | Make `$team` a real coordinated multi-worker harness and expose transport/status contracts for Hermes/plugin/desktop surfaces. | Merged; plan 158 moved to `done/`. |
-| Next slot | `159-harness-release-readiness` | `docs/harness-release-readiness` | `docs: prepare harness release readiness` | Polish public docs, examples, command maturity, package/release notes, and owner gates after the harness actually works. | Fresh install/help smoke and release-readiness checks pass; publish/release remain owner-gated. |
+| #199 expected | `159-harness-release-readiness` | `docs/harness-release-readiness` | `docs: prepare harness release readiness` | Polish public docs, examples, command maturity, package/release notes, and owner gates after the harness actually works. | Help/build/test/strict/secret-scan checks pass; publish/release remain owner-gated. |
 
 ## When each PR starts
 
