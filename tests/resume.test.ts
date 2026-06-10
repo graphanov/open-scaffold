@@ -310,6 +310,75 @@ describe('osc resume packet compiler', () => {
     expect(packet).not.toContain('external-stage-secret');
   });
 
+
+  it('ignores a symlinked .osc root before scanning scaffold state', () => {
+    const root = tempRepo();
+    writeMission(root);
+    const outsideOsc = join(tempRepo(), '.osc');
+    mkdirSync(join(outsideOsc, 'plans', 'active'), { recursive: true });
+    mkdirSync(join(outsideOsc, 'releases'), { recursive: true });
+    mkdirSync(join(outsideOsc, 'runs', 'harness-work-osc-symlink'), { recursive: true });
+    writeFileSync(join(outsideOsc, 'plans', 'active', '001-external-osc-plan.md'), [
+      '# Plan: external-osc-plan',
+      '',
+      '## Status',
+      '',
+      'active',
+      '',
+      '## Context',
+      '',
+      'External context.',
+      '',
+      '## Goal',
+      '',
+      'Leak external osc plan text external-osc-secret.',
+      '',
+      '## Constraints / Out of scope',
+      '',
+      '- None.',
+      '',
+      '## Files to touch',
+      '',
+      '- `src/x.ts` — x.',
+      '',
+      '## Acceptance criteria',
+      '',
+      '- [ ] External osc criterion external-osc-secret.',
+      '',
+      '## Verification steps',
+      '',
+      '1. Run `npm test`.',
+      '',
+      '## Open questions',
+      '',
+      '- None.',
+      '',
+    ].join('\n'), 'utf8');
+    writeFileSync(join(outsideOsc, 'releases', 'external-osc-release-secret.md'), '# External evidence\n', 'utf8');
+    writeFileSync(join(outsideOsc, 'runs', 'harness-work-osc-symlink', 'status.json'), JSON.stringify({
+      schema: 'osc.harness-status.v1',
+      runId: 'external-osc-run-id',
+      command: 'work',
+      state: 'waiting_on_human',
+      updatedAt: '2026-06-10T10:00:00.000Z',
+      pendingHumanGates: [{ id: 'external-osc-gate-id', required: true, status: 'pending' }],
+    }), 'utf8');
+    symlinkSync(outsideOsc, join(root, '.osc'), 'dir');
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.active_plan).toBeNull();
+    expect(summary.work_done.evidence).toEqual([]);
+    expect(summary.latest_run).toBeNull();
+    expect(summaryJson).not.toContain('external-osc-secret');
+    expect(summaryJson).not.toContain('external-osc-release-secret');
+    expect(summaryJson).not.toContain('external-osc-run-id');
+    expect(packet).not.toContain('external-osc-secret');
+    expect(packet).not.toContain('external-osc-release-secret');
+    expect(packet).not.toContain('external-osc-run-id');
+  });
+
   it('ignores a symlinked plans root before scanning plan stages', () => {
     const root = tempRepo();
     writeMission(root);

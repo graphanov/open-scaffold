@@ -13,8 +13,8 @@ const cleanupBaselineLoc = 20_890;
 // Team/control-room parity adds shared worker-lane status, adapter metadata, worker gates, and transport-neutral event projections.
 // Harness release readiness adds top-level feedback/bench help so public command maturity docs match real CLI behavior.
 // Surface collapse and resume (plan 162) adds the read-only resume packet compiler, the core/full help split, and the shared packet redaction helper.
-// Codex hardening for plan 162 redacts JSON/run/plan identifiers, missing-plan errors, workspace paths, run/evidence symlinks, mission/plan-file/stage/root symlinks, and fixes final evidence-before-verify resume guidance.
-const cleanupTargetLoc = 16_040;
+// Codex hardening for plan 162 redacts JSON/run/plan identifiers, missing-plan errors, workspace paths, .osc/run/evidence symlinks, mission/plan-file/stage/root symlinks, and fixes final evidence-before-verify resume guidance.
+const cleanupTargetLoc = 16_044;
 const cleanupTargetFiles = 39;
 
 interface MaintainedSourceFile {
@@ -57,7 +57,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(16_040);
+    expect(cleanupTargetLoc).toBe(16_044);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

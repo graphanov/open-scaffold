@@ -145,6 +145,7 @@ export function inspectScaffold(root = process.cwd()): ScaffoldState {
     done: [],
   };
   const plansRoot = join(root, OSC_NAMESPACE, 'plans');
+  if (!isRealDirectory(join(root, OSC_NAMESPACE))) return { root, namespace: OSC_NAMESPACE, mission: inspectMission(root), plans };
   if (!isRealDirectory(plansRoot)) return { root, namespace: OSC_NAMESPACE, mission: inspectMission(root), plans };
   for (const stage of PLAN_STAGES) {
     const dir = join(plansRoot, stage);
@@ -354,6 +355,7 @@ function planStageSearchDirs(root: string, stages: readonly (PlanStage | 'root')
 }
 
 function findPlanBySlug(root: string, slug: string, stages: readonly (PlanStage | 'root')[]): FoundPlan | null {
+  if (!isRealDirectory(join(root, OSC_NAMESPACE))) return null;
   for (const { stage, dir } of planStageSearchDirs(root, stages)) {
     if (!isRealDirectory(dir)) continue;
     const path = join(dir, `${slug}.md`);
