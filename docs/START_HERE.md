@@ -46,7 +46,7 @@ npx open-scaffold@latest compare \
 | See how the loop is wired | [`HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md) |
 | Pick or write a runtime adapter | [`ADAPTERS.md`](ADAPTERS.md) |
 | Check what is stable vs experimental | [`STABILITY.md`](STABILITY.md) |
-| Understand the version story | [`STABILITY.md#version-truth`](STABILITY.md#version-truth) |
+| Understand the version story | [`STABILITY.md#release-status`](STABILITY.md#release-status) |
 | Look up unfamiliar terms | [`GLOSSARY.md`](GLOSSARY.md) |
 | Read the system boundary map | [`OPEN_SCAFFOLD_SYSTEM.md`](OPEN_SCAFFOLD_SYSTEM.md) |
 
