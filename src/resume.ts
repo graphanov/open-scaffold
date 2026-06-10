@@ -119,8 +119,12 @@ function listAmendments(root: string, plan: PlanSummary | null): string[] {
 function listEvidence(root: string): string[] {
   const dir = join(root, '.osc', 'releases');
   if (!existsSync(dir)) return [];
+  try { if (!lstatSync(dir).isDirectory()) return []; } catch { return []; }
   return readdirSync(dir)
     .filter((name) => name.endsWith('.md') && name !== 'README.md')
+    .filter((name) => {
+      try { return lstatSync(join(dir, name)).isFile(); } catch { return false; }
+    })
     .sort()
     .map((name) => `.osc/releases/${name}`);
 }

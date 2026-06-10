@@ -450,6 +450,25 @@ describe('osc resume packet compiler', () => {
     expect(summary.next_commands).toContain('osc plan move <slug> --to active');
   });
 
+
+  it('ignores a symlinked releases directory before listing evidence paths', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-evidence-symlink');
+    const outsideReleases = join(tempRepo(), 'external-releases');
+    mkdirSync(outsideReleases, { recursive: true });
+    writeFileSync(join(outsideReleases, 'external-release-secret.md'), '# External evidence\n', 'utf8');
+    mkdirSync(join(root, '.osc'), { recursive: true });
+    symlinkSync(outsideReleases, join(root, '.osc', 'releases'), 'dir');
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.work_done.evidence).toEqual([]);
+    expect(summaryJson).not.toContain('external-release-secret');
+    expect(packet).not.toContain('external-release-secret');
+  });
+
   it('prioritizes pending human gates from the latest run', () => {
     const root = tempRepo();
     writeMission(root);
