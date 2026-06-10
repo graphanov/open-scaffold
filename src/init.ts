@@ -49,6 +49,8 @@ const standardOnlyFiles = [
 
 const maxOnlyFiles = [
   'docs/GITHUB_WORKFLOW.md',
+  'docs/ADAPTERS.md',
+  'docs/HARNESS_ARCHITECTURE.md',
   'docs/RUNTIME_BINDING_CONTRACT.md',
   'docs/OPEN_SCAFFOLD_SYSTEM.md',
   'delegate.sh',
@@ -482,7 +484,7 @@ function downstreamTemplateFor(file: string, tier: ScaffoldTier): string | null 
   if (file === 'README.md') return downstreamReadmeTemplate();
   if (file === 'ROADMAP.md') return downstreamRoadmapTemplate();
   if (file === 'docs/START_HERE.md') return downstreamMinimumScaffoldDocTemplate();
-  if (file === 'docs/TASK_RUN_MODEL.md') return downstreamTaskRunModelDocTemplate();
+  if (file === 'docs/TASK_RUN_MODEL.md' && tier === 'standard') return downstreamTaskRunModelDocTemplate();
   return null;
 }
 

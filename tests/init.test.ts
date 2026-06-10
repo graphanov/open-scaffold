@@ -48,6 +48,7 @@ describe('tiered scaffold initialization', () => {
     expect(taskRunModel).not.toContain('RUNTIME_BINDING_CONTRACT.md');
     expect(taskRunModel).not.toContain('HARNESS_ARCHITECTURE.md');
     expect(taskRunModel).not.toContain('ADAPTERS.md');
+    expect(readFileSync(join(target, 'docs/WORKFLOW.md'), 'utf8')).not.toContain('ADAPTERS.md#reference-labels-for-named-tools');
     expect(existsSync(join(target, '.devcontainer/devcontainer.json'))).toBe(true);
     expect(existsSync(join(target, '.devcontainer/Dockerfile'))).toBe(true);
     expect(existsSync(join(target, '.devcontainer/README.md'))).toBe(true);
@@ -74,6 +75,12 @@ describe('tiered scaffold initialization', () => {
     expect(result.filesCreated.sort()).toEqual([...tierFiles.max].sort());
     for (const file of tierFiles.standard) expect(result.filesCreated).toContain(file);
     expect(readFileSync(join(target, 'docs/OPEN_SCAFFOLD_SYSTEM.md'), 'utf8')).toContain('Open Scaffold');
+    const maxTaskRunModel = readFileSync(join(target, 'docs/TASK_RUN_MODEL.md'), 'utf8');
+    expect(maxTaskRunModel).toContain('RUNTIME_BINDING_CONTRACT.md');
+    expect(maxTaskRunModel).toContain('HARNESS_ARCHITECTURE.md');
+    expect(maxTaskRunModel).toContain('ADAPTERS.md#runtime-dispatch-pattern');
+    expect(existsSync(join(target, 'docs/ADAPTERS.md'))).toBe(true);
+    expect(existsSync(join(target, 'docs/HARNESS_ARCHITECTURE.md'))).toBe(true);
     expect(readFileSync(join(target, '.osc/runs/.gitkeep'), 'utf8')).toBe('');
   });
 

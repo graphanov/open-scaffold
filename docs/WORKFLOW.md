@@ -4,7 +4,7 @@ A phase-to-tool reference for agent-orchestrated development. This file is the o
 
 The stable core is the file protocol and lifecycle helpers. Lab surfaces such as evolution ledgers, cockpit webhooks, runtime profiles, and adapter dispatch glue are optional layers around that record; they do not replace the plan/evidence/verification/close chain. Historical helpers removed from the reduced maintained CLI, such as `osc work`, `osc dashboard`, `osc task`, `osc plan wizard`, `osc plan graph`, `osc metrics`, and broad `osc doctor --fix`, are migration references only unless a future plan restores them with fresh evidence.
 
-Named coordinators, harnesses, and status/approval channels (operator surfaces) in this guide are examples. Use [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools) to distinguish public examples, private deployment examples, runtime lanes, adapter candidates, and operator surfaces.
+Named coordinators, harnesses, and status/approval channels (operator surfaces) in this guide are examples. Use the adapter/reference-label taxonomy in the upstream Open Scaffold docs to distinguish public examples, private deployment examples, runtime lanes, adapter candidates, and operator surfaces.
 
 ## Development phases
 
