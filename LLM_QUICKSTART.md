@@ -2,6 +2,8 @@
 
 You are an LLM helping a human bootstrap a new project from the [open-scaffold](https://github.com/graphanov/open-scaffold) template. Walk the human through the steps below interactively — confirm each step with them before proceeding to the next.
 
+> Already in an existing repo? The fastest path is `npx open-scaffold@latest first-run` (guided), and every later session starts with `osc resume` — the ten-line agent protocol lives in `AGENTS.md`. The template-clone flow below is for starting a brand-new project repository.
+
 ## Capability check
 
 Before anything else, determine whether you can execute shell commands in this session.

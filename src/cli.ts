@@ -24,6 +24,7 @@ import { scanPublicFilesForSecrets } from './redaction.js';
 import { computePrCheck, renderPrCheckMarkdown } from './pr-check.js';
 import { computePrSummary, renderPrSummaryMarkdown } from './pr-summary.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
+import { compileResume, MAX_RESUME_MAX_CHARS, MIN_RESUME_MAX_CHARS } from './resume.js';
 import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, findScaffoldRoot, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
 import { renderSchemaDetail, renderSchemaList, schemaById, SCHEMA_REGISTRY } from './schema-registry.js';
 import { buildTrace, formatTraceReport, TraceUsageError } from './trace.js';
@@ -42,8 +43,40 @@ function rootPackageVersion(): string {
   return '0.0.0';
 }
 
-function help(): string {
+function coreHelp(): string {
   return `osc — Open Scaffold CLI
+
+The harness loop: $interview -> $plan -> $work or $team -> evidence -> feedback -> retry or lesson
+A fresh session resumes from the repo, not the chat.
+
+Start:
+  osc first-run                                guided mission + first plan (scripts: --non-interactive --slug --mission --goal)
+  osc init --tier <min|standard|max> --target <dir>
+  osc resume [--json] [--plan <slug>] [--max-chars <n>]
+
+Work (the four verbs):
+  osc harness '$interview "clarify the work"'
+  osc harness '$plan "describe the slice" --slug <slug>'
+  osc harness '$work "implement the slice" --context "plan is ready"'
+  osc harness '$work ... --adapter <id> --allow-spawn'
+  osc harness '$team "split lanes" --worker <id> --worker <id>'
+  osc harness status <run-id> | osc harness answer <run-id> --gate <id> --answer <text>
+
+Record:
+  osc status [--json]
+  osc plan new <slug> --stage <active|backlog|blocked>
+  osc amend <plan-slug> [--message <text>]
+  osc evidence new <slug>
+  osc verify [--evidence-chain]
+  osc close <plan-slug> [--message <text>]
+
+More:
+  osc help --all          full surface: run packets, adapters, dispatch, evolve, bench, prove, audit, MCP, cockpit, schemas, trace, pr
+`;
+}
+
+function help(): string {
+  return `osc — Open Scaffold CLI (full surface)
 
 MISSION.md → plan → run packet/amendment → evidence → verification → close
 Command maturity: stable day-one/day-two commands first; lab and advanced commands are labeled. Removed lab/advanced surfaces are listed separately as migration breadcrumbs.
@@ -56,6 +89,7 @@ First-read demo:
   osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]
 
 Stable core protocol:
+  osc resume [--json] [--plan <slug>] [--max-chars <n>]
   osc status [--json]
   osc plan <plan-path>
   osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]
@@ -129,7 +163,7 @@ Removed/repositioned migration appendix (not live maintained commands):
   removed/repositioned: osc task new/list/show/claim/start/complete/cancel/block/comment/link
   removed/repositioned: osc eval import/check
   removed/repositioned: osc status --dashboard
-  removed/repositioned: osc work, osc dashboard, osc metrics, osc study, osc ab, broad osc doctor checks, resume helpers
+  removed/repositioned: osc work, osc dashboard, osc metrics, osc study, osc ab, broad osc doctor checks
 `;
 }
 function die(message: string, code = 2): never {
@@ -716,6 +750,30 @@ function schemasCommand(args: string[]): void {
   else die('Usage: osc schemas list | osc schemas show <schema-id>');
 }
 
+function resumeCommand(args: string[]): void {
+  if (isHelpArg(args[0])) { console.log('Usage: osc resume [--json] [--plan <slug>] [--max-chars <n>]\n\nCompiles a compact, read-only resume packet from repo truth: mission digest, active plan with acceptance criteria, latest run state, repair hypotheses, accepted lessons, and the next bounded action. A fresh agent or session continues from this packet instead of chat history.'); return; }
+  validateOptions(args, ['--plan', '--max-chars'], ['--json'], 'resume');
+  const extra = positional(args, ['--plan', '--max-chars']);
+  if (extra.length) die(`Unknown argument for resume: ${extra[0]}`, 2);
+  const maxCharsRaw = value(args, '--max-chars');
+  let maxChars: number | undefined;
+  if (maxCharsRaw !== undefined) {
+    maxChars = Number(maxCharsRaw);
+    if (!Number.isInteger(maxChars) || maxChars < MIN_RESUME_MAX_CHARS || maxChars > MAX_RESUME_MAX_CHARS) {
+      die(`--max-chars must be an integer between ${MIN_RESUME_MAX_CHARS} and ${MAX_RESUME_MAX_CHARS}`, 2);
+    }
+  }
+  try {
+    const root = findScaffoldRoot(process.cwd()) ?? process.cwd();
+    const result = compileResume(root, { planSlug: value(args, '--plan'), maxChars });
+    if (has(args, '--json')) console.log(JSON.stringify(result.summary, null, 2));
+    else process.stdout.write(result.packet);
+  } catch (error) {
+    if (error instanceof Error) die(error.message, 2);
+    throw error;
+  }
+}
+
 function doctorCommand(args: string[]): void {
   if (isHelpArg(args[0])) { console.log('Usage: osc doctor --check secret-scan'); return; }
   validateOptions(args, ['--check'], [], 'doctor');
@@ -941,10 +999,11 @@ async function main(): Promise<void> {
   const [command = 'help', ...args] = process.argv.slice(2);
   try {
     switch (command) {
-      case '-h': case '--help': case 'help': console.log(help()); return;
+      case '-h': case '--help': case 'help': console.log(args.includes('--all') || args[0] === 'all' ? help() : coreHelp()); return;
       case '-v': case '--version': case 'version': console.log(rootPackageVersion()); return;
       case 'init': initCommand(args); return;
       case 'first-run': await firstRunCommand(args); return;
+      case 'resume': resumeCommand(args); return;
       case 'status': statusCommand(args); return;
       case 'plan': planCommand(args); return;
       case 'amend': lifecycleCommand('amend', args); return;
@@ -973,7 +1032,7 @@ async function main(): Promise<void> {
       case 'eval': evalCommand(args); return;
       case 'task': case 'metrics': case 'study': case 'ab': case 'dashboard': case 'work': removed(command);
       default: {
-        die(`Unknown command: ${command}\n${help()}`);
+        die(`Unknown command: ${command}\n${coreHelp()}\nRun osc help --all for the full surface.`);
       }
     }
   } catch (error) {

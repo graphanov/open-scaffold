@@ -2,10 +2,10 @@
 
 Status: current public command-readiness guide after the framework cleanup and harness migration.
 
-The top-level command list is rendered by:
+The core surface is rendered by `osc help` (one screen). The full surface, including lab and advanced commands, is rendered by:
 
 ```bash
-osc help
+osc help --all
 ```
 
 This page explains how to read that help. It does not make an experimental runtime path stable.
@@ -30,6 +30,7 @@ The stable day-one/day-two path is the repo work record:
 
 ```bash
 osc first-run --non-interactive --slug <slug> --mission <text> --goal <text>
+osc resume
 osc plan new <slug> --stage active
 osc plan validate <slug> --strict
 osc start <plan> --runtime codex
@@ -104,4 +105,4 @@ Framework cleanup removed several lab, analytics, and convenience commands from 
 | `osc eval import/check` | Use `osc eval init` only to scaffold a plan-based evaluation record; scorer import/check workflows are no longer a maintained live surface. |
 | `osc status --dashboard`, `osc dashboard` | Use `osc status`, status events, PR comments, and evidence notes instead of local dashboard modes. |
 | `osc work` | Use `osc start`, `osc run --dry-run`, or the harness backend `$work` route. Runtime execution remains adapter/orchestrator-owned. |
-| `osc metrics`, `osc study`, broad `osc doctor` checks, resume helpers | Keep broad analysis, observational studies, and resume/handoff proof in docs/evidence unless a smaller maintained command exists. For bounded scaffolded-vs-control receipt comparisons, use `osc prove compare`; the full `osc ab` controlled-study surface remains documentation-only/future. |
+| `osc metrics`, `osc study`, broad `osc doctor` checks | Keep broad analysis and observational studies in docs/evidence unless a smaller maintained command exists. For bounded scaffolded-vs-control receipt comparisons, use `osc prove compare`; the full `osc ab` controlled-study surface remains documentation-only/future. Session resume is a maintained stable command again: `osc resume`. |

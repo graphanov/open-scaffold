@@ -20,7 +20,7 @@ describe('CLI harness backend', () => {
     const result = spawnSync(tsx, [cli, '--help'], { cwd: repoRoot, encoding: 'utf8' });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('Harness command surface');
+    expect(result.stdout).toContain('Work (the four verbs):');
     for (const command of ['$interview', '$plan', '$work', '$team']) {
       expect(result.stdout).toContain(command);
     }

@@ -174,7 +174,7 @@ describe('osc init CLI', () => {
   });
 
   it('mentions the brownfield init flag in CLI help', () => {
-    const result = spawnSync(tsx, [cli, '--help'], { encoding: 'utf8' });
+    const result = spawnSync(tsx, [cli, 'help', '--all'], { encoding: 'utf8' });
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('osc init --from-existing --tier min --target <dir> [--force]');

@@ -89,6 +89,9 @@ records the change without rewriting the plan — plans are immutable, learnings
 are appended. Need a plan without the harness grammar? `osc plan new <slug>
 --stage active` scaffolds one directly.
 
+Back tomorrow in a brand-new session? `osc resume` rebuilds the working memory
+in one command.
+
 Prefer a global install? `npm i -g open-scaffold` gives you `osc` everywhere.
 
 ## Under the hood, it is just files
@@ -109,8 +112,16 @@ PR and survives any tool change.
 ## Resume after total context loss
 
 This is the core trick. Kill the session mid-task — close the laptop, lose the
-chat, switch agents. The repo still knows the mission, the active plan, the
-acceptance criteria, what passed, what failed, and what to do next.
+chat, switch agents. Then, in a fresh session:
+
+```bash
+osc resume
+```
+
+One read-only command compiles the repo's working memory into a budgeted
+packet: mission digest, the active plan with its acceptance criteria, the
+latest run state, repair hypotheses, lessons to inherit, and the exact next
+bounded action. The agent reads the packet, not your history.
 
 - Try it on the committed mid-flight fixture: [`examples/resume-demo/`](examples/resume-demo/)
   with the narrated path in [`docs/RESUME_WALKTHROUGH.md`](docs/RESUME_WALKTHROUGH.md).

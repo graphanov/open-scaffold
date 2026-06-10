@@ -27,6 +27,7 @@ const topLevelHelpCommands = [
   'osc init --tier <min|standard|max> --target <dir> [--force]',
   'osc init --from-existing --tier min --target <dir> [--force]',
   'osc init --min|--standard|--max --target <dir> [--force]',
+  'osc resume [--json] [--plan <slug>] [--max-chars <n>]',
   'osc status [--json]',
   'osc plan <plan-path>',
   'osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]',
@@ -77,10 +78,36 @@ const topLevelHelpCommands = [
   'removed/repositioned: osc task new/list/show/claim/start/complete/cancel/block/comment/link',
   'removed/repositioned: osc eval import/check',
   'removed/repositioned: osc status --dashboard',
-  'removed/repositioned: osc work, osc dashboard, osc metrics, osc study, osc ab, broad osc doctor checks, resume helpers',
+  'removed/repositioned: osc work, osc dashboard, osc metrics, osc study, osc ab, broad osc doctor checks',
 ];
 
+const coreHelpSections = ['Start:', 'Work (the four verbs):', 'Record:', 'More:'];
+
+const coreHelpCommands = [
+  'osc first-run',
+  'osc init --tier <min|standard|max> --target <dir>',
+  'osc resume [--json] [--plan <slug>] [--max-chars <n>]',
+  "osc harness '$interview \"clarify the work\"'",
+  "osc harness '$work ... --adapter <id> --allow-spawn'",
+  'osc harness status <run-id> | osc harness answer <run-id> --gate <id> --answer <text>',
+  'osc status [--json]',
+  'osc plan new <slug> --stage <active|backlog|blocked>',
+  'osc amend <plan-slug> [--message <text>]',
+  'osc evidence new <slug>',
+  'osc verify [--evidence-chain]',
+  'osc close <plan-slug> [--message <text>]',
+  'osc help --all',
+];
+
+const advancedOnlyCommands = ['osc evolve', 'osc dispatch', 'osc cockpit', 'osc bench', 'osc prove', 'osc audit', 'osc mcp serve'];
+
 const cases: HelpCase[] = [
+  {
+    name: 'resume',
+    args: ['resume', '--help'],
+    expected: 'Usage: osc resume [--json] [--plan <slug>] [--max-chars <n>]',
+    forbidden: 'Unknown option',
+  },
   {
     name: 'plan root',
     args: ['plan', '--help'],
@@ -147,27 +174,57 @@ const cases: HelpCase[] = [
 ];
 
 describe('top-level help', () => {
-  it('groups commands without hiding representative coverage', () => {
+  it('renders the core surface on one screen by default', () => {
     const result = spawnSync(node, [...cliArgs, '--help'], { cwd: repoRoot, encoding: 'utf8' });
 
     expect(result.status).toBe(0);
     expect(result.stderr).toBe('');
-    expect(result.stdout).toContain('MISSION.md → plan → run packet/amendment → evidence → verification → close');
+    expect(result.stdout).toContain('The harness loop: $interview -> $plan -> $work or $team');
 
-    for (const section of topLevelHelpSections) {
+    for (const section of coreHelpSections) {
       expect(result.stdout).toContain(section);
     }
-
-    const sectionPositions = topLevelHelpSections.map((section) => result.stdout.indexOf(section));
-    expect(sectionPositions.every((position) => position >= 0)).toBe(true);
-    expect(sectionPositions).toEqual([...sectionPositions].sort((a, b) => a - b));
-    expect(result.stdout.indexOf('osc compare <attempt-a-dir>')).toBeLessThan(
-      result.stdout.indexOf('Stable core protocol:'),
-    );
-
-    for (const command of topLevelHelpCommands) {
+    for (const command of coreHelpCommands) {
       expect(result.stdout).toContain(command);
     }
+    for (const advanced of advancedOnlyCommands) {
+      expect(result.stdout).not.toContain(advanced);
+    }
+
+    expect(result.stdout.trimEnd().split('\n').length).toBeLessThanOrEqual(35);
+  });
+
+  it('keeps the full surface reachable behind help --all', () => {
+    for (const invocation of [['help', '--all'], ['--help', '--all']]) {
+      const result = spawnSync(node, [...cliArgs, ...invocation], { cwd: repoRoot, encoding: 'utf8' });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toContain('MISSION.md → plan → run packet/amendment → evidence → verification → close');
+
+      for (const section of topLevelHelpSections) {
+        expect(result.stdout).toContain(section);
+      }
+
+      const sectionPositions = topLevelHelpSections.map((section) => result.stdout.indexOf(section));
+      expect(sectionPositions.every((position) => position >= 0)).toBe(true);
+      expect(sectionPositions).toEqual([...sectionPositions].sort((a, b) => a - b));
+      expect(result.stdout.indexOf('osc compare <attempt-a-dir>')).toBeLessThan(
+        result.stdout.indexOf('Stable core protocol:'),
+      );
+
+      for (const command of topLevelHelpCommands) {
+        expect(result.stdout).toContain(command);
+      }
+    }
+  });
+
+  it('points unknown commands at the core help', () => {
+    const result = spawnSync(node, [...cliArgs, 'bogus-command'], { cwd: repoRoot, encoding: 'utf8' });
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('Unknown command: bogus-command');
+    expect(result.stderr).toContain('osc help --all');
   });
 });
 

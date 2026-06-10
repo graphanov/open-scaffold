@@ -19,6 +19,10 @@ The harness writes repo files and status events. It does not make the agent smar
 
 The product UX is the four `$commands`. The `osc` CLI is the backend surface for shell, CI, tests, and transport adapters.
 
+## Entering or re-entering a session
+
+Run `osc resume` before any harness command. It compiles a budgeted, read-only packet from repo truth — mission digest, active plan with acceptance criteria, latest run state, repair hypotheses, lessons, and the next bounded action — so a fresh session continues without chat history. See [`RESUME_WALKTHROUGH.md`](RESUME_WALKTHROUGH.md).
+
 ## CLI backend
 
 Use the backend when a shell, CI job, Codex plugin, Hermes worker, or future desktop app needs a deterministic call. Help is available at `osc harness --help`, `osc feedback --help`, and `osc bench --help`:

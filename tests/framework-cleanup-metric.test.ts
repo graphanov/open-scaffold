@@ -12,8 +12,10 @@ const cleanupBaselineLoc = 20_890;
 // Reproduction proof parity adds live benchmark lane packaging, clean-completion/proof-gate logic, benchmark feedback wiring, lane-specific live prompts, collision-safe run ids, and adapter token-usage capture.
 // Team/control-room parity adds shared worker-lane status, adapter metadata, worker gates, and transport-neutral event projections.
 // Harness release readiness adds top-level feedback/bench help so public command maturity docs match real CLI behavior.
-const cleanupTargetLoc = 15_565;
-const cleanupTargetFiles = 38;
+// Surface collapse and resume (plan 162) adds the read-only resume packet compiler, the core/full help split, and the shared packet redaction helper.
+// Codex hardening for plan 162 redacts JSON/run/plan identifiers, missing-plan errors, workspace paths, .osc/run/evidence/lesson symlinks and unsafe lesson roots/stores, mission/plan-file/stage/root symlinks, and fixes final evidence-before-verify resume guidance.
+const cleanupTargetLoc = 16_064;
+const cleanupTargetFiles = 39;
 
 interface MaintainedSourceFile {
   path: string;
@@ -55,7 +57,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(15_565);
+    expect(cleanupTargetLoc).toBe(16_064);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

@@ -25,12 +25,21 @@ export interface HandoffValidation {
 function redactLocalText(value: string): string {
   return redactSecrets(String(value ?? ''))
     .replace(/\/(?:Users|home|tmp|private|var|Volumes)\/[^\s`'"),;]+/g, '[local-path omitted]')
+    .replace(/(^|[\s`'"(,;])\/(?:workspace|workspaces|workdir|repo)(?=$|[\s`'"),;])/g, '$1[local-path omitted]')
+    .replace(/(^|[\s`'"(,;])\/(?!\/)(?:[A-Za-z0-9._-]+\/)+[^\s`'"),;]+/g, '$1[local-path omitted]')
     .replace(/[A-Za-z]:\\Users\\[^\s`'"),;]+/g, '[local-path omitted]');
 }
 
 function clean(value: string, fallback = 'Not recorded.'): string {
   const text = redactLocalText(value).replace(/\s+/g, ' ').trim();
   return text || fallback;
+}
+
+export function redactPacketText(value: string, max = 220, fallback = ''): string {
+  const text = redactLocalText(String(value ?? '')).replace(/\s+/g, ' ').trim();
+  if (!text) return fallback;
+  if (text.length <= max) return text;
+  return `${text.slice(0, Math.max(0, max - 1)).trim()}…`;
 }
 
 function bullets(values: string[] | undefined, fallback: string, maxChars = 220): string[] {
