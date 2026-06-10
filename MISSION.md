@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-10: closed 161-harness-identity-pivot — harness identity pivot and docs<=25 shipped via PR #205
 - 2026-06-10: closed 162-surface-collapse-and-resume — osc resume + one-screen surface shipped via PR #204
 - 2026-06-10: ratified the harness-identity pivot — the harness is the product, the work record is its substrate; supersedes the 2026-05-15 orchestration stance — see .osc/plans/active/161-harness-identity-pivot.md
 - 2026-06-10: closed 160-harness-release-readiness-package-sync — Published open-scaffold@0.31.1, verified npm/latest and fresh npx help smokes, and created GitHub Release v0.31.1 as Latest.
