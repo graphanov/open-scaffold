@@ -186,6 +186,60 @@ describe('osc resume packet compiler', () => {
     expect(() => compileResume(root, { planSlug: 'missing-sk-abcdefghijklmnopqrstuvwxyz012345' })).not.toThrow(/sk-abcdefghijklmnopqrstuvwxyz012345/);
   });
 
+
+  it('ignores symlinked active plan files before parsing plan text', () => {
+    const root = tempRepo();
+    writeMission(root);
+    const outside = join(tempRepo(), 'external-plan.md');
+    writeFileSync(outside, [
+      '# Plan: external-plan',
+      '',
+      '## Status',
+      '',
+      'active',
+      '',
+      '## Context',
+      '',
+      'External context.',
+      '',
+      '## Goal',
+      '',
+      'Leak external plan text external-plan-secret.',
+      '',
+      '## Constraints / Out of scope',
+      '',
+      '- None.',
+      '',
+      '## Files to touch',
+      '',
+      '- `src/x.ts` — x.',
+      '',
+      '## Acceptance criteria',
+      '',
+      '- [ ] External criterion external-plan-secret.',
+      '',
+      '## Verification steps',
+      '',
+      '1. Run `npm test`.',
+      '',
+      '## Open questions',
+      '',
+      '- None.',
+      '',
+    ].join('\n'), 'utf8');
+    const activeDir = join(root, '.osc', 'plans', 'active');
+    mkdirSync(activeDir, { recursive: true });
+    symlinkSync(outside, join(activeDir, '001-symlink-plan.md'));
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.active_plan).toBeNull();
+    expect(summary.status).toBe('no active plan; 0 backlog plan(s)');
+    expect(summaryJson).not.toContain('external-plan-secret');
+    expect(packet).not.toContain('external-plan-secret');
+  });
+
   it('orders final-slice resume actions as evidence before verify before close', () => {
     const root = tempRepo();
     writeMission(root);

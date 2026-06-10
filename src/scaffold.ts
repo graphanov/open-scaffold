@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 
 export const OSC_NAMESPACE = '.osc';
@@ -136,7 +136,7 @@ export function inspectScaffold(root = process.cwd()): ScaffoldState {
       if (file === 'README.md' || file === 'WORKFLOW.md' || file === 'handoff-template.md') continue;
       if (isPlanAmendmentFile(file)) continue;
       const full = join(dir, file);
-      if (!statSync(full).isFile()) continue;
+      if (!lstatSync(full).isFile()) continue;
       plans[stage].push({ slug: basename(file, '.md'), path: relative(root, full), stage });
     }
   }
@@ -338,7 +338,7 @@ function planStageSearchDirs(root: string, stages: readonly (PlanStage | 'root')
 function findPlanBySlug(root: string, slug: string, stages: readonly (PlanStage | 'root')[]): FoundPlan | null {
   for (const { stage, dir } of planStageSearchDirs(root, stages)) {
     const path = join(dir, `${slug}.md`);
-    if (existsSync(path) && statSync(path).isFile()) return { path, dir, stage };
+    if (existsSync(path) && lstatSync(path).isFile()) return { path, dir, stage };
   }
   return null;
 }
