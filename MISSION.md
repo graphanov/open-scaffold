@@ -30,7 +30,7 @@ One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line piv
 <!-- append YYYY-MM-DD entries below this line -->
 - 2026-06-10: closed 161-harness-identity-pivot — harness identity pivot and docs<=25 shipped via PR #205
 - 2026-06-10: closed 162-surface-collapse-and-resume — osc resume + one-screen surface shipped via PR #204
-- 2026-06-10: ratified the harness-identity pivot — the harness is the product, the work record is its substrate; supersedes the 2026-05-15 orchestration stance — see .osc/plans/active/161-harness-identity-pivot.md
+- 2026-06-10: ratified the harness-identity pivot — the harness is the product, the work record is its substrate; supersedes the 2026-05-15 orchestration stance — see .osc/plans/done/161-harness-identity-pivot.md
 - 2026-06-10: closed 160-harness-release-readiness-package-sync — Published open-scaffold@0.31.1, verified npm/latest and fresh npx help smokes, and created GitHub Release v0.31.1 as Latest.
 - 2026-06-10: closed 159-harness-release-readiness — PR #199 merged; harness release-readiness docs and command help parity are in main while npm publish and GitHub Release remain owner-gated.
 - 2026-06-10: closed 157-reproduction-proof-parity — PR #196 merged; reproduction proof parity shipped with Open Scaffold-owned bench suite, handoff lab, proof-gate, and benchmark feedback evidence.
