@@ -333,6 +333,62 @@ export function resolveRuntimeProfile(root: string, id: string): ResolvedRuntime
   return loadRuntimeProfiles(root).find((entry) => entry.profile.id === id) ?? null;
 }
 
+export const TEAM_WORKER_ADAPTER_CONTRACT_SCHEMA = 'osc.team-worker-adapter-contract.v1';
+
+export interface TeamWorkerAdapterMetadata {
+  schema: typeof TEAM_WORKER_ADAPTER_CONTRACT_SCHEMA;
+  adapterId: string;
+  displayName: string;
+  profileSource: RuntimeProfileSource | 'unresolved';
+  workflow: string | null;
+  transportNeutral: true;
+  spawning: false;
+  capabilities: {
+    canReportStatus: true;
+    canReportHumanGates: true;
+    canReportFailureCode: true;
+    writesRepoRelativeEvidence: true;
+  };
+  authority: {
+    canCommit: false;
+    canPush: false;
+    canMerge: false;
+    canPublish: false;
+    canRelease: false;
+    canDeploy: false;
+    canForcePush: false;
+  };
+}
+
+export function teamWorkerAdapterMetadata(root: string, adapterId: string): TeamWorkerAdapterMetadata {
+  if (!isSafeRuntimeAdapterId(adapterId)) throw new Error(`Unsafe worker adapter id: ${adapterId}`);
+  const resolved = resolveRuntimeProfile(root, adapterId);
+  return {
+    schema: TEAM_WORKER_ADAPTER_CONTRACT_SCHEMA,
+    adapterId,
+    displayName: resolved?.profile.displayName ?? adapterId,
+    profileSource: resolved?.source ?? 'unresolved',
+    workflow: resolved?.profile.workflows?.team ?? null,
+    transportNeutral: true,
+    spawning: false,
+    capabilities: {
+      canReportStatus: true,
+      canReportHumanGates: true,
+      canReportFailureCode: true,
+      writesRepoRelativeEvidence: true,
+    },
+    authority: {
+      canCommit: false,
+      canPush: false,
+      canMerge: false,
+      canPublish: false,
+      canRelease: false,
+      canDeploy: false,
+      canForcePush: false,
+    },
+  };
+}
+
 export const HARNESS_RUNTIME_RECEIPT_SCHEMA = 'osc.harness-runtime-receipt.v1';
 
 export type LomeinRuntimeMarker = 'LOMEIN_COMPLETE' | 'LOMEIN_NEEDS_HUMAN' | 'LOMEIN_BLOCKED';

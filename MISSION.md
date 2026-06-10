@@ -29,6 +29,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-09: closed 158-team-control-room-adapter-parity — Implemented team/control-room adapter contracts with shared lanes, gates, feedback, events, and docs.
 - 2026-06-09: closed 156-feedback-handoff-improvement-parity — Close feedback handoff improvement parity slice.
 - 2026-06-09: closed 155-controlled-runtime-parity — Controlled runtime parity implemented and verified for PR #194 candidate.
 - 2026-06-08: closed 154-harness-command-surface — PR #192 merged; harness command surface foundation landed with follow-up migration plans queued.

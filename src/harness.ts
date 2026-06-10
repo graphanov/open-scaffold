@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { compileHandoffPacket } from './handoff.js';
 import { analyzeFeedback, loadAcceptedImprovements, recordFeedback, type FeedbackRecord, type FeedbackSource, type FeedbackVerdict } from './feedback.js';
 import { appendJsonLineUnder, createSafeOutputRoot, readJsonlUnder, readJsonUnder, writeFileUnder, writeJsonUnder } from './path-safety.js';
-import { HARNESS_RUNTIME_RECEIPT_SCHEMA, runHarnessRuntimeAdapter, type HarnessRuntimeReceipt } from './runtimes.js';
+import { HARNESS_RUNTIME_RECEIPT_SCHEMA, runHarnessRuntimeAdapter, teamWorkerAdapterMetadata, type HarnessRuntimeReceipt, type TeamWorkerAdapterMetadata } from './runtimes.js';
 
 export const HARNESS_COMMAND_RESULT_SCHEMA = 'osc.harness-command-result.v1';
 export const HARNESS_EVENT_SCHEMA = 'osc.harness-event.v1';
@@ -31,6 +31,9 @@ export interface HumanGate {
   prompt: string;
   required: boolean;
   status: 'pending' | 'satisfied';
+  workerId?: string;
+  adapterId?: string;
+  evidencePath?: string;
   answer?: {
     summary: string;
     answeredAt: string;
@@ -45,8 +48,13 @@ export interface HumanGate {
 export interface WorkerStatus {
   id: string;
   role: string;
-  state: 'queued' | 'ready' | 'running' | 'completed' | 'blocked';
+  state: 'queued' | 'ready' | 'running' | 'completed' | 'waiting_on_human' | 'blocked' | 'failed';
   evidencePath: string;
+  evidenceLinks?: HarnessArtifactLink[];
+  adapter?: TeamWorkerAdapterMetadata;
+  failureCode?: string | null;
+  humanGateIds?: string[];
+  resumedFromGate?: string;
 }
 
 export interface HarnessStatus {
@@ -198,7 +206,20 @@ function artifact(runId: string, role: string, file: string, schema?: string): H
 }
 
 function writeEvent(repoRoot: string, runId: string, type: string, payload: Record<string, unknown> = {}) {
-  const event = { schema: HARNESS_EVENT_SCHEMA, runId, type, timestamp: nowIso(), ...payload };
+  const event = {
+    ...payload,
+    schema: HARNESS_EVENT_SCHEMA,
+    runId,
+    type,
+    timestamp: nowIso(),
+    controlRoom: {
+      schema: 'osc.control-room-event.v1',
+      transport: 'neutral',
+      platform: null,
+      surfaceDependencies: [],
+      canRenderFromStatusAndArtifacts: true,
+    },
+  };
   appendJsonLineUnder(repoRoot, `.osc/runs/${runId}/events.jsonl`, event, 'harness event path');
   return event;
 }
@@ -697,78 +718,253 @@ interface TeamOutcome {
   verdict: FeedbackVerdict;
   nextAction: string;
   state: WorkerStatus['state'];
+  failureCode: string | null;
+  recordsFeedback: boolean;
+  needsHuman: boolean;
+}
+
+function splitWorkerOption(raw: string, optionName: string): { workerId: string; value: string } {
+  const separator = raw.indexOf(':');
+  if (separator <= 0 || separator === raw.length - 1) throw new Error(`${optionName} must use <worker>:<value>`);
+  return { workerId: slugify(raw.slice(0, separator), 'worker'), value: raw.slice(separator + 1).trim() };
 }
 
 function parseTeamOutcome(raw: string): TeamOutcome {
-  const [workerRaw, outcomeRaw] = raw.split(':');
-  const workerId = slugify(workerRaw ?? '', 'worker');
-  const outcome = (outcomeRaw ?? '').trim().toLowerCase();
-  if (!workerId || !outcome) throw new Error('worker-outcome must use <worker>:<blocked|failed|rejected|benchmark-failed|reviewer-failed>');
-  if (outcome === 'blocked') return { workerId, rawOutcome: outcome, source: 'runtime', verdict: 'block', nextAction: 'retry-team', state: 'blocked' };
-  if (outcome === 'benchmark-failed') return { workerId, rawOutcome: outcome, source: 'benchmark', verdict: 'retry', nextAction: 'retry-team', state: 'blocked' };
-  if (outcome === 'reviewer-failed' || outcome === 'rejected') return { workerId, rawOutcome: outcome, source: 'reviewer', verdict: 'retry', nextAction: 'retry-team', state: 'blocked' };
-  if (outcome === 'failed') return { workerId, rawOutcome: outcome, source: 'runtime', verdict: 'retry', nextAction: 'retry-team', state: 'blocked' };
+  const { workerId, value } = splitWorkerOption(raw, 'worker-outcome');
+  const outcome = value.toLowerCase();
+  if (outcome === 'complete' || outcome === 'completed' || outcome === 'pass') {
+    return { workerId, rawOutcome: outcome, source: 'runtime', verdict: 'pass', nextAction: 'none', state: 'completed', failureCode: null, recordsFeedback: false, needsHuman: false };
+  }
+  if (outcome === 'needs-human' || outcome === 'needs_human' || outcome === 'question') {
+    return { workerId, rawOutcome: outcome, source: 'runtime', verdict: 'block', nextAction: 'answer-gate', state: 'waiting_on_human', failureCode: 'worker_needs_human', recordsFeedback: false, needsHuman: true };
+  }
+  if (outcome === 'blocked') {
+    return { workerId, rawOutcome: outcome, source: 'runtime', verdict: 'block', nextAction: 'retry-team', state: 'blocked', failureCode: 'worker_blocked', recordsFeedback: true, needsHuman: false };
+  }
+  if (outcome === 'benchmark-failed') {
+    return { workerId, rawOutcome: outcome, source: 'benchmark', verdict: 'retry', nextAction: 'retry-team', state: 'blocked', failureCode: 'benchmark_failed', recordsFeedback: true, needsHuman: false };
+  }
+  if (outcome === 'reviewer-failed' || outcome === 'rejected') {
+    return { workerId, rawOutcome: outcome, source: 'reviewer', verdict: 'retry', nextAction: 'retry-team', state: 'blocked', failureCode: 'reviewer_failed', recordsFeedback: true, needsHuman: false };
+  }
+  if (outcome === 'failed') {
+    return { workerId, rawOutcome: outcome, source: 'runtime', verdict: 'retry', nextAction: 'retry-team', state: 'failed', failureCode: 'worker_failed', recordsFeedback: true, needsHuman: false };
+  }
   throw new Error(`unsupported worker-outcome: ${outcome}`);
+}
+
+function workerDefinitions(parsed: ParsedHarnessCommand): Array<{ id: string; role: string }> {
+  const values = optionList(parsed, 'worker').length ? optionList(parsed, 'worker') : ['implementation', 'review'];
+  const definitions = values.map((raw) => {
+    const separator = raw.indexOf(':');
+    const idSource = separator > 0 ? raw.slice(0, separator) : raw;
+    const role = separator > 0 ? raw.slice(separator + 1).trim() : raw;
+    return { id: slugify(idSource, 'worker'), role: role || idSource };
+  });
+  const seen = new Set<string>();
+  for (const worker of definitions) {
+    if (seen.has(worker.id)) throw new Error(`duplicate worker id after slug normalization: ${worker.id}`);
+    seen.add(worker.id);
+  }
+  return definitions;
+}
+
+function workerValueMap(parsed: ParsedHarnessCommand, optionName: string): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const raw of optionList(parsed, optionName)) {
+    const { workerId, value } = splitWorkerOption(raw, optionName);
+    if (map.has(workerId)) throw new Error(`duplicate ${optionName} for worker: ${workerId}`);
+    map.set(workerId, value);
+  }
+  return map;
+}
+
+function assertUniqueTeamOutcomes(outcomes: TeamOutcome[]) {
+  const seen = new Set<string>();
+  for (const outcome of outcomes) {
+    if (seen.has(outcome.workerId)) throw new Error(`duplicate worker-outcome for worker: ${outcome.workerId}`);
+    seen.add(outcome.workerId);
+  }
+}
+
+function safePlanRef(parsed: ParsedHarnessCommand): { path: string } | null {
+  const plan = option(parsed, 'plan') ?? option(parsed, 'plan-ref') ?? option(parsed, 'plan-path');
+  if (!plan) return null;
+  if (plan.startsWith('/') || plan.includes('..') || plan.includes('\0') || /^[a-z]+:/i.test(plan)) throw new Error(`unsafe team plan ref: ${plan}`);
+  return { path: plan };
+}
+
+function teamState(workers: WorkerStatus[], humanGates: HumanGate[]): HarnessState {
+  if (humanGates.some((gate) => gate.required && gate.status === 'pending')) return 'waiting_on_human';
+  if (workers.some((worker) => worker.state === 'failed')) return 'failed';
+  if (workers.some((worker) => worker.state === 'blocked')) return 'blocked';
+  if (workers.length > 0 && workers.every((worker) => worker.state === 'completed')) return 'completed';
+  return 'ready';
+}
+
+function teamImprovementSummaries(repoRoot: string, parsed: ParsedHarnessCommand) {
+  const query = parsed.intent;
+  return inheritedImprovements(repoRoot, parsed).map((item) => ({
+    slug: item.slug,
+    path: item.path,
+    summary: item.content.split('\n').slice(0, 8).join('\n'),
+    relevance: { requireQuery: true, query },
+  }));
+}
+
+function writeTeamWorkerEvidence(repoRoot: string, worker: WorkerStatus, sharedEvidencePath: string) {
+  writeFileUnder(repoRoot, worker.evidencePath, [
+    `# Worker evidence: ${worker.id}`,
+    '',
+    `Role: ${worker.role}`,
+    `State: ${worker.state}`,
+    `Adapter: ${worker.adapter?.adapterId ?? 'unknown'}`,
+    `Shared evidence: ${sharedEvidencePath}`,
+    worker.failureCode ? `Failure code: ${worker.failureCode}` : 'Failure code: none',
+    worker.humanGateIds?.length ? `Human gates: ${worker.humanGateIds.join(', ')}` : 'Human gates: none',
+    worker.resumedFromGate ? `Resumed from gate: ${worker.resumedFromGate}` : null,
+    '',
+  ].filter((line) => line !== null).join('\n'), 'worker evidence path');
+}
+
+function writeSharedTeamEvidence(repoRoot: string, runId: string, sharedEvidencePath: string, planRef: { path: string } | null, goal: string, workers: WorkerStatus[]) {
+  writeFileUnder(repoRoot, sharedEvidencePath, [
+    '# Shared team evidence',
+    '',
+    `Run ID: ${runId}`,
+    planRef ? `Plan: ${planRef.path}` : `Goal: ${goal || 'not recorded'}`,
+    '',
+    'One shared evidence record for every worker lane in this coordinated team run.',
+    '',
+    '## Worker lanes',
+    '',
+    ...workers.map((worker) => `- ${worker.id}: ${worker.state}; evidence ${worker.evidencePath}; adapter ${worker.adapter?.adapterId ?? 'unknown'}; failure ${worker.failureCode ?? 'none'}`),
+    '',
+    `Feedback path: .osc/runs/${runId}/feedback.jsonl`,
+    `Postflight: .osc/runs/${runId}/postflight.md`,
+    '',
+  ].join('\n'), 'shared team evidence path');
 }
 
 function routeTeam(repoRoot: string, parsed: ParsedHarnessCommand): HarnessCommandResult {
   const runId = uniqueRunIdFor(repoRoot, 'team', parsed.intent);
   ensureRunDir(repoRoot, runId);
   const teamOutcomes = optionList(parsed, 'worker-outcome').map(parseTeamOutcome);
+  assertUniqueTeamOutcomes(teamOutcomes);
   const outcomeByWorker = new Map(teamOutcomes.map((outcome) => [outcome.workerId, outcome]));
-  const workers = (optionList(parsed, 'worker').length ? optionList(parsed, 'worker') : ['implementation', 'review']).map((id): WorkerStatus => {
-    const workerId = slugify(id, 'worker');
+  const adapterByWorker = workerValueMap(parsed, 'worker-adapter');
+  const questionByWorker = workerValueMap(parsed, 'worker-question');
+  const defaultAdapter = option(parsed, 'adapter') ?? option(parsed, 'runtime') ?? 'plain';
+  const sharedEvidencePath = `.osc/runs/${runId}/shared-evidence.md`;
+  const workers = workerDefinitions(parsed).map(({ id, role }): WorkerStatus => {
+    const outcome = outcomeByWorker.get(id);
+    const evidencePath = `.osc/runs/${runId}/workers/${id}/evidence.md`;
+    const adapterId = adapterByWorker.get(id) ?? defaultAdapter;
+    const humanGateIds = outcome?.needsHuman ? [`worker-${id}-needs-human`] : [];
     return {
-      id: workerId,
-      role: id,
-      state: outcomeByWorker.get(workerId)?.state ?? 'ready',
-      evidencePath: `.osc/runs/${runId}/workers/${workerId}/evidence.md`,
+      id,
+      role,
+      state: outcome?.state ?? 'ready',
+      evidencePath,
+      evidenceLinks: [
+        { role: 'shared_evidence', path: sharedEvidencePath },
+        { role: 'worker_evidence', path: evidencePath, schema: 'osc.team-worker-lane.v1' },
+      ],
+      adapter: teamWorkerAdapterMetadata(repoRoot, adapterId),
+      failureCode: outcome?.failureCode ?? null,
+      humanGateIds,
     };
   });
   for (const outcome of teamOutcomes) {
     if (!workers.some((worker) => worker.id === outcome.workerId)) throw new Error(`worker-outcome references unknown worker: ${outcome.workerId}`);
   }
+  for (const workerId of adapterByWorker.keys()) {
+    if (!workers.some((worker) => worker.id === workerId)) throw new Error(`worker-adapter references unknown worker: ${workerId}`);
+  }
+  for (const workerId of questionByWorker.keys()) {
+    if (!workers.some((worker) => worker.id === workerId)) throw new Error(`worker-question references unknown worker: ${workerId}`);
+  }
+  const humanGates: HumanGate[] = workers.flatMap((worker) => {
+    const outcome = outcomeByWorker.get(worker.id);
+    if (!outcome?.needsHuman) return [];
+    const gateId = `worker-${worker.id}-needs-human`;
+    return [{
+      id: gateId,
+      required: true,
+      status: 'pending' as const,
+      workerId: worker.id,
+      adapterId: worker.adapter?.adapterId,
+      evidencePath: worker.evidencePath,
+      prompt: questionByWorker.get(worker.id) ?? `Worker lane ${worker.id} needs bounded task input before the shared team run can continue.`,
+    }];
+  });
   const artifacts = [...baseArtifacts(runId), artifact(runId, 'team_run', 'team.json', 'osc.team-run.v1'), artifact(runId, 'shared_evidence', 'shared-evidence.md'), artifact(runId, 'feedback', 'feedback.jsonl', 'osc.feedback.v1')];
-  const improvements = inheritedImprovements(repoRoot, parsed).map((item) => ({ slug: item.slug, path: item.path, summary: item.content.split('\n').slice(0, 8).join('\n') }));
+  const improvements = teamImprovementSummaries(repoRoot, parsed);
   const repairHypothesis = option(parsed, 'repair-hypothesis') ?? 'Summarize the failed worker lane, preserve shared evidence, and retry only the bounded team scope.';
-  const state: HarnessState = teamOutcomes.length ? 'blocked' : 'ready';
-  writeEvent(repoRoot, runId, 'command_started', { command: 'team', intent: parsed.intent, workers: workers.map((worker) => worker.id) });
-  for (const worker of workers) writeFileUnder(repoRoot, worker.evidencePath, `# Worker evidence: ${worker.id}\n\nState: ${worker.state}\n`, 'worker evidence path');
-  writeFileUnder(repoRoot, `.osc/runs/${runId}/shared-evidence.md`, '# Shared team evidence\n\nOne evidence record for the coordinated team run.\n\nFeedback path: feedback.jsonl\n', 'shared team evidence path');
-  const feedbackRecords = teamOutcomes.map((outcome) => recordFeedback({
+  const state = teamState(workers, humanGates);
+  const planRef = safePlanRef(parsed);
+  writeEvent(repoRoot, runId, 'command_started', { command: 'team', intent: parsed.intent, workers: workers.map((worker) => worker.id), planRef });
+  for (const worker of workers) {
+    writeTeamWorkerEvidence(repoRoot, worker, sharedEvidencePath);
+    writeEvent(repoRoot, runId, 'team_worker_status', { workerId: worker.id, state: worker.state, adapterId: worker.adapter?.adapterId, failureCode: worker.failureCode, evidencePath: worker.evidencePath });
+  }
+  writeSharedTeamEvidence(repoRoot, runId, sharedEvidencePath, planRef, parsed.intent, workers);
+  const feedbackRecords = teamOutcomes.filter((outcome) => outcome.recordsFeedback).map((outcome) => recordFeedback({
     repoRoot,
     runId,
     source: outcome.source,
     verdict: outcome.verdict,
     scope: 'run',
-    whatHappened: `Team worker ${outcome.workerId} reported ${outcome.rawOutcome}.`,
+    whatHappened: `Team worker ${outcome.workerId} reported ${outcome.rawOutcome} (${outcome.failureCode ?? 'no_failure_code'}).`,
     whyItMatters: 'A shared team run must preserve worker failure feedback and repair input before retrying.',
     repairHypothesis,
-    evidencePaths: [`.osc/runs/${runId}/shared-evidence.md`, `.osc/runs/${runId}/workers/${outcome.workerId}/evidence.md`],
+    evidencePaths: [sharedEvidencePath, `.osc/runs/${runId}/workers/${outcome.workerId}/evidence.md`],
     nextAction: outcome.nextAction,
   }).record);
+  if (humanGates.length) writeEvent(repoRoot, runId, 'human_gate', { gates: humanGates, gateSchema: 'osc.team-shared-gate.v1' });
   if (feedbackRecords.length) writeEvent(repoRoot, runId, 'feedback_recorded', { feedbackPath: `.osc/runs/${runId}/feedback.jsonl`, feedbackIds: feedbackRecords.map((record) => record.id) });
-  const repairHypotheses = feedbackRecords.map((record) => ({ hypothesis: record.repairHypothesis ?? repairHypothesis, evidenceIds: [record.id] }));
+  const repairHypotheses = feedbackRecords.map((record) => ({ workerId: record.whatHappened.match(/Team worker ([^ ]+)/)?.[1] ?? null, hypothesis: record.repairHypothesis ?? repairHypothesis, evidenceIds: [record.id] }));
   writeJsonUnder(repoRoot, `.osc/runs/${runId}/team.json`, {
     schema: 'osc.team-run.v1',
     runId,
+    command: '$team',
     intent: parsed.intent,
+    planRef,
+    status: state,
     workers,
+    humanGates,
+    sharedEvidence: { path: sharedEvidencePath, schema: 'osc.team-shared-evidence.v1' },
     feedback: { path: `.osc/runs/${runId}/feedback.jsonl`, schema: 'osc.feedback.v1', feedback_is_not_approval: true },
     repairHypotheses,
     improvements: { inherited: improvements },
-    boundary: { one_shared_evidence_record: true, shared_postflight: true, core_runtime_spawning: false, feedback_is_not_approval: true },
+    controlRoom: { statusPath: `.osc/runs/${runId}/status.json`, eventStreamPath: `.osc/runs/${runId}/events.jsonl`, eventSchema: 'osc.control-room-event.v1', transport: 'neutral' },
+    boundary: {
+      one_shared_run_record: true,
+      one_shared_evidence_record: true,
+      shared_postflight: true,
+      core_runtime_spawning: false,
+      feedback_is_not_approval: true,
+      worker_lanes_have_no_owner_authority: true,
+      human_owns_merge_publish_release: true,
+    },
   }, 'team run path');
-  writeJsonUnder(repoRoot, `.osc/runs/${runId}/human-gates.json`, [], 'human gates path');
+  writeJsonUnder(repoRoot, `.osc/runs/${runId}/human-gates.json`, humanGates, 'human gates path');
   writePostflight(repoRoot, runId, 'team', state, {
     feedbackPath: `.osc/runs/${runId}/feedback.jsonl`,
     acceptedImprovementCount: improvements.length,
     repairHypotheses: repairHypotheses.map((item) => item.hypothesis),
   });
-  const status = makeStatus({ runId, command: 'team', state, artifacts, workers });
+  const status = makeStatus({ runId, command: 'team', state, humanGates, artifacts, workers });
   writeStatus(repoRoot, status);
-  writeEvent(repoRoot, runId, state === 'blocked' ? 'command_blocked' : 'command_completed', { state });
-  return resultFor(repoRoot, runId, 'team', status, [], artifacts, workers, state === 'blocked' ? 'Team run packaged with shared feedback and repair hypothesis.' : 'Team run packaged with worker lanes and shared evidence.');
+  writeEvent(repoRoot, runId, 'control_room_status', { state, pendingHumanGates: status.pendingHumanGates.length, workerStates: workers.map((worker) => ({ id: worker.id, state: worker.state, failureCode: worker.failureCode ?? null })) });
+  const commandEvent = state === 'completed' ? 'command_completed' : state === 'ready' ? 'command_ready' : 'command_blocked';
+  writeEvent(repoRoot, runId, commandEvent, { state });
+  const message = state === 'waiting_on_human'
+    ? 'Team run is waiting on worker-level human task input.'
+    : state === 'blocked' || state === 'failed'
+      ? 'Team run packaged with shared feedback and repair hypothesis.'
+      : 'Team run packaged with worker lanes and shared evidence.';
+  return resultFor(repoRoot, runId, 'team', status, humanGates, artifacts, workers, message);
 }
 
 export function routeHarnessCommand({ repoRoot = process.cwd(), input }: { repoRoot?: string; input: string }): HarnessCommandResult {
@@ -831,6 +1027,44 @@ export function answerHumanGate({ repoRoot = process.cwd(), runId, gateId, answe
   writeJsonUnder(repoRoot, `.osc/runs/${safe}/human-gates.json`, gates, 'human gates path');
   if (packet) writeJsonUnder(repoRoot, `.osc/runs/${safe}/run.json`, packet, 'work run packet path');
   writeEvent(repoRoot, safe, 'human_gate_answered', { gateId, boundary: gate.answer.boundary });
+
+  if (status.command === 'team' && lexicalExists(join(repoRoot, `.osc/runs/${safe}/team.json`))) {
+    const team = readJsonUnder<Record<string, unknown>>(repoRoot, `.osc/runs/${safe}/team.json`, 'team run path');
+    const workers = Array.isArray(team.workers) ? team.workers as WorkerStatus[] : [];
+    const workerId = gate.workerId ?? gate.id.replace(/^worker-/, '').replace(/-needs-human$/, '');
+    for (const worker of workers) {
+      if (worker.id !== workerId) continue;
+      worker.state = 'ready';
+      worker.failureCode = null;
+      worker.resumedFromGate = gate.id;
+      worker.humanGateIds = (worker.humanGateIds ?? []).filter((id) => id !== gate.id);
+    }
+    const nextState = teamState(workers, gates);
+    team.status = nextState;
+    team.workers = workers;
+    team.humanGates = gates;
+    writeJsonUnder(repoRoot, `.osc/runs/${safe}/team.json`, team, 'team run path');
+    const sharedEvidence = team.sharedEvidence as { path?: unknown } | undefined;
+    const sharedEvidencePath = typeof sharedEvidence?.path === 'string' ? sharedEvidence.path : `.osc/runs/${safe}/shared-evidence.md`;
+    const planRef = team.planRef && typeof team.planRef === 'object' && typeof (team.planRef as { path?: unknown }).path === 'string'
+      ? { path: String((team.planRef as { path: unknown }).path) }
+      : null;
+    const goal = typeof team.intent === 'string' ? team.intent : '';
+    for (const worker of workers) writeTeamWorkerEvidence(repoRoot, worker, sharedEvidencePath);
+    writeSharedTeamEvidence(repoRoot, safe, sharedEvidencePath, planRef, goal, workers);
+    writePostflight(repoRoot, safe, 'team', nextState, {
+      feedbackPath: `.osc/runs/${safe}/feedback.jsonl`,
+      acceptedImprovementCount: Array.isArray((team.improvements as { inherited?: unknown[] } | undefined)?.inherited) ? (team.improvements as { inherited: unknown[] }).inherited.length : undefined,
+      repairHypotheses: Array.isArray(team.repairHypotheses) ? (team.repairHypotheses as Array<{ hypothesis?: unknown }>).map((item) => String(item.hypothesis ?? '')).filter(Boolean) : [],
+    });
+    const nextStatus = makeStatus({ runId: safe, command: 'team', state: nextState, humanGates: gates, artifacts: status.artifacts, workers });
+    writeStatus(repoRoot, nextStatus);
+    writeEvent(repoRoot, safe, 'team_worker_resumed', { workerId, gateId, state: nextState });
+    writeEvent(repoRoot, safe, 'control_room_status', { state: nextState, pendingHumanGates: nextStatus.pendingHumanGates.length, workerStates: workers.map((worker) => ({ id: worker.id, state: worker.state, failureCode: worker.failureCode ?? null })) });
+    const terminalEvent = nextState === 'completed' ? 'command_completed' : nextState === 'ready' ? 'command_ready' : 'command_blocked';
+    writeEvent(repoRoot, safe, terminalEvent, { state: nextState });
+    return resultFor(repoRoot, safe, 'team', nextStatus, gates, status.artifacts, workers, 'Human gate answer recorded as team task input.');
+  }
 
   if (shouldResumeRuntime && runtime) {
     const runningStatus = makeStatus({ runId: safe, command: 'work', state: 'running', humanGates: gates, artifacts: status.artifacts, workers: status.workers, runtimeSpawned: true });

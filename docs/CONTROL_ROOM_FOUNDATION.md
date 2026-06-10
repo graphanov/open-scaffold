@@ -32,6 +32,10 @@ The current harness writes transport-neutral contracts:
 - `osc.harness-event.v1`
 - `osc.controlled-work-run.v1`
 - `osc.team-run.v1`
+- `osc.team-worker-lane.v1`
+- `osc.team-shared-gate.v1`
+- `osc.team-worker-adapter-contract.v1`
+- `osc.control-room-event.v1`
 - `osc.feedback.v1`
 - `osc.feedback-analysis.v1`
 - `osc.handoff-compiler.v1`
@@ -52,15 +56,28 @@ Answering a gate resumes or updates the run package. It does not authorize commi
 
 ## Worker status UI
 
-A `$team` run should show workers with:
+A `$team` run shows workers with:
 
 - role/id,
 - current state,
-- evidence path,
-- blockers,
+- adapter metadata,
+- repo-relative evidence links,
+- portable failure code when blocked or failed,
+- related human gate ids,
 - postflight summary.
 
-The app should preserve one shared evidence record so multiple lanes do not split the source of truth.
+The current implementation already writes those fields into `status.json` and `team.json`. The app should preserve one shared evidence record so multiple lanes do not split the source of truth.
+
+## Event stream
+
+The event stream is JSONL at `.osc/runs/<run-id>/events.jsonl`. It is deliberately transport-neutral:
+
+- `transport: "neutral"`,
+- `platform: null`,
+- no Discord, Slack, Telegram, Hermes, Electron, or Tauri dependency in the core event,
+- repo-relative links back to status, evidence, feedback, and postflight files.
+
+A chat bot, plugin, CLI, Hermes worker, or future app can render this stream. None of those surfaces own the truth; the repo files do.
 
 ## Benchmark UI
 

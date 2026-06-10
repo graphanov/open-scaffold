@@ -69,9 +69,13 @@ Events are JSONL records with `schema: "osc.harness-event.v1"`. Current event ty
 - `handoff_packet_written`
 - `runtime_resume_started`
 - `command_blocked`
+- `command_ready`
 - `command_completed`
+- `team_worker_status`
+- `team_worker_resumed`
+- `control_room_status`
 
-These are deliberately small so chat/plugin/desktop surfaces can render progress without reading raw logs.
+Each event also includes a small `controlRoom` projection with `transport: "neutral"`, `platform: null`, and no webhook, plugin, Hermes, Electron, or Tauri dependency. CLI, chat, plugin, Hermes, and future app surfaces can render the same event stream without becoming the source of truth.
 
 ## Human gate shape
 
@@ -151,6 +155,17 @@ For failed and blocked outcomes, `$work` records feedback before the next attemp
 
 When requested, `$work --handoff --handoff-max-chars <n>` writes `.osc/runs/<run-id>/handoff.md` with required resume sections under the budget. This packet is a continuation aid only.
 
-`$team` keeps parity with the same loop: shared evidence, shared feedback path, accepted improvement inheritance when requested, repair hypotheses for blocked worker lanes, and one postflight record.
+`$team` keeps parity with the same loop: shared evidence, shared feedback path, accepted improvement inheritance when requested, repair hypotheses for blocked or failed worker lanes, worker-level human gates, and one postflight record. A worker lane has:
+
+- an id and role,
+- a state (`ready`, `completed`, `waiting_on_human`, `blocked`, or `failed`),
+- adapter metadata using `osc.team-worker-adapter-contract.v1`,
+- repo-relative evidence links,
+- a portable failure code when blocked or failed,
+- optional human gate ids.
+
+All worker lanes stay inside one `.osc/runs/<run-id>/` directory. Worker evidence files can exist per lane, but the run keeps one shared `shared-evidence.md`, one `status.json`, one `feedback.jsonl`, and one `postflight.md` so the truth does not split across workers.
+
+A worker gate such as `worker-review-needs-human` appears in the shared `pendingHumanGates` list. Answering it through `osc harness answer` updates the same team run; the answer is task input, not approval.
 
 This keeps the core portable across CLI, Codex plugin, Hermes, and future app surfaces while preserving owner authority.
