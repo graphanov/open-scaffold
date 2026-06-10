@@ -105,6 +105,22 @@ describe('osc resume packet compiler', () => {
     expect(() => compileResume(fixtureRoot, { maxChars: 10 })).toThrow(/maxChars/);
   });
 
+
+  it('treats symlinked mission files as undefined before reading mission text', () => {
+    const root = tempRepo();
+    const outside = join(tempRepo(), 'MISSION.md');
+    writeFileSync(outside, '# Mission\n\nExternal mission text external-mission-secret.\n', 'utf8');
+    symlinkSync(outside, join(root, 'MISSION.md'));
+    mkdirSync(join(root, '.osc', 'plans', 'active'), { recursive: true });
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.mission.defined).toBe(false);
+    expect(summaryJson).not.toContain('external-mission-secret');
+    expect(packet).not.toContain('external-mission-secret');
+  });
+
   it('never leaks secrets or local absolute paths into packet or JSON summary text', () => {
     const root = tempRepo();
     writeMission(root);

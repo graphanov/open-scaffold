@@ -125,7 +125,7 @@ function isRealFile(path: string): boolean {
 
 export function inspectMission(root: string): MissionState {
   const path = join(root, 'MISSION.md');
-  if (!existsSync(path)) return { path, defined: false, reason: 'MISSION.md not found' };
+  if (!isRealFile(path)) return { path, defined: false, reason: 'MISSION.md not found or not a regular file' };
   const text = readText(path);
   if (text.includes('mission:unset') || text.includes('TODO: define mission')) {
     return { path, defined: false, reason: 'mission unset marker present' };

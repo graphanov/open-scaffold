@@ -95,6 +95,7 @@ function pickActivePlan(actives: PlanSummary[], requested?: string): { picked: P
 function missionDigest(root: string): string {
   const path = join(root, 'MISSION.md');
   if (!existsSync(path)) return '';
+  try { if (!lstatSync(path).isFile()) return ''; } catch { return ''; }
   const body = readFileSync(path, 'utf8')
     .split(/\r?\n/)
     .filter((line) => !/^#/.test(line.trim()))
