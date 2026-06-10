@@ -333,6 +333,14 @@ function compileHasRealScaffold(root: string): boolean {
   }
 }
 
+function safeAcceptedLessons(root: string): ReturnType<typeof loadAcceptedImprovements> {
+  try {
+    return loadAcceptedImprovements({ repoRoot: root });
+  } catch {
+    return [];
+  }
+}
+
 export function compileResume(root = process.cwd(), options: ResumeOptions = {}): ResumeResult {
   const maxChars = options.maxChars ?? DEFAULT_RESUME_MAX_CHARS;
   if (!Number.isInteger(maxChars) || maxChars < MIN_RESUME_MAX_CHARS || maxChars > MAX_RESUME_MAX_CHARS) {
@@ -369,7 +377,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
         updated_at: run.updated_at,
       }
     : null;
-  const lessonsList = scaffoldPresent ? loadAcceptedImprovements({ repoRoot: root }) : [];
+  const lessonsList = scaffoldPresent ? safeAcceptedLessons(root) : [];
   const amendments = listAmendments(root, picked).map((id) => redactPacketText(id, 180));
   const next = deriveNextAction({
     scaffoldPresent,

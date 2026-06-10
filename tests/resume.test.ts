@@ -524,6 +524,43 @@ describe('osc resume packet compiler', () => {
   });
 
 
+
+  it('skips symlinked accepted-lessons directories during resume', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-lesson-dir-symlink');
+    const outsideLessons = join(tempRepo(), 'external-lessons');
+    mkdirSync(outsideLessons, { recursive: true });
+    writeFileSync(join(outsideLessons, 'external-lesson-secret.md'), '# External lesson\n', 'utf8');
+    mkdirSync(join(root, '.osc', 'improvements'), { recursive: true });
+    symlinkSync(outsideLessons, join(root, '.osc', 'improvements', 'applied'), 'dir');
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.lessons).toEqual({ count: 0, slugs: [] });
+    expect(summaryJson).not.toContain('external-lesson-secret');
+    expect(packet).not.toContain('external-lesson-secret');
+  });
+
+  it('skips symlinked accepted-lesson files during resume', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-lesson-file-symlink');
+    const outsideLesson = join(tempRepo(), 'external-lesson-secret.md');
+    writeFileSync(outsideLesson, '# External lesson\n', 'utf8');
+    const applied = join(root, '.osc', 'improvements', 'applied');
+    mkdirSync(applied, { recursive: true });
+    symlinkSync(outsideLesson, join(applied, 'external-lesson-secret.md'));
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.lessons).toEqual({ count: 0, slugs: [] });
+    expect(summaryJson).not.toContain('external-lesson-secret');
+    expect(packet).not.toContain('external-lesson-secret');
+  });
+
   it('ignores a symlinked releases directory before listing evidence paths', () => {
     const root = tempRepo();
     writeMission(root);
