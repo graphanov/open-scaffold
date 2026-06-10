@@ -11,7 +11,7 @@ The package-visible change is small and deliberate: public docs now explain curr
 - Roadmap / issue / task: harness migration release-readiness package sync after the final harness docs/readiness PR and plan closeout.
 - Source plans: `.osc/plans/done/154-harness-command-surface.md`, `.osc/plans/done/155-controlled-runtime-parity.md`, `.osc/plans/done/156-feedback-handoff-improvement-parity.md`, `.osc/plans/done/157-reproduction-proof-parity.md`, `.osc/plans/done/158-team-control-room-adapter-parity.md`, and `.osc/plans/done/159-harness-release-readiness.md`.
 - Source PRs: #192, #194, #195, #196, #197, #198, #199, and #200 in `graphanov/open-scaffold`.
-- Release-sync plan: `.osc/plans/active/160-harness-release-readiness-package-sync.md` before public proof; move to `done/` after publication proof.
+- Release-sync plan: `.osc/plans/done/160-harness-release-readiness-package-sync.md`.
 - Run ID / run packet: N/A for this scoped package/release sync.
 - Branch / PR: `release/0.31.1-harness-readiness-sync` / https://github.com/graphanov/open-scaffold/pull/201.
 
@@ -37,24 +37,24 @@ Candidate gates before PR-ready:
 - [x] `npm run osc -- doctor --check secret-scan` — PASS: `PASS secret-scan: no obvious token/webhook strings found.`
 - [x] `npm pack --dry-run --json` payload inspection after rebuilding — PASS for `open-scaffold@0.31.1`; entry count 236; no `__pycache__`/`.pyc` files; required CLI/docs files present.
 - [x] `npm publish --dry-run --tag latest` — PASS for `open-scaffold@0.31.1` with tag `latest`.
-- [ ] Release candidate PR CI and review/thread gate.
+- [x] Release candidate PR CI and review/thread gate — PASS: PR #201 CI green, evidence/plan checks green, latest-head Codex clean, and unresolved current Codex threads `0`.
 
 Post-merge/publication gates after owner-approved follow-through:
 
-- [ ] Sync clean `main` after release PR merge.
-- [ ] Main CI for release commit.
-- [ ] Post-merge local publish gates.
-- [ ] Trusted publishing workflow publishes `open-scaffold@0.31.1` with dist-tag `latest`.
-- [ ] `npm view open-scaffold version dist-tags --json --prefer-online` reports `0.31.1`, `latest: 0.31.1`.
-- [ ] Fresh isolated-cache `npx --yes open-scaffold@latest --help` from an external temp directory passes.
-- [ ] Fresh isolated-cache smokes for `osc feedback --help` and `osc bench --help` pass from the published package.
-- [ ] GitHub Release `v0.31.1` exists, targets the merged `origin/main` release commit, and is marked Latest.
-- [ ] This plan is closed to `done` with final public proof.
+- [x] Sync clean `main` after release PR merge — PASS: local `main` fast-forwarded to `origin/main` at `42c6a3506dbc36c3ea748c633990c5e9bc02f4c1`.
+- [x] Main CI for release commit — PASS: https://github.com/graphanov/open-scaffold/actions/runs/27259171710.
+- [x] Post-merge local publish gates — PASS: `git diff --check`, `./verify.sh --strict`, `npm test -- --run`, `npm run build`, `npm run osc -- doctor --check secret-scan`, `npm pack --dry-run --json`, and `npm publish --dry-run --tag latest`.
+- [x] Trusted publishing workflow publishes `open-scaffold@0.31.1` with dist-tag `latest` — PASS: https://github.com/graphanov/open-scaffold/actions/runs/27259297262.
+- [x] `npm view open-scaffold version dist-tags --json --prefer-online` reports `0.31.1`, `latest: 0.31.1`.
+- [x] Fresh isolated-cache `npx --yes open-scaffold@latest --help` from an external temp directory passes.
+- [x] Fresh isolated-cache smokes for `osc feedback --help` and `osc bench --help` pass from the published package.
+- [x] GitHub Release `v0.31.1` exists, targets `42c6a3506dbc36c3ea748c633990c5e9bc02f4c1`, and is marked Latest: https://github.com/graphanov/open-scaffold/releases/tag/v0.31.1.
+- [x] This plan is closed to `done` with final public proof.
 
 ## Outcome
 
-Pending. This branch prepares the candidate package/release truth. Public npm and GitHub Release proof must be recorded after the release-sync PR merges and trusted publishing completes.
+Published and verified. `open-scaffold@0.31.1` is live on npm with dist-tag `latest`, fresh isolated-cache `npx open-scaffold@latest` and help smokes pass, and GitHub Release `v0.31.1` is marked Latest at the release commit.
 
 ## Follow-up
 
-- After publish and GitHub Release creation, update this note, `docs/CHANGELOG.md`, and `docs/VERSION_TRUTH.md` from candidate/pending to published/latest, then close plan `160-harness-release-readiness-package-sync`.
+- None for this release-sync slice after closeout PR merge. Future package-visible changes still require separate owner-approved release follow-through.
