@@ -353,6 +353,35 @@ describe('osc resume packet compiler', () => {
     expect(packet).not.toContain('external-dir-gate-id');
   });
 
+
+  it('ignores a symlinked runs root before scanning run status files', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-symlink-runs-root');
+    const outsideRunsDir = join(tempRepo(), 'external-runs');
+    const outsideRunDir = join(outsideRunsDir, 'harness-work-root-symlink');
+    mkdirSync(outsideRunDir, { recursive: true });
+    writeFileSync(join(outsideRunDir, 'status.json'), JSON.stringify({
+      schema: 'osc.harness-status.v1',
+      runId: 'external-root-run-id',
+      command: 'work',
+      state: 'waiting_on_human',
+      updatedAt: '2026-06-10T10:00:00.000Z',
+      pendingHumanGates: [{ id: 'external-root-gate-id', required: true, status: 'pending' }],
+    }), 'utf8');
+    mkdirSync(join(root, '.osc'), { recursive: true });
+    symlinkSync(outsideRunsDir, join(root, '.osc', 'runs'), 'dir');
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.latest_run).toBeNull();
+    expect(summaryJson).not.toContain('external-root-run-id');
+    expect(summaryJson).not.toContain('external-root-gate-id');
+    expect(packet).not.toContain('external-root-run-id');
+    expect(packet).not.toContain('external-root-gate-id');
+  });
+
   it('redacts sensitive run and gate identifiers before emitting resume output', () => {
     const root = tempRepo();
     writeMission(root);

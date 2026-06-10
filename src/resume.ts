@@ -137,6 +137,7 @@ function planAcceptanceCriteria(root: string, plan: PlanSummary): { parsed: Retu
 function latestHarnessRun(root: string): InternalResumeLatestRun | null {
   const dir = join(root, '.osc', 'runs');
   if (!existsSync(dir)) return null;
+  try { if (!lstatSync(dir).isDirectory()) return null; } catch { return null; }
   let best: InternalResumeLatestRun | null = null;
   for (const name of readdirSync(dir).sort()) {
     const runDir = join(dir, name);
