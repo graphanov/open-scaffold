@@ -76,6 +76,23 @@ describe('CLI harness backend', () => {
     expect(existsSync(join(root, '.osc/bench/handoff-lab-15/aggregate.json'))).toBe(false);
   });
 
+  it('prints top-level backend help for feedback and bench without running commands', () => {
+    const root = tempScaffold();
+    const feedback = spawnSync(tsx, [cli, 'feedback', '--help'], { cwd: root, encoding: 'utf8' });
+
+    expect(feedback.status).toBe(0);
+    expect(feedback.stdout).toContain('Usage: osc feedback record|analyze');
+    expect(feedback.stdout).toContain('osc feedback record <run-id>');
+    expect(feedback.stdout).toContain('not owner approval');
+
+    const bench = spawnSync(tsx, [cli, 'bench', '--help'], { cwd: root, encoding: 'utf8' });
+    expect(bench.status).toBe(0);
+    expect(bench.stdout).toContain('Usage: osc bench suite|handoff-lab');
+    expect(bench.stdout).toContain('osc bench suite [--mode simulated|live]');
+    expect(bench.stdout).toContain('do not grant broad proof or owner approval');
+    expect(existsSync(join(root, '.osc/bench/simulated-runtime-smoke/aggregate.json'))).toBe(false);
+  });
+
   it('runs simulated benchmark and handoff-lab backend smokes', () => {
     const root = tempScaffold();
     const suite = spawnSync(tsx, [cli, 'bench', 'suite', '--mode', 'simulated', '--out', '.osc/bench/simulated-runtime-smoke'], { cwd: root, encoding: 'utf8' });

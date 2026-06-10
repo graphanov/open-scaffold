@@ -2,6 +2,28 @@
 
 The harness includes local benchmark/reproduction machinery so Open Scaffold can test whether the workflow helped. It does not turn a smoke test into a broad model or framework claim.
 
+## Current Open Scaffold-run verdict
+
+Current committed readout: `partially_reproduced`.
+
+Evidence note: `.osc/releases/2026-06-09-harness-reproduction-proof-parity.md`.
+
+What reproduced:
+
+- One representative live fixture showed a clean quality-preserving faster harness lane.
+- The representative aggregate had slightly better harness quality and wall-clock duration.
+- The handoff lab found a budget-passing deterministic candidate.
+
+What did not reproduce cleanly:
+
+- Targeted compact handoff did not reproduce the source efficiency win in the rerun.
+- Runtime token receipts were unavailable from the live Codex adapter output, so token/cost efficiency is not proven.
+- Representative live included dirty/blocked lanes.
+- Ablations did not isolate a harness-specific causal effect.
+- Fixture count stayed below the broad proof gate.
+
+Broad dominance remains `mixed_not_proven`. Do not claim Open Scaffold broadly beats naked Codex from the current evidence.
+
 ## Backend commands
 
 ```bash
