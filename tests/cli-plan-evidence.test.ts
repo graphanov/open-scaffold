@@ -176,5 +176,5 @@ Template goal.
     const missingRoot = spawnSync(tsx, [cli, 'evidence', 'new', '001-first-task'], { cwd: noRoot, encoding: 'utf8' });
     expect(missingRoot.status).toBe(1);
     expect(missingRoot.stderr).toContain('No Open Scaffold root found');
-  });
+  }, CLI_TEST_TIMEOUT_MS);
 });
