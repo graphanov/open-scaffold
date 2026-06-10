@@ -29,6 +29,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-10: closed 159-harness-release-readiness — PR #199 merged; harness release-readiness docs and command help parity are in main while npm publish and GitHub Release remain owner-gated.
 - 2026-06-10: closed 157-reproduction-proof-parity — PR #196 merged; reproduction proof parity shipped with Open Scaffold-owned bench suite, handoff lab, proof-gate, and benchmark feedback evidence.
 - 2026-06-09: closed 158-team-control-room-adapter-parity — Implemented team/control-room adapter contracts with shared lanes, gates, feedback, events, and docs.
 - 2026-06-09: closed 156-feedback-handoff-improvement-parity — Close feedback handoff improvement parity slice.
