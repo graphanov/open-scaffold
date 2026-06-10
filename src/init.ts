@@ -318,6 +318,31 @@ function downstreamMinimumScaffoldDocTemplate(): string {
   ].join('\n') + '\n';
 }
 
+function downstreamTaskRunModelDocTemplate(): string {
+  return [
+    '# Task, Run, and Operator-Surface Model',
+    '',
+    'Open Scaffold standard tier keeps work identity simple:',
+    '',
+    '```text',
+    'Task owns intent/lifecycle.',
+    'Run owns one execution attempt.',
+    'Operator surface mirrors status, questions, and approvals; it is not canonical truth.',
+    'Evidence owns proof.',
+    '```',
+    '',
+    '## Standard-tier rule',
+    '',
+    '- Use `.osc/plans/` for durable slice intent and stage state.',
+    '- If you delegate work, record the run attempt and evidence path in the plan or evidence note.',
+    '- Route blocking questions with explicit IDs when multiple runs are alive; never rely on the latest chat message.',
+    '- Keep approvals in evidence or PR review, not only chat.',
+    '',
+    'For the local workflow, see [`WORKFLOW.md`](WORKFLOW.md) and [`SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md).',
+    'Adapter/runtime binding details live in the upstream Open Scaffold docs or the max tier.',
+  ].join('\n') + '\n';
+}
+
 function downstreamBootstrapTemplate(): string {
   return `#!/usr/bin/env bash
 # open-scaffold bootstrap for a downstream project
@@ -457,6 +482,7 @@ function downstreamTemplateFor(file: string, tier: ScaffoldTier): string | null 
   if (file === 'README.md') return downstreamReadmeTemplate();
   if (file === 'ROADMAP.md') return downstreamRoadmapTemplate();
   if (file === 'docs/START_HERE.md') return downstreamMinimumScaffoldDocTemplate();
+  if (file === 'docs/TASK_RUN_MODEL.md') return downstreamTaskRunModelDocTemplate();
   return null;
 }
 
