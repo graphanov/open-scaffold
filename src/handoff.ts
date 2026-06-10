@@ -25,6 +25,7 @@ export interface HandoffValidation {
 function redactLocalText(value: string): string {
   return redactSecrets(String(value ?? ''))
     .replace(/\/(?:Users|home|tmp|private|var|Volumes)\/[^\s`'"),;]+/g, '[local-path omitted]')
+    .replace(/(^|[\s`'"(,;])\/(?:workspace|workspaces|workdir|repo)(?=$|[\s`'"),;])/g, '$1[local-path omitted]')
     .replace(/(^|[\s`'"(,;])\/(?!\/)(?:[A-Za-z0-9._-]+\/)+[^\s`'"),;]+/g, '$1[local-path omitted]')
     .replace(/[A-Za-z]:\\Users\\[^\s`'"),;]+/g, '[local-path omitted]');
 }

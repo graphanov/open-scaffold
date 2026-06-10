@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { compileResume } from '../src/resume.js';
@@ -121,7 +121,7 @@ describe('osc resume packet compiler', () => {
       '',
       '## Goal',
       '',
-      'Use token sk-aaaaaaaaaaaaaaaaaaaaaaaa from /Users/someone/secrets.txt and /workspace/open-scaffold/src/secret.ts to call the API.',
+      'Use token sk-aaaaaaaaaaaaaaaaaaaaaaaa from /Users/someone/secrets.txt, /workspace, and /workspace/open-scaffold/src/secret.ts to call the API.',
       '',
       '## Constraints / Out of scope',
       '',
@@ -133,7 +133,7 @@ describe('osc resume packet compiler', () => {
       '',
       '## Acceptance criteria',
       '',
-      '- [ ] Confirm sk-aaaaaaaaaaaaaaaaaaaaaaaa never appears in logs under /Users/someone/secrets.txt or /workspace/open-scaffold/src/secret.ts.',
+      '- [ ] Confirm sk-aaaaaaaaaaaaaaaaaaaaaaaa never appears in logs under /Users/someone/secrets.txt, /workspace, or /workspace/open-scaffold/src/secret.ts.',
       '',
       '## Verification steps',
       '',
@@ -150,12 +150,12 @@ describe('osc resume packet compiler', () => {
 
     expect(packet).not.toContain('sk-aaaaaaaaaaaaaaaaaaaaaaaa');
     expect(packet).not.toContain('/Users/someone');
-    expect(packet).not.toContain('/workspace/open-scaffold');
+    expect(packet).not.toContain('/workspace');
     expect(packet).toContain('sk-[redacted]');
     expect(packet).toContain('local-path');
     expect(summaryJson).not.toContain('sk-aaaaaaaaaaaaaaaaaaaaaaaa');
     expect(summaryJson).not.toContain('/Users/someone');
-    expect(summaryJson).not.toContain('/workspace/open-scaffold');
+    expect(summaryJson).not.toContain('/workspace');
     expect(summaryJson).toContain('sk-[redacted]');
     expect(summaryJson).toContain('local-path');
     expect(summary.next_bounded_action).toContain('sk-[redacted]');
@@ -294,6 +294,34 @@ describe('osc resume packet compiler', () => {
     expect(summary.latest_run?.pending_gates).toBe(1);
     expect(summary.next_bounded_action).toContain('missing-required-context');
     expect(packet).toContain('osc harness answer harness-work-demo-1 --gate missing-required-context');
+  });
+
+
+  it('ignores symlinked run status files instead of reading outside the repo', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-symlink-run');
+    const outside = join(tempRepo(), 'external-status.json');
+    writeFileSync(outside, JSON.stringify({
+      schema: 'osc.harness-status.v1',
+      runId: 'external-run-id',
+      command: 'work',
+      state: 'waiting_on_human',
+      updatedAt: '2026-06-10T10:00:00.000Z',
+      pendingHumanGates: [{ id: 'external-gate-id', required: true, status: 'pending' }],
+    }), 'utf8');
+    const runDir = join(root, '.osc', 'runs', 'harness-work-symlink');
+    mkdirSync(runDir, { recursive: true });
+    symlinkSync(outside, join(runDir, 'status.json'));
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.latest_run).toBeNull();
+    expect(summaryJson).not.toContain('external-run-id');
+    expect(summaryJson).not.toContain('external-gate-id');
+    expect(packet).not.toContain('external-run-id');
+    expect(packet).not.toContain('external-gate-id');
   });
 
   it('redacts sensitive run and gate identifiers before emitting resume output', () => {

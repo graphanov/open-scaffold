@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { redactPacketText } from './handoff.js';
 import { loadAcceptedImprovements, readFeedback } from './feedback.js';
@@ -142,7 +142,7 @@ function latestHarnessRun(root: string): InternalResumeLatestRun | null {
     const statusPath = join(dir, name, 'status.json');
     if (!existsSync(statusPath)) continue;
     try {
-      if (!statSync(statusPath).isFile()) continue;
+      if (!lstatSync(statusPath).isFile()) continue;
       const parsed = JSON.parse(readFileSync(statusPath, 'utf8')) as RunStatusFile;
       const rawRunId = typeof parsed.runId === 'string' ? parsed.runId : name;
       const gates = Array.isArray(parsed.pendingHumanGates) ? parsed.pendingHumanGates : [];
