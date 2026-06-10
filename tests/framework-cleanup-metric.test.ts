@@ -11,7 +11,7 @@ const cleanupBaselineLoc = 20_890;
 // Feedback/handoff parity adds the real retry, repair-hypothesis, handoff, and team feedback wiring instead of leaving those as standalone lab primitives.
 // Reproduction proof parity adds live benchmark lane packaging, clean-completion/proof-gate logic, benchmark feedback wiring, lane-specific live prompts, collision-safe run ids, and adapter token-usage capture.
 // Team/control-room parity adds shared worker-lane status, adapter metadata, worker gates, and transport-neutral event projections.
-const cleanupTargetLoc = 15_538;
+const cleanupTargetLoc = 15_555;
 const cleanupTargetFiles = 38;
 
 interface MaintainedSourceFile {
@@ -54,7 +54,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(15_538);
+    expect(cleanupTargetLoc).toBe(15_555);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

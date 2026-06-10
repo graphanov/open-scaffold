@@ -812,6 +812,40 @@ function teamImprovementSummaries(repoRoot: string, parsed: ParsedHarnessCommand
   }));
 }
 
+function writeTeamWorkerEvidence(repoRoot: string, worker: WorkerStatus, sharedEvidencePath: string) {
+  writeFileUnder(repoRoot, worker.evidencePath, [
+    `# Worker evidence: ${worker.id}`,
+    '',
+    `Role: ${worker.role}`,
+    `State: ${worker.state}`,
+    `Adapter: ${worker.adapter?.adapterId ?? 'unknown'}`,
+    `Shared evidence: ${sharedEvidencePath}`,
+    worker.failureCode ? `Failure code: ${worker.failureCode}` : 'Failure code: none',
+    worker.humanGateIds?.length ? `Human gates: ${worker.humanGateIds.join(', ')}` : 'Human gates: none',
+    worker.resumedFromGate ? `Resumed from gate: ${worker.resumedFromGate}` : null,
+    '',
+  ].filter((line) => line !== null).join('\n'), 'worker evidence path');
+}
+
+function writeSharedTeamEvidence(repoRoot: string, runId: string, sharedEvidencePath: string, planRef: { path: string } | null, goal: string, workers: WorkerStatus[]) {
+  writeFileUnder(repoRoot, sharedEvidencePath, [
+    '# Shared team evidence',
+    '',
+    `Run ID: ${runId}`,
+    planRef ? `Plan: ${planRef.path}` : `Goal: ${goal || 'not recorded'}`,
+    '',
+    'One shared evidence record for every worker lane in this coordinated team run.',
+    '',
+    '## Worker lanes',
+    '',
+    ...workers.map((worker) => `- ${worker.id}: ${worker.state}; evidence ${worker.evidencePath}; adapter ${worker.adapter?.adapterId ?? 'unknown'}; failure ${worker.failureCode ?? 'none'}`),
+    '',
+    `Feedback path: .osc/runs/${runId}/feedback.jsonl`,
+    `Postflight: .osc/runs/${runId}/postflight.md`,
+    '',
+  ].join('\n'), 'shared team evidence path');
+}
+
 function routeTeam(repoRoot: string, parsed: ParsedHarnessCommand): HarnessCommandResult {
   const runId = uniqueRunIdFor(repoRoot, 'team', parsed.intent);
   ensureRunDir(repoRoot, runId);
@@ -871,35 +905,10 @@ function routeTeam(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
   const planRef = safePlanRef(parsed);
   writeEvent(repoRoot, runId, 'command_started', { command: 'team', intent: parsed.intent, workers: workers.map((worker) => worker.id), planRef });
   for (const worker of workers) {
-    writeFileUnder(repoRoot, worker.evidencePath, [
-      `# Worker evidence: ${worker.id}`,
-      '',
-      `Role: ${worker.role}`,
-      `State: ${worker.state}`,
-      `Adapter: ${worker.adapter?.adapterId ?? 'unknown'}`,
-      `Shared evidence: ${sharedEvidencePath}`,
-      worker.failureCode ? `Failure code: ${worker.failureCode}` : 'Failure code: none',
-      worker.humanGateIds?.length ? `Human gates: ${worker.humanGateIds.join(', ')}` : 'Human gates: none',
-      '',
-    ].join('\n'), 'worker evidence path');
+    writeTeamWorkerEvidence(repoRoot, worker, sharedEvidencePath);
     writeEvent(repoRoot, runId, 'team_worker_status', { workerId: worker.id, state: worker.state, adapterId: worker.adapter?.adapterId, failureCode: worker.failureCode, evidencePath: worker.evidencePath });
   }
-  writeFileUnder(repoRoot, sharedEvidencePath, [
-    '# Shared team evidence',
-    '',
-    `Run ID: ${runId}`,
-    planRef ? `Plan: ${planRef.path}` : `Goal: ${parsed.intent || 'not recorded'}`,
-    '',
-    'One shared evidence record for every worker lane in this coordinated team run.',
-    '',
-    '## Worker lanes',
-    '',
-    ...workers.map((worker) => `- ${worker.id}: ${worker.state}; evidence ${worker.evidencePath}; adapter ${worker.adapter?.adapterId ?? 'unknown'}; failure ${worker.failureCode ?? 'none'}`),
-    '',
-    `Feedback path: .osc/runs/${runId}/feedback.jsonl`,
-    `Postflight: .osc/runs/${runId}/postflight.md`,
-    '',
-  ].join('\n'), 'shared team evidence path');
+  writeSharedTeamEvidence(repoRoot, runId, sharedEvidencePath, planRef, parsed.intent, workers);
   const feedbackRecords = teamOutcomes.filter((outcome) => outcome.recordsFeedback).map((outcome) => recordFeedback({
     repoRoot,
     runId,
@@ -1035,6 +1044,14 @@ export function answerHumanGate({ repoRoot = process.cwd(), runId, gateId, answe
     team.workers = workers;
     team.humanGates = gates;
     writeJsonUnder(repoRoot, `.osc/runs/${safe}/team.json`, team, 'team run path');
+    const sharedEvidence = team.sharedEvidence as { path?: unknown } | undefined;
+    const sharedEvidencePath = typeof sharedEvidence?.path === 'string' ? sharedEvidence.path : `.osc/runs/${safe}/shared-evidence.md`;
+    const planRef = team.planRef && typeof team.planRef === 'object' && typeof (team.planRef as { path?: unknown }).path === 'string'
+      ? { path: String((team.planRef as { path: unknown }).path) }
+      : null;
+    const goal = typeof team.intent === 'string' ? team.intent : '';
+    for (const worker of workers) writeTeamWorkerEvidence(repoRoot, worker, sharedEvidencePath);
+    writeSharedTeamEvidence(repoRoot, safe, sharedEvidencePath, planRef, goal, workers);
     writePostflight(repoRoot, safe, 'team', nextState, {
       feedbackPath: `.osc/runs/${safe}/feedback.jsonl`,
       acceptedImprovementCount: Array.isArray((team.improvements as { inherited?: unknown[] } | undefined)?.inherited) ? (team.improvements as { inherited: unknown[] }).inherited.length : undefined,

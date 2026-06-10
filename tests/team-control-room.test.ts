@@ -119,6 +119,14 @@ describe('$team control-room adapter parity', () => {
     expect(team.workers.find((worker: any) => worker.id === 'review')).toMatchObject({ state: 'ready', resumedFromGate: 'worker-review-needs-human' });
     expect(readFileSync(join(root, `.osc/runs/${waiting.runId}/postflight.md`), 'utf8')).toContain('State: ready');
 
+    const sharedEvidence = readFileSync(join(root, `.osc/runs/${waiting.runId}/shared-evidence.md`), 'utf8');
+    const reviewEvidence = readFileSync(join(root, `.osc/runs/${waiting.runId}/workers/review/evidence.md`), 'utf8');
+    expect(sharedEvidence).toContain('- review: ready;');
+    expect(sharedEvidence).not.toContain('review: waiting_on_human');
+    expect(reviewEvidence).toContain('State: ready');
+    expect(reviewEvidence).toContain('Human gates: none');
+    expect(reviewEvidence).toContain('Resumed from gate: worker-review-needs-human');
+
     const events = readFileSync(join(root, `.osc/runs/${waiting.runId}/events.jsonl`), 'utf8')
       .trim()
       .split('\n')
