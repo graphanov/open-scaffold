@@ -4,9 +4,9 @@ This page is the canonical reconciliation between the current package version an
 
 ## Current line: `v0.31.x` (pre-1.0 hardening)
 
-- **Current `package.json` version:** `0.31.0`.
-- **npm latest:** `0.31.0` with dist-tag `latest` after owner-approved trusted publishing; run `npm view open-scaffold version dist-tags --json` for live confirmation.
-- **GitHub Release latest:** `v0.31.0` is marked **Latest** after GitHub Release follow-through.
+- **Current `package.json` version:** `0.31.1` release candidate in the repository.
+- **npm latest:** `0.31.0` with dist-tag `latest` until owner-approved trusted publishing for `0.31.1` completes; run `npm view open-scaffold version dist-tags --json` for live confirmation.
+- **GitHub Release latest:** `v0.31.0` is marked **Latest** until GitHub Release follow-through for `v0.31.1` completes.
 - **Maturity:** pre-1.0 hardening. The core work-record protocol is usable, but the public product surface, runtime boundary, and adoption story are still moving. See [`docs/STABILITY.md`](STABILITY.md) for the full stable-vs-experimental boundary.
 
 Do not treat the repository version alone as proof of npm publication or GitHub Release movement. Verify the registry and release surfaces separately.
@@ -19,13 +19,13 @@ Do not treat the repository version alone as proof of npm publication or GitHub 
 
 ## Stable vs experimental in the current line
 
-The `v0.31.x` line defines a stable-enough core (the repo-native work-record loop, the Status + seven content-heading plan schema, lifecycle helpers, first-run onboarding, PR-native structural checks, adapter trust inspection, command/schema registries, and read-only commands such as `osc compare` and `osc trace`) alongside explicitly experimental surfaces (runtime launch, dashboards, cockpit transports, evaluation helpers, MCP interface). The framework cleanup shrink removed or repositioned older experimental helpers from the live reduced CLI; pin older package versions if you depend on those exact command shapes. See [`docs/STABILITY.md`](STABILITY.md) for the full listing.
+The `v0.31.x` line defines a stable-enough core (the repo-native work-record loop, the Status + seven content-heading plan schema, lifecycle helpers, first-run onboarding, PR-native structural checks, adapter trust inspection, command/schema registries, and read-only commands such as `osc compare` and `osc trace`) alongside explicitly experimental surfaces (runtime launch, dashboards, cockpit transports, evaluation helpers, MCP interface). The `0.31.1` candidate publishes harness-readiness docs and command-help parity on top of the `0.31.0` framework cleanup line, but it does not change the pre-1.0 boundary. Pin older package versions if you depend on exact command shapes.
 
 ## Summary
 
 | Surface | Value |
 |---|---|
-| `package.json` version | `0.31.0` |
+| `package.json` version | `0.31.1` candidate; npm latest remains `0.31.0` until publish |
 | Current package line | `v0.31.x` (pre-1.0) |
 | Most recent historical tag | `v1.0.5` |
 | Historical package line | `v1.0.x` (over-eager launch; not current) |
