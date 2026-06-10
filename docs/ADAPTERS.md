@@ -59,7 +59,7 @@ Project-local adapter configs are checked into the repo and treated as untrusted
 
 Execution authority is explicit: an adapter id plus `--allow-spawn` plus human gates.
 
-Open Scaffold core selects and packages; it never spawns a runtime process by itself. A runtime adapter owns installation, authentication, process launch, sandbox behavior, and the dispatch receipt it returns. Runtime-local logs and session state are forensic — useful for investigation, not durable project truth — until promoted into `.osc/runs/`, evidence docs, PRs, or release notes.
+Open Scaffold core always requires explicit launch authority before process execution. Plain `osc run` selects and packages work without spawning. The `$work ... --allow-spawn --adapter <id>` path intentionally invokes the reviewed adapter command through the harness launcher, which enforces adapter selection, trust, environment allowlisting, timeouts, bounded logs, and receipt capture before any runtime output can become project truth. Adapter-owned setup, authentication, sandbox behavior, and runtime-local session state remain forensic — useful for investigation, not durable project truth — until promoted into `.osc/runs/`, evidence docs, PRs, or release notes.
 
 For the full adapter/coordinator lifecycle contract, see [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
 
