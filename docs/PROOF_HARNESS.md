@@ -6,7 +6,7 @@ Status: lab/experimental, source-labeled, bounded comparison surface.
 
 The command does not run Codex, call an LLM, rank models, approve work, or certify correctness. It reads a committed manifest plus source-labeled receipts and renders the comparison honestly, including ties and regressions.
 
-For Open Scaffold-owned reproduction runs, use `osc bench suite` and `osc bench handoff-lab` instead. `osc prove` compares checked-in proof receipts; `osc bench` creates local reproduction evidence and must still report `reproduced`, `partially_reproduced`, or `not_reproduced` without promoting source-prototype evidence into Open Scaffold proof. The current Open Scaffold-run harness migration verdict is summarized in [`HARNESS_REPRODUCIBILITY.md`](HARNESS_REPRODUCIBILITY.md): `partially_reproduced`, with broad dominance still `mixed_not_proven`.
+For Open Scaffold-owned reproduction runs, use `osc bench suite` and `osc bench handoff-lab` instead. `osc prove` compares checked-in proof receipts; `osc bench` creates local reproduction evidence and must still report `reproduced`, `partially_reproduced`, or `not_reproduced` without promoting source-prototype evidence into Open Scaffold proof. The current Open Scaffold-run harness migration verdict is `partially_reproduced`, with broad dominance still `mixed_not_proven`.
 
 ```bash
 osc prove check examples/proof/scaffold-vs-naked-codex/manifest.json
@@ -87,3 +87,40 @@ Required metric categories are `quality`, `tokens`, `speed`, and `evolution`. `o
 - prove a task is correct;
 - approve merge, release, publish, deploy, or compliance decisions;
 - replace a controlled A/B study for broader causal claims.
+
+## Reproducing the fixture
+
+Run the bench commands in order. Each writes results under `.osc/bench/<suite-id>/`:
+
+```bash
+# 1. Simulated smoke — verifies schema, aggregate, report, feedback, and proof gate
+osc bench suite --mode simulated --out .osc/bench/simulated-runtime-smoke
+
+# 2. Handoff lab — tests 15 deterministic handoff candidates, keeps the best under budget
+osc bench handoff-lab --out .osc/bench/handoff-lab-15
+
+# 3. Targeted live handoff — budget-gated live run for compact handoff reproduction
+osc bench suite --mode live \
+  --fixture token-efficient-handoff-resume \
+  --include-ablations \
+  --ablation-fixture token-efficient-handoff-resume \
+  --allow-spawn \
+  --effort low \
+  --out .osc/bench/targeted-live-handoff
+```
+
+Live mode only counts as runtime evidence when `--allow-spawn` is present. Each suite writes `.osc/bench/<suite-id>/aggregate.json` and `.osc/bench/<suite-id>/REPORT.md`; the handoff lab also writes per-method `resume.md` and `score.json` under `.osc/bench/<suite-id>/methods/<method>/`. Raw live logs and local runtime residue are gitignored; commit a short evidence note when a PR needs a durable readout.
+
+## Current evidence status
+
+| Claim | Status | Notes |
+|---|---|---|
+| Checked-in fixture passes `osc prove check` | demonstrated | `examples/proof/scaffold-vs-naked-codex/` |
+| Decision quality preserved (5/5 both arms) | demonstrated | committed receipts |
+| Prompt payload reduction (~11.6×) | demonstrated | committed receipts |
+| Token and wall-clock reduction | demonstrated | committed receipts |
+| Live-lane reproduction of efficiency win | partially_reproduced | Compact handoff did not reproduce the source efficiency win in the rerun; runtime token receipts unavailable from live Codex adapter output |
+| Broad dominance over naked Codex | mixed_not_proven | Ablations did not isolate a harness-specific causal effect; fixture count below broad proof gate |
+| Third-party or production adoption | not_demonstrated | No entries beyond placeholder in the adoption index |
+
+Live-lane reproduction has not yet fully succeeded; raw attempts are in `.osc/bench/`. Do not claim Open Scaffold broadly beats naked Codex from the current evidence.

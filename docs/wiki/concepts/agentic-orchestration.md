@@ -4,7 +4,7 @@ created: 2026-05-15
 updated: 2026-05-21
 type: concept
 tags: [open-scaffold, agent-orchestration, model-routing, evolutionary-loops]
-sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/AGENTIC_RUNTIME_LAYER.md, docs/EVOLUTION_LOOP.md, .osc/plans/done/031-agentic-orchestration-model-lab-vision.md, .osc/plans/done/087-closed-evolution-loop-contract.md, .osc/plans/done/046-executable-open-scaffold-architecture.md, docs/wiki/concepts/model-task-fit.md]
+sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/EVOLUTION_LOOP.md, .osc/plans/done/031-agentic-orchestration-model-lab-vision.md, .osc/plans/done/087-closed-evolution-loop-contract.md, .osc/plans/done/046-executable-open-scaffold-architecture.md, docs/wiki/concepts/model-task-fit.md]
 confidence: low
 contested: true
 ---

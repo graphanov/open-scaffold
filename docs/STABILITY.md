@@ -1,10 +1,19 @@
 # Open Scaffold stability
 
-This page defines Open Scaffold's current package contract and maturity boundary.
+This page is the single home for Open Scaffold's maturity boundary: what is stable, what is experimental, what is future, and what the project does not claim. Other surfaces state their promise once and link here.
 
-The short version: Open Scaffold is on a pre-1.0 hardening line (`v0.31.x` after the framework cleanup shrink) because the protocol is useful but the public product surface, runtime boundary, and adoption story are still moving quickly. The stable-enough core is the repo-native work-record loop — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus adoption/review/trust helpers such as `osc first-run`, `osc pr check`, adapter trust inspection, schema registry inspection, and read-only work-record commands such as `osc compare` and `osc trace` that help humans inspect recorded work without launching runtimes. Runtime launch, provider-specific automation, evaluation helpers, dashboards, and external cockpit transports remain opt-in lab/experimental surfaces unless a later release explicitly promotes them.
+The short version: Open Scaffold is on a pre-1.0 line (`v0.31.x`). The stable core is the work loop and its record — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus the review/trust helpers (`osc first-run`, `osc pr check`, adapter trust inspection, `osc compare`, `osc trace`). Runtime launch beyond the explicit `$work --adapter <id> --allow-spawn` path, evaluation helpers, and external event transports are labeled lab/experimental until a release promotes them.
 
-The historical `v1.0.x` packages and GitHub Releases remain available for provenance. They are not erased, but they should not set the current expectation that Open Scaffold has fully earned a mature 1.0 contract.
+## Honest limits
+
+Everything Open Scaffold does not claim, in one place:
+
+- **It does not make your model smarter.** It disciplines the loop around the model: bounded slices, gated execution, compact resumes, receipts. Output quality still comes from the model and the task.
+- **Receipts prove handoff and execution facts, not correctness.** Verification against acceptance criteria is a separate, recorded step — and a human still owns the judgment call.
+- **The proof fixture is bounded.** `examples/proof/` demonstrates compactness and decision-quality parity on one task family; it is not a general benchmark win. Current evidence status lives in [`PROOF_HARNESS.md`](PROOF_HARNESS.md); the broader benchmark program is backlog plan 163.
+- **It is not a compliance certification, sandbox, or security guarantee.** It produces structural evidence a process can build on; it does not replace the process.
+- **Humans own merge, publish, release, and deployment.** Nothing in the harness self-approves.
+- **Historical `v1.0.x` packages exist** as immutable publication history; the forward line is `v0.31.x` and the next 1.0 will be cut when the contract has earned it.
 
 ## Release status
 

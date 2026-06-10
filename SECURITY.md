@@ -36,11 +36,9 @@ Security or dependency bot output is review input, not automatic truth. Changes 
 
 ## Optional native dependency posture
 
-The local task database uses `better-sqlite3` as an optional native dependency. npm installs optional dependencies by default, which means downstream installs may fetch prebuilt/native artifacts for that feature.
+The root package intentionally ships without optional native dependencies. The core scaffold files, plan workflow, run packets, evidence notes, and GitHub-based task tracking should install without fetching native database artifacts.
 
-This dependency is not required for the core scaffold files, plan workflow, run packets, evidence notes, or GitHub-based task tracking. If an environment wants to avoid optional native installs, install with npm's optional-dependency omission mode and use GitHub Issues or another task bridge instead of `osc task` local database commands.
-
-When the optional dependency is unavailable, Open Scaffold should fail only the local task database command path with an explicit error rather than making the whole scaffold unusable.
+If a future local task database returns, it needs a dedicated plan and review gate before reintroducing native optional installs. Until then, use GitHub Issues or another external task bridge for task tracking rather than implying a bundled `osc task` database path.
 
 ## Runtime command boundaries
 

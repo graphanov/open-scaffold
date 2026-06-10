@@ -13,17 +13,17 @@ function firstLines(text: string, count: number): string {
 }
 
 describe('public work-record positioning', () => {
-  it('leads the README with the repo-native work-record promise', () => {
+  it('leads the README with the harness promise on a repo-native work record', () => {
     const firstScreen = firstLines(read('README.md'), 80);
 
     expect(firstScreen).toContain("Your AI agent's work belongs in your repo, not its chat history.");
+    expect(firstScreen).toContain('harness');
     expect(firstScreen).toContain('repo-native work record');
-    expect(firstScreen).toContain('goal');
     expect(firstScreen).toContain('plan');
-    expect(firstScreen).toContain('handoff');
     expect(firstScreen).toContain('evidence');
-    expect(firstScreen).toContain('approval');
     expect(firstScreen).toContain('lessons');
+    expect(firstScreen).toContain('resume');
+    expect(firstScreen).toContain('gate');
 
     expect(firstScreen).not.toMatch(/agent OS|control plane|compliance-grade|operating system|tamper-proof/i);
   });
@@ -133,28 +133,22 @@ describe('public work-record positioning', () => {
     expect(trace).not.toMatch(/trust score|compliance-grade|tamper-proof|certif(y|ies|ied)/i);
   });
 
-  it('keeps efficiency positioning benchmark-neutral and artifact-measured while exposing bounded proof receipts', () => {
+  it('keeps efficiency limits in one home and exposes bounded proof receipts', () => {
     const readme = read('README.md');
+    const stability = read('docs/STABILITY.md');
     const evolution = read('docs/EVOLUTION_LOOP.md');
-    const methodology = read('docs/EVIDENCE_METHODOLOGY.md');
     const faq = read('docs/FAQ.md');
     const proof = read('docs/PROOF_HARNESS.md');
-    const combined = [readme, evolution, methodology, faq, proof].join('\n');
 
-    expect(combined).toContain('does not make models smarter');
-    expect(combined).toContain('is not benchmark proof');
-    expect(combined).toContain('workflow control');
-    expect(combined).toContain('before/after artifact');
-    expect(combined).toContain('diagnostic');
-    expect(combined).toContain('experimental');
+    expect(stability).toContain('does not make your model smarter');
+    expect(stability).toContain('Receipts prove handoff and execution facts, not correctness');
     expect(evolution).toContain('osc evolve analyze .osc/evolution/demo-loop --efficiency');
-    expect(methodology).toContain('output bytes per useful decision field');
-    expect(methodology).toContain('osc prove compare');
     expect(proof).toContain('Bounded fixture proof only');
     expect(proof).toContain('not a universal benchmark');
     expect(proof).toContain('15,225 bytes');
     expect(proof).toContain('31,635');
     expect(readme).toContain('docs/PROOF_HARNESS.md');
+    expect(readme).toContain('docs/STABILITY.md');
     expect(faq).toContain('token/cost savings require receipts');
   });
 

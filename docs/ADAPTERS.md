@@ -2,8 +2,6 @@
 
 Open Scaffold is the runtime-neutral core. It owns the project contract: mission, roadmap, plans, amendments, verification, evidence, and run artifacts under `.osc/`.
 
-For the current OMC/OMX runtime selection surface and the minimum refreshed-adapter checklist, see [`docs/RUNTIME_SELECTION.md`](RUNTIME_SELECTION.md).
-
 This page uses precise language:
 
 - **Coordinators/orchestrators** — controllers/deciders — decide what should happen next and may maintain or bridge package/task state.
@@ -13,6 +11,57 @@ This page uses precise language:
 - **Operator surfaces** — chats/dashboards for human interaction — expose status and approvals.
 
 For the full taxonomy, see [`docs/OPEN_SCAFFOLD_SYSTEM.md`](OPEN_SCAFFOLD_SYSTEM.md). For public/private/future tool availability labels, see [`docs/REFERENCE_TRUTH.md`](REFERENCE_TRUTH.md).
+
+## Choosing a runtime
+
+Runtime selection answers one question: which execution target should a `run.json` work package be prepared for?
+
+```text
+User selects a runtime
+  -> Open Scaffold reads its runtime profile
+  -> Open Scaffold creates the run.json work package
+  -> Adapter/coordinator launches the actual runtime outside core
+  -> Runtime does the work
+  -> Evidence comes back into Open Scaffold
+```
+
+### Built-in runtime profiles
+
+| Runtime | Executor lane | Backend | Use when |
+|---|---|---|---|
+| `omc` | `omc-claude` | Claude Code + OMC | Execution lane is Claude Code with OMC workflow skills. |
+| `codex` | `omx-codex` | Codex via OMX | Broad Codex preset; backed by the `runtime-omx` adapter path. |
+| `omx` | `omx-codex` | Codex + OMX | Targeting OMX by name directly. |
+| `plain` | `plain-agent` | Any capable agent | Runtime-neutral prompt package; no harness skill inferred. |
+| `human` | `human` | Human/manual | Manual execution with evidence gates. |
+
+`codex` and `omx` both record the same `omx-codex` lane and `$ralplan` workflow token in `run.json`; `codex` is the broad user-facing preset, `omx` is for operators who want the OMX harness name explicitly.
+
+### Project-local adapters
+
+Drop a JSON file at `.osc/adapters/<id>.json` to define a project-local adapter — a company bot, private wrapper, or experimental runtime. The schema is `open-scaffold.adapter.v1`. Built-in profile ids (`omc`, `codex`, `omx`, `plain`, `human`, `custom`) are reserved and cannot be silently overridden by a project-local file.
+
+Minimal example:
+
+```json
+{
+  "schemaVersion": "open-scaffold.adapter.v1",
+  "id": "company-review-bot",
+  "command": ["company-review-bot"],
+  "envAllowlist": ["PATH"],
+  "timeoutMs": 600000
+}
+```
+
+Project-local adapter configs are checked into the repo and treated as untrusted configuration until `osc adapter trust <id>` records the reviewed config digest. Trust is invalidated automatically when the config changes.
+
+### Execution authority
+
+Execution authority is explicit: an adapter id plus `--allow-spawn` plus human gates.
+
+Open Scaffold core always requires explicit launch authority before process execution. Plain `osc run` selects and packages work without spawning. The `$work ... --allow-spawn --adapter <id>` path intentionally invokes the reviewed adapter command through the harness launcher, which enforces adapter selection, trust, environment allowlisting, timeouts, bounded logs, and receipt capture before any runtime output can become project truth. Adapter-owned setup, authentication, sandbox behavior, and runtime-local session state remain forensic — useful for investigation, not durable project truth — until promoted into `.osc/runs/`, evidence docs, PRs, or release notes.
+
+For the full adapter/coordinator lifecycle contract, see [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md).
 
 ## Generic core: `graphanov/open-scaffold`
 

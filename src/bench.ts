@@ -232,7 +232,7 @@ function requiredHandoffSeed() {
     state: 'Prior work built a harness route but the next worker must resume from compact evidence only. Keep this under budget and preserve proof boundaries.',
     decisions: ['Use repo evidence refs instead of raw logs.', 'Do not claim broad dominance from prototype evidence.', 'Feedback is not approval.'],
     blockers: ['Live reproduction may be partial.', 'Full live reproduction remains owner-gated when expensive.'],
-    evidenceRefs: ['docs/HARNESS_REPRODUCIBILITY.md', '.osc/bench/<suite>/aggregate.json'],
+    evidenceRefs: ['docs/PROOF_HARNESS.md', '.osc/bench/<suite>/aggregate.json'],
     nextActions: ['Inspect aggregate.json.', 'Report reproduced, partially reproduced, or not reproduced.', 'Keep broad dominance mixed unless strict gates clear.'],
     maxChars: 1200,
     reason: 'benchmark fixture seed',
@@ -708,7 +708,7 @@ export function runHandoffLab({ repoRoot = process.cwd(), outDir = '.osc/bench/h
     state: 'Prior work attempted a harness migration. Some checks may have passed, but exact verification output is missing and proof wording needs care.',
     decisions: ['Use $interview, $plan, $work, $team.', 'Keep evidence refs instead of raw logs.', 'Do not claim broad dominance from prototype evidence.'],
     blockers: ['Live Codex reproduction is optional and budget-gated.', 'Owner still controls merge, publish, and release.'],
-    evidenceRefs: ['docs/JOHN_LOMEIN_MIGRATION.md', '.osc/bench/simulated-runtime-smoke/aggregate.json'],
+    evidenceRefs: ['docs/PROOF_HARNESS.md', '.osc/bench/simulated-runtime-smoke/aggregate.json'],
     nextActions: ['Run local verification.', 'Inspect proof wording.', 'Open PR with reproduction status.'],
     maxChars,
   };

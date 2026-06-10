@@ -1,27 +1,35 @@
 # Start Here
 
-The single first action for a solo developer or their AI agent entering this repository cold.
+The single first action for a developer or AI agent entering this repository cold.
 
 ## What is Open Scaffold?
 
-Open Scaffold gives AI-assisted work a durable repo record. It keeps the goal, plan, handoff, evidence, approval trail, and lessons in git-tracked files — so any agent or future session can pick up work without relying on vanished chat context.
-
-- **Version info:** see [`docs/VERSION_TRUTH.md`](VERSION_TRUTH.md) for the current package line and historical tags.
-- **Jargon:** see [`docs/GLOSSARY.md`](GLOSSARY.md) for run packet, glass cockpit, OMC/OMX, operator surface, and namespace definitions.
+Open Scaffold is a harness for AI-assisted work. It clarifies messy intent into bounded slices, plans them in the repo, gates execution through explicit adapters, and keeps the whole work record — goal, plan, handoff, evidence, approvals, lessons — in git-tracked files. Any agent or future session can resume the work cold, with no chat history.
 
 ## The one first action
 
+In the repo you want to scaffold:
+
 ```bash
-npx open-scaffold init --tier min --target .
+npx open-scaffold@latest first-run
 ```
 
-Run it from the repo you want to scaffold. This adds the minimal scaffold to the current directory: `MISSION.md`, `.osc/plans/`, and `.osc/releases/`.
+Three guided questions produce the minimum work record — `MISSION.md`, one active plan with acceptance criteria, an evidence skeleton — and print the exact commands to run next.
 
-After that: define your mission in `MISSION.md`, create a plan with `osc plan new <slug> --stage active`, hand it off with a run packet or amendment, capture evidence, verify, and close the slice.
+From there, the whole human grammar is four verbs:
 
-## See the core idea before adopting
+```bash
+osc harness '$interview "clarify the work"'
+osc harness '$plan "describe the slice" --slug my-slice'
+osc harness '$work "implement the slice" --context "plan is ready"'
+osc harness '$team "split work across lanes" --worker implementation --worker review'
+```
 
-From this repository checkout, run the 30-second demo — no runtime, no provider account needed:
+## See the core trick before adopting
+
+Zero-context resume is the point. Explore [`../examples/resume-demo/`](../examples/resume-demo/) — a committed mid-flight project snapshot: one active plan with unchecked acceptance criteria, one amendment, one closed slice, and an evidence note. Everything a fresh agent needs to continue bounded work without any chat history. The narrated path is [`RESUME_WALKTHROUGH.md`](RESUME_WALKTHROUGH.md).
+
+For a 30-second taste with no setup at all, compare two recorded attempts:
 
 ```bash
 npx open-scaffold@latest compare \
@@ -29,19 +37,15 @@ npx open-scaffold@latest compare \
   examples/attempt-compare/attempt-b
 ```
 
-To see what zero-context resume looks like in practice, explore `examples/resume-demo/`. It is a committed mid-flight project snapshot: one active plan with unchecked acceptance criteria, one amendment, one closed slice, and an evidence note — everything a new agent or session needs to reconstruct bounded next work without any chat history.
-
-See [`docs/RESUME_WALKTHROUGH.md`](RESUME_WALKTHROUGH.md) for the narrated walkthrough and the no-overclaim disclaimer about what is and is not a shipped stable command today.
-
 ## Where to go next
 
 | I want to… | Go to |
 |---|---|
-| Understand the project mission and goals | [`MISSION.md`](../MISSION.md) |
-| See the current roadmap | [`ROADMAP.md`](../ROADMAP.md) |
-| Learn the core work-record loop | [`README.md`](../README.md) |
-| Understand the version story | [`docs/VERSION_TRUTH.md`](VERSION_TRUTH.md) |
-| Look up unfamiliar terms | [`docs/GLOSSARY.md`](GLOSSARY.md) |
-| Understand the system boundary map | [`docs/OPEN_SCAFFOLD_SYSTEM.md`](OPEN_SCAFFOLD_SYSTEM.md) |
-| Try the resume fixture | `examples/resume-demo/` |
-| Read the zero-context resume walkthrough | [`docs/RESUME_WALKTHROUGH.md`](RESUME_WALKTHROUGH.md) |
+| Understand the mission and goals | [`MISSION.md`](../MISSION.md) |
+| Learn the harness loop and the four verbs | [`HARNESS_COMMANDS.md`](HARNESS_COMMANDS.md) |
+| See how the loop is wired | [`HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md) |
+| Pick or write a runtime adapter | [`ADAPTERS.md`](ADAPTERS.md) |
+| Check what is stable vs experimental | [`STABILITY.md`](STABILITY.md) |
+| Understand the version story | [`VERSION_TRUTH.md`](VERSION_TRUTH.md) |
+| Look up unfamiliar terms | [`GLOSSARY.md`](GLOSSARY.md) |
+| Read the system boundary map | [`OPEN_SCAFFOLD_SYSTEM.md`](OPEN_SCAFFOLD_SYSTEM.md) |

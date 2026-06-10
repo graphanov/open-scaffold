@@ -4,7 +4,7 @@ created: 2026-05-15
 updated: 2026-05-15
 type: concept
 tags: [open-scaffold, governance, workflow, agent-orchestration]
-sources: [docs/GLASS_COCKPIT_PROTOCOL.md, ROADMAP.md]
+sources: [ROADMAP.md]
 confidence: high
 contested: false
 ---

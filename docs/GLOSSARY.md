@@ -10,7 +10,7 @@ A repo-native handoff package stored at `.osc/runs/<run_id>/run.json`. It captur
 
 ## glass cockpit
 
-An event stream protocol for real-time status broadcasting. A glass cockpit transport relays structured events — status updates, blockers, questions, approvals, evidence receipts, and PR links — to a human-facing channel such as Discord, Slack, or a local dashboard. It is an opt-in lab/experimental surface: the core work-record loop does not require it. See [`docs/GLASS_COCKPIT_PROTOCOL.md`](GLASS_COCKPIT_PROTOCOL.md) for the event vocabulary.
+An event stream protocol for real-time status broadcasting. A glass cockpit transport relays structured events — status updates, blockers, questions, approvals, evidence receipts, and PR links — to a human-facing channel such as Discord, Slack, or a local dashboard. It is an opt-in lab/experimental surface: the core work-record loop does not require it. The protocol doc was archived 2026-06-10; the live event vocabulary is in [`docs/HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md).
 
 ## OMC / OMX / Codex
 

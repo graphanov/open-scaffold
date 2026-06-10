@@ -469,7 +469,7 @@ Avoid:
 
 ## Relationship to cockpit events
 
-Slice close decisions often appear first as cockpit events: `completion_report`, `approval_request`, `evidence_receipt`, or `pr_link`. Those events are visibility and control messages. The durable close record still belongs in the run packet, evidence file, PR/release note, issue/task, or plan/amendment. See [`docs/GLASS_COCKPIT_PROTOCOL.md`](GLASS_COCKPIT_PROTOCOL.md) for the event vocabulary.
+Slice close decisions often appear first as cockpit events: `completion_report`, `approval_request`, `evidence_receipt`, or `pr_link`. Those events are visibility and control messages. The durable close record still belongs in the run packet, evidence file, PR/release note, issue/task, or plan/amendment. The live event vocabulary is in [`docs/HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md).
 
 ## Minimal manual template
 
