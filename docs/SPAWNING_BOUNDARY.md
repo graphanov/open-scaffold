@@ -265,9 +265,7 @@ The next slice should not:
 ## Relationship to existing docs
 
 - `docs/RUNTIME_BINDING_CONTRACT.md` defines the current package-to-binding lifecycle.
-- `docs/RUNTIME_STRATEGY_RESEARCH_SYNTHESIS.md` captures the Milestone 16 framework research synthesis.
 - `docs/TASK_RUN_MODEL.md` defines task/run/question IDs.
-- `docs/GLASS_COCKPIT_PROTOCOL.md` defines operator-surface events.
 - `docs/SLICE_CLOSE_PROTOCOL.md` defines evidence-backed postflight and approval strength.
 
 This document narrows those ideas into the spawning/adapter boundary that must hold before any `osc spawn` or runtime adapter implementation is attempted.

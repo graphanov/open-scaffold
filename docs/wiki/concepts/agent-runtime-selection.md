@@ -4,7 +4,7 @@ created: 2026-05-15
 updated: 2026-05-20
 type: concept
 tags: [open-scaffold, runtime, agent-orchestration, product-vision]
-sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_SELECTION.md, docs/RUNTIME_PROFILES.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, docs/AGENTIC_RUNTIME_LAYER.md, packages/runtime-omx/README.md, .osc/plans/done/030-agent-runtime-selection-vision.md, .osc/plans/done/042-reference-adapter-package-no-spawn.md, .osc/plans/done/046-executable-open-scaffold-architecture.md]
+sources: [MISSION.md, ROADMAP.md, docs/RUNTIME_BINDING_CONTRACT.md, docs/SPAWNING_BOUNDARY.md, packages/runtime-omx/README.md, .osc/plans/done/030-agent-runtime-selection-vision.md, .osc/plans/done/042-reference-adapter-package-no-spawn.md, .osc/plans/done/046-executable-open-scaffold-architecture.md]
 confidence: medium
 contested: partially
 ---

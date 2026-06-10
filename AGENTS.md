@@ -15,7 +15,6 @@ open-scaffold has multiple layers. The **core system** is framework-agnostic rep
 - **System ontology:** `docs/OPEN_SCAFFOLD_SYSTEM.md` — boundary map for Open Scaffold core, orchestrators/agents, OMC/OMX runtime harnesses, task bridges, glass-cockpit surfaces, and GitHub.
 - **Task/run model:** `docs/TASK_RUN_MODEL.md` — `task_id` for durable work, `run_id` for one execution attempt, `question_id` for operator prompts, and chat/thread ids as optional bindings.
 - **Slice close protocol:** `docs/SLICE_CLOSE_PROTOCOL.md` — evidence receipts, postflight decisions, approval strength, correction routing, and next-slice inheritance.
-- **Glass cockpit protocol:** `docs/GLASS_COCKPIT_PROTOCOL.md` — event vocabulary for status, blockers, questions, approvals, evidence receipts, PR links, and build-in-public streams.
 - **Runtime binding contract:** `docs/RUNTIME_BINDING_CONTRACT.md` — lifecycle/responsibilities for OMC/OMX/plain-agent/human bindings that consume run packets outside core.
 - **GitHub workflow:** `docs/GITHUB_WORKFLOW.md` — issue → task/run → branch/PR → CI/Codex review → human approval → merge traceability.
 - **Plans directory:** `.osc/plans/` — immutable plan files organized in stage subfolders (`active/`, `backlog/`, `done/`, `blocked/`), one per task/feature slice, conforming to the Status + seven content-heading schema in `.osc/plans/handoff-template.md`. The folder IS the status — see `.osc/plans/WORKFLOW.md` for movement rules.

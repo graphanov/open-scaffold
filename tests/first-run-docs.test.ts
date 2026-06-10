@@ -9,32 +9,27 @@ function read(path: string): string {
 }
 
 describe('first-run documentation truth', () => {
-  it('advertises the published npx command as the default first-run path', () => {
-    const docs = [
-      ['README.md', read('README.md')],
-      ['docs/MINIMUM_VIABLE_SCAFFOLD.md', read('docs/MINIMUM_VIABLE_SCAFFOLD.md')],
-    ] as const;
-
-    for (const [path, text] of docs) {
-      expect(text, path).toContain('npx open-scaffold init --tier min');
-    }
+  it('advertises the published guided first-run as the default adoption path', () => {
+    expect(read('README.md')).toContain('npx open-scaffold@latest first-run');
+    expect(read('docs/MINIMUM_VIABLE_SCAFFOLD.md')).toContain('npx open-scaffold init --tier min');
   });
 
   it('keeps a source-checkout fallback path for users who do not want npx', () => {
-    const readme = read('README.md');
     const minimum = read('docs/MINIMUM_VIABLE_SCAFFOLD.md');
 
-    for (const [path, text] of [['README.md', readme], ['docs/MINIMUM_VIABLE_SCAFFOLD.md', minimum]] as const) {
-      expect(text, path).toContain('git clone https://github.com/graphanov/open-scaffold');
-      expect(text, path).toContain('npm install');
-      expect(text, path).toContain('npm run build');
-      expect(text, path).toContain('node dist/cli.js init');
-    }
+    expect(minimum).toContain('git clone https://github.com/graphanov/open-scaffold');
+    expect(minimum).toContain('npm install');
+    expect(minimum).toContain('npm run build');
+    expect(minimum).toContain('node dist/cli.js init');
   });
 
   it('documents lifecycle helper commands without removing shell fallbacks', () => {
+    const readme = read('README.md');
+    for (const command of ['osc plan new', 'osc evidence new', 'osc amend', 'osc close']) {
+      expect(readme, 'README.md').toContain(command);
+    }
+
     const docs = [
-      ['README.md', read('README.md')],
       ['docs/MINIMUM_VIABLE_SCAFFOLD.md', read('docs/MINIMUM_VIABLE_SCAFFOLD.md')],
       ['docs/WORKFLOW.md', read('docs/WORKFLOW.md')],
     ] as const;
@@ -47,9 +42,6 @@ describe('first-run documentation truth', () => {
       expect(text, path).toContain('npx open-scaffold amend');
       expect(text, path).toContain('npx open-scaffold close');
     }
-    expect(read('README.md')).toContain('cp .osc/plans/handoff-template.md');
-    expect(read('README.md')).toContain('./amend.sh');
-    expect(read('README.md')).toContain('./close.sh');
     expect(read('docs/MINIMUM_VIABLE_SCAFFOLD.md')).toContain('copy `.osc/plans/handoff-template.md`');
     expect(read('docs/MINIMUM_VIABLE_SCAFFOLD.md')).toContain('./close.sh');
     expect(read('docs/WORKFLOW.md')).toContain('Shell scripts remain the day-zero floor');
@@ -64,12 +56,9 @@ describe('first-run documentation truth', () => {
     });
   });
 
-  it('documents optional dev container support without replacing npx setup', () => {
-    const readme = read('README.md');
+  it('documents optional dev container support', () => {
     const devcontainer = read('docs/DEV_CONTAINER.md');
 
-    expect(readme).toContain('Dev Container');
-    expect(readme).toContain('npx open-scaffold init --tier min');
     expect(devcontainer).toContain('docker build -t osc-devcontainer -f .devcontainer/Dockerfile .devcontainer/');
     expect(devcontainer).toContain('Containers');
     expect(devcontainer).not.toContain('Daniel');

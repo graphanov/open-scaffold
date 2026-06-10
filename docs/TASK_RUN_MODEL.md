@@ -85,7 +85,7 @@ A runtime binding — external launch glue — consumes `run.json`, validates pa
 
 ### Event / cockpit bindings
 
-Cockpit events — operator-dashboard messages — are status, blocker, question, answer, approval, completion, evidence, PR, release, nudge, or cancellation messages posted to an operator surface. They should carry canonical IDs rather than becoming canonical themselves. See [`docs/GLASS_COCKPIT_PROTOCOL.md`](GLASS_COCKPIT_PROTOCOL.md).
+Cockpit events — operator-dashboard messages — are status, blocker, question, answer, approval, completion, evidence, PR, release, nudge, or cancellation messages posted to an operator surface. They should carry canonical IDs rather than becoming canonical themselves. The harness event stream in [`docs/HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md) defines the current event vocabulary.
 
 ### Runtime bindings
 

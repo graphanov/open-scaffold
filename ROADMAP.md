@@ -100,15 +100,15 @@ Acceptance criteria:
 
 ## Milestone 3 — Glass cockpit MVP
 
-Status: v1 complete in PR #6 via `docs/GLASS_COCKPIT_PROTOCOL.md`; implementation examples are optional follow-up slices, not required for the protocol milestone to count as done.
+Status: v1 complete in PR #6 via the glass-cockpit event protocol (archived 2026-06-10; see git history); implementation examples are optional follow-up slices, not required for the protocol milestone to count as done.
 
 Goal: make build-in-public / private control-room operation a first-class Open Scaffold capability.
 
 Deliverables:
 
-- Define glass-cockpit event types: nudge, active session, blocker, question, answer, approval request, completion report, evidence receipt, PR link. First public shape: `docs/GLASS_COCKPIT_PROTOCOL.md`.
+- Define glass-cockpit event types: nudge, active session, blocker, question, answer, approval request, completion report, evidence receipt, PR link. First public shape: the glass-cockpit event protocol (archived 2026-06-10; see git history).
 - Define event/session transport separately from the cockpit: clawhip-style routers, webhooks, gateway adapters, and session hooks carry events but do not plan or execute.
-- Define public/team/private modes. First public shape: private, team, build-in-public, and stakeholder modes in `docs/GLASS_COCKPIT_PROTOCOL.md`.
+- Define public/team/private modes. First public shape: private, team, build-in-public, and stakeholder modes in the glass-cockpit event protocol (archived 2026-06-10; see git history).
 - Provide Discord-first examples while keeping the protocol surface generic enough for Slack/Telegram/CLI/GitHub comments.
 - Specify that chat is a surface, not canonical truth.
 
@@ -340,7 +340,7 @@ Current stance:
 
 - Open Scaffold core does **not** currently provide an autonomous agent runtime.
 - That boundary is intentional today, and PR #18 documents the adapter/spawning boundary in `docs/SPAWNING_BOUNDARY.md`.
-- PR #17 captured the current runtime strategy research in `docs/RUNTIME_STRATEGY_RESEARCH_SYNTHESIS.md` and supporting evidence docs.
+- PR #17 captured the current runtime strategy research in the runtime strategy research docs (archived 2026-06-10; see git history) and supporting evidence docs.
 - A thin `osc spawn` command or native runtime must not be added by drift; any future work starts with explicit adapter/receipt design, safety analysis, and a fake/local dispatch receipt before real runtime mutation.
 
 Discovery tracks:
@@ -413,7 +413,7 @@ Owner gates:
 
 ### Milestone 19 — Post-v1 adoption workflow target
 
-Status: historical/repositioned after the framework cleanup. Earlier staged work through `.osc/plans/done/099-runtime-adoption-ux-reset.md`, `docs/RUNTIME_ADOPTION_WORKFLOW.md`, and `104-osc-work-dry-run-target` explored `osc work --dry-run` as a natural-language composition layer, but the reduced maintained CLI removed `osc work` from the live command surface. The 2026-05-28 control-loop decision still routes any future execution controller to backlog plan `119-osc-work-execute-controller` while rejecting a native core runtime. The completed MCP readiness decision slice (`.osc/plans/done/131-mcp-integration-surface-readiness.md`) keeps MCP as an integration facet and routes any future write/execution authority downstream of that controller model.
+Status: historical/repositioned after the framework cleanup. Earlier staged work through `.osc/plans/done/099-runtime-adoption-ux-reset.md`, the runtime adoption workflow doc (archived 2026-06-10), and `104-osc-work-dry-run-target` explored `osc work --dry-run` as a natural-language composition layer, but the reduced maintained CLI removed `osc work` from the live command surface. The 2026-05-28 control-loop decision still routes any future execution controller to backlog plan `119-osc-work-execute-controller` while rejecting a native core runtime. The completed MCP readiness decision slice (`.osc/plans/done/131-mcp-integration-surface-readiness.md`) keeps MCP as an integration facet and routes any future write/execution authority downstream of that controller model.
 
 Goal: turn the credible v1 work-record protocol into a smoother adoption path without collapsing Open Scaffold core into a provider-specific runtime.
 

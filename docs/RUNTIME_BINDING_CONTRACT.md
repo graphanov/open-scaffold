@@ -6,7 +6,7 @@ Named harnesses in this contract, including OMC and OMX, are runtime lanes or ad
 
 Open Scaffold creates bounded run packages and records receipts. Runtime adapters — external launch glue or built-in bounded adapter paths for a chosen lane — consume those packages, execute only when explicit backend authority is present, and write evidence back under `.osc/runs`. This document defines the contract between the repo-native Open Scaffold package and any coordinator, adapter, harness, agent, or human lane that executes it.
 
-For the accepted executable architecture direction, see [`docs/AGENTIC_RUNTIME_LAYER.md`](AGENTIC_RUNTIME_LAYER.md). The current root-package `$work --adapter codex --allow-spawn` path is bounded: one run package, one adapter process, strict markers, bounded logs, and a repo receipt. Richer runtime packages such as `packages/runtime-omx/` remain useful adapter tracks and publication remains owner-gated.
+The current root-package `$work --adapter codex --allow-spawn` path is bounded: one run package, one adapter process, strict markers, bounded logs, and a repo receipt. Richer runtime packages such as `packages/runtime-omx/` remain useful adapter tracks and publication remains owner-gated.
 
 ## Executive rule
 
@@ -413,7 +413,7 @@ Then use `docs/SLICE_CLOSE_PROTOCOL.md` to decide whether the slice is approved,
 
 ## Cockpit events
 
-If an operator surface is bound, the binding may emit events using `docs/GLASS_COCKPIT_PROTOCOL.md`:
+If an operator surface is bound, the binding may emit events using the harness event stream (docs/HARNESS_ARCHITECTURE.md):
 
 - `session_start` when execution begins;
 - `status` for progress;
@@ -459,7 +459,7 @@ Avoid:
 
 - `docs/TASK_RUN_MODEL.md` defines task/run/question/operator identity.
 - `docs/RUNTIME_HARNESS_DISPATCH.md` explains the high-level coordinator-to-harness flow.
-- `docs/GLASS_COCKPIT_PROTOCOL.md` defines visible operator events emitted during binding execution.
+- the harness event stream (docs/HARNESS_ARCHITECTURE.md) defines visible operator events emitted during binding execution.
 - `docs/SLICE_CLOSE_PROTOCOL.md` defines postflight, approval strength, correction routing, and next-slice inheritance.
 - `docs/GITHUB_WORKFLOW.md` defines the issue/branch/PR/review/release publication chain.
 
@@ -478,7 +478,7 @@ The first concrete executable track is Codex-through-OMX rather than runtime-gen
 
 ## Dry-run and conformance examples
 
-For concrete, credential-free consumers of this contract, see [`docs/examples/runtime-binding-dry-run.mjs`](examples/runtime-binding-dry-run.mjs), [`docs/examples/runtime-binding-conformance/fake-local-adapter.mjs`](examples/runtime-binding-conformance/fake-local-adapter.mjs), [`packages/runtime-omx/README.md`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx#readme), and [`docs/examples/README.md`](examples/README.md). For the current OMC/OMX runtime-selection surface and refreshed-adapter checklist, see [`docs/RUNTIME_SELECTION.md`](RUNTIME_SELECTION.md).
+For concrete, credential-free consumers of this contract, see [`docs/examples/runtime-binding-dry-run.mjs`](examples/runtime-binding-dry-run.mjs), [`docs/examples/runtime-binding-conformance/fake-local-adapter.mjs`](examples/runtime-binding-conformance/fake-local-adapter.mjs), [`packages/runtime-omx/README.md`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx#readme), and [`docs/examples/README.md`](examples/README.md). For the current runtime-selection surface, see [`docs/ADAPTERS.md`](ADAPTERS.md).
 
 The dry-run example reads a generated `.osc/runs/<run_id>/run.json`, validates the executable-package and `spawning: false` boundary, prints the handoff summary an external binding would use, and exits without launching any runtime.
 

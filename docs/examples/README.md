@@ -1,6 +1,6 @@
 # Examples
 
-Six worked example paths a fresh user or agent can read end-to-end. The first four are operating modes; the fifth shows the evolution-ledger comparison wedge directly; the sixth is a pre-registered measurement instrument. Each path links to existing protocol docs and shipped fixtures rather than inventing new machinery.
+Five worked example paths a fresh user or agent can read end-to-end. The first four are operating modes; the fifth shows the evolution-ledger comparison wedge directly. Each path links to existing protocol docs and shipped fixtures rather than inventing new machinery.
 
 The example paths:
 
@@ -10,7 +10,6 @@ The example paths:
 4. [Runtime harness handoff](#4-runtime-harness-handoff) — packaging work for an external runtime lane to execute.
 5. [Evolution loop compare](evolution-loop-compare.md) — two attempts → `osc evolve compare` → frontier rationale.
    - [`examples/evolution-ledger-demo/`](../../examples/evolution-ledger-demo/) — runnable fixture: checked-in loop, attempts, evaluations, a promoted frontier, and committed expected compare output. Verified by the evolution CLI tests.
-6. [A/B comparison pilot packet](ab-comparison/README.md) — pre-registered templates to measure whether the scaffold helps. **Ships no data and proves no outcome.**
 
 If you want one complete non-recursive example first, start with [`downstream-walkthrough.md`](downstream-walkthrough.md). It shows the full mission → plan → optional `run.json` work package → evidence → close loop on a tiny shell CLI that is not Open Scaffold itself, then shows how a second session reconstructs the current state from files alone.
 
@@ -53,7 +52,6 @@ Multiple humans and/or agents coordinating around the same repo. A team room (Sl
 
 Reading path:
 
-- [`docs/GLASS_COCKPIT_PROTOCOL.md`](../GLASS_COCKPIT_PROTOCOL.md) — event vocabulary for status, blockers, questions, approvals, evidence receipts, and PR links. See the **Team control room** mode for the multi-person variant.
 - [`docs/SLICE_CLOSE_PROTOCOL.md`](../SLICE_CLOSE_PROTOCOL.md) — evidence receipts, approval strength, and correction routing when more than one person signs off.
 - [`docs/TASK_RUN_MODEL.md`](../TASK_RUN_MODEL.md) — `task_id`, `run_id`, and `question_id` so cockpit messages, PRs, and evidence files can cross-reference.
 
@@ -99,8 +97,7 @@ When a runtime lane (Claude Code, Codex, OMC, OMX, a custom adapter, or a human 
 
 Reading path:
 
-- [`docs/RUNTIME_SELECTION.md`](../RUNTIME_SELECTION.md) — choosing `--runtime` and `--workflow`.
-- [`docs/RUNTIME_PROFILES.md`](../RUNTIME_PROFILES.md) — built-in and project-local runtime profile metadata.
+- [`docs/ADAPTERS.md`](../ADAPTERS.md) — choosing a runtime and writing adapters.
 - [`docs/RUNTIME_BINDING_CONTRACT.md`](../RUNTIME_BINDING_CONTRACT.md) — lifecycle/responsibilities for any binding that consumes a `run.json` work package (run packet).
 - [`runtime-profiles/company-review-bot.json`](runtime-profiles/company-review-bot.json) — example project-local profile.
 - [`runtime-binding-conformance/README.md`](runtime-binding-conformance/README.md) — fake/local adapter conformance fixture.

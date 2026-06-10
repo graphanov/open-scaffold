@@ -49,7 +49,6 @@ const standardOnlyFiles = [
 
 const maxOnlyFiles = [
   'docs/GITHUB_WORKFLOW.md',
-  'docs/GLASS_COCKPIT_PROTOCOL.md',
   'docs/RUNTIME_BINDING_CONTRACT.md',
   'docs/TASK_RUN_MODEL.md',
   'docs/OPEN_SCAFFOLD_SYSTEM.md',

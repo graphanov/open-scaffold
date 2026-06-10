@@ -1,23 +1,22 @@
 # Mission
 
-Open Scaffold is a runtime-neutral, repo-native work record for AI-assisted work: a portable methodology and repository protocol that lets humans, AI agents, and orchestrators plan, execute, verify, publish, and evolve project work without losing context or ownership.
+Open Scaffold is a harness for AI-assisted work. It clarifies messy intent into bounded work, plans it in the repo, packages and gates controlled execution through explicit runtime adapters, collects evidence and feedback, enforces retry discipline, and keeps the entire work record in git-tracked files — so humans, agents, and orchestrators can resume, review, and improve work without losing context or ownership.
 
 ## Goals
 
-- Provide a durable project substrate: mission, roadmap, plans, amendments, evidence, run packets, decisions, and handoffs as git-tracked files.
-- Support any capable orchestrator or agent runtime — Hermes, Claw/OpenClaw, Claude Code, Codex, Gemini, or future tools — without making any one runtime the canonical brain.
-- Define clear integration boundaries between orchestrators, runtime harnesses, operator surfaces, repository truth, and GitHub issue/PR workflows.
-- Productize the closed evolutionary loop: slice work, capture feedback, amend plans, verify against acceptance criteria, and feed learnings into the next slice.
-- Ship a Discord glass-cockpit pattern for private control rooms, team control rooms, and build-in-public workflows while keeping durable truth in the repo/GitHub/task system.
-- Make the post-v1 adoption target explicit: `osc work "TASK DESCRIPTION" --runtime codex` should draft/confirm a plan, create a run packet, dispatch through an explicit adapter, capture receipt/evidence, run verification, and stop at human approval gates.
-- Keep Open Scaffold core as the runtime-neutral work record; runtime execution belongs in paste-ready handoffs, optional adapter packages, or future explicitly approved runtime layers — not hidden core spawning by drift.
+- Own the work loop end to end: `$interview` → `$plan` → `$work`/`$team` → evidence → feedback → retry or lesson, with human gates at every authority boundary.
+- Keep the substrate durable and tool-neutral: mission, roadmap, plans, amendments, run packets, receipts, evidence, decisions, and handoffs as git-tracked files any runtime can read.
+- Make resume-after-total-context-loss a first-class, cheap operation: a fresh session continues from compact handoff packets instead of chat archaeology or repo re-exploration.
+- Win measurably on token efficiency, retry discipline, and reviewability — and prove it with reproducible benchmarks instead of prose.
+- Stay provider-neutral: Claude Code, Codex, Gemini, OMC/OMX, or a human terminal execute through one explicit adapter contract; no runtime becomes the canonical brain.
+- Ship the gated work controller path (backlog plan 119) so one verb can drive plan → package → explicit dispatch → receipt → verification without manual command chaining.
 - Dogfood Open Scaffold on Open Scaffold itself: use the framework to grow the framework.
 
 ## Non-Goals
 
 Explicit things this project is NOT trying to do. Legitimate scope discipline starts here. When new information arrives that would change what belongs in this list, follow the amendment protocol in `.osc/plans/README.md` — do not silently edit the list.
 
-- Open Scaffold core does not own autonomous agent spawning or long-running execution loops today; any move toward thin spawning or a native runtime requires explicit roadmap investigation, architectural decision records, security analysis, and separate approval rather than accidental scope creep.
+- Open Scaffold does not hide execution: runtimes launch only through an explicit adapter id, explicit spawn authority, and human gates — never as a silent side effect of core commands. Any expansion of execution authority requires an architectural decision record, security analysis, and owner approval rather than scope creep.
 - Open Scaffold core does not make Discord, Slack, Telegram, or any chat surface the source of truth.
 - Open Scaffold core does not require Hermes, Claw/OpenClaw, Claude Code, Codex, Gemini, OMC, OMX, or any other specific runtime.
 - Open Scaffold core does not treat OMC/OMX as equivalent to orchestrator agents: OMC is a Claude Code workflow harness; OMX is a Codex workflow/execution harness.
@@ -29,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-10: ratified the harness-identity pivot — the harness is the product, the work record is its substrate; supersedes the 2026-05-15 orchestration stance — see .osc/plans/active/161-harness-identity-pivot.md
 - 2026-06-10: closed 160-harness-release-readiness-package-sync — Published open-scaffold@0.31.1, verified npm/latest and fresh npx help smokes, and created GitHub Release v0.31.1 as Latest.
 - 2026-06-10: closed 159-harness-release-readiness — PR #199 merged; harness release-readiness docs and command help parity are in main while npm publish and GitHub Release remain owner-gated.
 - 2026-06-10: closed 157-reproduction-proof-parity — PR #196 merged; reproduction proof parity shipped with Open Scaffold-owned bench suite, handoff lab, proof-gate, and benchmark feedback evidence.

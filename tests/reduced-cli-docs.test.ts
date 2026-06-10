@@ -9,8 +9,6 @@ const currentFacingDocs = [
   'ROADMAP.md',
   'docs/WORKFLOW.md',
   'docs/EVOLUTION_LOOP.md',
-  'docs/GLASS_COCKPIT_PROTOCOL.md',
-  'docs/RUNTIME_ADOPTION_WORKFLOW.md',
   'docs/STABILITY.md',
   'docs/index.html',
   'docs/TASKS.md',
@@ -20,12 +18,6 @@ const currentFacingDocs = [
   'docs/SLICE_CLOSE_PROTOCOL.md',
   'docs/wiki/log.md',
   'docs/wiki/concepts/implementation-architecture-lens.md',
-  'docs/EVIDENCE_METHODOLOGY.md',
-  'docs/EVIDENCE_SELF_STUDY.md',
-  'docs/AB_COMPARISON_PROTOCOL.md',
-  'docs/AB_COMPARISON_PILOT.md',
-  'docs/examples/ab-comparison/README.md',
-  'docs/examples/ab-comparison/pre-registration.md',
 ];
 
 const removedCommandPatterns = [
