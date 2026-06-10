@@ -13,20 +13,23 @@ $team
 
 ## Current state
 
-Open Scaffold has landed the first harness foundation PR:
+Open Scaffold has landed the harness runtime chain through reproduction proof and team/control-room adapter parity:
 
 | Item | Current value |
 | --- | --- |
 | Foundation PR | graphanov/open-scaffold#192 |
-| Branch | `feat/harness-command-surface` |
-| Plan | `.osc/plans/done/154-harness-command-surface.md` |
-| Status | Merged; plan 154 is closed as `done`. |
-| What it proves | Open Scaffold can host the command surface, event/status model, feedback files, handoff lab, simulated benchmark smoke, and strict proof gate. |
-| What it does not prove yet | Open Scaffold has not yet reproduced the live John Lomein runtime signal. |
+| Runtime parity PR | graphanov/open-scaffold#194 |
+| Feedback/handoff parity PR | graphanov/open-scaffold#195 |
+| Reproduction proof PR | graphanov/open-scaffold#196 |
+| Team/control-room adapter PR | graphanov/open-scaffold#197 |
+| Closed plans | `.osc/plans/done/154-harness-command-surface.md`, `.osc/plans/done/155-controlled-runtime-parity.md`, `.osc/plans/done/156-feedback-handoff-improvement-parity.md`, `.osc/plans/done/157-reproduction-proof-parity.md`, `.osc/plans/done/158-team-control-room-adapter-parity.md` |
+| Status | Plans 154-158 are merged; the next remaining roadmap plan is `.osc/plans/backlog/159-harness-release-readiness.md`. |
+| What it proves | Open Scaffold now has the `$interview`, `$plan`, `$work`, and `$team` command surface, controlled runtime receipts, feedback/improvement loop, handoff lab, benchmark/proof-gate machinery, and team/control-room status contracts. |
+| What it does not prove yet | Public package/release readiness is not complete, and broad dominance claims remain gated by Open Scaffold-run proof evidence. |
 
 The important boundary is this:
 
-> PR #192 was the foundation PR. It landed the command surface and queued the remaining runtime/reproduction chain. It is not the whole migration.
+> PR #192 was the foundation PR. PRs #194-#197 landed the runtime, feedback/handoff, reproduction, and team/control-room slices. Plan 159 is the remaining release-readiness step; it still does not authorize npm publish, GitHub Release updates, or broad dominance claims without owner gates.
 
 ## End state
 
@@ -56,18 +59,18 @@ GitHub may assign a different number if another PR is opened first. The PR numbe
 | #192 | `154-harness-command-surface` | `feat/harness-command-surface` | `feat: add harness command surface` | Establish `$interview`, `$plan`, `$work`, `$team`, backend CLI, status/events, feedback model, handoff lab, simulated proof smoke, and docs. | Merged; plan 154 moved to `done/`. |
 | #194 | `155-controlled-runtime-parity` | `feat/controlled-runtime-parity` | `feat: add controlled runtime parity` | Make `$work` run a bounded Codex/agent adapter with strict marker parsing, receipts, timeouts, human gate pause/resume, and safe artifact handling. | Merged; plan 155 moved to `done/`. |
 | #195 | `156-feedback-handoff-improvement-parity` | `feat/feedback-handoff-improvement-parity` | `feat: wire feedback and handoff improvement loop` | Make feedback, repair hypotheses, accepted improvements, retries, and compact handoffs part of real `$work`/`$team` flows. | Merged; plan 156 moved to `done/`. |
-| Next slot | `157-reproduction-proof-parity` | `feat/harness-reproduction-proof-parity` | `feat: reproduce source prototype proof lanes` | Run Open Scaffold-owned reproduction suites: targeted handoff, representative live fixtures, ablations, and strict proof report. | Evidence says reproduced, partially reproduced, or not reproduced with raw paths and no broad claim unless gates clear. |
-| Later slot | `158-team-control-room-adapter-parity` | `feat/team-control-room-adapter-parity` | `feat: add team and control-room adapter contracts` | Make `$team` a real coordinated multi-worker harness and expose transport/status contracts for Hermes/plugin/desktop surfaces. | Multiple worker lanes share one status/evidence/postflight record and remain transport-agnostic. |
-| Later slot | `159-harness-release-readiness` | `docs/harness-release-readiness` | `docs: prepare harness release readiness` | Polish public docs, examples, command maturity, package/release notes, and owner gates after the harness actually works. | Fresh install/help smoke and release-readiness checks pass; publish/release remain owner-gated. |
+| #196 | `157-reproduction-proof-parity` | `feat/harness-reproduction-proof-parity` | `feat: reproduce source prototype proof lanes` | Run Open Scaffold-owned reproduction suites: targeted handoff, representative live fixtures, ablations, and strict proof report. | Merged; plan 157 moved to `done/`. |
+| #197 | `158-team-control-room-adapter-parity` | `feat/team-control-room-adapter-parity` | `feat: add team and control-room adapter contracts` | Make `$team` a real coordinated multi-worker harness and expose transport/status contracts for Hermes/plugin/desktop surfaces. | Merged; plan 158 moved to `done/`. |
+| Next slot | `159-harness-release-readiness` | `docs/harness-release-readiness` | `docs: prepare harness release readiness` | Polish public docs, examples, command maturity, package/release notes, and owner gates after the harness actually works. | Fresh install/help smoke and release-readiness checks pass; publish/release remain owner-gated. |
 
 ## When each PR starts
 
 1. **PR #192 is merged.** The foundation is on `main`; plan 154 is closed in `done/`.
 2. **Controlled runtime parity starts after the closeout PR lands.** Base `feat/controlled-runtime-parity` on fresh `main`; GitHub may assign a number other than the old planning slot because the closeout PR used the next number.
 3. **Feedback/handoff improvement starts after controlled runtime parity** because feedback/retry must attach to the real runtime receipt shape.
-4. **Reproduction proof starts after feedback/handoff improvement** because reproduction must test the real runtime plus feedback/handoff loop, not a standalone smoke fixture.
-5. **Team/control-room adapter parity can start after controlled runtime parity if needed**, but it should land after feedback/handoff improvement unless `$team` parity becomes the immediate blocker.
-6. **Harness release readiness is last.** Do not polish release copy before the runtime and proof story are true.
+4. **Reproduction proof followed feedback/handoff improvement** because reproduction must test the real runtime plus feedback/handoff loop, not a standalone smoke fixture.
+5. **Team/control-room adapter parity landed after reproduction proof** so `$team` has a shared status/evidence/postflight path.
+6. **Harness release readiness is last.** Do not polish release copy before the runtime and proof story are true; do not publish or create/update releases without owner approval.
 
 ## Reproduction ladder
 
