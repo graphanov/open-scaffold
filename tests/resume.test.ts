@@ -121,7 +121,7 @@ describe('osc resume packet compiler', () => {
       '',
       '## Goal',
       '',
-      'Use token sk-abcdefghijklmnopqrstuvwxyz012345 from /Users/someone/secrets.txt to call the API.',
+      'Use token sk-aaaaaaaaaaaaaaaaaaaaaaaa from /Users/someone/secrets.txt and /workspace/open-scaffold/src/secret.ts to call the API.',
       '',
       '## Constraints / Out of scope',
       '',
@@ -133,7 +133,7 @@ describe('osc resume packet compiler', () => {
       '',
       '## Acceptance criteria',
       '',
-      '- [ ] Confirm sk-proj-abcdefghijklmnopqrstuvwxyz012345 never appears in logs under /Users/someone/secrets.txt.',
+      '- [ ] Confirm sk-aaaaaaaaaaaaaaaaaaaaaaaa never appears in logs under /Users/someone/secrets.txt or /workspace/open-scaffold/src/secret.ts.',
       '',
       '## Verification steps',
       '',
@@ -148,12 +148,14 @@ describe('osc resume packet compiler', () => {
     const { packet, summary } = compileResume(root);
     const summaryJson = JSON.stringify(summary);
 
-    expect(packet).not.toContain('sk-proj-abcdefghijklmnopqrstuvwxyz012345');
+    expect(packet).not.toContain('sk-aaaaaaaaaaaaaaaaaaaaaaaa');
     expect(packet).not.toContain('/Users/someone');
+    expect(packet).not.toContain('/workspace/open-scaffold');
     expect(packet).toContain('sk-[redacted]');
     expect(packet).toContain('local-path');
-    expect(summaryJson).not.toContain('sk-proj-abcdefghijklmnopqrstuvwxyz012345');
+    expect(summaryJson).not.toContain('sk-aaaaaaaaaaaaaaaaaaaaaaaa');
     expect(summaryJson).not.toContain('/Users/someone');
+    expect(summaryJson).not.toContain('/workspace/open-scaffold');
     expect(summaryJson).toContain('sk-[redacted]');
     expect(summaryJson).toContain('local-path');
     expect(summary.next_bounded_action).toContain('sk-[redacted]');
@@ -168,8 +170,8 @@ describe('osc resume packet compiler', () => {
     const { summary, packet } = compileResume(root);
     const summaryJson = JSON.stringify(summary);
 
-    expect(summaryJson).not.toContain('sk-abcdefghijklmnopqrstuvwxyz012345');
-    expect(packet).not.toContain('sk-abcdefghijklmnopqrstuvwxyz012345');
+    expect(summaryJson).not.toContain('sk-aaaaaaaaaaaaaaaaaaaaaaaa');
+    expect(packet).not.toContain('sk-aaaaaaaaaaaaaaaaaaaaaaaa');
     expect(summary.active_plan?.slug).toContain('sk-[redacted]');
     expect(summary.next_commands.join('\n')).toContain('sk-[redacted]');
     expect(summary.status).toContain('sk-[redacted]');
@@ -312,9 +314,9 @@ describe('osc resume packet compiler', () => {
     const { summary, packet } = compileResume(root);
     const summaryJson = JSON.stringify(summary);
 
-    expect(summaryJson).not.toContain('sk-abcdefghijklmnopqrstuvwxyz012345');
+    expect(summaryJson).not.toContain('sk-aaaaaaaaaaaaaaaaaaaaaaaa');
     expect(summaryJson).not.toContain('/Users/someone');
-    expect(packet).not.toContain('sk-abcdefghijklmnopqrstuvwxyz012345');
+    expect(packet).not.toContain('sk-aaaaaaaaaaaaaaaaaaaaaaaa');
     expect(packet).not.toContain('/Users/someone');
     expect(summary.latest_run?.run_id).toContain('sk-[redacted]');
     expect(summary.latest_run?.pending_gate_ids[0]).toContain('sk-[redacted]');
