@@ -318,6 +318,7 @@ describe('osc resume packet compiler', () => {
     mkdirSync(join(outsideOsc, 'plans', 'active'), { recursive: true });
     mkdirSync(join(outsideOsc, 'releases'), { recursive: true });
     mkdirSync(join(outsideOsc, 'runs', 'harness-work-osc-symlink'), { recursive: true });
+    mkdirSync(join(outsideOsc, 'improvements', 'applied'), { recursive: true });
     writeFileSync(join(outsideOsc, 'plans', 'active', '001-external-osc-plan.md'), [
       '# Plan: external-osc-plan',
       '',
@@ -355,6 +356,7 @@ describe('osc resume packet compiler', () => {
       '',
     ].join('\n'), 'utf8');
     writeFileSync(join(outsideOsc, 'releases', 'external-osc-release-secret.md'), '# External evidence\n', 'utf8');
+    writeFileSync(join(outsideOsc, 'improvements', 'applied', 'external-osc-lesson-secret.md'), '# External lesson\n', 'utf8');
     writeFileSync(join(outsideOsc, 'runs', 'harness-work-osc-symlink', 'status.json'), JSON.stringify({
       schema: 'osc.harness-status.v1',
       runId: 'external-osc-run-id',
@@ -374,9 +376,11 @@ describe('osc resume packet compiler', () => {
     expect(summaryJson).not.toContain('external-osc-secret');
     expect(summaryJson).not.toContain('external-osc-release-secret');
     expect(summaryJson).not.toContain('external-osc-run-id');
+    expect(summaryJson).not.toContain('external-osc-lesson-secret');
     expect(packet).not.toContain('external-osc-secret');
     expect(packet).not.toContain('external-osc-release-secret');
     expect(packet).not.toContain('external-osc-run-id');
+    expect(packet).not.toContain('external-osc-lesson-secret');
   });
 
   it('ignores a symlinked plans root before scanning plan stages', () => {

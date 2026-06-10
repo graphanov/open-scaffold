@@ -325,12 +325,20 @@ function renderPacket(summary: ResumeSummary, extras: { missionText: string; ver
   return `${lines.join('\n')}\n`;
 }
 
+function compileHasRealScaffold(root: string): boolean {
+  try {
+    return lstatSync(join(root, '.osc')).isDirectory() && lstatSync(join(root, '.osc', 'plans')).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 export function compileResume(root = process.cwd(), options: ResumeOptions = {}): ResumeResult {
   const maxChars = options.maxChars ?? DEFAULT_RESUME_MAX_CHARS;
   if (!Number.isInteger(maxChars) || maxChars < MIN_RESUME_MAX_CHARS || maxChars > MAX_RESUME_MAX_CHARS) {
     throw new Error(`maxChars must be an integer between ${MIN_RESUME_MAX_CHARS} and ${MAX_RESUME_MAX_CHARS}`);
   }
-  const scaffoldPresent = existsSync(join(root, '.osc', 'plans'));
+  const scaffoldPresent = compileHasRealScaffold(root);
   const scaffold = inspectScaffold(root);
   const { picked, others } = pickActivePlan(scaffold.plans.active ?? [], options.planSlug);
   const publicOtherActivePlans = others.map((slug) => redactPacketText(slug, 160));
