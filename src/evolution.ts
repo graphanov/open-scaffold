@@ -9,6 +9,7 @@ export const EVOLUTION_ATTEMPT_SCHEMA = 'open-scaffold.evolution-attempt.v1';
 export const EVOLUTION_FRONTIER_SCHEMA = 'open-scaffold.evolution-frontier.v1';
 export const EVOLUTION_NEXT_ACTION_PACKET_SCHEMA = 'open-scaffold.evolution-next-action-packet.v1';
 export const EVOLUTION_CONTROLLER_SIGNAL_SCHEMA = 'open-scaffold.evolution-controller-signal.v1';
+export const EVOLUTION_JUDGMENT_CHECKPOINT_SCHEMA = 'open-scaffold.evolution-judgment-checkpoint.v1';
 export const EVOLUTION_EFFICIENCY_REPORT_SCHEMA = 'open-scaffold.evolution-efficiency-report.v1';
 const RUN_SCHEMA = 'open-scaffold.run.v1';
 const EVALUATION_SCHEMA = 'open-scaffold.evaluation.v1';
@@ -1118,6 +1119,38 @@ export interface EvolutionControllerSignal {
   boundaryNotes: string[];
 }
 
+export type EvolutionJudgeAction = 'continue' | 'stop_impossible' | 'stop_blocked';
+
+export interface EvolutionJudgeRuling {
+  action: EvolutionJudgeAction;
+  impossibleAcs?: string[];
+  rationale?: string;
+}
+
+export interface EvolutionJudgmentCheckpoint {
+  schema: typeof EVOLUTION_JUDGMENT_CHECKPOINT_SCHEMA;
+  action: EvolutionAnalysisRecommendationAction;
+  retryAuthorized: {
+    allow: boolean;
+    mode: 'normal' | 'proof_only' | 'closeout_only' | 'blocked_by_packet' | 'stop';
+    reason: string;
+  };
+  packet: EvolutionControllerSignal;
+  judge: {
+    present: boolean;
+    action: EvolutionJudgeAction | null;
+    impossibleAcs: string[];
+    rationale: string | null;
+  };
+  requiredBeforeRetry: string[];
+  boundary: {
+    judgment_checkpoint_only: true;
+    does_not_execute_runtime: true;
+    does_not_approve_work: true;
+    human_owns_closeout_merge_publish_release: true;
+  };
+}
+
 export interface EvolutionAnalysisResult {
   kind: 'analysis';
   loop: { loopDir: string; loopId: string | null; objective: string | null; strategy: string | null; attemptCount: number };
@@ -1857,6 +1890,109 @@ export function buildEvolutionControllerSignal(analysis: EvolutionAnalysisResult
     evidenceRefs: packet.evidenceRefs,
     boundaryNotes: packet.boundaryNotes,
   };
+}
+
+export function buildEvolutionJudgmentCheckpoint(analysis: EvolutionAnalysisResult, judge?: EvolutionJudgeRuling | null): EvolutionJudgmentCheckpoint {
+  const packet = buildEvolutionControllerSignal(analysis);
+  const judgeAction = judge?.action ?? null;
+  let retryAuthorized: EvolutionJudgmentCheckpoint['retryAuthorized'];
+  if (judgeAction === 'stop_impossible' || judgeAction === 'stop_blocked') {
+    retryAuthorized = {
+      allow: false,
+      mode: 'stop',
+      reason: `judge_${judgeAction}`,
+    };
+  } else if (packet.action === 'stop') {
+    retryAuthorized = {
+      allow: false,
+      mode: 'closeout_only',
+      reason: 'all_current_criteria_pass_route_to_closeout',
+    };
+  } else if (packet.action === 'redesign') {
+    retryAuthorized = {
+      allow: false,
+      mode: 'blocked_by_packet',
+      reason: 'redesign_required_before_retry',
+    };
+  } else if (packet.action === 'inspect_scorer') {
+    retryAuthorized = {
+      allow: true,
+      mode: 'proof_only',
+      reason: 'retry_authorized_only_for_scorer_inspection_or_impossibility_proof',
+    };
+  } else {
+    retryAuthorized = {
+      allow: true,
+      mode: 'normal',
+      reason: 'continue_signal',
+    };
+  }
+  return {
+    schema: EVOLUTION_JUDGMENT_CHECKPOINT_SCHEMA,
+    action: packet.action,
+    retryAuthorized,
+    packet,
+    judge: {
+      present: Boolean(judge),
+      action: judgeAction,
+      impossibleAcs: judge?.impossibleAcs ?? [],
+      rationale: judge?.rationale ?? null,
+    },
+    requiredBeforeRetry: retryAuthorized.allow ? packet.requiredNextFields : packet.requiredNextFields,
+    boundary: {
+      judgment_checkpoint_only: true,
+      does_not_execute_runtime: true,
+      does_not_approve_work: true,
+      human_owns_closeout_merge_publish_release: true,
+    },
+  };
+}
+
+export function renderEvolutionJudgmentCheckpoint(checkpoint: EvolutionJudgmentCheckpoint, format: EvolutionAnalysisFormat = 'terminal'): string {
+  if (format === 'json') return `${JSON.stringify(checkpoint, null, 2)}\n`;
+  if (format === 'markdown') {
+    return [
+      '# Evolution judgment checkpoint',
+      '',
+      `- Action: \`${checkpoint.action}\``,
+      `- Retry authorized: \`${checkpoint.retryAuthorized.allow ? 'yes' : 'no'}\``,
+      `- Mode: \`${checkpoint.retryAuthorized.mode}\``,
+      `- Reason: ${checkpoint.retryAuthorized.reason}`,
+      `- Judge: ${checkpoint.judge.present ? `${checkpoint.judge.action} — ${checkpoint.judge.rationale ?? '—'}` : 'not attached'}`,
+      `- Required before retry: ${checkpoint.requiredBeforeRetry.map((field) => `\`${field}\``).join(', ') || '—'}`,
+      '',
+      '## Remaining failures',
+      '',
+      ...(checkpoint.packet.acceptance.remainingFailures.length
+        ? checkpoint.packet.acceptance.remainingFailures.map((criterion) => `- \`${criterion.id}\`: ${criterion.status}; sensitivity ${criterion.sensitivity}; impossible ${criterion.impossible ? 'yes' : 'no'} — ${criterion.text}`)
+        : ['- —']),
+      ...(checkpoint.packet.requirementQuestions.length ? [
+        '',
+        '## Question The Requirement',
+        '',
+        ...checkpoint.packet.requirementQuestions.map((question) => `- ${question}`),
+      ] : []),
+      '',
+      '## Boundary',
+      '',
+      '- This checkpoint is decision support only.',
+      '- It does not execute a runtime or approve work.',
+      '',
+    ].join('\n');
+  }
+  return [
+    'Evolution Judgment Checkpoint',
+    `Action: ${checkpoint.action}`,
+    `Retry authorized: ${checkpoint.retryAuthorized.allow ? 'yes' : 'no'}`,
+    `Mode: ${checkpoint.retryAuthorized.mode}`,
+    `Reason: ${checkpoint.retryAuthorized.reason}`,
+    `Judge: ${checkpoint.judge.present ? `${checkpoint.judge.action} — ${checkpoint.judge.rationale ?? '—'}` : 'not attached'}`,
+    `Required before retry: ${checkpoint.requiredBeforeRetry.join(', ') || '—'}`,
+    `Remaining failures: ${checkpoint.packet.acceptance.remainingFailureIds.join(', ') || '—'}`,
+    ...(checkpoint.packet.requirementQuestions.length ? checkpoint.packet.requirementQuestions.map((question) => `Question requirement: ${question}`) : []),
+    'Boundary: checkpoint only; does not execute runtime, approve work, merge, publish, or release.',
+    '',
+  ].join('\n');
 }
 
 function renderCompactAnalysisTerminal(analysis: EvolutionAnalysisResult): string {

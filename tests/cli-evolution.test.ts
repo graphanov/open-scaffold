@@ -566,4 +566,32 @@ describe('osc evolve CLI', () => {
     expect(result.stderr).toContain('Invalid value for --strategy: magical');
     expect(result.stderr).toContain('Usage: osc evolve init');
   });
+
+  it('renders a checkpoint and exits nonzero when retry is not authorized', () => {
+    const { root, outDir } = writePlateauCliLoop();
+
+    const proc = spawnSync(tsx, [cli, 'evolve', 'checkpoint', outDir, '--format', 'json'], { cwd: root, encoding: 'utf8' });
+
+    expect(proc.status).toBe(1);
+    const checkpoint = JSON.parse(proc.stdout);
+    expect(checkpoint).toMatchObject({
+      schema: 'open-scaffold.evolution-judgment-checkpoint.v1',
+      action: 'redesign',
+      retryAuthorized: { allow: false, mode: 'blocked_by_packet' },
+    });
+  });
+
+  it('renders a proof-only checkpoint with zero exit when scorer inspection is required', () => {
+    const { root, outDir } = writeInspectCliLoop();
+
+    const proc = spawnSync(tsx, [cli, 'evolve', 'checkpoint', outDir, '--format', 'json'], { cwd: root, encoding: 'utf8' });
+
+    expect(proc.status).toBe(0);
+    const checkpoint = JSON.parse(proc.stdout);
+    expect(checkpoint).toMatchObject({
+      schema: 'open-scaffold.evolution-judgment-checkpoint.v1',
+      action: 'inspect_scorer',
+      retryAuthorized: { allow: true, mode: 'proof_only' },
+    });
+  });
 });

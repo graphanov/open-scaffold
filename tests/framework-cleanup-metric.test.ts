@@ -17,8 +17,9 @@ const cleanupBaselineLoc = 20_890;
 // Docs-tranche downstream template hardening adds a standard-tier task/run template so generated scaffolds avoid broken links to max-tier docs.
 // 165: evolution enforced-loop auto-fill + fingerprint plateau (+170 LOC)
 // 165 follow-up: question-the-requirement fires with scores present; reachability-reason filter (+4 LOC)
-const cleanupTargetLoc = 16_265;
-const cleanupTargetFiles = 39;
+// 165 completion: product-side judgment checkpoint + ambient postflight record (+298 LOC, +1 file)
+const cleanupTargetLoc = 16_563;
+const cleanupTargetFiles = 40;
 
 interface MaintainedSourceFile {
   path: string;
@@ -60,7 +61,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(16_265);
+    expect(cleanupTargetLoc).toBe(16_563);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

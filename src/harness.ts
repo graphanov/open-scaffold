@@ -1,5 +1,7 @@
 import { existsSync, lstatSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { writeAmbientWorkRecord, AMBIENT_WORK_RECORD_SCHEMA } from './ambient.js';
+import { analyzeEvolutionLoop, buildEvolutionJudgmentCheckpoint, renderEvolutionAnalysis, type EvolutionJudgmentCheckpoint } from './evolution.js';
 import { compileHandoffPacket } from './handoff.js';
 import { analyzeFeedback, loadAcceptedImprovements, recordFeedback, type FeedbackRecord, type FeedbackSource, type FeedbackVerdict } from './feedback.js';
 import { appendJsonLineUnder, createSafeOutputRoot, readJsonlUnder, readJsonUnder, writeFileUnder, writeJsonUnder } from './path-safety.js';
@@ -309,6 +311,13 @@ function runtimeArtifacts(runId: string): HarnessArtifactLink[] {
   ];
 }
 
+function checkpointArtifacts(runId: string): HarnessArtifactLink[] {
+  return [
+    artifact(runId, 'judgment_checkpoint', 'judgment-checkpoint.json', 'open-scaffold.evolution-judgment-checkpoint.v1'),
+    artifact(runId, 'controller_signal', 'controller-signal.md', 'open-scaffold.evolution-controller-signal.v1'),
+  ];
+}
+
 function mergeRuntimeEvidenceArtifacts(artifacts: HarnessArtifactLink[], receipt: HarnessRuntimeReceipt): HarnessArtifactLink[] {
   const seen = new Set(artifacts.map((item) => item.path));
   const merged = [...artifacts];
@@ -342,6 +351,19 @@ function runtimeRepairHypothesis(receipt: HarnessRuntimeReceipt): string {
     return `Repair runtime_blocked by resolving the blocker captured in the runtime receipt before retrying: ${receipt.marker.context || receipt.failure.message || 'No runtime context supplied.'}`;
   }
   return `Repair ${code} before retrying: inspect the runtime receipt/logs, fix the adapter output or task package, then retry without overwriting this attempt's evidence.`;
+}
+
+function buildWorkCheckpoint(repoRoot: string, parsed: ParsedHarnessCommand): { loopDir: string; checkpoint: EvolutionJudgmentCheckpoint; controllerSignal: string } | null {
+  const loopDir = option(parsed, 'checkpoint') ?? option(parsed, 'judgment-checkpoint');
+  if (!loopDir) return null;
+  if (loopDir.startsWith('~') || loopDir.includes('\0')) throw new Error(`unsafe checkpoint loop path: ${loopDir}`);
+  const resolvedLoopDir = resolve(repoRoot, loopDir);
+  const analysis = analyzeEvolutionLoop(resolvedLoopDir, {}, repoRoot);
+  return {
+    loopDir,
+    checkpoint: buildEvolutionJudgmentCheckpoint(analysis),
+    controllerSignal: renderEvolutionAnalysis(analysis, 'terminal', { compact: true }),
+  };
 }
 
 function recordRuntimeOutcomeFeedback(repoRoot: string, runId: string, receipt: HarnessRuntimeReceipt): FeedbackRecord | null {
@@ -496,6 +518,10 @@ function applyRuntimeReceipt(repoRoot: string, runId: string, receipt: HarnessRu
   const nextGates = receipt.status === 'needs_human' ? [...humanGates, runtimeHumanGate(receipt, humanGates)] : humanGates;
   const nextState = runtimeState(receipt);
   let nextArtifacts = mergeRuntimeEvidenceArtifacts(artifacts, receipt);
+  const ambient = writeAmbientWorkRecord({ repoRoot, runId, state: nextState, artifacts: nextArtifacts, receipt });
+  if (!nextArtifacts.some((item) => item.path === ambient.path)) {
+    nextArtifacts.push({ role: 'ambient_record', path: ambient.path, schema: AMBIENT_WORK_RECORD_SCHEMA });
+  }
   const feedback = recordRuntimeOutcomeFeedback(repoRoot, runId, receipt);
   const handoff = maybeWriteHandoffPacket(repoRoot, runId, 'work', nextState, nextArtifacts, receipt, nextGates);
   nextArtifacts = handoff.artifacts;
@@ -509,6 +535,7 @@ function applyRuntimeReceipt(repoRoot: string, runId: string, receipt: HarnessRu
   });
   const status = makeStatus({ runId, command: 'work', state: nextState, humanGates: nextGates, artifacts: nextArtifacts, runtimeSpawned: receipt.spawned });
   writeStatus(repoRoot, status);
+  writeEvent(repoRoot, runId, 'ambient_record_written', { path: ambient.path, schema: AMBIENT_WORK_RECORD_SCHEMA });
   writeEvent(repoRoot, runId, `runtime_${receipt.status}`, { receiptPath: `.osc/runs/${runId}/runtime-receipt.json`, failure: receipt.failure, marker: receipt.marker });
   if (feedback) writeEvent(repoRoot, runId, 'feedback_recorded', { feedbackId: feedback.id, feedbackPath });
   writeEvent(repoRoot, runId, nextState === 'waiting_on_human' ? 'command_blocked' : nextState === 'completed' ? 'command_completed' : 'command_blocked', { state: nextState });
@@ -623,22 +650,29 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
   const runId = uniqueRunIdFor(repoRoot, 'work', parsed.intent);
   ensureRunDir(repoRoot, runId);
   const retry = buildRetryMetadata(repoRoot, parsed);
+  const checkpoint = buildWorkCheckpoint(repoRoot, parsed);
   const context = [
     ...optionList(parsed, 'context'),
     ...(retry ? [`Repair hypothesis from ${retry.parentRunId}: ${retry.repairHypothesis}`] : []),
+    ...(checkpoint ? [
+      `Judgment checkpoint from ${checkpoint.loopDir}: action=${checkpoint.checkpoint.action}; retry_authorized=${checkpoint.checkpoint.retryAuthorized.allow}; mode=${checkpoint.checkpoint.retryAuthorized.mode}; reason=${checkpoint.checkpoint.retryAuthorized.reason}`,
+      checkpoint.controllerSignal,
+    ] : []),
   ];
   const humanGates = context.length ? [] : [missingContextGate('work')];
+  const checkpointBlocksRuntime = Boolean(checkpoint && !checkpoint.checkpoint.retryAuthorized.allow && humanGates.length === 0);
   const allowSpawn = optionFlag(parsed, 'allow-spawn');
   const adapterId = option(parsed, 'adapter') ?? option(parsed, 'runtime') ?? 'codex';
   const timeoutMs = numericOption(parsed, 'timeout-ms', 30 * 60 * 1000);
   const maxLogBytes = numericOption(parsed, 'max-log-bytes', 2_000_000);
-  const state: HarnessState = humanGates.length ? 'waiting_on_human' : 'ready';
+  const state: HarnessState = humanGates.length ? 'waiting_on_human' : checkpointBlocksRuntime ? 'blocked' : 'ready';
   const handoff = handoffRequested(parsed) ? { requested: true, maxChars: handoffMaxChars(parsed), path: `.osc/runs/${runId}/handoff.md`, schema: 'osc.handoff-compiler.v1' } : { requested: false };
   const artifacts = [
     ...baseArtifacts(runId),
     artifact(runId, 'run_packet', 'run.json', 'osc.controlled-work-run.v1'),
     artifact(runId, 'work_package', 'work-package.md'),
     ...(retry ? [artifact(runId, 'retry_attempt', 'retry.json', 'osc.harness-retry.v1')] : []),
+    ...(checkpoint ? checkpointArtifacts(runId) : []),
     ...runtimeArtifacts(runId),
   ];
   const improvements = inheritedImprovements(repoRoot, parsed).map((item) => ({ slug: item.slug, path: item.path, summary: item.content.split('\n').slice(0, 8).join('\n') }));
@@ -654,7 +688,7 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
     status: state,
     runtime: {
       adapter: adapterId,
-      spawning: allowSpawn && humanGates.length === 0,
+      spawning: allowSpawn && humanGates.length === 0 && !checkpointBlocksRuntime,
       spawnAuthority: allowSpawn,
       timeoutMs: timeoutMs ?? null,
       maxLogBytes: maxLogBytes ?? null,
@@ -667,9 +701,20 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
     improvements: { inherited: improvements },
     retry,
     handoff,
+    judgmentCheckpoint: checkpoint ? {
+      loopDir: checkpoint.loopDir,
+      checkpointPath: `.osc/runs/${runId}/judgment-checkpoint.json`,
+      controllerSignalPath: `.osc/runs/${runId}/controller-signal.md`,
+      retryAuthorized: checkpoint.checkpoint.retryAuthorized,
+    } : null,
     boundary: { feedback_is_not_approval: true, human_owns_merge_publish_release: true, runtime_adapter_executes: true, open_scaffold_records_evidence: true },
   };
   writeJsonUnder(repoRoot, `.osc/runs/${runId}/run.json`, runPacket, 'work run packet path');
+  if (checkpoint) {
+    writeJsonUnder(repoRoot, `.osc/runs/${runId}/judgment-checkpoint.json`, checkpoint.checkpoint, 'judgment checkpoint path');
+    writeFileUnder(repoRoot, `.osc/runs/${runId}/controller-signal.md`, checkpoint.controllerSignal, 'controller signal path');
+    writeEvent(repoRoot, runId, 'judgment_checkpoint_recorded', { loopDir: checkpoint.loopDir, retryAuthorized: checkpoint.checkpoint.retryAuthorized });
+  }
   if (retry) {
     writeJsonUnder(repoRoot, `.osc/runs/${runId}/retry.json`, {
       schema: 'osc.harness-retry.v1',
@@ -694,6 +739,7 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
     `- Adapter: ${adapterId}`,
     `- Spawn authority passed: ${allowSpawn ? 'yes' : 'no'}`,
     '- Runtime adapters execute bounded work while Open Scaffold writes status, receipts, gates, and evidence links.',
+    ...(checkpoint ? [`- Judgment checkpoint: ${checkpoint.checkpoint.retryAuthorized.allow ? 'retry authorized' : 'retry blocked'} (${checkpoint.checkpoint.retryAuthorized.mode}: ${checkpoint.checkpoint.retryAuthorized.reason})`] : []),
     '- Human gate answers are task input, not approval.',
     '- Commit, push, merge, publish, release, deploy, credentials, and history rewrite remain owner-controlled.',
     ...(retry ? ['', '## Repair hypothesis for this retry', '', retry.repairHypothesis] : []),
@@ -706,6 +752,32 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
     writeStatus(repoRoot, status);
     writeEvent(repoRoot, runId, 'command_blocked', { state });
     return resultFor(repoRoot, runId, 'work', status, humanGates, artifacts, [], 'Work package paused for missing context.');
+  }
+  if (checkpointBlocksRuntime && checkpoint) {
+    const feedback = recordFeedback({
+      repoRoot,
+      runId,
+      source: 'reviewer',
+      verdict: 'block',
+      scope: 'run',
+      whatHappened: `Judgment checkpoint blocked runtime dispatch: ${checkpoint.checkpoint.retryAuthorized.reason}.`,
+      whyItMatters: 'Retry discipline must be enforced before spending another runtime attempt.',
+      repairHypothesis: checkpoint.checkpoint.retryAuthorized.mode === 'blocked_by_packet'
+        ? 'Redesign or amend the failing criterion, scorer, or artifact shape before another retry.'
+        : 'Route to closeout or human review instead of retrying the same loop.',
+      evidencePaths: [`.osc/runs/${runId}/judgment-checkpoint.json`, `.osc/runs/${runId}/controller-signal.md`],
+      nextAction: checkpoint.checkpoint.retryAuthorized.mode,
+    });
+    writePostflight(repoRoot, runId, 'work', 'blocked', {
+      feedbackPath: feedback.path,
+      acceptedImprovementCount: improvements.length,
+      repairHypotheses: [feedback.record.repairHypothesis ?? checkpoint.checkpoint.retryAuthorized.reason],
+    });
+    const status = makeStatus({ runId, command: 'work', state: 'blocked', humanGates, artifacts });
+    writeStatus(repoRoot, status);
+    writeEvent(repoRoot, runId, 'feedback_recorded', { feedbackId: feedback.record.id, feedbackPath: feedback.path });
+    writeEvent(repoRoot, runId, 'command_blocked', { state: 'blocked', reason: checkpoint.checkpoint.retryAuthorized.reason });
+    return resultFor(repoRoot, runId, 'work', status, humanGates, artifacts, [], 'Judgment checkpoint blocked runtime dispatch before another retry.');
   }
   const receipt = runHarnessRuntimeAdapter({ repoRoot, runId, runPacketPath: `.osc/runs/${runId}/run.json`, adapterId, allowSpawn, timeoutMs, maxLogBytes, model: option(parsed, 'model'), effort: option(parsed, 'effort') });
   return applyRuntimeReceipt(repoRoot, runId, receipt, humanGates, artifacts);

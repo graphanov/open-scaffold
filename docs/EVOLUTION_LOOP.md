@@ -125,6 +125,29 @@ The loop earns its overhead only when the coordinator — not the agent under ev
 - Before every retry, the coordinator runs `osc evolve analyze <loop-dir> --compact` and injects the controller signal into the worker's context. Analyze reports a plateau when three or more consecutive attempts share an identical per-acceptance-criterion pass/fail fingerprint — even when score, target metric, and actual delta are all absent. On a zero-sensitivity plateau (one or more criteria failing in every attempt with no observed delta) the packet recommends `redesign` and names those criteria with explicit language that the requirement itself may be unsatisfiable and should be questioned, not only that the scorer should be inspected.
 - Retrying without addressing the packet's recommendation is a protocol violation. The coordinator should surface it (for example, refuse the retry or flag the handoff) rather than letting the worker claim completion against an unchanged plateau.
 
+## Judgment Checkpoint
+
+`osc evolve checkpoint <loop-dir>` turns the compact analysis packet into a hard
+retry gate. It returns `open-scaffold.evolution-judgment-checkpoint.v1` and exits
+non-zero when retry is not authorized.
+
+Actions:
+
+- `continue` authorizes one more bounded attempt.
+- `inspect_scorer` authorizes proof-only work: inspect the scorer/evaluation or
+  prove impossibility before changing implementation again.
+- `redesign` blocks runtime dispatch until the criterion, scorer, artifact shape,
+  or task design is amended.
+- `stop` routes to closeout/human review instead of another retry.
+
+`osc harness '$work ... --checkpoint <loop-dir>'` runs the same checkpoint before
+runtime dispatch. If retry is blocked, `$work` writes `judgment-checkpoint.json`,
+`controller-signal.md`, feedback, status, and postflight, then refuses to launch
+the adapter even when `--allow-spawn` is present.
+
+This makes judgment the mandatory step and makes the work record ambient: the
+worker no longer has to hand-type plateau telemetry just to trigger the gate.
+
 This is bounded bookkeeping enforced around the model by the coordinator. It does not make a model smarter, judge correctness, or approve work; whether enforcement changes outcomes is a separate measured experiment, not a claim of this contract.
 
 Historical/repositioned migration note: earlier builds exposed `osc eval import` and `osc evidence compact` for richer external scorer conversion and compact public-safe evidence bundles. Those helpers are outside the reduced maintained CLI after the framework cleanup. Current reduced CLI support is narrower:

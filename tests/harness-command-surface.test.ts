@@ -10,6 +10,7 @@ import {
   routeHarnessCommand,
 } from '../src/harness.js';
 import { persistAcceptedImprovement, readFeedback } from '../src/feedback.js';
+import { recordEvolutionAttempt, writeEvolutionLoop } from '../src/evolution.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -20,6 +21,96 @@ function tempScaffold(prefix = 'osc-harness-') {
   execFileSync(tsx, [cli, 'init', '--tier', 'min', '--target', root], { encoding: 'utf8' });
   writeFileSync(join(root, 'MISSION.md'), '# Mission\n\nHarness test repo.\n', 'utf8');
   return root;
+}
+
+function writeCheckpointPlan(root: string) {
+  const planPath = join(root, '.osc/plans/active/checkpoint-demo.md');
+  writeFileSync(planPath, `# Plan: checkpoint-demo
+
+## Status
+
+active
+
+## Context
+
+Checkpoint fixture.
+
+## Goal
+
+Test judgment checkpoints.
+
+## Constraints / Out of scope
+
+- Do not spawn blind retries.
+
+## Files to touch
+
+- demo.txt
+
+## Acceptance criteria
+
+- [ ] AC1: Stable criterion passes.
+- [ ] AC2: Unsatisfiable criterion is questioned.
+
+## Verification steps
+
+1. Run tests.
+
+## Open questions
+
+None.
+`);
+  return planPath;
+}
+
+function writeCheckpointRun(root: string, runId: string) {
+  const runDir = join(root, `.osc/runs/${runId}`);
+  mkdirSync(runDir, { recursive: true });
+  const runPath = join(runDir, 'run.json');
+  writeFileSync(runPath, JSON.stringify({
+    schemaVersion: 'open-scaffold.run.v1',
+    runId,
+    taskId: 'checkpoint-task',
+    plan: {
+      slug: 'checkpoint-demo',
+      path: '.osc/plans/active/checkpoint-demo.md',
+      acceptanceCriteria: ['Stable criterion passes.', 'Unsatisfiable criterion is questioned.'],
+    },
+    artifacts: { evidence: [`docs/evidence/${runId}.md`] },
+  }, null, 2));
+  mkdirSync(join(root, 'docs/evidence'), { recursive: true });
+  writeFileSync(join(root, `docs/evidence/${runId}.md`), `${runId} evidence\n`);
+  return runPath;
+}
+
+function writeCheckpointEvaluation(root: string, runId: string) {
+  const evalPath = join(root, `docs/evidence/${runId}-evaluation.json`);
+  writeFileSync(evalPath, JSON.stringify({
+    schema: 'open-scaffold.evaluation.v1',
+    evaluation_id: `eval-${runId}`,
+    subject: { source: 'run', plan: '.osc/plans/active/checkpoint-demo.md', plan_slug: 'checkpoint-demo', task_id: 'checkpoint-task', run_id: runId, run_packet: `.osc/runs/${runId}/run.json` },
+    acceptance_criteria: [
+      { id: 'AC1', text: 'Stable criterion passes.', status: 'pass', evaluator: { kind: 'tests', name: 'fixture', ref: null }, evidence: [], rationale: 'pass' },
+      { id: 'AC2', text: 'Unsatisfiable criterion is questioned.', status: 'fail', evaluator: { kind: 'tests', name: 'fixture', ref: null }, evidence: [], rationale: 'fail' },
+    ],
+  }, null, 2));
+  return evalPath;
+}
+
+function writeCheckpointLoop(root: string) {
+  const planPath = writeCheckpointPlan(root);
+  const outDir = join(root, '.osc/evolution/checkpoint-loop');
+  writeEvolutionLoop(planPath, outDir, root, { strategy: 'greedy', now: new Date('2026-06-11T12:00:00.000Z') });
+  for (const [index, runId] of ['attempt-a', 'attempt-b', 'attempt-c'].entries()) {
+    recordEvolutionAttempt(outDir, {
+      runPath: writeCheckpointRun(root, runId),
+      evaluationPath: writeCheckpointEvaluation(root, runId),
+      decision: index === 0 ? 'promote' : 'reject',
+      rationale: `Attempt ${runId} preserved the same failing AC fingerprint.`,
+      now: new Date(`2026-06-11T12:${String(10 + index).padStart(2, '0')}:00.000Z`),
+    }, root);
+  }
+  return outDir;
 }
 
 describe('harness command surface', () => {
@@ -103,6 +194,46 @@ describe('harness command surface', () => {
     expect(existsSync(join(root, sharedEvidence!.path))).toBe(true);
     const team = JSON.parse(readFileSync(join(root, `.osc/runs/${result.runId}/team.json`), 'utf8'));
     expect(team.feedback).toMatchObject({ schema: 'osc.feedback.v1', feedback_is_not_approval: true });
+  });
+
+  it('writes an ambient record for $work postflight without worker-authored bookkeeping', () => {
+    const root = tempScaffold();
+    const result = routeHarnessCommand({
+      repoRoot: root,
+      input: '$work "ambient record smoke" --context "repo truth"',
+    });
+
+    expect(result.status.state).toBe('ready');
+    const ambientArtifact = result.artifacts.find((artifact) => artifact.role === 'ambient_record');
+    expect(ambientArtifact).toBeTruthy();
+    const ambient = JSON.parse(readFileSync(join(root, ambientArtifact!.path), 'utf8'));
+    expect(ambient).toMatchObject({
+      schema: 'osc.ambient-work-record.v1',
+      runId: result.runId,
+      source: 'harness-postflight',
+      runtime: { status: 'dry_run', spawned: false },
+      boundary: { not_worker_authored: true, not_approval: true },
+    });
+  });
+
+  it('lets $work checkpoint block another runtime attempt before dispatch', () => {
+    const root = tempScaffold();
+    writeCheckpointLoop(root);
+
+    const result = routeHarnessCommand({
+      repoRoot: root,
+      input: '$work "blind retry should not run" --context "repo truth" --checkpoint .osc/evolution/checkpoint-loop --adapter codex --allow-spawn',
+    });
+
+    expect(result.status.state).toBe('blocked');
+    expect(result.message).toContain('Judgment checkpoint blocked runtime dispatch');
+    const packet = JSON.parse(readFileSync(join(root, `.osc/runs/${result.runId}/run.json`), 'utf8'));
+    expect(packet.runtime.spawning).toBe(false);
+    expect(packet.judgmentCheckpoint.retryAuthorized).toMatchObject({ allow: false, mode: 'blocked_by_packet' });
+    expect(existsSync(join(root, `.osc/runs/${result.runId}/judgment-checkpoint.json`))).toBe(true);
+    expect(existsSync(join(root, `.osc/runs/${result.runId}/runtime-receipt.json`))).toBe(false);
+    const feedback = readFeedback({ repoRoot: root, runId: result.runId });
+    expect(feedback[0]).toMatchObject({ source: 'reviewer', verdict: 'block', scope: 'run' });
   });
 
   it('gives $team a shared feedback path, repair hypothesis, accepted lessons, and postflight parity', () => {
