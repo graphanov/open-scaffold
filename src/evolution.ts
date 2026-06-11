@@ -1475,12 +1475,16 @@ function recommendAnalysis(plateau: EvolutionAnalysisResult['plateau'], criteria
       reasons: ['plateau', 'remaining_failures_non_score_moving'],
     };
   }
-  // 165: zero-sensitivity plateau from AC fingerprints alone — criteria failing in
-  // every attempt with no observed delta and no score signal to inspect. The
-  // requirement itself may be unsatisfiable, so recommend redesign and (in the
-  // packet) question the requirement, not only the scorer.
-  const alwaysFailing = remaining.filter((criterion) => criterion.alwaysFailing);
-  if (plateau.status === 'plateau' && plateau.fingerprintPlateau && !plateau.scoreObserved && missingCurrent.length === 0 && alwaysFailing.length > 0) {
+  // 165: zero-sensitivity plateau — criteria failing in every attempt with no
+  // observed delta, with or without score signals (plan 165 AC3: a coordinator
+  // recording scores must still get the question-the-requirement prompt). The
+  // requirement itself may be unsatisfiable, so recommend redesign and question it.
+  // A reason outside the blocking set (e.g. missing_tests) is reachability
+  // evidence: the failure is actionable, so inspect/fix instead of questioning
+  // the requirement.
+  const alwaysFailing = remaining.filter((criterion) => criterion.alwaysFailing &&
+    !criterion.reasons.some((reason) => !BLOCKING_IMPOSSIBLE_REASONS.has(reason)));
+  if (plateau.status === 'plateau' && plateau.fingerprintPlateau && missingCurrent.length === 0 && alwaysFailing.length > 0) {
     const ids = alwaysFailing.map((criterion) => criterion.id).join(', ');
     return {
       action: 'redesign',

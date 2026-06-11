@@ -16,7 +16,8 @@ const cleanupBaselineLoc = 20_890;
 // Codex hardening for plan 162 redacts JSON/run/plan identifiers, missing-plan errors, workspace paths, .osc/run/evidence/lesson symlinks and unsafe lesson roots/stores, mission/plan-file/stage/root symlinks, and fixes final evidence-before-verify resume guidance.
 // Docs-tranche downstream template hardening adds a standard-tier task/run template so generated scaffolds avoid broken links to max-tier docs.
 // 165: evolution enforced-loop auto-fill + fingerprint plateau (+170 LOC)
-const cleanupTargetLoc = 16_261;
+// 165 follow-up: question-the-requirement fires with scores present; reachability-reason filter (+4 LOC)
+const cleanupTargetLoc = 16_265;
 const cleanupTargetFiles = 39;
 
 interface MaintainedSourceFile {
@@ -59,7 +60,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(16_261);
+    expect(cleanupTargetLoc).toBe(16_265);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

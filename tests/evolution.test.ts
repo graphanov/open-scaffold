@@ -930,17 +930,23 @@ describe('evolution analysis', () => {
       impossible: false,
     });
     expect(ac28?.reasons).not.toContain('probe_only');
-    expect(analysis.recommendation.action).toBe('inspect_scorer');
+    // 165: stale frontier metadata still must not mark the criterion impossible
+    // (asserted above), but three identical failures with zero observed delta and
+    // no reachability evidence are a zero-sensitivity plateau — the recommendation
+    // escalates to redesign with question-the-requirement language on fresh
+    // plateau evidence, not on the stale blocker claim.
+    expect(analysis.recommendation.action).toBe('redesign');
+    expect(analysis.recommendation.reasons).toContain('question_the_requirement');
+    expect(analysis.recommendation.summary).toContain('question');
     expect(analysis.nextActionPacket).toMatchObject({
-      recommendedAction: 'inspect_scorer',
+      recommendedAction: 'redesign',
       acceptance: { currentPass: 1, currentTotal: 2 },
     });
     expect(analysis.nextActionPacket.requiredNextFields).toEqual(expect.arrayContaining([
-      'current_evaluation_or_scorer_inspection',
-      'score_sensitivity_or_impossibility_metadata',
+      'redesigned_criterion_scorer_or_artifact_shape',
+      'measurable_repair_hypothesis_before_retry',
       'usage_receipt_or_unavailable_reason',
     ]));
-    expect(analysis.nextActionPacket.handoffChecklist.join('\n')).toContain('Inspect scorer/evaluation coverage');
     expect(analysis.nextActionPacket.boundaryNotes.join('\n')).toContain('not benchmark support');
   });
 
