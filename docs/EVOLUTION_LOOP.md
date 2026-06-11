@@ -117,6 +117,16 @@ That fixture reports quality, prompt-payload/token, speed, and evolution-loop me
 
 The analysis command is a decision aid. It does not mutate loop files unless `--out` is supplied for a rendered report, and even then it writes only the requested report path. It does not spawn runtimes, rerun benchmarks, rank models, certify compliance, promote a frontier, or approve work.
 
+### Enforced loop (coordinator-driven)
+
+The loop earns its overhead only when the coordinator — not the agent under evaluation — runs the bookkeeping. Enforcement lives in the coordinator's control flow; Open Scaffold core only records and analyzes. The intended usage is:
+
+- The coordinator runs `osc evolve record <loop-dir> --run <run-packet> --evaluation <evaluation-json>` after each attempt. When the caller omits `--target-metric`/`--actual-delta`, record stores `target_metric: accepted_ac_count` and an `actual_delta` computed as this evaluation's passing-criteria count minus the previous attempt's (first attempt: versus 0). Explicit caller flags always win. The agent never has to hand-type that telemetry, so the fields plateau detection consumes are populated by construction.
+- Before every retry, the coordinator runs `osc evolve analyze <loop-dir> --compact` and injects the controller signal into the worker's context. Analyze reports a plateau when three or more consecutive attempts share an identical per-acceptance-criterion pass/fail fingerprint — even when score, target metric, and actual delta are all absent. On a zero-sensitivity plateau (one or more criteria failing in every attempt with no observed delta) the packet recommends `redesign` and names those criteria with explicit language that the requirement itself may be unsatisfiable and should be questioned, not only that the scorer should be inspected.
+- Retrying without addressing the packet's recommendation is a protocol violation. The coordinator should surface it (for example, refuse the retry or flag the handoff) rather than letting the worker claim completion against an unchanged plateau.
+
+This is bounded bookkeeping enforced around the model by the coordinator. It does not make a model smarter, judge correctness, or approve work; whether enforcement changes outcomes is a separate measured experiment, not a claim of this contract.
+
 Historical/repositioned migration note: earlier builds exposed `osc eval import` and `osc evidence compact` for richer external scorer conversion and compact public-safe evidence bundles. Those helpers are outside the reduced maintained CLI after the framework cleanup. Current reduced CLI support is narrower:
 
 ```bash

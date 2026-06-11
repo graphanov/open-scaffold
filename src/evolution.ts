@@ -404,6 +404,16 @@ function readRunSummary(runPath: string, root: string): Record<string, unknown> 
   };
 }
 
+function evaluationAcStatuses(parsed: unknown): Array<string | null> {
+  if (!isRecord(parsed) || parsed.schema !== EVALUATION_SCHEMA) return [];
+  const criteria = Array.isArray(parsed.acceptance_criteria) ? parsed.acceptance_criteria.filter(isRecord) : [];
+  return criteria.map((criterion) => asString(criterion.status));
+}
+
+function countEvaluationPasses(parsed: unknown): number {
+  return evaluationAcStatuses(parsed).filter((status) => status === 'pass').length;
+}
+
 function readEvaluationSummary(evaluationPath: string, root: string): Record<string, unknown> {
   const parsed = readJson(evaluationPath);
   if (!isRecord(parsed) || parsed.schema !== EVALUATION_SCHEMA) {
@@ -416,7 +426,24 @@ function readEvaluationSummary(evaluationPath: string, root: string): Record<str
     evaluationPath: pathRelativeToRoot(root, evaluationPath),
     runId: asString(subject.run_id),
     decisionStatus: asString(decision.status),
+    passCount: countEvaluationPasses(parsed),
   };
+}
+
+// 165: passCount of an attempt's already-linked evaluation, resolved from the
+// attempt's repo-relative evaluation ref. Used by record auto-fill to compute
+// actual_delta against the previous attempt without re-deriving the envelope shape.
+function previousAttemptPassCount(attempt: Record<string, unknown> | undefined, root: string): number | null {
+  if (!attempt) return null;
+  const ref = asString(attempt.evaluation);
+  if (!ref) return null;
+  const evaluationPath = analysisEvaluationPath(root, ref);
+  if (!evaluationPath || !existsSync(evaluationPath)) return null;
+  try {
+    return countEvaluationPasses(readJson(evaluationPath));
+  } catch {
+    return null;
+  }
 }
 
 function readDispatchReceiptSummary(receiptPath: string, root: string, expectedRunId: string | null): Record<string, unknown> {
@@ -1000,6 +1027,9 @@ export interface EvolutionAnalysisCriterion {
   frontierStatus: string | null;
   sensitivity: EvolutionCriterionSensitivity;
   impossible: boolean;
+  // 165: criterion is non-pass in every recorded attempt with no observed positive
+  // delta — a zero-sensitivity signal that the requirement itself may be unsatisfiable.
+  alwaysFailing: boolean;
   reasons: string[];
   evidence: string[];
 }
@@ -1032,6 +1062,7 @@ export interface EvolutionNextActionPacket {
       status: string | null;
       sensitivity: EvolutionCriterionSensitivity;
       impossible: boolean;
+      alwaysFailing: boolean;
       reasons: string[];
       evidence: string[];
     }>;
@@ -1043,6 +1074,9 @@ export interface EvolutionNextActionPacket {
   };
   requiredNextFields: string[];
   handoffChecklist: string[];
+  // 165: on a zero-sensitivity plateau, explicit prompts to question the
+  // requirement itself (not only the scorer) for each always-failing criterion.
+  requirementQuestions: string[];
   evidenceRefs: string[];
   boundaryNotes: string[];
 }
@@ -1065,6 +1099,8 @@ export interface EvolutionControllerSignal {
     remainingFailures: EvolutionNextActionPacket['acceptance']['remainingFailures'];
   };
   requiredNextFields: string[];
+  // 165: zero-sensitivity question-the-requirement prompts, carried into the compact signal.
+  requirementQuestions: string[];
   usageReceipt: {
     totalTokens: number | null;
     estimatedUsd: number | null;
@@ -1085,7 +1121,7 @@ export interface EvolutionControllerSignal {
 export interface EvolutionAnalysisResult {
   kind: 'analysis';
   loop: { loopDir: string; loopId: string | null; objective: string | null; strategy: string | null; attemptCount: number };
-  plateau: { status: EvolutionPlateauStatus; threshold: number; noImprovementCount: number; currentScore: number | null; bestScore: number | null; bestAttemptId: string | null };
+  plateau: { status: EvolutionPlateauStatus; threshold: number; noImprovementCount: number; currentScore: number | null; bestScore: number | null; bestAttemptId: string | null; fingerprintPlateau: boolean; scoreObserved: boolean };
   currentAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null; repairHypothesis: EvolutionAttemptRepairHypothesis | null; usage: EvolutionAttemptUsageSummary | null };
   previousAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null; repairHypothesis: EvolutionAttemptRepairHypothesis | null; usage: EvolutionAttemptUsageSummary | null };
   frontierAttempt: { attemptId: string | null; runId: string | null; decision: string | null; score: number | null; evaluation: string | null; repairHypothesis: EvolutionAttemptRepairHypothesis | null; usage: EvolutionAttemptUsageSummary | null };
@@ -1273,10 +1309,55 @@ function criterionStatusRank(status: string | null): number {
   }
 }
 
-function analyzePlateau(attempts: EvolutionCompareAttempt[], threshold: number) {
+// 165: per-AC pass/fail fingerprint for one attempt, derived from its linked
+// evaluation criteria states (pass vs non-pass). Used to detect plateaus from
+// AC states alone when score telemetry is absent. Null when no criteria are linked.
+function attemptAcFingerprint(criteria: Map<string, EvolutionAnalysisCriterionSnapshot> | undefined): string | null {
+  if (!criteria || criteria.size === 0) return null;
+  const entries = [...criteria.values()]
+    .map((snapshot) => `${snapshot.id}=${snapshot.status === 'pass' ? 'pass' : 'fail'}`)
+    .sort();
+  return entries.join('|');
+}
+
+// 165: length of the trailing run of consecutive attempts (ending at the most
+// recent) that share the current attempt's non-null AC fingerprint.
+function trailingFingerprintRun(fingerprints: Array<string | null>): number {
+  const current = fingerprints.at(-1);
+  if (!current) return 0;
+  let run = 0;
+  for (let index = fingerprints.length - 1; index >= 0; index -= 1) {
+    if (fingerprints[index] === current) run += 1;
+    else break;
+  }
+  return run;
+}
+
+// 165: criterion ids that are non-pass in every attempt that evaluated them and
+// were evaluated in at least one attempt — the "failing in every attempt" set
+// behind the zero-sensitivity question-the-requirement signal.
+function alwaysFailingCriterionIds(ids: string[], criteriaByAttempt: Map<string, Map<string, EvolutionAnalysisCriterionSnapshot>>): Set<string> {
+  const result = new Set<string>();
+  const maps = [...criteriaByAttempt.values()];
+  if (maps.length === 0) return result;
+  for (const id of ids) {
+    const seen = maps.map((map) => map.get(id)).filter((snapshot): snapshot is EvolutionAnalysisCriterionSnapshot => Boolean(snapshot));
+    if (seen.length === 0) continue;
+    if (seen.every((snapshot) => snapshot.status !== 'pass')) result.add(id);
+  }
+  return result;
+}
+
+function analyzePlateau(attempts: EvolutionCompareAttempt[], threshold: number, fingerprints: Array<string | null> = []) {
+  // 165: a stable AC-state fingerprint across >=3 consecutive attempts is a
+  // plateau even when score/target_metric/actual_delta are all absent.
+  const fingerprintPlateau = trailingFingerprintRun(fingerprints) >= 3;
   const scored = attempts.filter((attempt) => attempt.score !== null);
+  const scoreObserved = scored.length > 0;
   if (scored.length < 2) {
-    return { status: 'insufficient_data' as const, threshold, noImprovementCount: 0, currentScore: scored.at(-1)?.score ?? null, bestScore: scored.at(-1)?.score ?? null, bestAttemptId: scored.at(-1)?.attemptId ?? null };
+    const status: EvolutionPlateauStatus = fingerprintPlateau ? 'plateau' : 'insufficient_data';
+    const noImprovementCount = fingerprintPlateau ? Math.max(0, trailingFingerprintRun(fingerprints) - 1) : 0;
+    return { status, threshold, noImprovementCount, currentScore: scored.at(-1)?.score ?? null, bestScore: scored.at(-1)?.score ?? null, bestAttemptId: scored.at(-1)?.attemptId ?? null, fingerprintPlateau, scoreObserved };
   }
   let bestScore = scored[0].score ?? null;
   let bestAttemptId = scored[0].attemptId;
@@ -1291,12 +1372,19 @@ function analyzePlateau(attempts: EvolutionCompareAttempt[], threshold: number) 
     }
   }
   const currentScore = scored[scored.length - 1].score;
-  const noImprovementCount = Math.max(0, scored.length - lastImprovementIndex - 1);
+  let noImprovementCount = Math.max(0, scored.length - lastImprovementIndex - 1);
   let status: EvolutionPlateauStatus = 'improving';
   if (currentScore !== null && bestScore !== null && currentScore < bestScore - epsilon) status = 'regressed';
   else if (noImprovementCount >= threshold) status = 'plateau';
   else if (noImprovementCount > 0) status = 'stagnating';
-  return { status, threshold, noImprovementCount, currentScore, bestScore, bestAttemptId };
+  // 165: a stable AC-state fingerprint across >=3 consecutive attempts escalates
+  // a non-regressed score path to plateau, so frozen criteria are reported even
+  // when the score wobbles below the threshold.
+  if (fingerprintPlateau && status !== 'regressed' && status !== 'plateau') {
+    status = 'plateau';
+    noImprovementCount = Math.max(noImprovementCount, trailingFingerprintRun(fingerprints) - 1);
+  }
+  return { status, threshold, noImprovementCount, currentScore, bestScore, bestAttemptId, fingerprintPlateau, scoreObserved };
 }
 
 function snapshotById(snapshots: EvolutionAnalysisCriterionSnapshot[]): Map<string, EvolutionAnalysisCriterionSnapshot> {
@@ -1385,6 +1473,19 @@ function recommendAnalysis(plateau: EvolutionAnalysisResult['plateau'], criteria
       action: 'redesign',
       summary: `Plateaued with ${remaining.length} remaining failing criteria that are impossible or not moving the score; redesign the criterion, scorer, artifact shape, or benchmark instead of retrying.`,
       reasons: ['plateau', 'remaining_failures_non_score_moving'],
+    };
+  }
+  // 165: zero-sensitivity plateau from AC fingerprints alone — criteria failing in
+  // every attempt with no observed delta and no score signal to inspect. The
+  // requirement itself may be unsatisfiable, so recommend redesign and (in the
+  // packet) question the requirement, not only the scorer.
+  const alwaysFailing = remaining.filter((criterion) => criterion.alwaysFailing);
+  if (plateau.status === 'plateau' && plateau.fingerprintPlateau && !plateau.scoreObserved && missingCurrent.length === 0 && alwaysFailing.length > 0) {
+    const ids = alwaysFailing.map((criterion) => criterion.id).join(', ');
+    return {
+      action: 'redesign',
+      summary: `Plateaued with ${alwaysFailing.length} remaining failing criteria (${ids}) that failed in every attempt with no observed delta; the requirement itself may be unsatisfiable — question and redesign the criterion before another retry instead of only inspecting the scorer.`,
+      reasons: ['plateau', 'zero_sensitivity_plateau', 'question_the_requirement'],
     };
   }
   if (plateaued) {
@@ -1496,9 +1597,19 @@ function buildNextActionPacket(
       status: criterion.currentStatus ?? 'missing_current',
       sensitivity: criterion.sensitivity,
       impossible: criterion.impossible,
+      alwaysFailing: criterion.alwaysFailing,
       reasons: criterion.reasons,
       evidence: criterion.evidence,
     }));
+  // 165: on a zero-sensitivity plateau (recommendation carries the
+  // question_the_requirement reason), name each always-failing criterion with
+  // explicit requirement-questioning language so the coordinator questions the
+  // requirement itself, not only the scorer.
+  const requirementQuestions = recommendation.reasons.includes('question_the_requirement')
+    ? remainingFailures
+        .filter((criterion) => criterion.alwaysFailing)
+        .map((criterion) => `${criterion.id} failed in every attempt with no observed delta — the requirement itself may be unsatisfiable; question whether "${criterion.text}" is the right requirement and redesign or drop it before another retry.`)
+    : [];
   const evidenceRefs = uniqueRefs([
     currentAttempt.evaluation,
     ...remainingFailures.flatMap((criterion) => criterion.evidence),
@@ -1542,6 +1653,7 @@ function buildNextActionPacket(
     },
     requiredNextFields: requiredNextFieldsForAction(recommendation.action),
     handoffChecklist: handoffChecklistForAction(recommendation.action, remainingFailures),
+    requirementQuestions,
     evidenceRefs,
     boundaryNotes: [
       'This packet is handoff/decision support only; it does not spawn runtimes or execute the next attempt.',
@@ -1591,7 +1703,11 @@ export function analyzeEvolutionLoop(loopDir: string, options: EvolutionAnalyzeO
   const previousMap = previousAttempt ? criteriaByAttempt.get(previousAttempt.attemptId) ?? new Map() : new Map<string, EvolutionAnalysisCriterionSnapshot>();
   const frontierMap = frontierAttempt ? criteriaByAttempt.get(frontierAttempt.attemptId) ?? new Map() : new Map<string, EvolutionAnalysisCriterionSnapshot>();
   const ids = [...new Set([...textById.keys(), ...currentMap.keys(), ...previousMap.keys(), ...frontierMap.keys()])].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-  const plateau = analyzePlateau(attempts, Math.max(1, options.plateauThreshold ?? 2));
+  // 165: per-attempt AC fingerprints (attempt order) feed plateau detection so a
+  // frozen pass/fail pattern reports a plateau even without score telemetry.
+  const fingerprints = attempts.map((attempt) => attemptAcFingerprint(criteriaByAttempt.get(attempt.attemptId)));
+  const plateau = analyzePlateau(attempts, Math.max(1, options.plateauThreshold ?? 2), fingerprints);
+  const alwaysFailingIds = alwaysFailingCriterionIds(ids, criteriaByAttempt);
   const criteria = ids.map((id) => {
     const current = currentMap.get(id);
     const previous = previousMap.get(id);
@@ -1611,6 +1727,9 @@ export function analyzeEvolutionLoop(loopDir: string, options: EvolutionAnalyzeO
       frontierStatus: frontierSnapshot?.status ?? null,
       sensitivity,
       impossible,
+      // 165: zero-sensitivity signal — failed in every attempt and never showed a
+      // positive delta, so the requirement itself is a candidate to question.
+      alwaysFailing: alwaysFailingIds.has(id) && sensitivity !== 'observed_positive',
       reasons,
       evidence,
     };
@@ -1722,6 +1841,7 @@ export function buildEvolutionControllerSignal(analysis: EvolutionAnalysisResult
       remainingFailures: packet.acceptance.remainingFailures,
     },
     requiredNextFields: packet.requiredNextFields,
+    requirementQuestions: packet.requirementQuestions,
     usageReceipt: {
       totalTokens: usage?.totalTokens ?? null,
       estimatedUsd: usage?.estimatedUsd ?? null,
@@ -1748,6 +1868,7 @@ function renderCompactAnalysisTerminal(analysis: EvolutionAnalysisResult): strin
     `Plateau: ${signal.plateau.status} | no-improve=${signal.plateau.noImprovementCount} | current=${formatScore(signal.plateau.currentScore)} | best=${formatScore(signal.plateau.bestScore)}`,
     `Acceptance: ${signal.acceptance.currentPass}/${signal.acceptance.currentTotal} pass | remaining=${remaining}`,
     `Required: ${signal.requiredNextFields.join(', ')}`,
+    ...(signal.requirementQuestions.length > 0 ? signal.requirementQuestions.map((question) => `Question requirement: ${question}`) : []),
     `Usage: tokens=${formatInteger(signal.usageReceipt.totalTokens)} | usd=${formatUsd(signal.usageReceipt.estimatedUsd)} | source=${signal.usageReceipt.source ?? signal.usageReceipt.unavailableReason ?? '—'} | completeness=${signal.usageReceipt.completeness.present}/${signal.usageReceipt.completeness.total}`,
     ...(signal.warnings.length > 0 ? signal.warnings.map((warning) => `Warning: ${warning}`) : []),
     `Evidence refs: ${signal.evidenceRefs.join(', ') || '—'}`,
@@ -1774,6 +1895,12 @@ function renderCompactAnalysisMarkdown(analysis: EvolutionAnalysisResult): strin
     '## Remaining failures',
     '',
     ...(signal.acceptance.remainingFailures.length > 0 ? signal.acceptance.remainingFailures.map((criterion) => `- \`${criterion.id}\`: ${criterion.status}; sensitivity ${criterion.sensitivity}; impossible ${criterion.impossible ? 'yes' : 'no'} — ${criterion.text}`) : ['- —']),
+    ...(signal.requirementQuestions.length > 0 ? [
+      '',
+      '## Question the requirement',
+      '',
+      ...signal.requirementQuestions.map((question) => `- ${question}`),
+    ] : []),
     '',
     '## Boundaries',
     '',
@@ -1823,6 +1950,7 @@ function renderAnalysisTerminal(analysis: EvolutionAnalysisResult): string {
     `  Resume: current=${packet.resumeFrom.currentAttemptId ?? '—'} | frontier=${packet.resumeFrom.frontierAttemptId ?? '—'}`,
     `  Acceptance: ${packet.acceptance.currentPass}/${packet.acceptance.currentTotal} pass | remaining=${packet.acceptance.remainingFailures.map((criterion) => criterion.id).join(', ') || '—'}`,
     `  Required next fields: ${packet.requiredNextFields.join(', ')}`,
+    ...(packet.requirementQuestions.length > 0 ? ['  Question the requirement:', ...packet.requirementQuestions.map((question) => `    - ${question}`)] : []),
     ...(packet.currentAttemptControl.budgetWarning ? [`  Budget: ${packet.currentAttemptControl.budgetWarning}`] : []),
     ...(packet.evidenceRefs.length > 0 ? [`  Evidence refs: ${packet.evidenceRefs.join(', ')}`] : []),
     `  Boundary: ${packet.boundaryNotes.join(' ')}`,
@@ -1906,6 +2034,12 @@ function renderAnalysisMarkdown(analysis: EvolutionAnalysisResult): string {
     '### Handoff checklist',
     '',
     ...packet.handoffChecklist.map((item) => `- ${item}`),
+    ...(packet.requirementQuestions.length > 0 ? [
+      '',
+      '### Question the requirement',
+      '',
+      ...packet.requirementQuestions.map((question) => `- ${question}`),
+    ] : []),
     '',
     '### Packet evidence refs',
     '',
@@ -1950,6 +2084,37 @@ function normalizeAttemptRepairHypothesis(input: EvolutionRepairHypothesis | und
     target_metric: targetMetric,
     expected_gain: optionalFiniteNumber(input.expectedGain, 'Repair hypothesis expected gain'),
     actual_delta: optionalFiniteNumber(input.actualDelta, 'Repair hypothesis actual delta'),
+  };
+}
+
+const AUTO_FILL_TARGET_METRIC = 'accepted_ac_count';
+
+// 165: when an evaluation envelope is linked and the caller did not supply
+// target-metric/actual-delta, store accepted_ac_count and the passCount delta
+// versus the previous attempt's linked evaluation (first attempt: delta vs 0).
+// Explicit caller flags always win, per-field.
+function applyEvaluationAutoFill(
+  normalized: Record<string, unknown> | null,
+  caller: EvolutionRepairHypothesis | undefined,
+  currentPassCount: number,
+  previousPassCount: number | null,
+): Record<string, unknown> | null {
+  const callerSetTarget = caller?.targetMetric !== undefined && caller?.targetMetric !== null;
+  const callerSetDelta = caller?.actualDelta !== undefined && caller?.actualDelta !== null;
+  if (callerSetTarget && callerSetDelta) return normalized;
+  const delta = currentPassCount - (previousPassCount ?? 0);
+  if (!normalized) {
+    return {
+      hypothesis: `Auto-recorded from linked evaluation: ${AUTO_FILL_TARGET_METRIC} delta ${delta} versus previous attempt.`,
+      target_metric: AUTO_FILL_TARGET_METRIC,
+      expected_gain: null,
+      actual_delta: delta,
+    };
+  }
+  return {
+    ...normalized,
+    target_metric: callerSetTarget ? normalized.target_metric : AUTO_FILL_TARGET_METRIC,
+    actual_delta: callerSetDelta ? normalized.actual_delta : delta,
   };
 }
 
@@ -2006,6 +2171,11 @@ export function recordEvolutionAttempt(loopDir: string, options: RecordEvolution
   if (attempts.some((attempt) => attempt.attempt_id === attemptId)) {
     throw new Error(`Evolution attempt already recorded: ${attemptId}`);
   }
+  // 165: auto-fill accepted_ac_count target metric and passCount delta from the
+  // linked evaluation when the caller did not provide them explicitly.
+  const effectiveRepairHypothesis = evalSummary
+    ? applyEvaluationAutoFill(repairHypothesis, options.repairHypothesis, (evalSummary.passCount as number) ?? 0, previousAttemptPassCount(attempts.at(-1), root))
+    : repairHypothesis;
   const now = options.now ?? new Date();
   const evidenceRefs = uniqueRefs([
     ...(asStringArray(run.evidenceRefs)),
@@ -2028,7 +2198,7 @@ export function recordEvolutionAttempt(loopDir: string, options: RecordEvolution
     rationale: options.rationale,
     evidence_refs: evidenceRefs,
     adapter_receipts: adapterReceiptRefs,
-    ...(repairHypothesis ? { repair_hypothesis: repairHypothesis } : {}),
+    ...(effectiveRepairHypothesis ? { repair_hypothesis: effectiveRepairHypothesis } : {}),
     ...(usage ? { usage } : {}),
     boundary: boundary(),
   };
