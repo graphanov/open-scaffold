@@ -245,7 +245,8 @@ This sample must not count as the real section.
     const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
     // 169 planning: staged review-battery backlog plan after dollar-verb retirement.
-    expect(hash(planIssueSnapshot)).toBe('a30456425a4f369b39ad6c669a6853083c7116b501b22a44da39fda901e5336f');
+    // 170: added active plan 170-ambient-capture (osc capture) to the corpus.
+    expect(hash(planIssueSnapshot)).toBe('d14aa648f280c04baf4aa6e047cbe449e29c2298e5271e17b095388e902e3e32');
     expect(scaffold.failures).toEqual([]);
     // 168: evidence note 2026-06-12-168-dollar-verb-retirement.md added to .osc/releases.
     expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('77d3ca8072b68fddcc790d96171145c744b770bf3f681145bc0fd0c56a77c618');
