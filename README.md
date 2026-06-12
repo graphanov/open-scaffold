@@ -55,6 +55,23 @@ The whole human grammar is four verbs:
 | `$work` | Package one bounded slice for controlled execution. |
 | `$team` | Coordinate multiple worker lanes with shared evidence. |
 
+## What's measured
+
+Open Scaffold ran a preregistered benchmark program against itself in an
+independent repo (hidden inputs, pre-committed hashes, kill rules) and publishes
+the verdicts both ways:
+
+- **The work record's measured value is to the next reader, not the current
+  worker.** In with/without-record review trials over real finished work, a
+  fresh reviewer reconstructed what happened at **94% accuracy with the record
+  vs 30% without — with zero confabulated history — at half the review cost**
+  (pilot-grade n; boundaries and raw-data pointers in
+  [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md)).
+- **What it does not do, measured:** it does not improve a strong model's
+  in-session task output — an explicit non-goal. Resume value scales with how
+  much recoverable state an interruption leaves behind. The dead claims stay
+  published alongside the live ones; that is the point.
+
 ## Start in 60 seconds
 
 In any repo, new or existing:
@@ -225,8 +242,10 @@ Open Scaffold is pre-1.0 (`v0.31.x`) and it does not make your model smarter —
 it makes the *loop around the model* disciplined: bounded slices, gated
 execution, compact resumes, receipts for everything. A bounded
 scaffold-vs-naked fixture ships in [`examples/proof/`](examples/proof/) and is
-honest about its current scope; the broader benchmark program is tracked in
-`.osc/plans/backlog/163-proof-harness-v2.md`. The full maturity contract —
+honest about its current scope; the broader benchmark program now lives in the
+source-labeled claim ledger in [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md),
+with raw receipts in the public
+[`harness-bench`](https://github.com/graphanov/harness-bench) results tree. The full maturity contract —
 what is stable, what is experimental, what is future — lives in one place:
 [`docs/STABILITY.md`](docs/STABILITY.md).
 

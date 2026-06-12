@@ -8,9 +8,9 @@ The short version: Open Scaffold is on a pre-1.0 line (`v0.31.x`). The stable co
 
 Everything Open Scaffold does not claim, in one place:
 
-- **It does not make your model smarter.** It disciplines the loop around the model: bounded slices, gated execution, compact resumes, receipts. Output quality still comes from the model and the task.
+- **It does not make your model smarter — now measured, not just stated.** The 2026-06 preregistered benchmark program found naked strong-model runs matched or beat scaffolded arms on in-session task performance across three benchmark families; that is an explicit non-goal. The measured value lives elsewhere: a fresh reviewer reconstructs the work from the record at 94% vs 30% accuracy at half the review cost (pilot-grade). Full claim ledger with boundaries: [`PROOF_HARNESS.md`](PROOF_HARNESS.md).
 - **Receipts prove handoff and execution facts, not correctness.** Verification against acceptance criteria is a separate, recorded step — and a human still owns the judgment call.
-- **The proof fixture is bounded.** `examples/proof/` demonstrates compactness and decision-quality parity on one task family; it is not a general benchmark win. Current evidence status lives in [`PROOF_HARNESS.md`](PROOF_HARNESS.md); the broader benchmark program is backlog plan 163.
+- **The benchmark program is pilot-grade and partly self-run.** One worker model, n=1 cells, owner-built instrument (preregistration, hidden inputs, blind double-implementation, and kill rules as mitigations); replication with humans and larger n is open work. The older bounded `examples/proof/` fixture remains a separate, narrower surface.
 - **It is not a compliance certification, sandbox, or security guarantee.** It produces structural evidence a process can build on; it does not replace the process.
 - **Humans own merge, publish, release, and deployment.** Nothing in the harness self-approves.
 - **Historical `v1.0.x` packages exist** as immutable publication history; the forward line is `v0.31.x` and the next 1.0 will be cut when the contract has earned it.
