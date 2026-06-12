@@ -17,7 +17,7 @@ An event stream protocol for real-time status broadcasting. A glass cockpit tran
 Runtime harnesses that extend a base agent with workflow modes.
 
 - **OMC** (Oh-My-ClaudeCode): a runtime harness for Claude Code. It provides workflow skills (`/team`, `/ralph`, `/ultrawork`, `/ralplan`) and orchestration tooling on top of the Claude Code CLI. OMC is not itself an orchestrator; it is a harness that routes work to specialized sub-agents.
-- **OMX** (Oh-My-Codex): the equivalent harness for OpenAI Codex. It provides parallel workflow commands (`$team`, `$ralph`, `$ultrawork`, `$ralplan`) on top of the Codex CLI.
+- **OMX** (Oh-My-Codex): the equivalent harness for OpenAI Codex. It provides parallel, retry, execution, and planning workflows on top of the Codex CLI.
 - **Codex**: OpenAI's coding agent. In this project, "Codex" refers to the CLI agent, not to the historical Codex language model.
 
 OMC and OMX are **not** orchestrators in the same sense as Hermes or Claw/OpenClaw. They are harnesses that add workflow modes to a base agent. See [`docs/OPEN_SCAFFOLD_SYSTEM.md`](OPEN_SCAFFOLD_SYSTEM.md) for the ontology.

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { ParsedPlan } from './scaffold.js';
 
-export type ArtifactMode = 'delegate' | 'run' | 'review' | 'ultrareview';
+export type ArtifactMode = 'delegate' | 'run';
 export type ExecutorLane = 'omc-claude' | 'omx-codex' | 'plain-agent' | 'human' | 'custom';
 export type OperatorSurface = 'discord' | 'slack' | 'telegram' | 'github' | 'cli' | 'none' | 'custom';
 export type RuntimePreset = string;

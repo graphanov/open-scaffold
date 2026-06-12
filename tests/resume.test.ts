@@ -618,7 +618,7 @@ describe('osc resume packet compiler', () => {
     expect(summary.latest_run?.run_id).toBe('harness-work-demo-1');
     expect(summary.latest_run?.pending_gates).toBe(1);
     expect(summary.next_bounded_action).toContain('missing-required-context');
-    expect(packet).toContain('osc harness answer harness-work-demo-1 --gate missing-required-context');
+    expect(packet).toContain('Record the answer for gate missing-required-context in evidence or the external coordinator');
   });
 
 
@@ -731,7 +731,8 @@ describe('osc resume packet compiler', () => {
     expect(packet).not.toContain('/Users/someone');
     expect(summary.latest_run?.run_id).toContain('sk-[redacted]');
     expect(summary.latest_run?.pending_gate_ids[0]).toContain('sk-[redacted]');
-    expect(summary.next_commands.join('\n')).toContain('sk-[redacted]');
+    expect(summary.next_commands.join('\n')).not.toContain('/Users/someone');
+    expect(summary.next_commands.join('\n')).toContain('osc trace 001-sensitive-run');
   });
 
   it('routes a failed run to a repair-hypothesis retry', () => {
@@ -767,7 +768,7 @@ describe('osc resume packet compiler', () => {
 
     expect(summary.repair_hypothesis).toBe('Fix the timeout configuration before retrying.');
     expect(summary.next_bounded_action).toContain('Fix the timeout configuration');
-    expect(packet).toContain('--retry-of harness-work-demo-2');
+    expect(packet).toContain('osc run .osc/plans/active/001-failed.md --dry-run');
   });
 
   it('selects the highest-numbered active plan and lists the others', () => {

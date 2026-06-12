@@ -1,7 +1,21 @@
 import { createSafeOutputRoot, writeFileUnder, writeJsonUnder } from './path-safety.js';
 import { compileHandoffPacket, validateHandoffPacket } from './handoff.js';
 import { analyzeFeedback, recordFeedback } from './feedback.js';
-import { runHarnessRuntimeAdapter, type HarnessRuntimeReceipt } from './runtimes.js';
+
+
+interface HarnessRuntimeReceipt {
+  status: 'completed' | 'needs_human' | 'failed' | 'blocked' | 'dry_run';
+  spawned: boolean;
+  exit: { status: number | null; signal: string | null; timedOut: boolean };
+  marker: { state: string; context?: string };
+  failure: { code?: string | null };
+  evidencePaths: Array<{ role: string; path: string; schema?: string }>;
+  tokenUsage?: { totalTokens: number; promptTokens?: number | null; completionTokens?: number | null } | null;
+}
+
+function runHarnessRuntimeAdapter(_options: unknown): HarnessRuntimeReceipt {
+  throw new Error('bench live runtime mode was retired from Open Scaffold core; use an external benchmark harness for live adapter runs.');
+}
 
 export const BENCH_SUITE_SCHEMA = 'osc.bench-suite-aggregate.v1';
 export const HANDOFF_LAB_SCHEMA = 'osc.handoff-lab-aggregate.v1';
@@ -416,7 +430,7 @@ function runLiveLane({ repoRoot, suiteId, fixtureId, laneId, laneLabel, adapterI
   const receipt = runHarnessRuntimeAdapter({ repoRoot, runId, runPacketPath: packet.path, adapterId, allowSpawn, timeoutMs, maxLogBytes, model, effort });
   const durationMs = Date.now() - started;
   const completion = classifyBenchLaneCompletion(receipt);
-  const answer = 'context' in receipt.marker ? receipt.marker.context : '';
+  const answer = typeof receipt.marker.context === 'string' ? receipt.marker.context : '';
   const quality = scoreLiveAnswer(fixtureId, answer, liveWorkPackage(fixtureId, laneId, ablationId).maxChars ?? 1600);
   return {
     laneId: ablationId ?? laneId,
@@ -621,18 +635,14 @@ function reportMarkdown(aggregate: Record<string, unknown> & { mode: BenchMode; 
 
 export function runBenchSuite({ repoRoot = process.cwd(), mode = 'simulated', outDir = '.osc/bench/simulated-runtime-smoke', fixtureIds = DEFAULT_FIXTURES, includeAblations = false, ablationFixtureIds = null, allowSpawn = false, adapterId = 'codex', timeoutMs, maxLogBytes, model, effort }: BenchSuiteOptions = {}) {
   if (mode !== 'simulated' && mode !== 'live') throw new Error('bench suite --mode must be simulated or live');
+  if (mode === 'live') throw new Error('bench suite live mode was retired from core; run live adapter benchmarks in an external harness.');
   const output = createSafeOutputRoot(repoRoot, outDir, 'bench suite output root');
   const selectedFixtures = fixtureIds.length ? fixtureIds : DEFAULT_FIXTURES;
   const suiteId = suiteRunId(output.relativePath);
-  const fixtures = mode === 'live'
-    ? selectedFixtures.map((fixtureId) => runLiveFixture({ repoRoot, suiteId, fixtureId, adapterId, allowSpawn, timeoutMs, maxLogBytes, model, effort }))
-    : selectedFixtures.map(simulatedFixture);
+  const fixtures = selectedFixtures.map(simulatedFixture);
   const selectedAblationFixtures = includeAblations ? (ablationFixtureIds?.length ? ablationFixtureIds : fixtures.slice(0, 3).map((item) => item.fixtureId)) : [];
-  const harnessByFixture = new Map(fixtures.map((fixture) => [fixture.fixtureId, fixture.harness.quality.value]));
   const ablations = includeAblations
-    ? selectedAblationFixtures.flatMap((fixtureId) => ABLATIONS.map((ablationId) => mode === 'live'
-      ? runLiveAblation({ repoRoot, suiteId, fixtureId, ablationId, harnessQuality: harnessByFixture.get(fixtureId) ?? null, adapterId, allowSpawn, timeoutMs, maxLogBytes, model, effort })
-      : simulatedAblation(fixtureId, ablationId)))
+    ? selectedAblationFixtures.flatMap((fixtureId) => ABLATIONS.map((ablationId) => simulatedAblation(fixtureId, ablationId)))
     : [];
 
   for (const item of fixtures) {
@@ -706,7 +716,7 @@ export function runHandoffLab({ repoRoot = process.cwd(), outDir = '.osc/bench/h
   const output = createSafeOutputRoot(repoRoot, outDir, 'handoff lab output root');
   const seed = {
     state: 'Prior work attempted a harness migration. Some checks may have passed, but exact verification output is missing and proof wording needs care.',
-    decisions: ['Use $interview, $plan, $work, $team.', 'Keep evidence refs instead of raw logs.', 'Do not claim broad dominance from prototype evidence.'],
+    decisions: ['Use handoff/review/gate over recorded facts.', 'Keep evidence refs instead of raw logs.', 'Do not claim broad dominance from prototype evidence.'],
     blockers: ['Live Codex reproduction is optional and budget-gated.', 'Owner still controls merge, publish, and release.'],
     evidenceRefs: ['docs/PROOF_HARNESS.md', '.osc/bench/simulated-runtime-smoke/aggregate.json'],
     nextActions: ['Run local verification.', 'Inspect proof wording.', 'Open PR with reproduction status.'],

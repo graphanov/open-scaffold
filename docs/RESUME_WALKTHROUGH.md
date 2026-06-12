@@ -53,7 +53,7 @@ A fresh agent now knows the goal, what is already done, what is open, the next b
 - A mission digest from `MISSION.md`.
 - The active plan (highest-numbered when several are active; pick explicitly with `--plan <slug>`), its goal, and checklist acceptance criteria with their checked state.
 - Amendments in numeric order — the plan is immutable; learnings layer on top.
-- The latest harness run when one exists: state, pending human gates, and the recorded repair hypothesis for failed or blocked runs, with a ready `--retry-of` recipe.
+- The latest run when one exists: state, pending human gates, and the recorded repair hypothesis for failed or blocked runs, with a next bounded action such as `osc trace <plan-slug>` followed by `osc run .osc/plans/active/<plan-slug>.md --dry-run`.
 - Accepted lessons from `.osc/improvements/applied/` so future runs inherit them.
 - The next bounded action, chosen by precedence: answer a pending gate → repair a failed run → complete the first unchecked acceptance criterion → verify and close → create or promote a plan.
 

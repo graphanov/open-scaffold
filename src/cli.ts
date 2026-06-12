@@ -6,24 +6,21 @@ import { dirname, join } from 'node:path';
 import { renderStartPrompt, parseStartRuntime, START_RUNTIMES } from './start.js';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type RunArtifactOptions, type RuntimeWorkflow } from './artifacts.js';
-import { AdapterTrustError, checkAdapterTrust, formatAdapterTrustStatus, formatTrustedAdapterList, listTrustedAdapters, trustAdapter } from './adapter-trust.js';
 import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
 import { compareBareAttempts, compareProofManifest, renderAttemptComparisonJson, renderAttemptComparisonMarkdown, renderProofComparison, validateProofManifestFile, type ProofRenderFormat } from './compare.js';
-import { DispatchUsageError, formatDispatchSummary, runDispatch } from './dispatch.js';
 import { collectEvidence } from './evidence.js';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, analyzeEvolutionLoop, buildEvolutionJudgmentCheckpoint, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionAnalysis, renderEvolutionComparison, renderEvolutionJudgmentCheckpoint, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionAnalysisFormat, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionJudgeAction, type EvolutionStrategy } from './evolution.js';
 import { measureEvolutionAnalysisEfficiency, renderEvolutionEfficiencyReport } from './evolution-efficiency.js';
 import { analyzeFeedback, recordFeedback } from './feedback.js';
 import { askInteractiveFirstRun, formatFirstRunResult, runFirstRun } from './first-run.js';
-import { answerHumanGate, getHarnessStatus, routeHarnessCommand } from './harness.js';
 import { runBenchSuite, runHandoffLab } from './bench.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { runMcpCommand } from './mcp-server.js';
 import { scanPublicFilesForSecrets } from './redaction.js';
 import { computePrCheck, renderPrCheckMarkdown } from './pr-check.js';
 import { computePrSummary, renderPrSummaryMarkdown } from './pr-summary.js';
-import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
+import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtime-profiles.js';
 import { compileResume, MAX_RESUME_MAX_CHARS, MIN_RESUME_MAX_CHARS } from './resume.js';
 import { requestJudgeRuling } from './reviewer.js';
 import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, findScaffoldRoot, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
@@ -59,7 +56,8 @@ Handoff (compile the work record into a resume packet):
   osc resume [--json] [--plan <slug>] [--max-chars <n>]        same command, original name
 
 Review and gate (judgment over recorded attempts):
-  osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>]
+  osc review <loop-dir> [--compact] [--format <terminal|markdown|json>]        front door
+  osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>]       same command
   osc gate <loop-dir> [--judge-action <continue|stop_impossible|stop_blocked>] [--format <terminal|markdown|json>]
 
 Structured intent (optional criteria source for claims-vs-actual checks):
@@ -71,7 +69,7 @@ Structured intent (optional criteria source for claims-vs-actual checks):
   osc close <plan-slug> [--message <text>]
 
 More:
-  osc help --all          full surface: schemas, MCP server, compare/trace, eval; deprecated runtime-dispatch surfaces are labeled
+  osc help --all          full surface: schemas, MCP server, compare/trace, eval
 `;
 }
 
@@ -90,7 +88,8 @@ First-read demo:
 
 Stable core protocol:
   osc handoff [--json] [--plan <slug>] [--max-chars <n>]      alias of osc resume
-  osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>]      alias of osc evolve analyze
+  osc review <loop-dir> [--compact] [--format <terminal|markdown|json>]      alias of osc evolve analyze
+  osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>]      same command, original name
   osc gate <loop-dir> [--judge-action <action> | --judge-endpoint <url> --judge-model <name>]      alias of osc evolve checkpoint
   osc resume [--json] [--plan <slug>] [--max-chars <n>]
   osc status [--json]
@@ -109,34 +108,14 @@ Stable core protocol:
   osc schemas list [--json]
   osc schemas show <schema-id>
 
-Handoff and run packages:  [deprecated runtime-dispatch surfaces; removal staged — docs/STABILITY.md#command-maturity]
+Run-packet generation (no runtime spawning):
   osc start <plan-slug-or-path> --runtime <codex|omx|plain|human|custom>
   osc delegate <plan-path> [run binding options]
   osc run <plan-path> [--dry-run] [--json] [run binding options]
-  osc dispatch <run-json> --adapter <adapter-id>
-  osc review <plan-path> [run binding options]
-  osc ultrareview <plan-path> [run binding options]
-  osc adapter check <adapter-id>
-  osc adapter trust <adapter-id>
-  osc adapter list --trusted
-  osc runtimes list [--json]
-  osc runtimes show <id>
-
-Harness command surface:  [deprecated; the $-verb grammar leaves the product — removal staged as plan 168]
-  primary UX: $interview | $plan | $work | $team
-  osc harness '$interview ...' [--json]
-  osc harness '$plan ...' [--json]
-  osc harness '$work ...' [--json]
-  osc harness '$work ... --adapter <id> --allow-spawn [--timeout-ms <n>] [--max-log-bytes <n>]' [--json]
-  osc harness '$work ... --retry-of <run-id> [--checkpoint <loop-dir>] [--handoff --handoff-max-chars <n>]' [--json]
-  osc harness '$team ... [--worker <id>]... [--worker-adapter <worker>:<adapter>] [--worker-outcome <worker>:complete|needs-human|blocked|failed] [--worker-question <worker>:<text>] [--repair-hypothesis <text>]' [--json]
-  osc harness status <run-id> [--json]
-  osc harness answer <run-id> --gate <id> --answer <text> [--json]
   osc feedback record <run-id> --source <human|tests|reviewer|benchmark|runtime|codex|hermes> --verdict <pass|retry|reject|block|improve> --scope <run|plan|command|docs|benchmark|runtime> --what-happened <text> --why-it-matters <text> [--repair-hypothesis <text>] [--evidence-path <path>]... --next-action <text> [--json]
   osc feedback analyze <run-id> [--json]
-  osc bench suite [--mode simulated|live] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--allow-spawn] [--adapter <id>] [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>] [--out <dir>] [--json]
+  osc bench suite [--mode simulated] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--out <dir>] [--json]
   osc bench handoff-lab [--out <dir>] [--json]
-  Backend commands are for CI/scripts/repro. The human-facing grammar stays the four $commands.
 
 Lab and experimental:
   osc eval init <plan-path> [--out <path>]
@@ -267,7 +246,7 @@ Run binding options:
   --runtime <preset>          omc | codex | omx | plain | human | custom
   --workflow <workflow>       interview | plan | team | loop | execute | goal | custom
   --executor <lane>           omc-claude | omx-codex | plain-agent | human | custom
-  --harness-skill <skill>     e.g. /ralplan, $ralplan, /ralph, $ultrawork
+  --harness-skill <skill>     optional runtime-native workflow hint
   --repo <path>               Repository path for execution
   --worktree <path>           Worktree path for isolated execution
   --branch <name>             Branch expected for the run
@@ -555,33 +534,9 @@ function startCommand(args: string[]): void {
   console.log(result.prompt);
 }
 
-function adapterCommand(args: string[]): void {
-  const sub = args[0];
-  try {
-    if (sub === 'list' && has(args, '--trusted')) console.log(formatTrustedAdapterList(listTrustedAdapters()));
-    else if (sub === 'check') console.log(formatAdapterTrustStatus(checkAdapterTrust(args[1] ?? die('Usage: osc adapter check <adapter-id>'))));
-    else if (sub === 'trust') {
-      const id = args[1] ?? die('Usage: osc adapter trust <adapter-id>');
-      const status = trustAdapter(id);
-      console.log(`Trusted adapter: ${status.adapterId}`);
-      console.log(formatAdapterTrustStatus(status));
-    }
-    else die('Usage: osc adapter check|trust <adapter-id> | osc adapter list --trusted');
-  } catch (error) {
-    if (error instanceof AdapterTrustError) die(error.message, 2);
-    throw error;
-  }
-}
+function adapterCommand(_args: string[]): void { removed('adapter'); }
 
-function dispatchCommand(args: string[]): void {
-  const runPacket = args[0] ?? die('Usage: osc dispatch <run-json> --adapter <adapter-id> [--allow-full-env]');
-  try {
-    const adapterId = value(args, '--adapter') ?? die('Missing required option: --adapter <adapter-id>', 2);
-    const result = runDispatch(runPacket, { adapterId, allowFullEnv: has(args, '--allow-full-env') });
-    console.log(formatDispatchSummary(result, process.cwd()));
-    if (result.exitStatus !== 0 || result.timedOut) process.exit(1);
-  } catch (error) { if (error instanceof DispatchUsageError || error instanceof AdapterTrustError) die(error.message, 2); throw error; }
-}
+function dispatchCommand(_args: string[]): void { removed('dispatch'); }
 
 function compareCommand(args: string[]): void {
   if (isHelpArg(args[0])) { console.log('Usage: osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]'); return; }
@@ -890,35 +845,7 @@ function runtimesCommand(args: string[]): void {
   die('Usage: osc runtimes list [--json] | osc runtimes show <id>', 2);
 }
 
-function harnessCommand(args: string[]): void {
-  if (isHelpArg(args[0])) { console.log("Usage: osc harness '$interview|$plan|$work|$team ...' [--json]\n  osc harness '$work ... --adapter <id> --allow-spawn [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>]' [--json]\n  osc harness '$work ... --retry-of <run-id> [--checkpoint <loop-dir>] [--handoff --handoff-max-chars <n>]' [--json]\n  osc harness '$team ... [--worker <id>]... [--worker-adapter <worker>:<adapter>] [--worker-outcome <worker>:complete|needs-human|blocked|failed] [--worker-question <worker>:<text>] [--repair-hypothesis <text>]' [--json]\n  osc harness status <run-id> [--json]\n  osc harness answer <run-id> --gate <id> --answer <text> [--json]\n\nFor $work, omit --allow-spawn to write a dry-run receipt without launching the adapter. --checkpoint <loop-dir> runs a judgment checkpoint before dispatch and can block another retry. Gate answers, feedback, repair hypotheses, and handoff packets are task input, not owner approval."); return; }
-  const json = has(args, '--json');
-  try {
-    if (args[0] === 'status') {
-      const runId = args[1] ?? die('Usage: osc harness status <run-id> [--json]', 2);
-      const status = getHarnessStatus({ repoRoot: process.cwd(), runId });
-      if (json) console.log(JSON.stringify(status, null, 2)); else console.log(`${status.runId}\t${status.state}\t${status.pendingHumanGates.length} pending gate(s)`);
-      return;
-    }
-    if (args[0] === 'answer') {
-      const runId = args[1] ?? die('Usage: osc harness answer <run-id> --gate <id> --answer <text> [--json]', 2);
-      const result = answerHumanGate({ repoRoot: process.cwd(), runId, gateId: requireValue(args, '--gate'), answer: requireValue(args, '--answer') });
-      if (json) console.log(JSON.stringify(result, null, 2)); else console.log(`Answered gate for ${result.runId}; state=${result.status.state}`);
-      return;
-    }
-    const input = args.find((arg) => arg.startsWith('$')) ?? die("Usage: osc harness '$interview|$plan|$work|$team ...' [--json]", 2);
-    const result = routeHarnessCommand({ repoRoot: process.cwd(), input });
-    if (json) console.log(JSON.stringify(result, null, 2));
-    else {
-      console.log(`${result.command}: ${result.status.state}`);
-      console.log(`run: ${result.runId}`);
-      for (const artifact of result.artifacts) console.log(`artifact: ${artifact.path}`);
-    }
-  } catch (error) {
-    if (error instanceof Error) die(error.message, 2);
-    throw error;
-  }
-}
+function harnessCommand(_args: string[]): void { removed('harness'); }
 
 function feedbackHelp(): string {
   return 'Usage: osc feedback record|analyze ...\n  osc feedback record <run-id> --source <human|tests|reviewer|benchmark|runtime|codex|hermes> --verdict <pass|retry|reject|block|improve> --scope <run|plan|command|docs|benchmark|runtime> --what-happened <text> --why-it-matters <text> [--repair-hypothesis <text>] [--evidence-path <path>]... --next-action <text> [--json]\n  osc feedback analyze <run-id> [--json]\n\nFeedback is task input and repair signal. It is not owner approval.';
@@ -960,14 +887,14 @@ function feedbackCommand(args: string[]): void {
 }
 
 function benchHelp(): string {
-  return 'Usage: osc bench suite|handoff-lab ...\n  osc bench suite [--mode simulated|live] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--allow-spawn] [--adapter <id>] [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>] [--out <dir>] [--json]\n  osc bench handoff-lab [--out <dir>] [--json]\n\nBench commands write local reproduction receipts. They do not grant broad proof or owner approval.';
+  return 'Usage: osc bench suite|handoff-lab ...\n  osc bench suite [--mode simulated] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--out <dir>] [--json]\n  osc bench handoff-lab [--out <dir>] [--json]\n\nBench commands write local reproduction receipts. Live runtime execution was retired from core; bench output does not grant broad proof or owner approval.';
 }
 
 function benchCommand(args: string[]): void {
   if (isHelpArg(args[0])) { console.log(benchHelp()); return; }
   const sub = args[0] ?? die(benchHelp(), 2);
   if (sub === 'suite' && isHelpArg(args[1])) {
-    console.log('Usage: osc bench suite [--mode simulated|live] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--allow-spawn] [--adapter <id>] [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>] [--out <dir>] [--json]');
+    console.log('Usage: osc bench suite [--mode simulated] [--fixture <id>]... [--include-ablations] [--ablation-fixture <id>]... [--out <dir>] [--json]');
     return;
   }
   if (sub === 'handoff-lab' && isHelpArg(args[1])) {
@@ -1029,6 +956,15 @@ function removed(command: string): never {
   die(`osc ${command} was removed/repositioned by the framework cleanup. See docs/STABILITY.md#command-maturity for shipped migration notes.`, 2);
 }
 
+function reviewAliasHelp(command: 'review' | 'analyze'): string {
+  return [
+    `Usage: osc ${command} <loop-dir> [--compact] [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>]`,
+    '',
+    `${command === 'review' ? 'osc review' : 'osc analyze'} reads recorded evolution-loop attempts; it does not create run packets, spawn runtimes, approve retries, merge, or publish.`,
+    command === 'review' ? 'Alias of: osc evolve analyze' : 'Synonym of: osc review / osc evolve analyze',
+  ].join('\n');
+}
+
 async function main(): Promise<void> {
   const [command = 'help', ...args] = process.argv.slice(2);
   try {
@@ -1038,10 +974,12 @@ async function main(): Promise<void> {
       case 'init': initCommand(args); return;
       case 'first-run': await firstRunCommand(args); return;
       case 'resume': resumeCommand(args); return;
-      // Product-named front door (plan 167): handoff/analyze/gate are stable
-      // aliases of resume / evolve analyze / evolve checkpoint.
+      // Product-named front door: handoff/review/gate are stable aliases of
+      // resume / evolve analyze / evolve checkpoint. analyze stays as a synonym.
       case 'handoff': resumeCommand(args); return;
-      case 'analyze': await evolveCommand(['analyze', ...args]); return;
+      case 'review': case 'analyze':
+        if (args.some(isHelpArg)) { console.log(reviewAliasHelp(command)); return; }
+        await evolveCommand(['analyze', ...args]); return;
       case 'gate': await evolveCommand(['checkpoint', ...args]); return;
       case 'status': statusCommand(args); return;
       case 'plan': planCommand(args); return;
@@ -1051,9 +989,8 @@ async function main(): Promise<void> {
       case 'verify': verifyCommand(args); return;
       case 'trace': traceCommand(args); return;
       case 'start': startCommand(args); return;
-      case 'delegate': case 'run': case 'review': case 'ultrareview': artifactsCommand(command, args); return;
-      case 'adapter': adapterCommand(args); return;
-      case 'dispatch': dispatchCommand(args); return;
+      case 'delegate': case 'run': artifactsCommand(command, args); return;
+      case 'adapter': case 'dispatch': case 'ultrareview': removed(command); return;
       case 'compare': compareCommand(args); return;
       case 'pr-summary': prSummaryCommand(args); return;
       case 'pr': prCommand(args); return;
@@ -1065,7 +1002,7 @@ async function main(): Promise<void> {
       case 'schemas': schemasCommand(args); return;
       case 'doctor': doctorCommand(args); return;
       case 'runtimes': runtimesCommand(args); return;
-      case 'harness': harnessCommand(args); return;
+      case 'harness': removed('harness'); return;
       case 'feedback': feedbackCommand(args); return;
       case 'bench': benchCommand(args); return;
       case 'eval': evalCommand(args); return;

@@ -22,21 +22,16 @@ This page explains the policy around that registry.
 Use `osc schemas list --json` for the machine-readable list. Representative schemas include:
 
 - `open-scaffold.run.v1` — run packet under `.osc/runs/<run_id>/run.json`.
-- `open-scaffold.adapter.v1` — project-local adapter config.
-- `open-scaffold.trusted_adapters.v1` — gitignored local adapter trust records.
-- `open-scaffold.dispatch-receipt.v1` — adapter receipt.
+- `open-scaffold.dispatch-receipt.v1` — adapter receipt under `.osc/runs/<run_id>/dispatch-receipt.json`.
 - `open-scaffold.pr_check.v1` — structural PR work-record check.
 - `open-scaffold.trace.v1` — local work-record replay.
 - `open-scaffold.audit-envelope.v1` — digest-only audit envelope for curated local artifacts.
 - `open-scaffold.evaluation.v1` — acceptance-criteria evaluation envelope scaffold / external scorer reference.
-- `osc.harness-status.v1` and `osc.harness-event.v1` — transport-neutral harness status and progress events, including feedback, retry, and handoff events.
-- `osc.controlled-work-run.v1` and `osc.team-run.v1` — `$work` and `$team` run-package receipts.
 - `open-scaffold.evolution-judgment-checkpoint.v1` — retry authorization gate built from evolution analysis plus optional independent judge input.
-- `osc.ambient-work-record.v1` — post-hoc `$work` record extracted by the harness so workers do not hand-write bookkeeping in-loop.
+- `osc.ambient-work-record.v1` — post-hoc work record extracted from observed run facts so workers do not hand-write bookkeeping in-loop.
 - `osc.feedback.v1` and `osc.feedback-analysis.v1` — feedback records and repair hypotheses.
-- `osc.harness-retry.v1` — retry attempt links that preserve old evidence.
 - `osc.accepted-improvement.v1` — accepted lesson files for relevant future-run inheritance.
-- `osc.handoff-compiler.v1` — compact continuation packet contract, including `$work --handoff` packets.
+- `osc.handoff-compiler.v1` — compact continuation packet contract.
 - `osc.bench-suite-aggregate.v1` and `osc.handoff-lab-aggregate.v1` — benchmark/proof smoke aggregates with no-overclaim gates.
 
 ## Adding a schema

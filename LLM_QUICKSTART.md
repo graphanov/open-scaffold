@@ -59,7 +59,7 @@ Ask the user two questions:
 1. Which operating mode are you using?
    - **Orchestrator-led** (Hermes, Claw/OpenClaw, or a custom bot reading Open Scaffold state)
    - **Claude Code + OMC harness** (`/deep-interview`, `/ralplan`, `/team`, `/ralph`)
-   - **Codex + OMX harness** (`$deep-interview`, `$ralplan`, `$team`, `$ralph`, `$ultrawork`)
+   - **Codex + OMX harness** (clarification, planning, team, retry, and execution workflows)
    - **Plain agent** (Claude Code, Cursor, Codex, Gemini, Aider — no harness)
    - **Fully manual** (no agent)
 2. Is your first task clear in your head, or still fuzzy?

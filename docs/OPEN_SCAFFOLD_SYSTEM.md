@@ -13,11 +13,11 @@ This document is the full ontology. Most readers do not need every protocol page
 - New here? Read the [README](../README.md), then [`docs/EXAMPLES.md`](EXAMPLES.md) for the 60-second viewer demo.
 - Wiring task/run identity into a coordinator or task system: [`docs/TASK_RUN_MODEL.md`](TASK_RUN_MODEL.md).
 - Using repo-local tasks before an external tracker: [`WORKFLOW.md#task-trackers-and-plans`](WORKFLOW.md#task-trackers-and-plans).
-- Understanding runtime handoff progressively: choosing a runtime via [`docs/ADAPTERS.md`](ADAPTERS.md), then [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md) and [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md) for adapter/runtime responsibilities.
+- Understanding runtime handoff progressively: start with `osc run` package generation, then read [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md), [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md), and the historical label taxonomy in [`docs/ADAPTERS.md`](ADAPTERS.md).
 - Closing a slice and producing evidence: [`docs/SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md).
 - Recording multi-attempt improvement loops and frontier promotion: [`docs/EVOLUTION_LOOP.md`](EVOLUTION_LOOP.md).
 - Exposing repo truth to MCP-capable tools: [`docs/MCP.md`](MCP.md).
-- Reading public mentions of named tools (Hermes, OMC, OMX, Discord, etc.): [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools) for the public/private/adapter labels.
+- Reading public mentions of named tools (Hermes, OMC, OMX, Discord, etc.): [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools) for the current label vocabulary and retired adapter-glue boundary.
 
 ## Layers
 
@@ -31,7 +31,7 @@ Open Scaffold core owns the portable project substrate:
 - `.osc/specs/` — durable specs and context packs.
 - `.osc/runs/` — generated `run.json` work packages (run packets), prompt bundles, execution evidence.
 - `docs/` — decisions, workflow standards, examples, operator guidance.
-- docs/HARNESS_ARCHITECTURE.md — harness layer, status/event contracts, and the control-room-neutral event projection.
+- docs/HARNESS_ARCHITECTURE.md — kept architecture, retired layers, and operator-event vocabulary.
 - `docs/RUNTIME_BINDING_CONTRACT.md` — binding lifecycle and responsibilities for OMC/OMX/plain-agent/human lanes that consume `run.json` work packages (run packets) outside core.
 - `docs/SLICE_CLOSE_PROTOCOL.md` — evidence receipts, postflight decisions, approval strength, correction routing, and next-slice inheritance.
 - `docs/EVOLUTION_LOOP.md` — multi-attempt loop state, attempt journals, frontier promotion, and improvement routing.
@@ -83,19 +83,7 @@ Use OMC when the execution lane is Claude Code plus OMC-specific workflows.
 
 #### OMX
 
-OMX / oh-my-codex is a Codex workflow/execution harness.
-
-It can provide Codex-native capabilities such as:
-
-- `$deep-interview`
-- `$ralplan`
-- `$team`
-- `$ralph`
-- `$ultrawork`
-- `$ultragoal`
-- goal modes, tmux teams, state surfaces, and verification workflows
-
-Use OMX when the execution lane is Codex plus OMX-specific planning/execution workflows.
+OMX / oh-my-codex is a Codex workflow/execution harness. It can provide Codex-native planning, team, goal, retry, tmux, state, and verification workflows. Use OMX when the execution lane is Codex plus OMX-specific planning/execution workflows.
 
 ### 4. Task and state bridges — work queues/status boards
 
@@ -110,7 +98,7 @@ Examples:
 - historical/repositioned local `.osc/tasks.db` task queues from the retired `osc task` bridge
 - a custom orchestrator board
 
-Open Scaffold should define how roadmap items and plans link to these systems, but it should not assume one board is universal. The dispatch pattern is documented in [`ADAPTERS.md#runtime-dispatch-pattern`](ADAPTERS.md#runtime-dispatch-pattern): core creates the package, coordinators/task bridges choose and launch the harness, and evidence returns to `.osc/runs`, GitHub, or release notes.
+Open Scaffold should define how roadmap items and plans link to these systems, but it should not assume one board is universal. The packet handoff pattern is documented in [`ADAPTERS.md#runtime-dispatch-pattern`](ADAPTERS.md#runtime-dispatch-pattern): core creates the package, coordinators/task bridges choose and launch the external worker, and evidence returns to `.osc/runs`, GitHub, or release notes.
 
 A live task should dispatch work through a canonical run record instead of through a chat thread or runtime transcript directly. See [`docs/TASK_RUN_MODEL.md`](TASK_RUN_MODEL.md) for the v1 task/run/operator-surface schema. A task or run should close through the evidence-backed slice-close protocol in [`docs/SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md), not merely because a runtime or chat message says "done".
 
@@ -155,7 +143,7 @@ The glass cockpit can run in several modes:
 - **Build-in-public room:** public or semi-public devlog channel.
 - **Stakeholder room:** curated client/product updates.
 
-Operator surfaces are **not canonical truth**. They should link back to roadmap items, task IDs, `run.json` work packages (run packets), evidence, issues, branches, and PRs. Their event vocabulary is the harness event stream in [`docs/HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md).
+Operator surfaces are **not canonical truth**. They should link back to roadmap items, task IDs, `run.json` work packages (run packets), evidence, issues, branches, and PRs. Their event vocabulary is the operator-event table in [`docs/HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md).
 
 ### 7. GitHub/public versioning layer
 
@@ -172,7 +160,7 @@ A mature Open Scaffold workflow should make GitHub artifacts traceable to roadma
 
 ## Correct boundary statements
 
-Use [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools) when deciding whether a named tool is a public example, private deployment example, adapter candidate, runtime lane, operator surface, or historical/unmigrated repository.
+Use [`ADAPTERS.md#reference-labels-for-named-tools`](ADAPTERS.md#reference-labels-for-named-tools) when deciding whether a named tool is core protocol, runtime lane, runtime harness, coordinator, operator surface, or historical adapter glue.
 
 Use these statements in product docs and agent prompts:
 
@@ -185,7 +173,7 @@ Claude Code, Codex, Gemini, Claw/OpenClaw, and custom agents can operate Open Sc
 OMC is a Claude Code execution/orchestration lane.
 OMX is a Codex execution/orchestration lane.
 OMX is not automatically the runtime engine for Hermes or OMC; it becomes one only when a coordinator dispatches a bounded package into an OMX/Codex session.
-Open Scaffold can invest heavily in an OMX-based agentic runtime/engine path through explicit runtime packages such as `packages/runtime-omx/` while keeping core contracts, evidence, and approval boundaries separate from process spawning.
+Runtime-specific packages such as `packages/runtime-omx/` stay separate from core contracts, evidence, and approval boundaries.
 clawhip-style tooling is routing/status/event transport, not the planner or executor.
 Discord is a glass cockpit, not canonical state.
 A chat thread is a binding on a task/run, not the task/run itself.
@@ -216,7 +204,7 @@ A clean coordinator-to-runtime flow looks like this:
 User selects runtime
   -> Open Scaffold reads runtime profile
   -> Open Scaffold creates the run.json work package (run packet)
-  -> Adapter/coordinator launches the actual runtime
+  -> External coordinator or operator launches the actual runtime
   -> Runtime does the work
   -> Evidence comes back into Open Scaffold
   -> Evaluation/audit envelopes and optional evolution-loop attempts/frontier record what happened
@@ -226,11 +214,11 @@ User selects runtime
 Rules:
 
 - Keep coordinator state separate from runtime execution state.
-- Dispatch bounded packages; do not let Hermes, OMC, OMX, and Discord all become competing brains.
+- Hand off bounded packages; do not let Hermes, OMC, OMX, and Discord all become competing brains.
 - Do not make Hermes/OMC/OMX mutate the same worktree at the same time unless the plan explicitly defines isolation and merge rules.
 - Treat event routers such as clawhip as transport for session/status events, not as the source of planning or execution truth.
-- Require an executable package before harness dispatch: clear objective, bounded scope, testable acceptance criteria, explicit constraints/non-goals, verification, and no blocking open questions.
-- If the package is ambiguous, route to clarification, interview, Seed/spec generation, or a harness-specific deep-interview mode before implementation.
+- Require an executable package before external execution: clear objective, bounded scope, testable acceptance criteria, explicit constraints/non-goals, verification, and no blocking open questions.
+- If the package is ambiguous, route to clarification, interview, Seed/spec generation, or a runtime-specific clarification mode before implementation.
 
 ## Shell scripts and CLI boundary
 
@@ -250,7 +238,7 @@ Open Scaffold should be developed with Open Scaffold:
 ROADMAP.md
   -> GitHub issue or live task
   -> .osc plan / amendment
-  -> runtime/harness handoff when needed
+  -> runtime/coordinator handoff when needed
   -> .osc run.json work package / evidence
   -> verification gate
   -> PR / release note

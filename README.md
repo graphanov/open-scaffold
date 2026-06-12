@@ -12,8 +12,6 @@ local models — for AI-assisted work, with published evidence.
 [![Works with](https://img.shields.io/badge/Works%20with-Any%20agent-green.svg)](#runtime-neutral-by-design)
 [![Runtime deps](https://img.shields.io/badge/Runtime%20deps-Zero-blue.svg)](package.json)
 
-![Resume after total context loss](.github/assets/readme-resume-screencast.gif)
-
 </div>
 
 ## The problem
@@ -38,7 +36,7 @@ files about what your agents actually did — and turns it into three things:
 - **Handoff.** `osc handoff` compiles the record into a packet that lets the
   next reader — a fresh session, a smaller model, another vendor's agent, or a
   teammate — resume from the truth instead of re-deriving (or inventing) it.
-- **Review and gate.** Cheap models read the record and judge: `osc analyze`
+- **Review and gate.** Cheap models read the record and judge: `osc review`
   reports plateaus, failing criteria, and requirements that deserve questioning;
   `osc gate` turns that into a retry authorization — a stop authority that
   lives outside the worker, with claims checked against evidence.
@@ -48,7 +46,7 @@ The front door is three commands:
 | Command | Meaning |
 | --- | --- |
 | `osc handoff` | Compile the work record into a resume packet for the next session or model. |
-| `osc analyze` | Review recorded attempts: plateaus, failing criteria, question-the-requirement signals. |
+| `osc review` | Review recorded attempts: plateaus, failing criteria, question-the-requirement signals. |
 | `osc gate` | Authorize or block the next attempt from the analysis plus an optional independent judge. |
 
 Why cheap models? Because with the record they stop guessing. In replicated
@@ -158,11 +156,11 @@ then ask the record:
 ```bash
 osc evolve init .osc/plans/active/my-task.md --out .osc/evolution/my-task --strategy manual
 osc evolve record .osc/evolution/my-task --run <run.json> --evaluation <eval.json> --decision retry --rationale "..."
-osc analyze .osc/evolution/my-task --compact
+osc review .osc/evolution/my-task --compact
 osc gate .osc/evolution/my-task --format json
 ```
 
-`osc analyze` reports plateaus, zero-sensitivity failures, and requirements
+`osc review` reports plateaus, zero-sensitivity failures, and requirements
 that deserve questioning instead of another retry. `osc gate` converts that —
 plus an optional independent judge ruling — into a retry authorization: a
 packet-level *redesign* blocks the retry even if everyone feels optimistic.

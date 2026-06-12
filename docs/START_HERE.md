@@ -4,7 +4,7 @@ The single first action for a developer or AI agent entering this repository col
 
 ## What is Open Scaffold?
 
-Open Scaffold keeps a repo-native work record for AI-assisted work — goal, plan, attempts, evidence, approvals, lessons — as git-tracked, observed-fact files, and turns it into three things: a handoff packet (`osc handoff`) so a fresh session, a smaller model, or a person resumes from truth instead of inventing history; review (`osc analyze`) and a gate (`osc gate`) so cheap or locally-hosted models can judge recorded work and authorize or block the next attempt. It never runs or disciplines your workflow — you work however you already work; the record accumulates around it.
+Open Scaffold keeps a repo-native work record for AI-assisted work — goal, plan, attempts, evidence, approvals, lessons — as git-tracked, observed-fact files, and turns it into three things: a handoff packet (`osc handoff`) so a fresh session, a smaller model, or a person resumes from truth instead of inventing history; review (`osc review`, with `osc analyze` as a synonym) and a gate (`osc gate`) so cheap or locally-hosted models can judge recorded work and authorize or block the next attempt. It never runs or disciplines your workflow — you work however you already work; the record accumulates around it.
 
 ## The one first action
 
@@ -20,7 +20,7 @@ From there, the working grammar is the lifecycle helpers (`osc plan new`, `osc e
 
 ```bash
 osc handoff   # resume packet so the next session, model, or person continues from truth
-osc analyze <loop-dir>   # review recorded attempts: plateaus, failing criteria, requirements to question
+osc review <loop-dir>    # review recorded attempts: plateaus, failing criteria, requirements to question
 osc gate <loop-dir>      # authorize or block the next attempt — stop authority outside the worker
 ```
 

@@ -18,7 +18,7 @@ type HelpCase = {
 const topLevelHelpSections = [
   'First-read demo:',
   'Stable core protocol:',
-  'Handoff and run packages:',
+  'Run-packet generation (no runtime spawning):',
   'Lab and experimental:',
   'Diagnostics and advanced:',
 ];
@@ -41,17 +41,11 @@ const topLevelHelpCommands = [
   'osc trace <plan-slug> [--json] [--include-unverified]',
   'osc verify [--evidence-chain [--plan <slug>] [--json] [--strict] [--online-github]]',
   'osc pr check <plan-slug> [--format <markdown|json>] [--online-github]',
-  'osc adapter check <adapter-id>',
-  'osc adapter trust <adapter-id>',
-  'osc adapter list --trusted',
   'osc schemas list [--json]',
   'osc schemas show <schema-id>',
   'osc start <plan-slug-or-path> --runtime <codex|omx|plain|human|custom>',
   'osc delegate <plan-path> [run binding options]',
   'osc run <plan-path> [--dry-run] [--json] [run binding options]',
-  'osc dispatch <run-json> --adapter <adapter-id>',
-  'osc review <plan-path> [run binding options]',
-  'osc ultrareview <plan-path> [run binding options]',
   'osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]',
   'osc eval init <plan-path> [--out <path>]',
   'osc audit init <run-or-plan> [--artifact <role> <path>]... [--out <path>]',
@@ -67,8 +61,6 @@ const topLevelHelpCommands = [
   'osc cockpit test [--dry-run]',
   'osc cockpit post --event <event> [--message <text>] [--run-id <id>] [--plan <slug>] [--task-id <id>] [--pr <url>] [--evidence-path <path>] [--dry-run]',
   'osc mcp serve [--repo <path>] [--allow-write] [--validate]',
-  'osc runtimes list [--json]',
-  'osc runtimes show <id>',
   'osc doctor --check secret-scan',
   'migration notes: docs/STABILITY.md#command-maturity',
   'removed/repositioned: osc plan wizard',
@@ -96,6 +88,7 @@ const coreHelpCommands = [
   'osc init --tier <min|standard|max> --target <dir>',
   'osc handoff [--json] [--plan <slug>] [--max-chars <n>]',
   'osc resume [--json] [--plan <slug>] [--max-chars <n>]',
+  'osc review <loop-dir> [--compact] [--format <terminal|markdown|json>]',
   'osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>]',
   'osc gate <loop-dir> [--judge-action <continue|stop_impossible|stop_blocked>] [--format <terminal|markdown|json>]',
   'osc status [--json]',
@@ -115,6 +108,18 @@ const cases: HelpCase[] = [
     args: ['resume', '--help'],
     expected: 'Usage: osc resume [--json] [--plan <slug>] [--max-chars <n>]',
     forbidden: 'Unknown option',
+  },
+  {
+    name: 'review alias',
+    args: ['review', '--help'],
+    expected: 'Usage: osc review <loop-dir> [--compact] [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>]',
+    forbidden: 'ENOENT',
+  },
+  {
+    name: 'analyze synonym',
+    args: ['analyze', '--help'],
+    expected: 'Usage: osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>]',
+    forbidden: 'ENOENT',
   },
   {
     name: 'plan root',
@@ -226,6 +231,10 @@ describe('top-level help', () => {
       for (const command of topLevelHelpCommands) {
         expect(result.stdout).toContain(command);
       }
+      expect(result.stdout).not.toContain('osc harness');
+      expect(result.stdout).not.toContain('$');
+      expect(result.stdout).not.toContain('osc dispatch');
+      expect(result.stdout).not.toContain('osc adapter');
     }
   });
 
@@ -261,6 +270,18 @@ describe('plan lifecycle help flags', () => {
 
 
 describe('removed/repositioned command shims', () => {
+
+  it('routes retired harness and dispatch commands to the migration notice', () => {
+    for (const args of [['harness'], ['harness', '--help'], ['dispatch'], ['adapter'], ['ultrareview']]) {
+      const result = spawnSync(node, [...cliArgs, ...args], { cwd: repoRoot, encoding: 'utf8' });
+
+      expect(result.status).toBe(2);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain('was removed/repositioned by the framework cleanup');
+      expect(result.stderr).toContain('docs/STABILITY.md#command-maturity');
+    }
+  });
+
   it('treats missing amend/close operands as errors, not help', () => {
     for (const command of ['amend', 'close']) {
       const result = spawnSync(node, [...cliArgs, command], { cwd: repoRoot, encoding: 'utf8' });

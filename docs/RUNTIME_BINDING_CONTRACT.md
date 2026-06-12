@@ -6,7 +6,7 @@ Named harnesses in this contract, including OMC and OMX, are runtime lanes or ad
 
 Open Scaffold creates bounded run packages and records receipts. Runtime adapters — external launch glue or built-in bounded adapter paths for a chosen lane — consume those packages, execute only when explicit backend authority is present, and write evidence back under `.osc/runs`. This document defines the contract between the repo-native Open Scaffold package and any coordinator, adapter, harness, agent, or human lane that executes it.
 
-The current root-package `$work --adapter codex --allow-spawn` path is bounded: one run package, one adapter process, strict markers, bounded logs, and a repo receipt. Richer runtime packages such as `packages/runtime-omx/` remain useful adapter tracks and publication remains owner-gated.
+Plan 168 retired the root-package controller path. Open Scaffold core now writes run packets only; runtime packages such as `packages/runtime-omx/` may consume those packets outside core, with publication and launch authority still owner-gated.
 
 ## Executive rule
 
@@ -18,7 +18,7 @@ Evidence returns.
 Postflight closes.
 ```
 
-`spawning: false` in `run.json` means this run has not been granted backend launch authority. `$work` without `--allow-spawn` writes a dry-run receipt and stops. `$work --allow-spawn` records that explicit authority before the selected adapter launches.
+`spawning: false` in `run.json` means Open Scaffold core has not launched a worker. External coordinators or runtime-specific packages must record their own launch authority and evidence outside the core CLI.
 
 ## What is a runtime binding?
 
@@ -65,9 +65,9 @@ A binding is not the Open Scaffold core. It may be a separate repo, plugin, bot,
 12. Close, retry, amend, block, or create next slice
 ```
 
-## `$work --allow-spawn` bounded controller contract
+## External bounded runner contract
 
-`$work --allow-spawn` is allowed to launch one bounded adapter process for one run. It is not allowed to grant owner authority or become a long-lived task bridge. The run directory keeps the record:
+An external runner may launch one bounded worker for one run packet. It is not allowed to grant owner authority or become a long-lived task bridge. The run directory keeps the record:
 
 ```text
 run.json
@@ -315,7 +315,7 @@ Binding behavior:
 
 ```text
 Read .osc/runs/<run_id>/package.md.
-Launch or hand off to Codex/OMX with $ralplan, $team, $ralph, $ultrawork, or $ultragoal as selected.
+Launch or hand off to the selected Codex/OMX workflow outside Open Scaffold core.
 Attach session/log/worktree metadata back to the run.
 Return completion report, artifacts, verification, and blocker questions by ID.
 Never treat OMX state as canonical truth unless promoted.
@@ -413,7 +413,7 @@ Then use `docs/SLICE_CLOSE_PROTOCOL.md` to decide whether the slice is approved,
 
 ## Cockpit events
 
-If an operator surface is bound, the binding may emit events using the harness event stream (docs/HARNESS_ARCHITECTURE.md):
+If an operator surface is bound, the binding may emit events using the operator-event vocabulary (docs/HARNESS_ARCHITECTURE.md):
 
 - `session_start` when execution begins;
 - `status` for progress;
@@ -459,7 +459,7 @@ Avoid:
 
 - `docs/TASK_RUN_MODEL.md` defines task/run/question/operator identity.
 - `ADAPTERS.md#runtime-dispatch-pattern` explains the high-level coordinator-to-harness flow.
-- the harness event stream (docs/HARNESS_ARCHITECTURE.md) defines visible operator events emitted during binding execution.
+- the operator-event vocabulary (docs/HARNESS_ARCHITECTURE.md) defines visible events emitted during binding execution.
 - `docs/SLICE_CLOSE_PROTOCOL.md` defines postflight, approval strength, correction routing, and next-slice inheritance.
 - `docs/GITHUB_WORKFLOW.md` defines the issue/branch/PR/review/release publication chain.
 

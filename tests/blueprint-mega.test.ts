@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const repoRoot = resolve(import.meta.dirname, '..');
@@ -72,73 +72,6 @@ function createRunPacket(root: string): string {
   const runId = readdirSync(runs).sort().at(-1);
   return join(runs, runId, 'run.json');
 }
-
-function writeFakeAdapter(root: string, id = 'fake'): void {
-  const adapterDir = join(root, '.osc/adapters');
-  mkdirSync(adapterDir, { recursive: true });
-  writeFileSync(join(adapterDir, `${id}.mjs`), `import { dirname, join } from 'node:path';
-import { readFileSync, writeFileSync } from 'node:fs';
-const runPath = process.argv[2];
-const packet = JSON.parse(readFileSync(runPath, 'utf8'));
-const runDir = dirname(runPath);
-const receiptPath = join(runDir, 'dispatch-receipt.json');
-const evidencePath = join(runDir, '${id}-evidence.md');
-writeFileSync(receiptPath, JSON.stringify({ schema_version: 'open-scaffold.dispatch-receipt.v1', adapter_id: '${id}', run_id: packet.runId, status: 'dry_run', spawned: false }, null, 2));
-writeFileSync(evidencePath, '# Evidence\\n');
-console.log('receipt written: ' + receiptPath);
-console.log('evidence written: ' + evidencePath);
-`);
-  writeFileSync(join(adapterDir, `${id}.json`), JSON.stringify({
-    schemaVersion: 'open-scaffold.adapter.v1',
-    id,
-    command: ['node', `.osc/adapters/${id}.mjs`],
-    requiresWorktreeIsolation: true
-  }, null, 2) + '\n');
-}
-
-describe('blueprint adapter trust workflow', () => {
-  it('refuses untrusted adapters, trusts by digest, lists trust records, and invalidates edited configs', () => {
-    const root = tempRepo('osc-adapter-trust-');
-    try {
-      const runJson = createRunPacket(root);
-      writeFakeAdapter(root);
-
-      const untrusted = runOsc(root, ['dispatch', runJson, '--adapter', 'fake']);
-      expect(untrusted.status).toBe(2);
-      expect(untrusted.stderr).toContain('Adapter fake is not trusted');
-
-      const checkBefore = runOsc(root, ['adapter', 'check', 'fake']);
-      expect(checkBefore.status).toBe(0);
-      expect(checkBefore.stdout).toContain('Trusted: no');
-      expect(checkBefore.stdout).toContain('Digest: sha256:');
-
-      const trust = runOsc(root, ['adapter', 'trust', 'fake']);
-      expect(trust.status).toBe(0);
-      expect(trust.stdout).toContain('Trusted adapter: fake');
-      expect(existsSync(join(root, '.osc/state/trusted-adapters.json'))).toBe(true);
-
-      const list = runOsc(root, ['adapter', 'list', '--trusted']);
-      expect(list.status).toBe(0);
-      expect(list.stdout).toContain('fake');
-      expect(list.stdout).toContain('sha256:');
-
-      const dispatch = runOsc(root, ['dispatch', runJson, '--adapter', 'fake']);
-      expect(dispatch.status).toBe(0);
-      expect(dispatch.stdout).toContain('Adapter trusted: yes');
-      expect(dispatch.stdout).toContain('Worktree isolation: enforced');
-
-      const configPath = join(root, '.osc/adapters/fake.json');
-      const edited = JSON.parse(readFileSync(configPath, 'utf8'));
-      edited.env = { ADDED_AFTER_TRUST: '1' };
-      writeFileSync(configPath, JSON.stringify(edited, null, 2) + '\n');
-      const invalidated = runOsc(root, ['dispatch', runJson, '--adapter', 'fake']);
-      expect(invalidated.status).toBe(2);
-      expect(invalidated.stderr).toContain('trusted digest no longer matches');
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-});
 
 describe('blueprint first-run and PR check surfaces', () => {
   it('creates one valid first work-record path in non-interactive mode', () => {
@@ -251,7 +184,8 @@ describe('blueprint registry and schema surfaces', () => {
     expect(help.status).toBe(0);
     expect(help.stdout).toContain('Command maturity: stable day-one/day-two commands first; lab and advanced commands are labeled.');
     expect(help.stdout).toContain('osc first-run --non-interactive --slug <slug> --mission <text> --goal <text>');
-    expect(help.stdout).toContain('osc adapter check <adapter-id>');
+    expect(help.stdout).not.toContain('osc adapter');
+    expect(help.stdout).not.toContain('osc dispatch');
     expect(help.stdout).toContain('osc pr check <plan-slug> [--format <markdown|json>] [--online-github]');
     expect(help.stdout).toContain('osc schemas list [--json]');
 
@@ -261,6 +195,7 @@ describe('blueprint registry and schema surfaces', () => {
     const schemaIds = parsed.map((schema: { id: string }) => schema.id);
     expect(schemaIds).toEqual(expect.arrayContaining([
       'open-scaffold.run.v1',
+      'open-scaffold.dispatch-receipt.v1',
       'open-scaffold.pr_check.v1',
       'open-scaffold.audit-envelope.v1',
       'open-scaffold.evaluation.v1',

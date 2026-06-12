@@ -39,6 +39,11 @@ describe('public work-record positioning', () => {
     expect(auditability).toContain('human approval');
     expect(auditability).toContain('compliance program');
     expect(auditability).toContain('project materials');
+    expect(auditability).toContain('Root `osc adapter` trust commands and root `osc dispatch` execution were retired');
+    expect(auditability).toContain('runtime-specific packages consume those packets outside the core CLI');
+    expect(auditability).not.toContain('osc adapter check <id>');
+    expect(auditability).not.toContain('osc adapter trust <id>');
+    expect(auditability).not.toContain('`osc dispatch` invokes only an explicitly selected project-local adapter config');
     expect(auditability).not.toMatch(/compliance-grade|tamper-proof|certif(y|ies|ied)/i);
     expect(auditability).not.toMatch(/close to the code|beside the code it describes/i);
   });
@@ -150,6 +155,9 @@ describe('public work-record positioning', () => {
     expect(proof).toContain('not a universal benchmark');
     expect(proof).toContain('15,225 bytes');
     expect(proof).toContain('31,635');
+    expect(proof).toContain('Live adapter runs — external harness only');
+    expect(proof).toContain('Open Scaffold core retired live mode for `osc bench suite`');
+    expect(proof).not.toContain('osc bench suite --mode live');
     expect(readme).toContain('docs/PROOF_HARNESS.md');
     expect(readme).toContain('docs/STABILITY.md');
     expect(faq).toContain('token/cost savings require receipts');

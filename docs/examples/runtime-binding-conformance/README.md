@@ -50,6 +50,6 @@ It does **not** prove real runtime launch, production adapter support, runtime-s
 - `plain-agent` with no runtime command/mode (`harness skill`);
 - `human` / `manual` with no runtime command/mode (`harness skill`);
 - `omc-claude` with `/deep-interview`, `/ralplan`, `/team`, `/ralph`, or `/ultrawork`;
-- `omx-codex` with `$deep-interview`, `$ralplan`, `$team`, `$ralph`, `$ultrawork`, or `$ultragoal`.
+- `omx-codex` with Codex/OMX clarification, planning, team, retry, execution, or goal workflows.
 
 Accepted here means the fake/local adapter can validate the package and write receipt/evidence artifacts for that lane token. It does not mean the named runtime is installed, launched, certified, or production-supported.

@@ -1,9 +1,25 @@
 import { createHash } from 'node:crypto';
-import type { HarnessArtifactLink, HarnessState } from './harness.js';
-import type { HarnessRuntimeReceipt } from './runtimes.js';
 import { readJsonUnder, writeJsonUnder } from './path-safety.js';
 
 export const AMBIENT_WORK_RECORD_SCHEMA = 'osc.ambient-work-record.v1';
+
+type AmbientWorkState = 'created' | 'ready' | 'waiting_on_human' | 'running' | 'completed' | 'failed' | 'blocked';
+
+interface AmbientArtifactLink {
+  role: string;
+  path: string;
+  schema?: string;
+}
+
+interface AmbientRuntimeReceipt {
+  adapterId: string;
+  spawned: boolean;
+  status: string;
+  failure: { code?: string | null };
+  marker: { state: string };
+  tokenUsage?: { totalTokens?: number } | null;
+  evidencePaths: Array<{ role: string; path: string; schema?: string }>;
+}
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -13,7 +29,7 @@ function digest(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value), 'utf8').digest('hex');
 }
 
-function tokenTotal(receipt: HarnessRuntimeReceipt): number | null {
+function tokenTotal(receipt: AmbientRuntimeReceipt): number | null {
   return receipt.tokenUsage?.totalTokens ?? null;
 }
 
@@ -26,18 +42,18 @@ export function writeAmbientWorkRecord({
 }: {
   repoRoot: string;
   runId: string;
-  state: HarnessState;
-  artifacts: HarnessArtifactLink[];
-  receipt: HarnessRuntimeReceipt;
+  state: AmbientWorkState;
+  artifacts: AmbientArtifactLink[];
+  receipt: AmbientRuntimeReceipt;
 }) {
   const packet = readJsonUnder<Record<string, unknown>>(repoRoot, `.osc/runs/${runId}/run.json`, 'work run packet path');
   const record = {
     schema: AMBIENT_WORK_RECORD_SCHEMA,
     runId,
     createdAt: nowIso(),
-    source: 'harness-postflight',
+    source: 'ambient-postflight',
     intentDigest: digest({ intent: packet.intent ?? null, context: packet.context ?? [] }),
-    command: packet.command ?? '$work',
+    command: packet.command ?? 'external-work',
     state,
     runtime: {
       adapter: receipt.adapterId,

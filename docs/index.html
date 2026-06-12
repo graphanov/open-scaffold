@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Open Scaffold — the harness for AI-assisted work</title>
+    <title>Open Scaffold — repo-native records for AI-assisted work</title>
     <style>
       :root {
         color-scheme: light;
@@ -120,8 +120,8 @@
 
       <section class="hero">
         <div>
-          <h1>AI work needs a harness.</h1>
-          <p class="lead">Open Scaffold clarifies, plans, gates, and records AI-assisted work in your repo — four verbs drive the loop, and every attempt leaves a receipt your team can review.</p>
+          <h1>AI work needs a record.</h1>
+          <p class="lead">Open Scaffold records AI-assisted work in your repo: plans, run packets, evidence, handoffs, review gates, and close records that survive the session.</p>
           <p>Kill the session mid-task. Any agent or operator can <strong>resume bounded work straight from the repo after total chat-context loss</strong> — no re-explaining. See the <a href="../examples/resume-demo/">resume demo fixture</a> and the <a href="RESUME_WALKTHROUGH.md">resume walkthrough</a>.</p>
         </div>
         <aside class="panel">
@@ -135,8 +135,8 @@
       <div class="strip" aria-label="30 second summary">
         <div><strong>Problem</strong><span class="muted">AI work disappears into chat, retries loop blind, and nobody can review what happened.</span></div>
         <div><strong>Audience</strong><span class="muted">Developers and teams using agents for work that must survive the session.</span></div>
-        <div><strong>Method</strong><span class="muted">$interview, $plan, $work, $team — a gated loop whose record lives in the repo.</span></div>
-        <div><strong>Boundary</strong><span class="muted">Execution is explicit: adapter + spawn authority + human gates. Humans own merge and release.</span></div>
+        <div><strong>Method</strong><span class="muted">handoff, review, and gate over a repo-native work record.</span></div>
+        <div><strong>Boundary</strong><span class="muted">External agents do the work. Humans own merge and release.</span></div>
       </div>
 
       <section class="grid">
@@ -156,7 +156,7 @@
 
       <section class="panel">
         <h2>What you can rely on today</h2>
-        <p>The work loop and its record are stable: <code>MISSION.md</code>, plan folders with acceptance criteria, amendments, run records with status/events/receipts, evidence notes, <code>osc verify</code>, and the harness grammar <code>$interview</code> / <code>$plan</code> / <code>$work</code> / <code>$team</code>. Runtime launch is explicit and gated: an adapter id, spawn authority, and human gates.</p>
+        <p>The work loop and its record are stable: <code>MISSION.md</code>, plan folders with acceptance criteria, amendments, no-spawn run packets, evidence notes, <code>osc handoff</code>, <code>osc review</code>, <code>osc gate</code>, and <code>osc verify</code>. Runtime launch stays outside Open Scaffold core.</p>
         <p>One page holds the full maturity contract — stable, experimental, future, and the honest limits: <a href="STABILITY.md">the stability page</a>.</p>
       </section>
 

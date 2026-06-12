@@ -56,6 +56,12 @@ function matchingProfileId(value: unknown, runtime: RuntimeOmxSelectionRuntime |
   return undefined;
 }
 
+function ralplanHarnessSkill(value: unknown, issues: string[]): 'ralplan' | undefined {
+  if (value === 'ralplan' || value === '$ralplan') return 'ralplan';
+  issues.push('executor.harnessSkill must be ralplan');
+  return undefined;
+}
+
 export function validateRunPacket(value: unknown): import('./types.js').ValidatedRunPacket {
   const issues: string[] = [];
   if (!isRecord(value)) throw new ValidationError(['run packet must be a JSON object']);
@@ -82,13 +88,13 @@ export function validateRunPacket(value: unknown): import('./types.js').Validate
   if (!runtimeSelection) issues.push('runtimeSelection must be an object');
   const runtimeSelectionRuntime = runtimeSelection ? selectedRuntime(runtimeSelection.runtime, issues) : undefined;
   const runtimeSelectionProfileId = runtimeSelection ? matchingProfileId(runtimeSelection.profileId, runtimeSelectionRuntime, issues) : undefined;
-  if (runtimeSelection?.workflow !== 'plan') issues.push('runtimeSelection.workflow must be plan for the OMX $ralplan preview');
+  if (runtimeSelection?.workflow !== 'plan') issues.push('runtimeSelection.workflow must be plan for the OMX ralplan preview');
   if (runtimeSelection?.profileSource !== undefined && runtimeSelection.profileSource !== null && runtimeSelection.profileSource !== 'builtin') issues.push('runtimeSelection.profileSource must be builtin when present');
 
   const executor = isRecord(value.executor) ? value.executor : undefined;
   if (!executor) issues.push('executor must be an object');
   if (executor?.lane !== 'omx-codex') issues.push('executor.lane must be omx-codex');
-  if (executor?.harnessSkill !== '$ralplan') issues.push('executor.harnessSkill must be $ralplan');
+  const harnessSkill = executor ? ralplanHarnessSkill(executor.harnessSkill, issues) : undefined;
   if (executor?.spawning !== false) issues.push('executor.spawning must be false');
 
   const runtime = isRecord(value.runtime) ? value.runtime : undefined;
@@ -121,7 +127,7 @@ export function validateRunPacket(value: unknown): import('./types.js').Validate
       profileId: runtimeSelectionProfileId ?? null,
       profileSource: runtimeSelection!.profileSource === 'builtin' ? 'builtin' : null,
     },
-    executor: { lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false },
+    executor: { lane: 'omx-codex', harnessSkill: harnessSkill!, spawning: false },
     runtime: { repoPath: repoPath!, worktreePath, branch, tmuxSession: null, processId: null },
     commitPolicy: commitPolicy!,
   };

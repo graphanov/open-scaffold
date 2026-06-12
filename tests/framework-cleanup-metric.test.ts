@@ -22,8 +22,10 @@ const cleanupBaselineLoc = 20_890;
 // 167: handoff/analyze/gate front-door aliases + core-help re-centering (+7 LOC)
 // 167 MCP front door: read-only get_handoff/analyze_loop/gate_loop tools (+133 LOC)
 // 167 AC6: OpenAI-compatible reviewer profile — src/reviewer.ts + gate --judge-endpoint wiring (+166 LOC, +1 file)
-const cleanupTargetLoc = 17_146;
-const cleanupTargetFiles = 42;
+// 168: retired $-verb harness/dispatch/adapter layers and kept only runtime-profile metadata (-2,726 LOC, -3 files net)
+// 168 Codex review: adapter validator accepts core-generated ralplan packets, dispatch receipt schema stays registered, and review alias help is explicit (+17 LOC)
+const cleanupTargetLoc = 14_437;
+const cleanupTargetFiles = 39;
 
 interface MaintainedSourceFile {
   path: string;
@@ -65,7 +67,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(17_146);
+    expect(cleanupTargetLoc).toBe(14_437);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);
