@@ -211,12 +211,12 @@ describe('aggregateUsage', () => {
     expect(ledger.rows[0].costUsdTotal).toBeNull();
   });
 
-  it('flags subscription receipts that carry a numeric total_cost_usd', () => {
+  it('flags subscription receipts that carry a numeric total_cost_usd and keeps cost unknown', () => {
     const { receipts } = parseUsageReceipts(
       JSON.stringify({ ...baseReceipt, run_id: 'r1', usage_source: 'claude-cli-subscription', total_cost_usd: 1.23 }),
     );
     const ledger = aggregateUsage(receipts);
-    expect(ledger.issues.some((i) => i.includes('subscription') && i.includes('inconsistent billing claim'))).toBe(true);
+    expect([ledger.issues.some((i) => i.includes('subscription') && i.includes('inconsistent billing claim')), ledger.rows[0].costUsdTotal]).toEqual([true, null]);
   });
 
   it('does not flag subscription receipts with null total_cost_usd', () => {

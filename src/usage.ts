@@ -231,8 +231,8 @@ export function aggregateUsage(receipts: UsageReceipt[]): UsageLedger {
     row.numTurns += receipt.num_turns ?? 0;
     row.durationMs += receipt.duration_ms ?? 0;
 
-    // Cost honesty: if ANY receipt in the group lacks a numeric cost, null the group
-    const hasCost = typeof receipt.total_cost_usd === 'number';
+    // Cost honesty: if ANY receipt in the group lacks a numeric cost, null the group.
+    const hasCost = typeof receipt.total_cost_usd === 'number' && !receipt.usage_source.includes('subscription');
     if (!hasCost) {
       groupCostComplete.set(key, false);
     }
