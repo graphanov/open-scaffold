@@ -12,7 +12,6 @@ local models — for AI-assisted work, with published evidence.
 [![Works with](https://img.shields.io/badge/Works%20with-Any%20agent-green.svg)](#runtime-neutral-by-design)
 [![Runtime deps](https://img.shields.io/badge/Runtime%20deps-Zero-blue.svg)](package.json)
 
-![Resume after total context loss](.github/assets/readme-resume-screencast.gif)
 
 </div>
 
