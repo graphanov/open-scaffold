@@ -4,14 +4,16 @@ Status: lab/experimental, source-labeled, bounded comparison surface.
 
 ## The benchmark program (2026-06): the claim ledger
 
-Plan 163's intent was executed in an independent benchmark repo (harness-bench;
-published under `github.com/graphanov` once the owner flips the publish gate).
+Plan 163's benchmark evidence is public in the independent
+[harness-bench](https://github.com/graphanov/harness-bench) repo, pinned here to
+commit [`7caa1e4`](https://github.com/graphanov/harness-bench/commit/7caa1e4044af642938ef391c06c43b3db09cf494).
 Method: preregistration with amendments-only changes, hidden seed/input pairs
 with pre-committed hashes, a clean-room blind second implementation proving the
 task spec unambiguous, submission-mode central scoring, per-invocation usage
 receipts, and pre-committed kill rules. Every number below is pilot-grade (n=1
-per cell unless stated; one worker model, claude-sonnet-4-6) and traces to
-committed raw JSONL in that repo's `results/` directories.
+per cell unless stated; one worker model, claude-sonnet-4-6) and traces to the
+pinned [`results/`](https://github.com/graphanov/harness-bench/tree/7caa1e4044af642938ef391c06c43b3db09cf494/results) tree; the headline reviewability claim uses
+[`results/review-1`](https://github.com/graphanov/harness-bench/tree/7caa1e4044af642938ef391c06c43b3db09cf494/results/review-1), including `answers.jsonl`, `grades.json`, and `receipts.jsonl`.
 
 **Measured dead (kept at equal prominence — the credibility asset):**
 

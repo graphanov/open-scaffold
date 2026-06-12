@@ -242,8 +242,10 @@ Open Scaffold is pre-1.0 (`v0.31.x`) and it does not make your model smarter —
 it makes the *loop around the model* disciplined: bounded slices, gated
 execution, compact resumes, receipts for everything. A bounded
 scaffold-vs-naked fixture ships in [`examples/proof/`](examples/proof/) and is
-honest about its current scope; the broader benchmark program is tracked in
-`.osc/plans/backlog/163-proof-harness-v2.md`. The full maturity contract —
+honest about its current scope; the broader benchmark program now lives in the
+source-labeled claim ledger in [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md),
+with raw receipts in the public
+[`harness-bench`](https://github.com/graphanov/harness-bench) results tree. The full maturity contract —
 what is stable, what is experimental, what is future — lives in one place:
 [`docs/STABILITY.md`](docs/STABILITY.md).
 
