@@ -136,8 +136,8 @@ export function parseUsageReceipts(jsonl: string): { receipts: UsageReceipt[]; i
         total_cost_usd = null;
       } else {
         const n = asFiniteNumber(raw);
-        if (n === null) {
-          issues.push(`line ${lineNum}: total_cost_usd must be a finite number or null`);
+        if (n === null || n < 0) {
+          issues.push(`line ${lineNum}: total_cost_usd must be a non-negative finite number or null`);
           continue;
         }
         total_cost_usd = n;

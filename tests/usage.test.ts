@@ -133,11 +133,11 @@ describe('parseUsageReceipts', () => {
     expect(receipts[0].usage.cache_read_input_tokens).toBeUndefined();
   });
 
-  it('rejects receipts where total_cost_usd is a non-finite value', () => {
-    const line = JSON.stringify({ ...baseReceipt, total_cost_usd: 'free' });
-    const { receipts, issues } = parseUsageReceipts(line);
-    expect(issues).toHaveLength(1);
-    expect(receipts).toHaveLength(0);
+  it('rejects receipts where total_cost_usd is non-finite or negative', () => {
+    for (const total_cost_usd of ['free', -0.01]) {
+      const { receipts, issues } = parseUsageReceipts(JSON.stringify({ ...baseReceipt, total_cost_usd }));
+      expect([issues.length, receipts.length]).toEqual([1, 0]);
+    }
   });
 
   it('accepts total_cost_usd as a numeric value', () => {
