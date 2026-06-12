@@ -39,10 +39,10 @@ export interface UsageLedgerRow {
   task_id: string;
   arm: string;
   runCount: number;
-  inputTokens: number;
-  outputTokens: number;
-  cacheCreationInputTokens: number;
-  cacheReadInputTokens: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cacheCreationInputTokens: number | null;
+  cacheReadInputTokens: number | null;
   numTurns: number | null;
   durationMs: number | null;
   /** null unless EVERY receipt in the group carries a numeric total_cost_usd */
@@ -183,7 +183,7 @@ type GroupKey = string;
 function groupKey(receipt: UsageReceipt): GroupKey {
   return `${receipt.benchmark ?? ''}\0${receipt.task_id ?? ''}\0${receipt.arm ?? ''}`;
 }
-
+const sumKnown = (total: number | null, value: number | undefined): number | null => (total === null || value === undefined ? null : total + value);
 export function aggregateUsage(receipts: UsageReceipt[]): UsageLedger {
   const issues: string[] = [];
   const rowMap = new Map<GroupKey, UsageLedgerRow>();
@@ -224,12 +224,12 @@ export function aggregateUsage(receipts: UsageReceipt[]): UsageLedger {
     }
 
     row.runCount += 1;
-    row.inputTokens += receipt.usage.input_tokens ?? 0;
-    row.outputTokens += receipt.usage.output_tokens ?? 0;
-    row.cacheCreationInputTokens += receipt.usage.cache_creation_input_tokens ?? 0;
-    row.cacheReadInputTokens += receipt.usage.cache_read_input_tokens ?? 0;
-    row.numTurns = row.numTurns === null || receipt.num_turns === undefined ? null : row.numTurns + receipt.num_turns;
-    row.durationMs = row.durationMs === null || receipt.duration_ms === undefined ? null : row.durationMs + receipt.duration_ms;
+    row.inputTokens = sumKnown(row.inputTokens, receipt.usage.input_tokens);
+    row.outputTokens = sumKnown(row.outputTokens, receipt.usage.output_tokens);
+    row.cacheCreationInputTokens = sumKnown(row.cacheCreationInputTokens, receipt.usage.cache_creation_input_tokens);
+    row.cacheReadInputTokens = sumKnown(row.cacheReadInputTokens, receipt.usage.cache_read_input_tokens);
+    row.numTurns = sumKnown(row.numTurns, receipt.num_turns);
+    row.durationMs = sumKnown(row.durationMs, receipt.duration_ms);
 
     // Cost honesty: if ANY receipt in the group lacks a numeric cost, null the group.
     const hasCost = typeof receipt.total_cost_usd === 'number' && !receipt.usage_source.includes('subscription');

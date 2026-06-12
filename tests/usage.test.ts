@@ -163,7 +163,7 @@ describe('aggregateUsage', () => {
     ].join('\n'));
     const ledger = aggregateUsage(receipts);
     expect(ledger.rows).toHaveLength(1);
-    expect([ledger.rows[0].runCount, ledger.rows[0].inputTokens, ledger.rows[0].outputTokens, ledger.rows[0].numTurns, ledger.rows[0].durationMs]).toEqual([2, 400, 600, null, null]);
+    expect([ledger.rows[0].runCount, ledger.rows[0].inputTokens, ledger.rows[0].outputTokens, ledger.rows[0].cacheCreationInputTokens, ledger.rows[0].cacheReadInputTokens, ledger.rows[0].numTurns, ledger.rows[0].durationMs]).toEqual([2, 400, 600, null, null, null, null]);
   });
 
   it('keeps separate groups for different arms', () => {
@@ -319,8 +319,8 @@ describe('renderUsageLedger', () => {
     const expected = [
       '| benchmark | task_id | arm | runs | input_tokens | output_tokens | cache_creation_tokens | cache_read_tokens | num_turns | duration_ms | cost_usd |',
       '|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|',
-      '| bench-a | T1 | ctrl | 1 | 100 | 200 | 0 | 0 | 14 | 184211 | null |',
-      '| bench-a | T1 | scaf | 1 | 150 | 250 | 0 | 0 | 14 | 184211 | null |',
+      '| bench-a | T1 | ctrl | 1 | 100 | 200 | null | null | 14 | 184211 | null |',
+      '| bench-a | T1 | scaf | 1 | 150 | 250 | null | null | 14 | 184211 | null |',
       '',
     ].join('\n');
     expect(output).toBe(expected);
