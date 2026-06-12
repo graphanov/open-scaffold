@@ -229,6 +229,7 @@ describe('harness command surface', () => {
     expect(result.message).toContain('Judgment checkpoint blocked runtime dispatch');
     const packet = JSON.parse(readFileSync(join(root, `.osc/runs/${result.runId}/run.json`), 'utf8'));
     expect(packet.runtime.spawning).toBe(false);
+    expect(packet.evidence).not.toHaveProperty('runtimeReceipt');
     expect(packet.judgmentCheckpoint.retryAuthorized).toMatchObject({ allow: false, mode: 'blocked_by_packet' });
     expect(existsSync(join(root, `.osc/runs/${result.runId}/judgment-checkpoint.json`))).toBe(true);
     expect(existsSync(join(root, `.osc/runs/${result.runId}/runtime-receipt.json`))).toBe(false);

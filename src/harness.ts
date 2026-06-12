@@ -697,7 +697,7 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
       note: 'Runtime adapters execute bounded work while Open Scaffold records evidence. Human gates do not grant owner authority.',
     },
     humanGates,
-    evidence: { events: `.osc/runs/${runId}/events.jsonl`, postflight: `.osc/runs/${runId}/postflight.md`, feedback: `.osc/runs/${runId}/feedback.jsonl`, runtimeReceipt: `.osc/runs/${runId}/runtime-receipt.json` },
+    evidence: { events: `.osc/runs/${runId}/events.jsonl`, postflight: `.osc/runs/${runId}/postflight.md`, feedback: `.osc/runs/${runId}/feedback.jsonl`, ...(checkpointBlocksRuntime ? {} : { runtimeReceipt: `.osc/runs/${runId}/runtime-receipt.json` }) },
     improvements: { inherited: improvements },
     retry,
     handoff,
