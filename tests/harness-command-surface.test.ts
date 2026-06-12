@@ -232,6 +232,7 @@ describe('harness command surface', () => {
     expect(packet.judgmentCheckpoint.retryAuthorized).toMatchObject({ allow: false, mode: 'blocked_by_packet' });
     expect(existsSync(join(root, `.osc/runs/${result.runId}/judgment-checkpoint.json`))).toBe(true);
     expect(existsSync(join(root, `.osc/runs/${result.runId}/runtime-receipt.json`))).toBe(false);
+    expect(result.status.artifacts.map((item) => item.path)).not.toContain(`.osc/runs/${result.runId}/runtime-receipt.json`);
     const feedback = readFeedback({ repoRoot: root, runId: result.runId });
     expect(feedback[0]).toMatchObject({ source: 'reviewer', verdict: 'block', scope: 'run' });
   });

@@ -673,7 +673,7 @@ function routeWork(repoRoot: string, parsed: ParsedHarnessCommand): HarnessComma
     artifact(runId, 'work_package', 'work-package.md'),
     ...(retry ? [artifact(runId, 'retry_attempt', 'retry.json', 'osc.harness-retry.v1')] : []),
     ...(checkpoint ? checkpointArtifacts(runId) : []),
-    ...runtimeArtifacts(runId),
+    ...(checkpointBlocksRuntime ? [] : runtimeArtifacts(runId)),
   ];
   const improvements = inheritedImprovements(repoRoot, parsed).map((item) => ({ slug: item.slug, path: item.path, summary: item.content.split('\n').slice(0, 8).join('\n') }));
   writeEvent(repoRoot, runId, 'command_started', { command: 'work', intent: parsed.intent, adapter: adapterId, allowSpawn });
