@@ -1404,7 +1404,7 @@ function analyzePlateau(attempts: EvolutionCompareAttempt[], threshold: number, 
       lastImprovementIndex = index;
     }
   }
-  const currentScore = scored[scored.length - 1].score;
+  const currentScore = attempts.at(-1)?.score ?? null;
   let noImprovementCount = Math.max(0, scored.length - lastImprovementIndex - 1);
   let status: EvolutionPlateauStatus = 'improving';
   if (currentScore !== null && bestScore !== null && currentScore < bestScore - epsilon) status = 'regressed';
@@ -1413,7 +1413,7 @@ function analyzePlateau(attempts: EvolutionCompareAttempt[], threshold: number, 
   // 165: a stable AC-state fingerprint across >=3 consecutive attempts escalates
   // a non-regressed score path to plateau, so frozen criteria are reported even
   // when the score wobbles below the threshold.
-  if (fingerprintPlateau && status === 'stagnating') {
+  if (fingerprintPlateau && (status === 'stagnating' || currentScore === null)) {
     status = 'plateau';
     noImprovementCount = Math.max(noImprovementCount, trailingFingerprintRun(fingerprints) - 1);
   }
