@@ -108,11 +108,11 @@ describe('parseUsageReceipts', () => {
     expect(receipts).toHaveLength(0);
   });
 
-  it('rejects receipts where a token field is negative', () => {
-    const line = JSON.stringify({ ...baseReceipt, usage: { input_tokens: -1 } });
-    const { receipts, issues } = parseUsageReceipts(line);
-    expect(issues).toHaveLength(1);
-    expect(receipts).toHaveLength(0);
+  it('rejects receipts where token or timing fields are malformed', () => {
+    for (const patch of [{ usage: { input_tokens: -1 } }, { duration_ms: -1 }, { num_turns: 'bad' }]) {
+      const { receipts, issues } = parseUsageReceipts(JSON.stringify({ ...baseReceipt, ...patch }));
+      expect([issues.length, receipts.length]).toEqual([1, 0]);
+    }
   });
 
   it('rejects receipts where a token field is a non-integer', () => {

@@ -90,9 +90,8 @@ function parseUsageTokens(raw: unknown): { tokens: UsageTokens; valid: boolean }
 export function parseUsageReceipts(jsonl: string): { receipts: UsageReceipt[]; issues: string[] } {
   const receipts: UsageReceipt[] = [];
   const issues: string[] = [];
-
   const lines = jsonl.split('\n');
-  for (let i = 0; i < lines.length; i++) {
+  lineLoop: for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (line.length === 0) continue;
     const lineNum = i + 1;
@@ -163,12 +162,13 @@ export function parseUsageReceipts(jsonl: string): { receipts: UsageReceipt[]; i
     if (seed !== undefined) receipt.seed = seed;
     const replicate = asNonNegativeInteger(parsed.replicate);
     if (replicate !== undefined) receipt.replicate = replicate;
-    const duration_ms = asNonNegativeInteger(parsed.duration_ms);
-    if (duration_ms !== undefined) receipt.duration_ms = duration_ms;
-    const duration_api_ms = asNonNegativeInteger(parsed.duration_api_ms);
-    if (duration_api_ms !== undefined) receipt.duration_api_ms = duration_api_ms;
-    const num_turns = asNonNegativeInteger(parsed.num_turns);
-    if (num_turns !== undefined) receipt.num_turns = num_turns;
+    for (const key of ['duration_ms', 'duration_api_ms', 'num_turns'] as const) {
+      if (Object.hasOwn(parsed, key)) {
+        const value = asNonNegativeInteger(parsed[key]);
+        if (value === undefined) { issues.push(`line ${lineNum}: ${key} must be a non-negative integer`); continue lineLoop; }
+        receipt[key] = value;
+      }
+    }
 
     if (total_cost_usd !== undefined) receipt.total_cost_usd = total_cost_usd;
 
