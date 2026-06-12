@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "open-scaffold.run.v1",
+  "runId": "ac7-attempt-1",
+  "taskId": "ac7-parse-duration",
+  "plan": {
+    "slug": "parse-duration",
+    "path": ".osc/plans/active/parse-duration.md",
+    "acceptanceCriteria": [
+      "parseDuration('90s') returns 90.",
+      "parseDuration('1h30m') returns 5400.",
+      "parseDuration('2d') returns 172800.",
+      "whitespace is tolerated — parseDuration(' 1h 30m ') returns 5400.",
+      "units are case-insensitive — parseDuration('1H30M') returns 5400.",
+      "fractional values work — parseDuration('1.5h') returns 5400.",
+      "invalid input (empty string, non-string, unparseable text) throws TypeError.",
+      "negative durations (e.g. '-5m') throw RangeError."
+    ]
+  },
+  "artifacts": {
+    "evidence": [
+      "evidence/eval-attempt-1.json"
+    ]
+  }
+}

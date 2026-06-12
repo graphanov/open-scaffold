@@ -171,6 +171,22 @@ A version is live only after the registry/package smoke checks and GitHub Releas
 
 The core surface is `osc help`; the full backend/lab surface is `osc help --all`.
 
+Pivot note (plan 167): the core surface is `handoff` / `analyze` / `gate` plus
+the structured-intent commands. The harness `$`-verb grammar and the
+runtime-dispatch surfaces (`start`, `delegate`, `run`, `dispatch`, runtime
+`review`/`ultrareview`) are deprecated, remain functional behind `osc help
+--all`, and their removal is staged as plan 168. Migration recipe for scripted
+dispatch while it remains available:
+
+```bash
+osc plan new <slug> --stage active
+osc run .osc/plans/active/<slug>.md --runtime codex --workflow plan
+osc dispatch .osc/runs/RUN_ID/run.json --adapter <id>
+```
+
+Use `osc run ... --dry-run` only to preview the run packet; rerun without
+`--dry-run` before dispatch so the run package actually exists.
+
 Labels:
 
 - `stable` — day-one/day-two workflow path; safe for normal examples.

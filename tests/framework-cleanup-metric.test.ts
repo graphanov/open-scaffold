@@ -19,8 +19,11 @@ const cleanupBaselineLoc = 20_890;
 // 165: evolution enforced-loop auto-fill + fingerprint plateau (+170 LOC)
 // 165 follow-up: question-the-requirement fires with scores present; reachability-reason filter (+4 LOC)
 // 165 completion: product-side judgment checkpoint + ambient postflight record (+298 LOC, +1 file)
-const cleanupTargetLoc = 16_840;
-const cleanupTargetFiles = 41;
+// 167: handoff/analyze/gate front-door aliases + core-help re-centering (+7 LOC)
+// 167 MCP front door: read-only get_handoff/analyze_loop/gate_loop tools (+133 LOC)
+// 167 AC6: OpenAI-compatible reviewer profile — src/reviewer.ts + gate --judge-endpoint wiring (+166 LOC, +1 file)
+const cleanupTargetLoc = 17_146;
+const cleanupTargetFiles = 42;
 
 interface MaintainedSourceFile {
   path: string;
@@ -62,7 +65,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(16_840);
+    expect(cleanupTargetLoc).toBe(17_146);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

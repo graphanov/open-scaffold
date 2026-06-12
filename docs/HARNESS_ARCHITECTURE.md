@@ -6,6 +6,13 @@ In plain terms: it turns a request into repo files a human can inspect later —
 
 It is not a Codex-only plugin and not an autonomous agent. The core receives a command, writes repo-local truth, emits status/events, and hands bounded work to an adapter or human-controlled runtime.
 
+Pivot note (plan 167): the maintained core of this architecture is the work
+record, the handoff packet (`osc handoff`), and the judgment layer
+(`osc analyze` / `osc gate`). The `$`-verb command grammar and the
+runtime-dispatch layers described below are deprecated — functional behind
+`osc help --all`, removal staged as plan 168 — kept here as architecture
+history until then.
+
 ## Layer diagram
 
 ```text

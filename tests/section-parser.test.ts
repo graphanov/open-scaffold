@@ -244,9 +244,11 @@ This sample must not count as the real section.
 
     const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
-    expect(hash(planIssueSnapshot)).toBe('a824463ebbf364c8432e39987eecfc826b78510ea801131e361be713b29d2eb0');
+    // 167 close: plan + amendment moved to done/, follow-up plan 168 staged in backlog.
+    expect(hash(planIssueSnapshot)).toBe('e36405321ea263ac75fbd8465da96839f51af2c5a00dca59c6f1129b72dc8d39');
     expect(scaffold.failures).toEqual([]);
-    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('60c4f8c59c490213148c726d731e40c41ae8330d3e9f73fe9e22261d7b821c85');
+    // 167: evidence note 2026-06-12-167-provenance-review-pivot.md added to .osc/releases.
+    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('0826266944c3bd92871aa70337dbea6792f42e4b484773bd0ccc0f6f6eeeff3d');
     expect(realPlanFiles().every((path) => statSync(path).isFile())).toBe(true);
   });
 });

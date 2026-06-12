@@ -1,6 +1,6 @@
 # Workflow
 
-A phase-to-tool reference for agent-orchestrated development. This file is the operational reference; `README.md` is the landing page. When in doubt about which tool to reach for, start with the stable repo record: `MISSION.md` → plan → run packet or amendment → evidence → verification → close.
+A phase-to-tool reference for agent-orchestrated development. This file is the operational reference; `README.md` is the landing page. When in doubt about which tool to reach for, start with the stable repo record: `MISSION.md` → plan → run packet or amendment → evidence → verification → close. Across every phase, the product front door is three commands: `osc handoff` (resume packet for the next session or model), `osc analyze` (review recorded attempts), and `osc gate` (authorize or block the next attempt).
 
 The stable core is the file protocol and lifecycle helpers. Lab surfaces such as evolution ledgers, cockpit webhooks, runtime profiles, and adapter dispatch glue are optional layers around that record; they do not replace the plan/evidence/verification/close chain. Historical helpers removed from the reduced maintained CLI, such as `osc work`, `osc dashboard`, `osc task`, `osc plan wizard`, `osc plan graph`, `osc metrics`, and broad `osc doctor --fix`, are migration references only unless a future plan restores them with fresh evidence.
 

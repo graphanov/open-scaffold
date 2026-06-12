@@ -1,0 +1,171 @@
+{
+  "schema": "open-scaffold.evaluation.v1",
+  "evaluation_id": "eval-ac7-attempt-2",
+  "subject": {
+    "source": "run",
+    "plan": ".osc/plans/active/parse-duration.md",
+    "plan_slug": "parse-duration",
+    "task_id": "ac7-parse-duration",
+    "run_id": "ac7-attempt-2",
+    "run_packet": ".osc/runs/ac7-attempt-2/run.json"
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC1",
+      "text": "parseDuration('90s') returns 90.",
+      "status": "pass",
+      "evaluator": {
+        "kind": "machine",
+        "name": "ac7-check-script",
+        "ref": null
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "ref": "evidence/eval-attempt-2.json",
+          "summary": "\"90s\" -> 90"
+        }
+      ],
+      "rationale": "\"90s\" -> 90"
+    },
+    {
+      "id": "AC2",
+      "text": "parseDuration('1h30m') returns 5400.",
+      "status": "pass",
+      "evaluator": {
+        "kind": "machine",
+        "name": "ac7-check-script",
+        "ref": null
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "ref": "evidence/eval-attempt-2.json",
+          "summary": "\"1h30m\" -> 5400"
+        }
+      ],
+      "rationale": "\"1h30m\" -> 5400"
+    },
+    {
+      "id": "AC3",
+      "text": "parseDuration('2d') returns 172800.",
+      "status": "pass",
+      "evaluator": {
+        "kind": "machine",
+        "name": "ac7-check-script",
+        "ref": null
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "ref": "evidence/eval-attempt-2.json",
+          "summary": "\"2d\" -> 172800"
+        }
+      ],
+      "rationale": "\"2d\" -> 172800"
+    },
+    {
+      "id": "AC4",
+      "text": "whitespace is tolerated — parseDuration(' 1h 30m ') returns 5400.",
+      "status": "pass",
+      "evaluator": {
+        "kind": "machine",
+        "name": "ac7-check-script",
+        "ref": null
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "ref": "evidence/eval-attempt-2.json",
+          "summary": "\" 1h 30m \" -> 5400"
+        }
+      ],
+      "rationale": "\" 1h 30m \" -> 5400"
+    },
+    {
+      "id": "AC5",
+      "text": "units are case-insensitive — parseDuration('1H30M') returns 5400.",
+      "status": "pass",
+      "evaluator": {
+        "kind": "machine",
+        "name": "ac7-check-script",
+        "ref": null
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "ref": "evidence/eval-attempt-2.json",
+          "summary": "\"1H30M\" -> 5400"
+        }
+      ],
+      "rationale": "\"1H30M\" -> 5400"
+    },
+    {
+      "id": "AC6",
+      "text": "fractional values work — parseDuration('1.5h') returns 5400.",
+      "status": "pass",
+      "evaluator": {
+        "kind": "machine",
+        "name": "ac7-check-script",
+        "ref": null
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "ref": "evidence/eval-attempt-2.json",
+          "summary": "\"1.5h\" -> 5400"
+        }
+      ],
+      "rationale": "\"1.5h\" -> 5400"
+    },
+    {
+      "id": "AC7",
+      "text": "invalid input (empty string, non-string, unparseable text) throws TypeError.",
+      "status": "pass",
+      "evaluator": {
+        "kind": "machine",
+        "name": "ac7-check-script",
+        "ref": null
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "ref": "evidence/eval-attempt-2.json",
+          "summary": "all probes threw TypeError"
+        }
+      ],
+      "rationale": "all probes threw TypeError"
+    },
+    {
+      "id": "AC8",
+      "text": "negative durations (e.g. '-5m') throw RangeError.",
+      "status": "pass",
+      "evaluator": {
+        "kind": "machine",
+        "name": "ac7-check-script",
+        "ref": null
+      },
+      "evidence": [
+        {
+          "kind": "path",
+          "ref": "evidence/eval-attempt-2.json",
+          "summary": "all probes threw RangeError"
+        }
+      ],
+      "rationale": "all probes threw RangeError"
+    }
+  ],
+  "decision": {
+    "status": "approved",
+    "approver": "machine",
+    "rationale": "8/8 criteria pass."
+  },
+  "improvement": {
+    "route": "none",
+    "target": null,
+    "carried_forward": [],
+    "do_not_assume": [
+      "No benchmark or model-ranking claim."
+    ]
+  }
+}

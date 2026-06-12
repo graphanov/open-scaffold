@@ -81,15 +81,23 @@ const topLevelHelpCommands = [
   'removed/repositioned: osc work, osc dashboard, osc metrics, osc study, osc ab, broad osc doctor checks',
 ];
 
-const coreHelpSections = ['Start:', 'Work (the four verbs):', 'Record:', 'More:'];
+// 167: core help re-centered on handoff/analyze/gate; the $-verb harness grammar
+// is advanced-only pending removal (plan 168).
+const coreHelpSections = [
+  'Start:',
+  'Handoff (compile the work record into a resume packet):',
+  'Review and gate (judgment over recorded attempts):',
+  'Structured intent (optional criteria source for claims-vs-actual checks):',
+  'More:',
+];
 
 const coreHelpCommands = [
   'osc first-run',
   'osc init --tier <min|standard|max> --target <dir>',
+  'osc handoff [--json] [--plan <slug>] [--max-chars <n>]',
   'osc resume [--json] [--plan <slug>] [--max-chars <n>]',
-  "osc harness '$interview \"clarify the work\"'",
-  "osc harness '$work ... --adapter <id> --allow-spawn'",
-  'osc harness status <run-id> | osc harness answer <run-id> --gate <id> --answer <text>',
+  'osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>]',
+  'osc gate <loop-dir> [--judge-action <continue|stop_impossible|stop_blocked>] [--format <terminal|markdown|json>]',
   'osc status [--json]',
   'osc plan new <slug> --stage <active|backlog|blocked>',
   'osc amend <plan-slug> [--message <text>]',
@@ -99,7 +107,7 @@ const coreHelpCommands = [
   'osc help --all',
 ];
 
-const advancedOnlyCommands = ['osc evolve', 'osc dispatch', 'osc cockpit', 'osc bench', 'osc prove', 'osc audit', 'osc mcp serve'];
+const advancedOnlyCommands = ['osc evolve', 'osc harness', 'osc dispatch', 'osc cockpit', 'osc bench', 'osc prove', 'osc audit', 'osc mcp serve'];
 
 const cases: HelpCase[] = [
   {
@@ -179,7 +187,9 @@ describe('top-level help', () => {
 
     expect(result.status).toBe(0);
     expect(result.stderr).toBe('');
-    expect(result.stdout).toContain('The harness loop: $interview -> $plan -> $work or $team');
+    // 167: the $-verb harness grammar left the public surface; core help leads
+    // with the record/handoff/review identity.
+    expect(result.stdout).toContain('Records, handoff packets, and cheap-model review');
 
     for (const section of coreHelpSections) {
       expect(result.stdout).toContain(section);

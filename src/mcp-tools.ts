@@ -1,6 +1,13 @@
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, isAbsolute, join, relative, resolve, sep, win32 } from 'node:path';
 import {
+  analyzeEvolutionLoop,
+  buildEvolutionJudgmentCheckpoint,
+  type EvolutionAnalysisResult,
+  type EvolutionJudgeAction,
+} from './evolution.js';
+import { compileResume, MAX_RESUME_MAX_CHARS, MIN_RESUME_MAX_CHARS } from './resume.js';
+import {
   closePlan,
   createEvidenceNoteSkeleton,
   createPlanAmendment,
@@ -49,6 +56,9 @@ interface PlanLocation {
 }
 
 const WRITE_TOOLS = new Set(['create_plan', 'amend_plan', 'close_plan', 'create_evidence']);
+
+// 167 front door: the judge reads the record and rules on it; it cannot modify it.
+const EVOLUTION_JUDGE_ACTIONS: readonly EvolutionJudgeAction[] = ['continue', 'stop_impossible', 'stop_blocked'];
 
 function objectSchema(properties: Record<string, unknown>, required: string[] = []): Record<string, unknown> {
   return {
@@ -116,6 +126,33 @@ export function listMcpTools(): McpToolDefinition[] {
       outputSchema: objectSchema({ amendments: { type: 'array' } }, ['amendments']),
     },
     {
+      name: 'get_handoff',
+      description: 'Compile the handoff/resume packet from repo truth: mission digest, active plan with acceptance criteria, latest run state, lessons, and the next bounded action. Read-only; equivalent to `osc handoff`.',
+      inputSchema: objectSchema({
+        plan: { type: 'string' },
+        max_chars: { type: 'integer', minimum: MIN_RESUME_MAX_CHARS, maximum: MAX_RESUME_MAX_CHARS },
+      }),
+      outputSchema: objectSchema({ packet: { type: 'string' }, summary: { type: 'object' } }, ['packet', 'summary']),
+    },
+    {
+      name: 'analyze_loop',
+      description: 'Analyze a recorded evolution loop: plateau state, per-criterion deltas, recommendation, and next-action packet. Read-only; equivalent to `osc analyze`.',
+      inputSchema: objectSchema({ loop_dir: { type: 'string' }, plateau_threshold: { type: 'number' } }, ['loop_dir']),
+      outputSchema: objectSchema({ recommendation: { type: 'object' }, plateau: { type: 'object' }, nextActionPacket: { type: 'object' } }, ['recommendation']),
+    },
+    {
+      name: 'gate_loop',
+      description: 'Compute the judgment checkpoint for an evolution loop and return the retry authorization, optionally folding in an independent judge ruling. Read-only: the gate rules on the record but cannot modify it. Equivalent to `osc gate`.',
+      inputSchema: objectSchema({
+        loop_dir: { type: 'string' },
+        plateau_threshold: { type: 'number' },
+        judge_action: stringEnum(EVOLUTION_JUDGE_ACTIONS),
+        judge_impossible_acs: { type: 'array', items: { type: 'string' } },
+        judge_rationale: { type: 'string' },
+      }, ['loop_dir']),
+      outputSchema: objectSchema({ retryAuthorized: { type: 'object' }, action: { type: 'string' }, packet: { type: 'object' } }, ['retryAuthorized', 'action']),
+    },
+    {
       name: 'create_plan',
       description: 'Create a plan skeleton. Requires server --allow-write.',
       inputSchema: objectSchema({ slug: { type: 'string' }, stage: stageCreation }, ['slug', 'stage']),
@@ -161,6 +198,12 @@ export function callMcpTool(name: string, args: unknown, context: McpToolContext
       return searchPlans(context.root, requiredString(input, 'query'), optionalStage(input, 'stage'));
     case 'list_amendments':
       return listAmendments(context.root, requiredString(input, 'slug'));
+    case 'get_handoff':
+      return getHandoff(context.root, input);
+    case 'analyze_loop':
+      return analyzeLoop(context.root, input);
+    case 'gate_loop':
+      return gateLoop(context.root, input);
     case 'create_plan': {
       const result = createPlanSkeleton(requiredString(input, 'slug'), requiredCreationStage(input, 'stage'), context.root);
       return { slug: result.slug, path: result.relativePath, stage: result.stage };
@@ -451,4 +494,94 @@ function listAmendments(root: string, slug: string): Record<string, unknown> {
     .sort()
     .map((file) => ({ file, path: relative(root, join(dir, file)) }));
   return { slug: found.slug, stage: found.stage, amendments };
+}
+
+function asMcpError(error: unknown, prefix: string): McpJsonRpcError {
+  if (error instanceof McpJsonRpcError) return error;
+  return new McpJsonRpcError(-32000, `${prefix}: ${error instanceof Error ? error.message : String(error)}`);
+}
+
+function optionalNumber(args: JsonRecord, key: string): number | undefined {
+  const value = args[key];
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new McpJsonRpcError(-32602, `Argument ${key} must be a finite number`);
+  return value;
+}
+
+function optionalInteger(args: JsonRecord, key: string): number | undefined {
+  const value = optionalNumber(args, key);
+  if (value !== undefined && !Number.isInteger(value)) throw new McpJsonRpcError(-32602, `Argument ${key} must be an integer`);
+  return value;
+}
+
+function optionalStringArray(args: JsonRecord, key: string): string[] | undefined {
+  const value = args[key];
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string')) {
+    throw new McpJsonRpcError(-32602, `Argument ${key} must be an array of strings`);
+  }
+  return (value as string[]).map((entry) => entry.trim()).filter(Boolean);
+}
+
+function optionalJudgeAction(args: JsonRecord, key: string): EvolutionJudgeAction | undefined {
+  const value = optionalString(args, key);
+  if (value === undefined) return undefined;
+  if (!(EVOLUTION_JUDGE_ACTIONS as readonly string[]).includes(value)) {
+    throw new McpJsonRpcError(-32602, `Invalid ${key}: ${value}. Expected one of: ${EVOLUTION_JUDGE_ACTIONS.join(', ')}`);
+  }
+  return value as EvolutionJudgeAction;
+}
+
+function isRegularLoopDirectory(dir: string, root: string): boolean {
+  try {
+    if (!lstatSync(dir).isDirectory()) return false;
+    return isSafeEvidenceRelativePath(relative(realpathSync(root), realpathSync(dir)));
+  } catch {
+    return false;
+  }
+}
+
+function safeLoopDir(root: string, value: string): string {
+  const candidate = resolve(root, value);
+  if (!isSafeEvidenceRelativePath(relative(root, candidate))) {
+    throw new McpJsonRpcError(-32602, `loop_dir must stay under the repository root: ${value}`);
+  }
+  if (!existsSync(candidate) || !isRegularLoopDirectory(candidate, root)) {
+    throw new McpJsonRpcError(-32004, `Evolution loop directory not found: ${value}`);
+  }
+  return candidate;
+}
+
+function getHandoff(root: string, input: JsonRecord): Record<string, unknown> {
+  const maxChars = optionalInteger(input, 'max_chars');
+  if (maxChars !== undefined && (maxChars < MIN_RESUME_MAX_CHARS || maxChars > MAX_RESUME_MAX_CHARS)) {
+    throw new McpJsonRpcError(-32602, `max_chars must be an integer between ${MIN_RESUME_MAX_CHARS} and ${MAX_RESUME_MAX_CHARS}`);
+  }
+  try {
+    const result = compileResume(root, { planSlug: optionalString(input, 'plan'), maxChars });
+    return { packet: result.packet, summary: result.summary };
+  } catch (error) {
+    throw asMcpError(error, 'handoff packet compilation failed');
+  }
+}
+
+function analyzeLoop(root: string, input: JsonRecord): EvolutionAnalysisResult {
+  const loopDir = safeLoopDir(root, requiredString(input, 'loop_dir'));
+  const plateauThreshold = optionalNumber(input, 'plateau_threshold');
+  try {
+    return analyzeEvolutionLoop(loopDir, { plateauThreshold }, root);
+  } catch (error) {
+    throw asMcpError(error, 'evolution loop analysis failed');
+  }
+}
+
+function gateLoop(root: string, input: JsonRecord): unknown {
+  const judgeAction = optionalJudgeAction(input, 'judge_action');
+  const impossibleAcs = optionalStringArray(input, 'judge_impossible_acs');
+  const rationale = optionalString(input, 'judge_rationale');
+  if (!judgeAction && (impossibleAcs !== undefined || rationale !== undefined)) {
+    throw new McpJsonRpcError(-32602, 'judge_impossible_acs and judge_rationale require judge_action');
+  }
+  const analysis = analyzeLoop(root, input);
+  return buildEvolutionJudgmentCheckpoint(analysis, judgeAction ? { action: judgeAction, impossibleAcs, rationale } : null);
 }

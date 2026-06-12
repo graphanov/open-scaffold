@@ -7,6 +7,7 @@ import { Readable, Writable } from 'node:stream';
 import { callMcpTool, isSafeEvidenceRelativePath, listMcpTools, McpJsonRpcError } from '../src/mcp-tools.js';
 import { listMcpResources, readMcpResource } from '../src/mcp-resources.js';
 import { handleMcpJsonRpcLine, runMcpStdioServer } from '../src/mcp-server.js';
+import { recordEvolutionAttempt, writeEvolutionLoop } from '../src/evolution.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -89,6 +90,58 @@ function samplePlan(slug: string, status: string, goal: string) {
   ].join('\n');
 }
 
+// 167 front door: one recorded attempt (AC1 pass, AC2 fail, decision retry) so
+// get_handoff, analyze_loop, and gate_loop are exercised against real loop files.
+function loopFixture() {
+  const root = scaffoldFixture();
+  mkdirSync(join(root, 'docs/evidence'), { recursive: true });
+  const planPath = join(root, '.osc/plans/active/001-sample.md');
+  const loopDirRelative = '.osc/evolution/001-sample-loop';
+  const loopDir = join(root, loopDirRelative);
+  writeEvolutionLoop(planPath, loopDir, root, { now: new Date('2026-06-12T08:00:00.000Z'), strategy: 'greedy' });
+
+  const runId = 'attempt-a';
+  mkdirSync(join(root, `.osc/runs/${runId}`), { recursive: true });
+  const runPath = join(root, `.osc/runs/${runId}/run.json`);
+  writeFileSync(runPath, JSON.stringify({
+    schemaVersion: 'open-scaffold.run.v1',
+    runId,
+    taskId: 'task-001',
+    plan: {
+      slug: '001-sample',
+      path: '.osc/plans/active/001-sample.md',
+      acceptanceCriteria: ['Agent can read the plan.', 'Missing plans return structured errors.'],
+    },
+    artifacts: { evidence: [`docs/evidence/${runId}-proof.md`] },
+  }, null, 2));
+  writeFileSync(join(root, `docs/evidence/${runId}-proof.md`), `${runId} proof`);
+
+  const evaluationPath = join(root, `docs/evidence/${runId}-evaluation.json`);
+  writeFileSync(evaluationPath, JSON.stringify({
+    schema: 'open-scaffold.evaluation.v1',
+    evaluation_id: `eval-${runId}`,
+    subject: { source: 'run', plan: '.osc/plans/active/001-sample.md', plan_slug: '001-sample', task_id: 'task-001', run_id: runId, run_packet: `.osc/runs/${runId}/run.json` },
+    acceptance_criteria: [
+      { id: 'AC1', text: 'Agent can read the plan.', status: 'pass', evaluator: { kind: 'human', name: 'reviewer', ref: null }, evidence: [{ kind: 'path', ref: `docs/evidence/${runId}-proof.md`, summary: 'Synthetic test evidence.' }], rationale: 'AC1 pass' },
+      { id: 'AC2', text: 'Missing plans return structured errors.', status: 'fail', evaluator: { kind: 'human', name: 'reviewer', ref: null }, evidence: [{ kind: 'path', ref: `docs/evidence/${runId}-proof.md`, summary: 'Synthetic test evidence.' }], rationale: 'AC2 fail' },
+    ],
+    decision: { status: 'rejected', approver: 'human', rationale: 'Evidence reviewed.' },
+    improvement: { route: 'retry_run', target: null, carried_forward: [], do_not_assume: ['No model benchmark claim.'] },
+  }, null, 2));
+
+  recordEvolutionAttempt(loopDir, {
+    runPath,
+    evaluationPath,
+    decision: 'retry',
+    score: 0.5,
+    rationale: 'First attempt; AC2 still failing.',
+    repairHypothesis: { hypothesis: 'Return a structured error for missing plans to satisfy AC2.', targetMetric: 'accepted_ac_count', expectedGain: 1 },
+    now: new Date('2026-06-12T08:10:00.000Z'),
+  }, root);
+
+  return { root, loopDirRelative };
+}
+
 function framedMessage(payload: unknown): string {
   const json = JSON.stringify(payload);
   return `Content-Length: ${Buffer.byteLength(json, 'utf8')}\r\n\r\n${json}`;
@@ -138,6 +191,9 @@ describe('Open Scaffold MCP tool handlers', () => {
       'get_status',
       'search_plans',
       'list_amendments',
+      'get_handoff',
+      'analyze_loop',
+      'gate_loop',
       'create_plan',
       'amend_plan',
       'close_plan',
@@ -297,6 +353,95 @@ describe('Open Scaffold MCP tool handlers', () => {
       expect(callMcpTool('list_evidence', { slug: 'evil' }, { root, allowWrite: false })).toMatchObject({ evidence: [] });
       expect(() => callMcpTool('get_evidence', { path: '.osc/releases/2999-evil.md' }, { root, allowWrite: false })).toThrow(McpJsonRpcError);
       expect(() => readMcpResource('osc://releases/latest', { root })).toThrow(McpJsonRpcError);
+    }
+  });
+});
+
+describe('167 front-door MCP tools: get_handoff, analyze_loop, gate_loop', () => {
+  it('compiles the handoff packet read-only and bounds max_chars', () => {
+    const root = scaffoldFixture();
+
+    const handoff = callMcpTool('get_handoff', {}, { root, allowWrite: false }) as { packet: string; summary: Record<string, unknown> };
+    expect(handoff.packet).toContain('001-sample');
+    expect(handoff.summary).toMatchObject({ schema: 'open-scaffold.resume.v1' });
+
+    try {
+      callMcpTool('get_handoff', { max_chars: 5 }, { root, allowWrite: false });
+      throw new Error('expected max_chars bound to throw');
+    } catch (error) {
+      expect(error).toBeInstanceOf(McpJsonRpcError);
+      expect((error as McpJsonRpcError).code).toBe(-32602);
+    }
+  });
+
+  it('analyzes a recorded loop without write access and reports the failing criterion', () => {
+    const { root, loopDirRelative } = loopFixture();
+
+    const analysis = callMcpTool('analyze_loop', { loop_dir: loopDirRelative }, { root, allowWrite: false }) as {
+      loop: { attemptCount: number };
+      acceptanceSummary: { currentPass: number; currentTotal: number; remainingFailures: string[] };
+      recommendation: { action: string };
+    };
+    expect(analysis.loop.attemptCount).toBe(1);
+    expect(analysis.acceptanceSummary).toMatchObject({ currentPass: 1, currentTotal: 2 });
+    expect(analysis.acceptanceSummary.remainingFailures).toContain('AC2');
+    expect(typeof analysis.recommendation.action).toBe('string');
+  });
+
+  it('rejects loop_dir escapes and missing loop directories with structured errors', () => {
+    const { root } = loopFixture();
+
+    try {
+      callMcpTool('analyze_loop', { loop_dir: '../outside-loop' }, { root, allowWrite: false });
+      throw new Error('expected loop_dir escape to throw');
+    } catch (error) {
+      expect(error).toBeInstanceOf(McpJsonRpcError);
+      expect((error as McpJsonRpcError).code).toBe(-32602);
+    }
+
+    try {
+      callMcpTool('analyze_loop', { loop_dir: '.osc/evolution/missing-loop' }, { root, allowWrite: false });
+      throw new Error('expected missing loop to throw');
+    } catch (error) {
+      expect(error).toBeInstanceOf(McpJsonRpcError);
+      expect((error as McpJsonRpcError).code).toBe(-32004);
+    }
+  });
+
+  it('computes the gate checkpoint and honors an independent judge stop ruling', () => {
+    const { root, loopDirRelative } = loopFixture();
+
+    const checkpoint = callMcpTool('gate_loop', { loop_dir: loopDirRelative }, { root, allowWrite: false }) as {
+      schema: string;
+      retryAuthorized: { allow: boolean; mode: string; reason: string };
+      judge: { present: boolean };
+    };
+    expect(checkpoint.schema).toBe('open-scaffold.evolution-judgment-checkpoint.v1');
+    expect(checkpoint.judge.present).toBe(false);
+    expect(typeof checkpoint.retryAuthorized.allow).toBe('boolean');
+
+    const stopped = callMcpTool('gate_loop', {
+      loop_dir: loopDirRelative,
+      judge_action: 'stop_impossible',
+      judge_impossible_acs: ['AC2'],
+      judge_rationale: 'AC2 cannot pass against the recorded artifacts.',
+    }, { root, allowWrite: false }) as {
+      retryAuthorized: { allow: boolean; mode: string };
+      judge: { present: boolean; action: string; impossibleAcs: string[] };
+    };
+    expect(stopped.judge).toMatchObject({ present: true, action: 'stop_impossible', impossibleAcs: ['AC2'] });
+    expect(stopped.retryAuthorized.allow).toBe(false);
+  });
+
+  it('rejects judge details without a judge_action', () => {
+    const { root, loopDirRelative } = loopFixture();
+
+    try {
+      callMcpTool('gate_loop', { loop_dir: loopDirRelative, judge_rationale: 'orphan rationale' }, { root, allowWrite: false });
+      throw new Error('expected orphan judge_rationale to throw');
+    } catch (error) {
+      expect(error).toBeInstanceOf(McpJsonRpcError);
+      expect((error as McpJsonRpcError).code).toBe(-32602);
     }
   });
 });

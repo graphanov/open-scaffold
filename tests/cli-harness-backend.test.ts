@@ -16,15 +16,20 @@ function tempScaffold(prefix = 'osc-cli-harness-') {
 }
 
 describe('CLI harness backend', () => {
-  it('top-level help presents $interview, $plan, $work, and $team as the primary harness UX', () => {
-    const result = spawnSync(tsx, [cli, '--help'], { cwd: repoRoot, encoding: 'utf8' });
+  it('keeps the $-verb grammar out of core help and deprecated-but-reachable in help --all', () => {
+    // 167: the $-verb grammar left the public front door; it stays functional
+    // behind help --all with a deprecation label until plan 168 removes it.
+    const core = spawnSync(tsx, [cli, '--help'], { cwd: repoRoot, encoding: 'utf8' });
+    expect(core.status).toBe(0);
+    expect(core.stdout).not.toContain('osc harness');
+    expect(core.stdout).not.toContain('$interview');
 
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain('Work (the four verbs):');
+    const full = spawnSync(tsx, [cli, 'help', '--all'], { cwd: repoRoot, encoding: 'utf8' });
+    expect(full.status).toBe(0);
+    expect(full.stdout).toContain('Harness command surface:  [deprecated');
     for (const command of ['$interview', '$plan', '$work', '$team']) {
-      expect(result.stdout).toContain(command);
+      expect(full.stdout).toContain(command);
     }
-    expect(result.stdout).toContain('osc harness');
   });
 
   it('invokes the router safely through quoted $commands for shell/CI tests', () => {
