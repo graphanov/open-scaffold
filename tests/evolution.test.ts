@@ -586,6 +586,23 @@ describe('evolution attempt recording and validation', () => {
     expect(frontier.current).toBeNull();
   });
 
+  it('does not synthesize repair hypotheses for retry attempts with linked evaluations', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root, 'demo-run');
+    const evalPath = writeEvaluation(root, 'demo-run');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+
+    expect(() => recordEvolutionAttempt(outDir, {
+      runPath,
+      evaluationPath: evalPath,
+      decision: 'retry',
+      rationale: 'Evaluation telemetry alone is not a concrete repair plan.',
+    }, root)).toThrow(/Retry decisions require a repair hypothesis/);
+    expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe('');
+  });
+
   it('records adapter receipt and evidence refs on attempts and promoted frontier', () => {
     const root = tempRepo();
     const planPath = writePlan(root);
@@ -753,7 +770,8 @@ describe('evolution analysis', () => {
       reasons: expect.arrayContaining(['probe_only']),
     });
     expect(analysis.recommendation).toMatchObject({ action: 'redesign' });
-    expect(analysis.recommendation.summary).toContain('remaining failing criteria');
+    expect(analysis.recommendation.reasons).toContain('question_the_requirement');
+    expect(analysis.recommendation.summary).toContain('question');
     expect(analysis.nextActionPacket).toMatchObject({
       schema: EVOLUTION_NEXT_ACTION_PACKET_SCHEMA,
       recommendedAction: 'redesign',
@@ -834,8 +852,8 @@ describe('evolution analysis', () => {
     expect(report.targets).toHaveLength(12);
     expect(report.targets.every((target) => target.requiredFieldsPreserved)).toBe(true);
     expect(report.targets.find((target) => target.id === 'target.markdown.control_to_compact_bullets')?.requiredFields).not.toContain('summary');
-    expect(report.targets.find((target) => target.id === 'target.terminal.packet_to_action_block')).toMatchObject({ classification: 'marginal', publicSummaryCounted: false });
-    expect(report.marginalTargets).toContain('target.terminal.packet_to_action_block');
+    expect(report.targets.find((target) => target.id === 'target.terminal.packet_to_action_block')).toMatchObject({ classification: 'strong', publicSummaryCounted: true });
+    expect(report.marginalTargets).not.toContain('target.terminal.packet_to_action_block');
     expect(report.baseline.requiredControlFieldsPresent).toBe(report.compact.requiredControlFieldsPresent);
     expect(report.compact.requiredControlFieldRatio).toBe(1);
     expect(report.telemetry).toMatchObject({ present: 2, total: 3, missing: ['estimated_usd'] });
@@ -930,17 +948,23 @@ describe('evolution analysis', () => {
       impossible: false,
     });
     expect(ac28?.reasons).not.toContain('probe_only');
-    expect(analysis.recommendation.action).toBe('inspect_scorer');
+    // 165: stale frontier metadata still must not mark the criterion impossible
+    // (asserted above), but three identical failures with zero observed delta and
+    // no reachability evidence are a zero-sensitivity plateau — the recommendation
+    // escalates to redesign with question-the-requirement language on fresh
+    // plateau evidence, not on the stale blocker claim.
+    expect(analysis.recommendation.action).toBe('redesign');
+    expect(analysis.recommendation.reasons).toContain('question_the_requirement');
+    expect(analysis.recommendation.summary).toContain('question');
     expect(analysis.nextActionPacket).toMatchObject({
-      recommendedAction: 'inspect_scorer',
+      recommendedAction: 'redesign',
       acceptance: { currentPass: 1, currentTotal: 2 },
     });
     expect(analysis.nextActionPacket.requiredNextFields).toEqual(expect.arrayContaining([
-      'current_evaluation_or_scorer_inspection',
-      'score_sensitivity_or_impossibility_metadata',
+      'redesigned_criterion_scorer_or_artifact_shape',
+      'measurable_repair_hypothesis_before_retry',
       'usage_receipt_or_unavailable_reason',
     ]));
-    expect(analysis.nextActionPacket.handoffChecklist.join('\n')).toContain('Inspect scorer/evaluation coverage');
     expect(analysis.nextActionPacket.boundaryNotes.join('\n')).toContain('not benchmark support');
   });
 

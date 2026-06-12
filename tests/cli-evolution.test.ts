@@ -411,11 +411,11 @@ describe('osc evolve CLI', () => {
   });
 
   it('rejects retry without a repair hypothesis instead of appending attempt state', () => {
-    const { root, planPath, runPath } = tempRepo();
+    const { root, planPath, runPath, evalPath } = tempRepo();
     const outDir = join(root, '.osc/evolution/demo-loop');
     execFileSync(tsx, [cli, 'evolve', 'init', planPath, '--out', outDir], { cwd: root, encoding: 'utf8' });
 
-    const result = spawnSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runPath, '--decision', 'retry', '--rationale', 'Try again without a measurable repair.'], { cwd: root, encoding: 'utf8' });
+    const result = spawnSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runPath, '--evaluation', evalPath, '--decision', 'retry', '--target-metric', 'accepted_ac_count', '--actual-delta', '1', '--rationale', 'Try again without a measurable repair.'], { cwd: root, encoding: 'utf8' });
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('Retry decisions require a repair hypothesis');
@@ -509,7 +509,7 @@ describe('osc evolve CLI', () => {
     expect(efficiency.additionalTargetsAtLeastOnePointFiveX).toBeGreaterThanOrEqual(10);
     expect(efficiency.publicSummaryTargetsAtLeastOnePointFiveX).toBeGreaterThanOrEqual(10);
     expect(efficiency.publicSummaryTargetsAtLeastOnePointFiveX).toBeLessThan(efficiency.additionalTargetsAtLeastOnePointFiveX);
-    expect(efficiency.marginalTargets).toContain('target.terminal.packet_to_action_block');
+    expect(efficiency.marginalTargets).not.toContain('target.terminal.packet_to_action_block');
     expect(efficiency.targets).toHaveLength(12);
     expect(efficiency.caveats.join('\n')).toContain('not model intelligence');
 
@@ -565,5 +565,33 @@ describe('osc evolve CLI', () => {
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('Invalid value for --strategy: magical');
     expect(result.stderr).toContain('Usage: osc evolve init');
+  });
+
+  it('renders a checkpoint and exits nonzero when retry is not authorized', () => {
+    const { root, outDir } = writePlateauCliLoop();
+
+    const proc = spawnSync(tsx, [cli, 'evolve', 'checkpoint', outDir, '--format', 'json'], { cwd: root, encoding: 'utf8' });
+
+    expect(proc.status).toBe(1);
+    const checkpoint = JSON.parse(proc.stdout);
+    expect(checkpoint).toMatchObject({
+      schema: 'open-scaffold.evolution-judgment-checkpoint.v1',
+      action: 'redesign',
+      retryAuthorized: { allow: false, mode: 'blocked_by_packet' },
+    });
+  });
+
+  it('renders a proof-only checkpoint with zero exit when scorer inspection is required', () => {
+    const { root, outDir } = writeInspectCliLoop();
+
+    const proc = spawnSync(tsx, [cli, 'evolve', 'checkpoint', outDir, '--format', 'json'], { cwd: root, encoding: 'utf8' });
+
+    expect(proc.status).toBe(0);
+    const checkpoint = JSON.parse(proc.stdout);
+    expect(checkpoint).toMatchObject({
+      schema: 'open-scaffold.evolution-judgment-checkpoint.v1',
+      action: 'inspect_scorer',
+      retryAuthorized: { allow: true, mode: 'proof_only' },
+    });
   });
 });

@@ -31,6 +31,8 @@ Use `osc schemas list --json` for the machine-readable list. Representative sche
 - `open-scaffold.evaluation.v1` — acceptance-criteria evaluation envelope scaffold / external scorer reference.
 - `osc.harness-status.v1` and `osc.harness-event.v1` — transport-neutral harness status and progress events, including feedback, retry, and handoff events.
 - `osc.controlled-work-run.v1` and `osc.team-run.v1` — `$work` and `$team` run-package receipts.
+- `open-scaffold.evolution-judgment-checkpoint.v1` — retry authorization gate built from evolution analysis plus optional independent judge input.
+- `osc.ambient-work-record.v1` — post-hoc `$work` record extracted by the harness so workers do not hand-write bookkeeping in-loop.
 - `osc.feedback.v1` and `osc.feedback-analysis.v1` — feedback records and repair hypotheses.
 - `osc.harness-retry.v1` — retry attempt links that preserve old evidence.
 - `osc.accepted-improvement.v1` — accepted lesson files for relevant future-run inheritance.
