@@ -30,9 +30,11 @@ files about what your agents actually did — and turns it into three things:
 - **Record (ambient).** The record is extracted from observed facts —
   transcripts, receipts, test results, scores — around whatever workflow you
   already run. It costs the working model nothing: no ceremony, no hand-written
-  bookkeeping. Add a plan and evidence files when you want claims checked
-  against intent; feedback and lessons carry into future attempts instead of
-  being relearned.
+  bookkeeping. `osc capture --from claude-code|codex` reads a finished session
+  transcript into a work record (turns, tokens, tool census) with no worker
+  cooperation — see [`docs/CAPTURE.md`](docs/CAPTURE.md). Add a plan and evidence
+  files when you want claims checked against intent; feedback and lessons carry
+  into future attempts instead of being relearned.
 - **Handoff.** `osc handoff` compiles the record into a packet that lets the
   next reader — a fresh session, a smaller model, another vendor's agent, or a
   teammate — resume from the truth instead of re-deriving (or inventing) it.
