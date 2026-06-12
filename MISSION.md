@@ -28,6 +28,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-12: closed 166-claim-ledger-repositioning — Plan 166 completed by PR #209 after refresh on merged PR #208 and full 631-test verification.
 - 2026-06-12: closed 165-harness-enforced-evolution-loop — Plan 165 completed by PR #208 after latest-head Codex clean review and 631-test verification.
 - 2026-06-10: Lock the v2 design: the three mechanism benchmarks run on one shared visual substrate (a seeded canvas game with deterministic event-log replays) built in an independent benchmark repo per the 2026-06-01 correction; arms are naked, naked+minimal-checklist, and open-scaffold with the evolve loop as the retry-trap instrument; execution lane is Claude headless on subscription, so budget is recorded as captured token counts from CLI usage fields, never invented USD. — see .osc/plans/active/163-proof-harness-v2-amendment-1.md
 - 2026-06-10: closed 161-harness-identity-pivot — harness identity pivot and docs<=25 shipped via PR #205
