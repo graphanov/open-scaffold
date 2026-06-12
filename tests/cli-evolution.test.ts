@@ -411,11 +411,11 @@ describe('osc evolve CLI', () => {
   });
 
   it('rejects retry without a repair hypothesis instead of appending attempt state', () => {
-    const { root, planPath, runPath } = tempRepo();
+    const { root, planPath, runPath, evalPath } = tempRepo();
     const outDir = join(root, '.osc/evolution/demo-loop');
     execFileSync(tsx, [cli, 'evolve', 'init', planPath, '--out', outDir], { cwd: root, encoding: 'utf8' });
 
-    const result = spawnSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runPath, '--decision', 'retry', '--rationale', 'Try again without a measurable repair.'], { cwd: root, encoding: 'utf8' });
+    const result = spawnSync(tsx, [cli, 'evolve', 'record', outDir, '--run', runPath, '--evaluation', evalPath, '--decision', 'retry', '--target-metric', 'accepted_ac_count', '--actual-delta', '1', '--rationale', 'Try again without a measurable repair.'], { cwd: root, encoding: 'utf8' });
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('Retry decisions require a repair hypothesis');

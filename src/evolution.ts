@@ -2226,9 +2226,7 @@ function normalizeAttemptRepairHypothesis(input: EvolutionRepairHypothesis | und
     actual_delta: optionalFiniteNumber(input.actualDelta, 'Repair hypothesis actual delta'),
   };
 }
-
 const AUTO_FILL_TARGET_METRIC = 'accepted_ac_count';
-
 // 165: when an evaluation envelope is linked and the caller did not supply
 // target-metric/actual-delta, store accepted_ac_count and the passCount delta
 // versus the previous attempt's linked evaluation (first attempt: delta vs 0).
@@ -2236,6 +2234,7 @@ const AUTO_FILL_TARGET_METRIC = 'accepted_ac_count';
 function applyEvaluationAutoFill(
   normalized: Record<string, unknown> | null,
   caller: EvolutionRepairHypothesis | undefined,
+  decision: EvolutionDecision,
   currentPassCount: number,
   previousPassCount: number | null,
 ): Record<string, unknown> | null {
@@ -2244,6 +2243,7 @@ function applyEvaluationAutoFill(
   if (callerSetTarget && callerSetDelta) return normalized;
   const delta = currentPassCount - (previousPassCount ?? 0);
   if (!normalized) {
+    if (decision === 'retry') throw new Error('Retry decisions require a repair hypothesis before continuing.');
     return {
       hypothesis: `Auto-recorded from linked evaluation: ${AUTO_FILL_TARGET_METRIC} delta ${delta} versus previous attempt.`,
       target_metric: AUTO_FILL_TARGET_METRIC,
@@ -2314,7 +2314,7 @@ export function recordEvolutionAttempt(loopDir: string, options: RecordEvolution
   // 165: auto-fill accepted_ac_count target metric and passCount delta from the
   // linked evaluation when the caller did not provide them explicitly.
   const effectiveRepairHypothesis = evalSummary
-    ? applyEvaluationAutoFill(repairHypothesis, options.repairHypothesis, (evalSummary.passCount as number) ?? 0, previousAttemptPassCount(attempts.at(-1), root))
+    ? applyEvaluationAutoFill(repairHypothesis, options.repairHypothesis, options.decision, (evalSummary.passCount as number) ?? 0, previousAttemptPassCount(attempts.at(-1), root))
     : repairHypothesis;
   const now = options.now ?? new Date();
   const evidenceRefs = uniqueRefs([

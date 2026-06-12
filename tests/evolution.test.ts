@@ -586,6 +586,23 @@ describe('evolution attempt recording and validation', () => {
     expect(frontier.current).toBeNull();
   });
 
+  it('does not synthesize repair hypotheses for retry attempts with linked evaluations', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root, 'demo-run');
+    const evalPath = writeEvaluation(root, 'demo-run');
+    const outDir = join(root, '.osc/evolution/demo-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-05-21T08:00:00.000Z') });
+
+    expect(() => recordEvolutionAttempt(outDir, {
+      runPath,
+      evaluationPath: evalPath,
+      decision: 'retry',
+      rationale: 'Evaluation telemetry alone is not a concrete repair plan.',
+    }, root)).toThrow(/Retry decisions require a repair hypothesis/);
+    expect(readFileSync(join(outDir, 'attempts.jsonl'), 'utf8')).toBe('');
+  });
+
   it('records adapter receipt and evidence refs on attempts and promoted frontier', () => {
     const root = tempRepo();
     const planPath = writePlan(root);
