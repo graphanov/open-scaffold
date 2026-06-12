@@ -13,11 +13,14 @@ function firstLines(text: string, count: number): string {
 }
 
 describe('public work-record positioning', () => {
-  it('leads the README with the harness promise on a repo-native work record', () => {
+  it('leads the README with the record/handoff/review promise on a repo-native work record', () => {
     const firstScreen = firstLines(read('README.md'), 80);
 
     expect(firstScreen).toContain("Your AI agent's work belongs in your repo, not its chat history.");
-    expect(firstScreen).toContain('harness');
+    // 167: "harness" left the first screen with the pivot; the promise is the
+    // record, the handoff, and cheap-model review.
+    expect(firstScreen).toContain('review');
+    expect(firstScreen).toContain('handoff');
     expect(firstScreen).toContain('repo-native work record');
     expect(firstScreen).toContain('plan');
     expect(firstScreen).toContain('evidence');

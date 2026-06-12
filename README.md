@@ -4,8 +4,8 @@
 
 **Your AI agent's work belongs in your repo, not its chat history.**
 
-A harness for AI-assisted work: clarify it, plan it, gate it, run it, prove it —
-and resume it cold after the chat is gone.
+Ambient work records, lossless handoffs, and near-frontier review from cheap and
+local models — for AI-assisted work, with published evidence.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/open-scaffold.svg)](https://www.npmjs.com/package/open-scaffold)
@@ -18,42 +18,49 @@ and resume it cold after the chat is gone.
 
 ## The problem
 
-Long AI sessions rot. Context degrades, retries loop blind, and when the chat
-ends, the work's memory dies with it. The next session starts from archaeology —
-yours or the agent's, paid for in tokens either way. And when someone asks
-*"what did the AI do, and why?"*, the answer lives in a scrollback buffer nobody
-can review.
+You pay frontier prices for everything — including the review, the status
+checks, the "where were we", the bookkeeping — because nothing cheaper can be
+trusted with them. Cheaper models guess; when a chat ends, the work's memory
+dies with it; the next session (or the reviewer) reconstructs history from a
+scrollback buffer, and what it can't reconstruct, it invents.
 
 ## What Open Scaffold does
 
-Open Scaffold moves the working memory of AI-assisted work out of the chat and
-into git-tracked files — a repo-native work record — then runs the loop with
-discipline:
+Open Scaffold keeps a repo-native work record — git-tracked, observed-fact
+files about what your agents actually did — and turns it into three things:
 
-```text
-$interview -> $plan -> $work or $team -> evidence -> feedback -> retry or lesson
-```
+- **Record (ambient).** The record is extracted from observed facts —
+  transcripts, receipts, test results, scores — around whatever workflow you
+  already run. It costs the working model nothing: no ceremony, no hand-written
+  bookkeeping. Add a plan and evidence files when you want claims checked
+  against intent; feedback and lessons carry into future attempts instead of
+  being relearned.
+- **Handoff.** `osc handoff` compiles the record into a packet that lets the
+  next reader — a fresh session, a smaller model, another vendor's agent, or a
+  teammate — resume from the truth instead of re-deriving (or inventing) it.
+- **Review and gate.** Cheap models read the record and judge: `osc analyze`
+  reports plateaus, failing criteria, and requirements that deserve questioning;
+  `osc gate` turns that into a retry authorization — a stop authority that
+  lives outside the worker, with claims checked against evidence.
 
-- **The CLI does the bookkeeping; the model does the thinking.** Plans, run
-  packages, status, events, receipts, and postflight notes are scaffolded by
-  `osc` from short answers — the agent never hand-writes ceremony.
-- **Execution is gated, not hidden.** `$work` packages a bounded slice. A
-  runtime launches only with an explicit adapter and explicit spawn authority,
-  and stops at human gates for anything irreversible.
-- **Every attempt leaves a receipt.** A failed run becomes feedback with a
-  repair hypothesis. The retry inherits it. Accepted lessons carry into future
-  runs instead of being relearned.
-- **Any session can die at any time.** A fresh agent, a teammate, or future you
-  resumes from compact repo files — no re-explaining.
-
-The whole human grammar is four verbs:
+The front door is three commands:
 
 | Command | Meaning |
 | --- | --- |
-| `$interview` | Clarify messy intent into a bounded work package. |
-| `$plan` | Create or amend the repo-native plan. |
-| `$work` | Package one bounded slice for controlled execution. |
-| `$team` | Coordinate multiple worker lanes with shared evidence. |
+| `osc handoff` | Compile the work record into a resume packet for the next session or model. |
+| `osc analyze` | Review recorded attempts: plateaus, failing criteria, question-the-requirement signals. |
+| `osc gate` | Authorize or block the next attempt from the analysis plus an optional independent judge. |
+
+Why cheap models? Because with the record they stop guessing. In replicated
+trials, a mid-tier reviewer answering factual questions about finished work —
+graded against answer keys committed before it ran — scored 96-97% with the
+record vs 36-46% on the bare workspace, with zero confabulation and at roughly
+half the review cost. And when a judge is too weak to be trusted, the gate
+fails closed: no parseable verdict means no authorization, and the record's
+own blocks override a permissive ruling. Small and locally-hosted models
+(haiku-class, DeepSeek, Qwen, Ollama/MLX) become viable reviewers, resumers,
+and bookkeepers, so the frontier model is spent only where frontier capability
+is needed.
 
 ## What's measured
 
@@ -84,16 +91,8 @@ Three guided questions (plan slug, mission, first goal) produce the minimum
 work record — `MISSION.md`, one active plan with acceptance criteria, an
 evidence skeleton — and print the exact commands to run next.
 
-Then drive work through the harness:
-
-```bash
-osc harness '$interview "clarify what we are building first"'
-osc harness '$plan "ship the first reviewed change" --slug first-slice'
-osc harness '$work "implement the first slice" --context "plan is ready"'
-```
-
-Each command writes a run record under `.osc/runs/<run_id>/` — status, events,
-gates, and a postflight note — and tells you the next step. Close the loop:
+Work however you already work — your agent, your editor, your loop. The record
+accumulates as files; you close each slice with evidence:
 
 ```bash
 osc verify
@@ -103,11 +102,15 @@ osc close first-slice --message "verified first slice"
 
 Scope changed mid-slice? `osc amend first-slice --message "what changed"`
 records the change without rewriting the plan — plans are immutable, learnings
-are appended. Need a plan without the harness grammar? `osc plan new <slug>
---stage active` scaffolds one directly.
+are appended. More plans: `osc plan new <slug> --stage active`.
 
-Back tomorrow in a brand-new session? `osc resume` rebuilds the working memory
-in one command.
+Back tomorrow in a brand-new session, or handing to a different model?
+
+```bash
+osc handoff
+```
+
+One read-only command compiles the working memory into a budgeted packet.
 
 Prefer a global install? `npm i -g open-scaffold` gives you `osc` everywhere.
 
@@ -126,105 +129,69 @@ MISSION.md                          why this repo exists
 No daemon, no database, no SaaS, no hidden state. Everything is reviewable in a
 PR and survives any tool change.
 
-## Resume after total context loss
+## Handoff after total context loss
 
 This is the core trick. Kill the session mid-task — close the laptop, lose the
-chat, switch agents. Then, in a fresh session:
+chat, switch agents or vendors. Then, in a fresh session:
 
 ```bash
-osc resume
+osc handoff
 ```
 
-One read-only command compiles the repo's working memory into a budgeted
-packet: mission digest, the active plan with its acceptance criteria, the
-latest run state, repair hypotheses, lessons to inherit, and the exact next
-bounded action. The agent reads the packet, not your history.
+One read-only command compiles the repo's working memory into a budgeted,
+secret-redacted packet: mission digest, the active plan with its acceptance
+criteria, the latest recorded state, repair hypotheses, lessons to inherit, and
+the exact next bounded action. The next reader gets the truth, not archaeology.
+In with/without trials, reviewers given the record reconstructed the work at
+94-96% accuracy versus 30-46% without it — and never invented history.
 
-- Try it on the committed mid-flight fixture: [`examples/resume-demo/`](examples/resume-demo/)
-  with the narrated path in [`docs/RESUME_WALKTHROUGH.md`](docs/RESUME_WALKTHROUGH.md).
-- Retries compile a budgeted handoff packet — capped at 1,600 characters,
-  secret-redacted, raw logs excluded:
+Try it on the committed mid-flight fixture: [`examples/resume-demo/`](examples/resume-demo/)
+with the narrated path in [`docs/RESUME_WALKTHROUGH.md`](docs/RESUME_WALKTHROUGH.md).
 
-```bash
-osc harness '$work "retry failed slice" --context "repo truth" --retry-of <old-run-id> --handoff'
-```
+## Review and gate with cheap models
 
-A fresh worker reads the packet, not your history. That is what makes
-multi-session work cheap: compact state replaces archaeology.
-
-## Run it through a real runtime
-
-Open Scaffold core never spawns anything silently. To hand a slice to a real
-runtime, name the adapter and grant the authority explicitly:
-
-```bash
-osc harness '$work "implement one bounded slice" --context "plan is ready" --adapter codex --allow-spawn'
-```
-
-The adapter runs with an environment allowlist, timeout, bounded log capture,
-and path containment, then writes a receipt back into the run record. Project
-adapters are one JSON file in `.osc/adapters/<id>.json` — point one at Claude
-Code, a shell script, or anything else that can execute work.
-
-For script/CI control without the harness grammar, the explicit backend path is:
-
-```bash
-osc plan new <slug> --stage active
-osc run .osc/plans/active/<slug>.md --runtime codex --workflow plan
-osc dispatch .osc/runs/RUN_ID/run.json --adapter <id>
-```
-
-Use `osc run ... --dry-run` only to preview the run packet; rerun without
-`--dry-run` before dispatch so the run package actually exists.
-
-See [`docs/ADAPTERS.md`](docs/ADAPTERS.md) and
-[`docs/RUNTIME_BINDING_CONTRACT.md`](docs/RUNTIME_BINDING_CONTRACT.md).
-
-## Teams of workers, one evidence trail
-
-```bash
-osc harness '$team "split implementation docs review" --worker implementation --worker docs --worker review'
-```
-
-`$team` packages coordinated worker lanes that share one run record: per-worker
-status, human gates, adapters, and evidence links in one place instead of N
-scattered sessions. See [`docs/HARNESS_COMMANDS.md`](docs/HARNESS_COMMANDS.md).
-
-## Learn from repeated attempts
-
-Real AI work means trying more than once. The evolution ledger records
-attempts, compares them, and tells you when to stop:
+Real AI work means repeated attempts — and someone deciding whether the next
+attempt is justified. That judgment should not belong to the worker (it grades
+its own homework), and it should not cost frontier prices. Record attempts,
+then ask the record:
 
 ```bash
 osc evolve init .osc/plans/active/my-task.md --out .osc/evolution/my-task --strategy manual
-osc evolve record .osc/evolution/my-task --run .osc/runs/<run_id>/run.json --decision promote --rationale "Best evidence so far."
-osc evolve analyze .osc/evolution/my-task
+osc evolve record .osc/evolution/my-task --run <run.json> --evaluation <eval.json> --decision retry --rationale "..."
+osc analyze .osc/evolution/my-task --compact
+osc gate .osc/evolution/my-task --format json
 ```
 
-`analyze` detects plateaus, impossible acceptance criteria, and token spend
-with zero measured gain — and recommends continue, stop, redesign, or
-inspect-scorer instead of letting a loop burn money. See
+`osc analyze` reports plateaus, zero-sensitivity failures, and requirements
+that deserve questioning instead of another retry. `osc gate` converts that —
+plus an optional independent judge ruling — into a retry authorization: a
+packet-level *redesign* blocks the retry even if everyone feels optimistic.
+Claims are checked against evidence (test results, scored criteria), so
+"complete" while the suite fails is caught mechanically. Any model that can
+read files can be the judge — including locally-hosted ones. See
 [`docs/EVOLUTION_LOOP.md`](docs/EVOLUTION_LOOP.md).
 
 ## Simple mental model
 
 - **You** own the goal, taste, risk, merge, and publish gates.
-- **Your agent or runtime** does the implementation work.
-- **Open Scaffold** runs the loop and keeps the record: what was asked, what
-  was handed off, what came back, what was checked, who approved.
+- **Your agent or workflow** does the implementation work — Open Scaffold never
+  runs or disciplines it.
+- **Open Scaffold** keeps the record and serves the readers: what was asked,
+  what actually happened, what was claimed versus verified, what the next
+  session or the reviewer needs to know.
 
-## Runtime-neutral by design
+## Vendor-neutral by design
 
 ```text
-Open Scaffold harness  = loop control: interview, plan, package, gates, receipts, feedback
-Runtime adapter        = translate + launch + return receipt/evidence
-Runtime                = Claude Code, Codex, Gemini, OMC/OMX, a shell, or a human
-Operator               = approve, reject, merge, publish, or redirect
+Work record      = git-tracked, observed-fact files: plans, receipts, evaluations, attempts
+Handoff packet   = compiled, budgeted, redacted working memory for the next reader
+Review + gate    = cheap-model judgment over the record, with stop authority outside the worker
+Reader           = a fresh session, a smaller model, another vendor's agent, or a human
 ```
 
-Core stays portable: files first, explicit authority, no provider lock-in. An
-optional read-only [MCP server](docs/MCP.md) exposes the work record to
-MCP-capable agents.
+Core stays portable: files first, versioned schemas, no provider lock-in. The
+[MCP server](docs/MCP.md) exposes the record, handoff packets, and gate
+checks to any MCP-capable client.
 
 ## When it helps — and when to skip it
 
@@ -252,10 +219,10 @@ what is stable, what is experimental, what is future — lives in one place:
 ## Key docs
 
 - [`docs/START_HERE.md`](docs/START_HERE.md) — the single entry point.
-- [`docs/HARNESS_COMMANDS.md`](docs/HARNESS_COMMANDS.md) — the four verbs in detail.
-- [`docs/HARNESS_ARCHITECTURE.md`](docs/HARNESS_ARCHITECTURE.md) — how the loop is wired.
-- [`docs/ADAPTERS.md`](docs/ADAPTERS.md) — choosing and writing runtime adapters.
-- [`docs/HARNESS_COMMANDS.md#feedback-retry-and-accepted-lessons`](docs/HARNESS_COMMANDS.md#feedback-retry-and-accepted-lessons) — feedback, retries, lessons.
+- [`docs/EVOLUTION_LOOP.md`](docs/EVOLUTION_LOOP.md) — the record, analyze, and gate in detail.
+- [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) — the measured claim ledger with boundaries.
+- [`docs/MCP.md`](docs/MCP.md) — plugging the record into MCP-capable clients.
+- [`docs/STABILITY.md`](docs/STABILITY.md) — command maturity and honest limits, in one place.
 - [`docs/RESUME_WALKTHROUGH.md`](docs/RESUME_WALKTHROUGH.md) — zero-context resume, narrated.
 - [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) — the proof fixture and its boundaries.
 - [`docs/GITHUB_WORKFLOW.md#structural-pr-review-with-open-scaffold`](docs/GITHUB_WORKFLOW.md#structural-pr-review-with-open-scaffold) — PRs that carry intent and evidence.

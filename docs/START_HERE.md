@@ -4,7 +4,7 @@ The single first action for a developer or AI agent entering this repository col
 
 ## What is Open Scaffold?
 
-Open Scaffold is a harness for AI-assisted work. It clarifies messy intent into bounded slices, plans them in the repo, gates execution through explicit adapters, and keeps the whole work record — goal, plan, handoff, evidence, approvals, lessons — in git-tracked files. Any agent or future session can resume the work cold, with no chat history.
+Open Scaffold keeps a repo-native work record for AI-assisted work — goal, plan, attempts, evidence, approvals, lessons — as git-tracked, observed-fact files, and turns it into three things: a handoff packet (`osc handoff`) so a fresh session, a smaller model, or a person resumes from truth instead of inventing history; review (`osc analyze`) and a gate (`osc gate`) so cheap or locally-hosted models can judge recorded work and authorize or block the next attempt. It never runs or disciplines your workflow — you work however you already work; the record accumulates around it.
 
 ## The one first action
 
@@ -16,14 +16,16 @@ npx open-scaffold@latest first-run
 
 Three guided questions produce the minimum work record — `MISSION.md`, one active plan with acceptance criteria, an evidence skeleton — and print the exact commands to run next.
 
-From there, the whole human grammar is four verbs:
+From there, the working grammar is the lifecycle helpers (`osc plan new`, `osc evidence new`, `osc amend`, `osc close`) plus the three-command front door:
 
 ```bash
-osc harness '$interview "clarify the work"'
-osc harness '$plan "describe the slice" --slug my-slice'
-osc harness '$work "implement the slice" --context "plan is ready"'
-osc harness '$team "split work across lanes" --worker implementation --worker review'
+osc handoff   # resume packet so the next session, model, or person continues from truth
+osc analyze <loop-dir>   # review recorded attempts: plateaus, failing criteria, requirements to question
+osc gate <loop-dir>      # authorize or block the next attempt — stop authority outside the worker
 ```
+
+For a new review/gate loop, create `<loop-dir>` first with
+`osc evolve init .osc/plans/active/<plan>.md --out .osc/evolution/<loop-id>`.
 
 ## See the core trick before adopting
 
@@ -42,8 +44,8 @@ npx open-scaffold@latest compare \
 | I want to… | Go to |
 |---|---|
 | Understand the mission and goals | [`MISSION.md`](../MISSION.md) |
-| Learn the harness loop and the four verbs | [`HARNESS_COMMANDS.md`](HARNESS_COMMANDS.md) |
-| See how the loop is wired | [`HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md) |
+| Learn the review-and-gate loop | [`EVOLUTION_LOOP.md`](EVOLUTION_LOOP.md) |
+| See how the record layer is wired | [`HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md) |
 | Pick or write a runtime adapter | [`ADAPTERS.md`](ADAPTERS.md) |
 | Check what is stable vs experimental | [`STABILITY.md`](STABILITY.md) |
 | Understand the version story | [`STABILITY.md#release-status`](STABILITY.md#release-status) |

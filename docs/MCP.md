@@ -54,6 +54,12 @@ Read tools work without extra flags:
 - `search_plans` — full-text search across plan markdown.
 - `list_amendments` — list amendment files for a plan.
 
+The product front door is exposed read-only (plan 167):
+
+- `get_handoff` — compile the handoff/resume packet from repo truth; equivalent to `osc handoff`.
+- `analyze_loop` — analyze a recorded evolution loop: plateau state, per-criterion deltas, recommendation; equivalent to `osc analyze`.
+- `gate_loop` — compute the judgment checkpoint and retry authorization for a loop, optionally folding in an independent judge ruling; equivalent to `osc gate`. The gate rules on the record but cannot modify it, so a cheap or locally-hosted judge model needs no write access.
+
 Write tools are intentionally gated:
 
 - `create_plan`
@@ -181,6 +187,17 @@ Replace `/absolute/path/to/repo` with the Open Scaffold repository you want the 
 }
 ```
 
+### Codex CLI
+
+```bash
+codex mcp add open_scaffold -- node /absolute/path/to/open-scaffold/dist/cli.js mcp serve --repo /absolute/path/to/repo
+```
+
+Name the server with underscores (`open_scaffold`, not `open-scaffold`).
+Observed on codex-cli 0.139.0: tools are namespaced under a sanitized server
+name, and a hyphenated registration makes every tool call fail instantly with
+"user cancelled MCP tool call" while the tool listing still works.
+
 ### Hermes Agent
 
 Hermes configuration uses YAML, but the command shape is the same:
@@ -207,6 +224,8 @@ mcp_servers:
 ## Readiness posture
 
 The current MCP server is useful, local-first, and optional. It is not yet a contract-stable integration surface.
+
+Smoke-verified clients (2026-06-12, plan 167): Claude Code (inline `--mcp-config`, `get_handoff` returned the live resume packet in 3 turns) and Codex CLI 0.139.0 (global `codex mcp add open_scaffold`, same tool, same packet). These are one-shot receipts, not a compatibility matrix.
 
 The 2026-05-29 MCP posture ADR keeps the surface read-oriented while Open Scaffold matures the surrounding contracts. Before MCP is promoted as standardized/conformance-tested, it needs:
 

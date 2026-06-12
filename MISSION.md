@@ -1,33 +1,55 @@
 # Mission
 
-Open Scaffold is a harness for AI-assisted work. It clarifies messy intent into bounded work, plans it in the repo, packages and gates controlled execution through explicit runtime adapters, collects evidence and feedback, enforces retry discipline, and keeps the entire work record in git-tracked files — so humans, agents, and orchestrators can resume, review, and improve work without losing context or ownership.
+Open Scaffold exists to ensure the level-headed distribution of AI-assisted
+work: every task matched — by difficulty, complexity, and sophistication — to
+the model appropriate for the job, without sacrificing speed, quality, or
+visibility of the work done.
+
+The mission is timeless; the means are not. Models, schemas, tools, and
+workflows will keep changing with the technology, and everything below this
+paragraph is expected to change with them. What does not change is the
+commitment: work routed to right-sized intelligence, and a record honest enough
+that whoever comes next — a fresh session, a smaller model, a person — can
+trust what happened instead of taking anyone's word for it.
+
+## How the mission is pursued today (subject to change)
+
+Open Scaffold brings lower-tier, cheaper, and locally-hosted models into
+AI-assisted work as trusted participants. It records what agents actually did as
+git-tracked, observed-fact files (the repo-native work record), compiles that
+record into handoff packets a fresh session or a different model can pick up
+without inventing history, and equips small models to review, gate, and feed
+evidence back to the next attempt — so frontier models are spent only where
+frontier capability is needed, and everything around them runs on rigor instead
+of trust.
 
 ## Goals
 
-- Own the work loop end to end: `$interview` → `$plan` → `$work`/`$team` → evidence → feedback → retry or lesson, with human gates at every authority boundary.
-- Keep the substrate durable and tool-neutral: mission, roadmap, plans, amendments, run packets, receipts, evidence, decisions, and handoffs as git-tracked files any runtime can read.
-- Make resume-after-total-context-loss a first-class, cheap operation: a fresh session continues from compact handoff packets instead of chat archaeology or repo re-exploration.
-- Win measurably on token efficiency, retry discipline, and reviewability — and prove it with reproducible benchmarks instead of prose.
-- Stay provider-neutral: Claude Code, Codex, Gemini, OMC/OMX, or a human terminal execute through one explicit adapter contract; no runtime becomes the canonical brain.
-- Ship the gated work controller path (backlog plan 119) so one verb can drive plan → package → explicit dispatch → receipt → verification without manual command chaining.
+- Make the work record ambient: extracted from observed facts (transcripts, receipts, test results, scores) around any workflow — never worker-authored ceremony, never a tax on the model doing the work.
+- Make handoff lossless and cheap: `osc handoff` compiles the record into a packet that lets the next reader — fresh session, smaller model, other vendor, or human — reconstruct what happened instead of hallucinating it.
+- Make cheap review real: reviewer profiles for low-tier and locally-hosted models (haiku-class, DeepSeek, Qwen, Ollama/MLX) that read the record, judge claims against evidence, and authorize or block the next attempt via `osc analyze` and `osc gate` — with feedback packets that flow upward to the frontier worker's next attempt.
+- Be an open, vendor-neutral standard for recording and handing off agent work: versioned schemas, plain files, a generic MCP server; no runtime becomes the canonical brain.
+- Claim only what is measured, publish the boundaries, and keep the dead claims next to the live ones (evidence: `docs/PROOF_HARNESS.md` and the independent benchmark repo).
 - Dogfood Open Scaffold on Open Scaffold itself: use the framework to grow the framework.
 
 ## Non-Goals
 
 Explicit things this project is NOT trying to do. Legitimate scope discipline starts here. When new information arrives that would change what belongs in this list, follow the amendment protocol in `.osc/plans/README.md` — do not silently edit the list.
 
-- Open Scaffold does not hide execution: runtimes launch only through an explicit adapter id, explicit spawn authority, and human gates — never as a silent side effect of core commands. Any expansion of execution authority requires an architectural decision record, security analysis, and owner approval rather than scope creep.
+- Open Scaffold does not run, orchestrate, or discipline the worker's loop. The measured verdict stands: workers self-administering protocol got worse, not better. Judgment lives outside the worker; execution belongs to whatever workflow the user already runs.
+- Open Scaffold does not claim to improve a frontier model's in-session output — a measured non-goal, kept published.
 - Open Scaffold core does not make Discord, Slack, Telegram, or any chat surface the source of truth.
-- Open Scaffold core does not require Hermes, Claw/OpenClaw, Claude Code, Codex, Gemini, OMC, OMX, or any other specific runtime.
-- Open Scaffold core does not treat OMC/OMX as equivalent to orchestrator agents: OMC is a Claude Code workflow harness; OMX is a Codex workflow/execution harness.
-- Open Scaffold core does not store secrets, private Command Center state, raw runtime sessions, or uncurated agent logs as public product truth.
-- Open Scaffold core does not replace GitHub Issues/branches/PRs for public/versioned implementation work.
+- Open Scaffold core does not require Claude Code, Codex, Gemini, OMC, OMX, or any other specific runtime; capture adapters are thin and optional.
+- Open Scaffold core does not store secrets, raw runtime sessions, or uncurated agent logs as public product truth; records are curated, redacted, observed facts.
+- Open Scaffold core does not replace GitHub Issues/branches/PRs for public/versioned implementation work, and it is not a compliance certification.
 
 ## Changelog
 
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-12: closed 167-provenance-review-pivot — Product recentered on record/handoff/review-gate with receipts: read-only MCP front door smoke-tested vs Claude Code and Codex, OpenAI-compatible reviewer profile validated with a local judge on a real record, live ambient SessionEnd hook, and a 6/8-to-8/8 judge-feeds-worker run; $-verb removal staged as plan 168.
+- 2026-06-12: Owner interview answers folded in: primary customer is the cheap/local-model enablement story (DeepSeek/Qwen/MLX-local reviewers in scope NOW via an OpenAI-compatible reviewer profile, plus a cheap-judge-feeds-frontier-worker validation run); generic MCP from day one tested against Claude Code and Codex; aliases osc handoff/review/gate become the front door; the harness $-verb grammar leaves every public surface with deprecation labels and its code removal becomes a follow-up plan; README/mission rewritten product-first with a short evidence section rather than the self-conviction narrative; doc budget may grow slightly; Spike A live hooks run on open-scaffold itself. — see .osc/plans/active/167-provenance-review-pivot-amendment-1.md
 - 2026-06-12: closed 166-claim-ledger-repositioning — Plan 166 completed by PR #209 after refresh on merged PR #208 and full 631-test verification.
 - 2026-06-12: closed 165-harness-enforced-evolution-loop — Plan 165 completed by PR #208 after latest-head Codex clean review and 631-test verification.
 - 2026-06-10: Lock the v2 design: the three mechanism benchmarks run on one shared visual substrate (a seeded canvas game with deterministic event-log replays) built in an independent benchmark repo per the 2026-06-01 correction; arms are naked, naked+minimal-checklist, and open-scaffold with the evolve loop as the retry-trap instrument; execution lane is Claude headless on subscription, so budget is recorded as captured token counts from CLI usage fields, never invented USD. — see .osc/plans/active/163-proof-harness-v2-amendment-1.md

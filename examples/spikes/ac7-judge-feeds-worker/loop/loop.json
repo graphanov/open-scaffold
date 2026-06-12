@@ -1,0 +1,77 @@
+{
+  "schema": "open-scaffold.evolution-loop.v1",
+  "loop_id": "20260612T165145Z-parse-duration-evolution",
+  "idempotency_key": "evolve:plan:parse-duration:77ff2ef1b671e533",
+  "created_at": "2026-06-12T16:51:45.233Z",
+  "updated_at": "2026-06-12T16:51:45.233Z",
+  "subject": {
+    "source": "plan",
+    "plan": ".osc/plans/active/parse-duration.md",
+    "plan_slug": "parse-duration",
+    "task_id": null,
+    "run_id": null,
+    "run_packet": null
+  },
+  "objective": "`parse-duration.mjs` exports a default `parseDuration(input)` that converts\nduration strings into total seconds and satisfies all eight acceptance criteria.",
+  "constraints": {
+    "hard": [
+      "Plain Node ESM, zero dependencies, single file.",
+      "No CLI, no formatting helpers, no test files required of the worker."
+    ],
+    "soft": []
+  },
+  "acceptance_criteria": [
+    "AC1: parseDuration('90s') returns 90.",
+    "AC2: parseDuration('1h30m') returns 5400.",
+    "AC3: parseDuration('2d') returns 172800.",
+    "AC4: whitespace is tolerated — parseDuration(' 1h 30m ') returns 5400.",
+    "AC5: units are case-insensitive — parseDuration('1H30M') returns 5400.",
+    "AC6: fractional values work — parseDuration('1.5h') returns 5400.",
+    "AC7: invalid input (empty string, non-string, unparseable text) throws TypeError.",
+    "AC8: negative durations (e.g. '-5m') throw RangeError."
+  ],
+  "scorer": {
+    "kind": "human",
+    "name": "maintainer",
+    "approval_authority": false,
+    "notes": "Scorer output is evidence for a maintainer/operator decision; it is not automatic approval."
+  },
+  "mutation_surface": [
+    "implementation",
+    "prompt-or-handoff",
+    "runtime-profile",
+    "docs",
+    "plan-amendment"
+  ],
+  "strategy": {
+    "name": "greedy",
+    "executes_in_core": false,
+    "notes": "Open Scaffold records strategy metadata only; external coordinators/adapters execute attempts."
+  },
+  "stop_condition": {
+    "max_attempts": null,
+    "all_acceptance_criteria_pass": true,
+    "human_approval": true,
+    "blocked_dependency": true,
+    "budget_limit": null,
+    "explicit_owner_stop": true
+  },
+  "source_refs": [
+    ".osc/plans/active/parse-duration.md"
+  ],
+  "artifacts": {
+    "attempts": "attempts.jsonl",
+    "frontier": "frontier.json"
+  },
+  "boundary": {
+    "runtime_spawning": false,
+    "model_benchmarking": false,
+    "compliance_certification": false,
+    "approval_or_release_decision": false,
+    "external_anchoring": false
+  },
+  "notes": [
+    "This loop records multi-attempt evolution state and frontier promotion. It does not spawn runtimes, rank models, certify compliance, or approve release.",
+    "Runtime attempts are executed by external coordinators/adapters such as OMX, OMC, Hermes, or human/manual lanes."
+  ]
+}

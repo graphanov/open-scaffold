@@ -1,4 +1,28 @@
-# Evolution Loop Contract
+# Evolution Loop Contract — the record and the gate
+
+This is the engine behind the product front door: `osc analyze` (alias of
+`osc evolve analyze`) reads recorded attempts and reports plateaus, failing
+criteria, and requirements that deserve questioning; `osc gate` (alias of
+`osc evolve checkpoint`) converts that — plus an optional independent judge
+ruling — into a retry authorization with stop authority OUTSIDE the worker.
+
+One boundary is measured, not stylistic: the worker must not administer this
+loop about itself. In benchmark trials, workers maintaining their own loop
+records performed worse than naked workers (self-graded homework, sunk-cost
+retries, hand-typed telemetry the analysis cannot use); a coordinator-driven
+loop with the same machinery repaired exactly that failure. Records are written
+by the coordinator or extracted ambiently from observed facts — never as worker
+ceremony. Evidence and boundaries: `docs/PROOF_HARNESS.md`.
+
+An external reviewer can supply the gate's ruling: `osc gate <loop-dir>
+--judge-endpoint <url> --judge-model <name>` sends the rendered analysis to any
+OpenAI-compatible chat endpoint (Ollama or MLX locally, DeepSeek, Qwen, or a
+hosted gateway) and folds the returned ruling into the checkpoint. API keys are
+passed by environment variable name (`--judge-api-key-env <VAR>`), never as
+values. The judge reads the record and rules; it cannot modify the record, and
+a permissive ruling does not bypass packet-level blocks such as
+`redesign_required_before_retry`. This is the only network call on the gate
+path, and it happens only when an endpoint is named explicitly.
 
 Open Scaffold's normal close loop handles one slice or one run:
 

@@ -25,6 +25,7 @@ import { computePrCheck, renderPrCheckMarkdown } from './pr-check.js';
 import { computePrSummary, renderPrSummaryMarkdown } from './pr-summary.js';
 import { loadRuntimeProfiles, resolveRuntimeProfile } from './runtimes.js';
 import { compileResume, MAX_RESUME_MAX_CHARS, MIN_RESUME_MAX_CHARS } from './resume.js';
+import { requestJudgeRuling } from './reviewer.js';
 import { closePlan, createEvidenceNoteSkeleton, createPlanAmendment, createPlanSkeleton, findScaffoldRoot, inspectScaffold, listPlanTemplates, movePlan, parsePlanFile, planToJson, PLAN_CREATION_STAGES, type PlanCreationStage } from './scaffold.js';
 import { renderSchemaDetail, renderSchemaList, schemaById, SCHEMA_REGISTRY } from './schema-registry.js';
 import { buildTrace, formatTraceReport, TraceUsageError } from './trace.js';
@@ -46,23 +47,22 @@ function rootPackageVersion(): string {
 function coreHelp(): string {
   return `osc — Open Scaffold CLI
 
-The harness loop: $interview -> $plan -> $work or $team -> evidence -> feedback -> retry or lesson
-A fresh session resumes from the repo, not the chat.
+Records, handoff packets, and cheap-model review for AI-assisted work.
+A fresh session — or a smaller model — picks up from repo truth, not chat history.
 
 Start:
   osc first-run                                guided mission + first plan (scripts: --non-interactive --slug --mission --goal)
   osc init --tier <min|standard|max> --target <dir>
-  osc resume [--json] [--plan <slug>] [--max-chars <n>]
 
-Work (the four verbs):
-  osc harness '$interview "clarify the work"'
-  osc harness '$plan "describe the slice" --slug <slug>'
-  osc harness '$work "implement the slice" --context "plan is ready"'
-  osc harness '$work ... --adapter <id> --allow-spawn'
-  osc harness '$team "split lanes" --worker <id> --worker <id>'
-  osc harness status <run-id> | osc harness answer <run-id> --gate <id> --answer <text>
+Handoff (compile the work record into a resume packet):
+  osc handoff [--json] [--plan <slug>] [--max-chars <n>]
+  osc resume [--json] [--plan <slug>] [--max-chars <n>]        same command, original name
 
-Record:
+Review and gate (judgment over recorded attempts):
+  osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>]
+  osc gate <loop-dir> [--judge-action <continue|stop_impossible|stop_blocked>] [--format <terminal|markdown|json>]
+
+Structured intent (optional criteria source for claims-vs-actual checks):
   osc status [--json]
   osc plan new <slug> --stage <active|backlog|blocked>
   osc amend <plan-slug> [--message <text>]
@@ -71,7 +71,7 @@ Record:
   osc close <plan-slug> [--message <text>]
 
 More:
-  osc help --all          full surface: run packets, adapters, dispatch, evolve, bench, prove, audit, MCP, cockpit, schemas, trace, pr
+  osc help --all          full surface: schemas, MCP server, compare/trace, eval; deprecated runtime-dispatch surfaces are labeled
 `;
 }
 
@@ -89,6 +89,9 @@ First-read demo:
   osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]
 
 Stable core protocol:
+  osc handoff [--json] [--plan <slug>] [--max-chars <n>]      alias of osc resume
+  osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>]      alias of osc evolve analyze
+  osc gate <loop-dir> [--judge-action <action> | --judge-endpoint <url> --judge-model <name>]      alias of osc evolve checkpoint
   osc resume [--json] [--plan <slug>] [--max-chars <n>]
   osc status [--json]
   osc plan <plan-path>
@@ -106,7 +109,7 @@ Stable core protocol:
   osc schemas list [--json]
   osc schemas show <schema-id>
 
-Handoff and run packages:
+Handoff and run packages:  [deprecated runtime-dispatch surfaces; removal staged — docs/STABILITY.md#command-maturity]
   osc start <plan-slug-or-path> --runtime <codex|omx|plain|human|custom>
   osc delegate <plan-path> [run binding options]
   osc run <plan-path> [--dry-run] [--json] [run binding options]
@@ -119,7 +122,7 @@ Handoff and run packages:
   osc runtimes list [--json]
   osc runtimes show <id>
 
-Harness command surface:
+Harness command surface:  [deprecated; the $-verb grammar leaves the product — removal staged as plan 168]
   primary UX: $interview | $plan | $work | $team
   osc harness '$interview ...' [--json]
   osc harness '$plan ...' [--json]
@@ -145,7 +148,7 @@ Lab and experimental:
   osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> [--repair-hypothesis <text>] [--target-metric <name>] [--expected-gain <number>] [--actual-delta <number>] [--tokens-total <integer>] [--estimated-usd <number>] [--usage-source <source>] [--usage-unavailable-reason <text>]
   osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>]
   osc evolve analyze <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>]
-  osc evolve checkpoint <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--judge-action <continue|stop_impossible|stop_blocked>] [--judge-impossible-ac <id>]... [--judge-rationale <text>]
+  osc evolve checkpoint <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--judge-action <continue|stop_impossible|stop_blocked>] [--judge-impossible-ac <id>]... [--judge-rationale <text>] [--judge-endpoint <url> --judge-model <name> [--judge-api-key-env <VAR>] [--judge-timeout-ms <n>]]
   osc evolve check <loop-dir>
   osc cockpit config
   osc cockpit test [--dry-run]
@@ -670,7 +673,7 @@ function proofCommand(args: string[]): void {
   die('Usage: osc prove compare|check <manifest.json>', 2);
 }
 
-function evolveCommand(args: string[]): void {
+async function evolveCommand(args: string[]): Promise<void> {
   const sub = args[0] ?? die('Usage: osc evolve init|record|compare|analyze|checkpoint|check');
   if (isHelpArg(sub)) { console.log('Usage: osc evolve init|record|compare|analyze|checkpoint|check <args>'); return; }
   if (sub === 'init') {
@@ -715,12 +718,27 @@ function evolveCommand(args: string[]): void {
     const format = (value(args, '--format') ?? 'terminal') as EvolutionAnalysisFormat;
     const judgeAction = value(args, '--judge-action') as EvolutionJudgeAction | undefined;
     if (judgeAction && !['continue', 'stop_impossible', 'stop_blocked'].includes(judgeAction)) die('Invalid --judge-action. Expected continue, stop_impossible, or stop_blocked.', 2);
-    const analysis = analyzeEvolutionLoop(args[1] ?? die('Usage: osc evolve checkpoint <loop-dir>'), { plateauThreshold: value(args, '--plateau-threshold') ? Number(value(args, '--plateau-threshold')) : undefined }, process.cwd());
-    const checkpoint = buildEvolutionJudgmentCheckpoint(analysis, judgeAction ? {
+    const judgeEndpoint = value(args, '--judge-endpoint');
+    const judgeModel = value(args, '--judge-model');
+    if (judgeEndpoint && judgeAction) die('Use either --judge-action (manual ruling) or --judge-endpoint (external reviewer), not both.', 2);
+    if ((judgeEndpoint ? 1 : 0) + (judgeModel ? 1 : 0) === 1) die('--judge-endpoint and --judge-model must be provided together.', 2);
+    const analysis = analyzeEvolutionLoop(args[1] ?? die('Usage: osc evolve checkpoint <loop-dir> [--judge-action <ruling>] [--judge-endpoint <url> --judge-model <name>]'), { plateauThreshold: value(args, '--plateau-threshold') ? Number(value(args, '--plateau-threshold')) : undefined }, process.cwd());
+    let judge: { action: EvolutionJudgeAction; impossibleAcs?: string[]; rationale?: string } | null = judgeAction ? {
       action: judgeAction,
       impossibleAcs: values(args, '--judge-impossible-ac'),
       rationale: value(args, '--judge-rationale'),
-    } : null);
+    } : null;
+    if (judgeEndpoint && judgeModel) {
+      const ruled = await requestJudgeRuling({
+        endpoint: judgeEndpoint,
+        model: judgeModel,
+        apiKeyEnv: value(args, '--judge-api-key-env'),
+        timeoutMs: value(args, '--judge-timeout-ms') ? Number(value(args, '--judge-timeout-ms')) : undefined,
+      }, renderEvolutionAnalysis(analysis, 'markdown'));
+      judge = ruled.ruling;
+      console.error(`External judge ${ruled.model} via ${ruled.endpoint}: action=${ruled.ruling.action}${ruled.usage.totalTokens !== null ? `, tokens=${ruled.usage.totalTokens}` : ''}`);
+    }
+    const checkpoint = buildEvolutionJudgmentCheckpoint(analysis, judge);
     const output = renderEvolutionJudgmentCheckpoint(checkpoint, format);
     const out = value(args, '--out') ?? value(args, '--output');
     if (out) { writeFileSync(resolve(out), output); console.log(`Wrote evolution checkpoint: ${resolve(out)}`); }
@@ -1020,6 +1038,11 @@ async function main(): Promise<void> {
       case 'init': initCommand(args); return;
       case 'first-run': await firstRunCommand(args); return;
       case 'resume': resumeCommand(args); return;
+      // Product-named front door (plan 167): handoff/analyze/gate are stable
+      // aliases of resume / evolve analyze / evolve checkpoint.
+      case 'handoff': resumeCommand(args); return;
+      case 'analyze': await evolveCommand(['analyze', ...args]); return;
+      case 'gate': await evolveCommand(['checkpoint', ...args]); return;
       case 'status': statusCommand(args); return;
       case 'plan': planCommand(args); return;
       case 'amend': lifecycleCommand('amend', args); return;
@@ -1036,7 +1059,7 @@ async function main(): Promise<void> {
       case 'pr': prCommand(args); return;
       case 'audit': auditCommand(args); return;
       case 'prove': proofCommand(args); return;
-      case 'evolve': evolveCommand(args); return;
+      case 'evolve': await evolveCommand(args); return;
       case 'mcp': process.exitCode = await runMcpCommand(args); return;
       case 'cockpit': await cockpitCommand(args); return;
       case 'schemas': schemasCommand(args); return;
