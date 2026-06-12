@@ -8,6 +8,7 @@ import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, typ
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type RunArtifactOptions, type RuntimeWorkflow } from './artifacts.js';
 import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
 import { compareBareAttempts, compareProofManifest, renderAttemptComparisonJson, renderAttemptComparisonMarkdown, renderProofComparison, validateProofManifestFile, type ProofRenderFormat } from './compare.js';
+import { CAPTURE_FORMATS, CaptureUsageError, captureRecord, defaultOutPath, isCaptureFormat, writeCaptureRecord, type CaptureFormat } from './capture.js';
 import { collectEvidence } from './evidence.js';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, analyzeEvolutionLoop, buildEvolutionJudgmentCheckpoint, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionAnalysis, renderEvolutionComparison, renderEvolutionJudgmentCheckpoint, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionAnalysisFormat, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionJudgeAction, type EvolutionStrategy } from './evolution.js';
@@ -55,6 +56,9 @@ Handoff (compile the work record into a resume packet):
   osc handoff [--json] [--plan <slug>] [--max-chars <n>]
   osc resume [--json] [--plan <slug>] [--max-chars <n>]        same command, original name
 
+Record (extract an ambient work record from a finished session transcript):
+  osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> [--out <path>] [--detect]
+
 Review and gate (judgment over recorded attempts):
   osc review <loop-dir> [--compact] [--format <terminal|markdown|json>]        front door
   osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>]       same command
@@ -101,6 +105,7 @@ Stable core protocol:
   osc amend <plan-slug> [--message <text>]
   osc evidence new <slug>
   osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
+  osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> [--out <path>] [--detect] [--session-id <id>] [--repo <root>] [--hook-safe]
   osc close <plan-slug> [--message <text>]
   osc trace <plan-slug> [--json] [--include-unverified]
   osc verify [--evidence-chain [--plan <slug>] [--json] [--strict] [--online-github]]
@@ -952,6 +957,75 @@ function benchCommand(args: string[]): void {
   die(benchHelp(), 2);
 }
 
+function captureHelp(): string {
+  return [
+    `Usage: osc capture --from <${CAPTURE_FORMATS.join('|')}> --transcript <path> [--out <path>] [--detect] [--session-id <id>] [--repo <root>] [--json] [--hook-safe]`,
+    '',
+    'Extract an osc.ambient-work-record.v1 record from a finished agent-session transcript:',
+    'assistant turns, token usage, tool-call census, files touched, session span, and a',
+    'redacted final-message digest. Read-only on the transcript; writes one record file.',
+    '',
+    '  --from <format>     transcript format: claude-code | codex | jsonl-generic',
+    '  --transcript <path> path to the session JSONL to read',
+    '  --detect            sniff the format from the first parseable lines (exit 2 on ambiguity)',
+    '  --out <path>        record output path (default: .osc-dev/ambient/<session-id>.json in an .osc repo)',
+    '  --hook-safe         never exit non-zero on bad/missing input (for SessionEnd-style hook wrappers)',
+    '',
+    'capture observes facts; it does not approve work, certify correctness, or spawn a runtime.',
+  ].join('\n');
+}
+
+// `osc capture` runs after a session ends and must be hook-safe: a malformed or missing
+// transcript can never break the triggering session. Exit-code contract:
+//   - successful capture -> 0
+//   - direct CLI misuse (bad --from, no --transcript, no --from/--detect) -> 2
+//   - with --hook-safe, any data problem -> 0 (the hook wrapper records nothing, quietly)
+// All errors are caught here; nothing bubbles to main()'s catch (which would exit 1).
+function captureCommand(args: string[]): void {
+  if (isHelpArg(args[0])) { console.log(captureHelp()); return; }
+  validateOptions(args, ['--from', '--transcript', '--out', '--output', '--session-id', '--repo'], ['--detect', '--json', '--hook-safe'], 'capture');
+  const hookSafe = has(args, '--hook-safe');
+  const fail = (message: string): void => {
+    if (hookSafe) return; // hook wrapper path: record nothing, never break the session
+    die(message, 2);
+  };
+
+  const fromRaw = value(args, '--from');
+  let format: CaptureFormat | undefined;
+  if (fromRaw !== undefined) {
+    if (!isCaptureFormat(fromRaw)) { fail(`Invalid --from value: ${fromRaw}. Expected one of: ${CAPTURE_FORMATS.join(', ')}`); return; }
+    format = fromRaw;
+  }
+  const detect = has(args, '--detect');
+  if (!format && !detect) { fail('Specify --from <claude-code|codex|jsonl-generic> or pass --detect.'); return; }
+
+  const transcriptPath = value(args, '--transcript');
+  if (!transcriptPath) { fail('Missing --transcript <path>.'); return; }
+
+  const repoRoot = value(args, '--repo') ?? findScaffoldRoot(process.cwd()) ?? process.cwd();
+
+  try {
+    const result = captureRecord({ transcriptPath, format, detect, sessionId: value(args, '--session-id') });
+    const runId = String(result.record.runId);
+    const explicitOut = value(args, '--out') ?? value(args, '--output');
+    const outPath = explicitOut ?? defaultOutPath(repoRoot, runId);
+    const writtenPath = writeCaptureRecord(repoRoot, outPath, result.record, explicitOut !== undefined);
+    if (has(args, '--json')) {
+      console.log(JSON.stringify({ path: relativeToCwd(writtenPath), format: result.format, detected: result.detected, record: result.record }, null, 2));
+    } else {
+      const observed = result.record.observed as { assistant_turns?: number };
+      const runtime = result.record.runtime as { tokenTotal?: number };
+      console.log(`Wrote ambient record (${result.format}${result.detected ? ', detected' : ''}): ${relativeToCwd(writtenPath)}`);
+      console.log(`runId=${runId} turns=${observed.assistant_turns ?? 0} tokenTotal=${runtime.tokenTotal ?? 0} schema=${result.record.schema}`);
+    }
+  } catch (error) {
+    if (error instanceof CaptureUsageError) { fail(error.message); return; }
+    // Any other failure (e.g. an unsafe output path) is still hook-safe under --hook-safe;
+    // otherwise surface it as a usage error rather than letting it become an exit-1 crash.
+    fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
 function removed(command: string): never {
   die(`osc ${command} was removed/repositioned by the framework cleanup. See docs/STABILITY.md#command-maturity for shipped migration notes.`, 2);
 }
@@ -986,6 +1060,7 @@ async function main(): Promise<void> {
       case 'amend': lifecycleCommand('amend', args); return;
       case 'close': lifecycleCommand('close', args); return;
       case 'evidence': evidenceCommand(args); return;
+      case 'capture': captureCommand(args); return;
       case 'verify': verifyCommand(args); return;
       case 'trace': traceCommand(args); return;
       case 'start': startCommand(args); return;
