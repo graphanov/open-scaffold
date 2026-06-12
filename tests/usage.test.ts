@@ -158,14 +158,12 @@ describe('parseUsageReceipts', () => {
 describe('aggregateUsage', () => {
   it('groups by benchmark, task_id, arm and sums tokens across receipts', () => {
     const { receipts } = parseUsageReceipts([
-      JSON.stringify({ ...baseReceipt, run_id: 'r1', usage: { input_tokens: 100, output_tokens: 200 } }),
+      JSON.stringify({ ...baseReceipt, run_id: 'r1', usage: { input_tokens: 100, output_tokens: 200 }, num_turns: undefined, duration_ms: undefined }),
       JSON.stringify({ ...baseReceipt, run_id: 'r2', usage: { input_tokens: 300, output_tokens: 400 } }),
     ].join('\n'));
     const ledger = aggregateUsage(receipts);
     expect(ledger.rows).toHaveLength(1);
-    expect(ledger.rows[0].runCount).toBe(2);
-    expect(ledger.rows[0].inputTokens).toBe(400);
-    expect(ledger.rows[0].outputTokens).toBe(600);
+    expect([ledger.rows[0].runCount, ledger.rows[0].inputTokens, ledger.rows[0].outputTokens, ledger.rows[0].numTurns, ledger.rows[0].durationMs]).toEqual([2, 400, 600, null, null]);
   });
 
   it('keeps separate groups for different arms', () => {

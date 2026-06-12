@@ -43,8 +43,8 @@ export interface UsageLedgerRow {
   outputTokens: number;
   cacheCreationInputTokens: number;
   cacheReadInputTokens: number;
-  numTurns: number;
-  durationMs: number;
+  numTurns: number | null;
+  durationMs: number | null;
   /** null unless EVERY receipt in the group carries a numeric total_cost_usd */
   costUsdTotal: number | null;
 }
@@ -228,8 +228,8 @@ export function aggregateUsage(receipts: UsageReceipt[]): UsageLedger {
     row.outputTokens += receipt.usage.output_tokens ?? 0;
     row.cacheCreationInputTokens += receipt.usage.cache_creation_input_tokens ?? 0;
     row.cacheReadInputTokens += receipt.usage.cache_read_input_tokens ?? 0;
-    row.numTurns += receipt.num_turns ?? 0;
-    row.durationMs += receipt.duration_ms ?? 0;
+    row.numTurns = row.numTurns === null || receipt.num_turns === undefined ? null : row.numTurns + receipt.num_turns;
+    row.durationMs = row.durationMs === null || receipt.duration_ms === undefined ? null : row.durationMs + receipt.duration_ms;
 
     // Cost honesty: if ANY receipt in the group lacks a numeric cost, null the group.
     const hasCost = typeof receipt.total_cost_usd === 'number' && !receipt.usage_source.includes('subscription');
