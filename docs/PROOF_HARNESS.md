@@ -2,6 +2,53 @@
 
 Status: lab/experimental, source-labeled, bounded comparison surface.
 
+## The benchmark program (2026-06): the claim ledger
+
+Plan 163's intent was executed in an independent benchmark repo (harness-bench;
+published under `github.com/graphanov` once the owner flips the publish gate).
+Method: preregistration with amendments-only changes, hidden seed/input pairs
+with pre-committed hashes, a clean-room blind second implementation proving the
+task spec unambiguous, submission-mode central scoring, per-invocation usage
+receipts, and pre-committed kill rules. Every number below is pilot-grade (n=1
+per cell unless stated; one worker model, claude-sonnet-4-6) and traces to
+committed raw JSONL in that repo's `results/` directories.
+
+**Measured dead (kept at equal prominence — the credibility asset):**
+
+- In-session task improvement for a strong model: naked matched or beat every
+  scaffolded arm across the retry-trap, cold-resume, and multi-slice campaigns.
+- Retry discipline as a strong-model benefit: the self-administered protocol arm
+  failed both decision cells (a five-attempt false-claim plateau and a
+  regression chase); the naked arm stopped correctly.
+- Unconditional "cheaper resumes": with near-zero recoverable state at
+  interruption, every gram of harness overhead was pure cost.
+- Cross-session memory carry at five slices: all four arms produced identical
+  perfect conformance; the record added 7-10% cost and no quality.
+
+**Measured alive:**
+
+- **Reviewability (review-1; the core claim):** six real finished workspaces,
+  each judged by a fresh reviewer with and without the record, graded
+  mechanically against pre-committed keys — accuracy **94% vs 30%**, confident
+  wrong history answers **0 vs 8** (sensitivity analysis included), review cost
+  **halved** (24.9k vs 46.5k judge tokens). All three preregistered hypotheses
+  confirmed; the pre-committed kill rule passed in the record's favor.
+- **Conditional resume value:** with substantial recoverable state, the
+  runner-carried record packet re-established a fresh session's context ~3x
+  cheaper than naked rediscovery (8.5k vs 25.2k tokens); with no state it paid
+  nothing. Resume value is a function of recoverable state, not a constant.
+- **Enforcement as self-repair:** the judgment checkpoint plus a clean-context
+  judge converted the protocol's own worst failure (the false-claim plateau)
+  into a correct stop carrying a 100,000-seed impossibility proof — at 67% of
+  the failed arm's cost, still above naked.
+
+**Untested:** weak-model rescue (haiku tier), ambient zero-worker-cost records
+(C-ambient; review-2 in flight at the time of writing), the D-light minimal-gate
+overhead floor, human-reviewer replication, multi-agent coordination.
+
+The sections below describe the older bounded `osc prove` fixture, which remains
+a separate, narrower comparison surface.
+
 `osc prove` is Open Scaffold's answer to a hard question: *is the scaffold actually better than a naked agent run, or are we just telling ourselves a nice story?* Bounded fixture proof only: every result is tied to the supplied receipts and caveats.
 
 The command does not run Codex, call an LLM, rank models, approve work, or certify correctness. It reads a committed manifest plus source-labeled receipts and renders the comparison honestly, including ties and regressions.
