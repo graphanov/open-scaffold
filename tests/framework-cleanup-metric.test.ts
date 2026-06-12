@@ -15,11 +15,12 @@ const cleanupBaselineLoc = 20_890;
 // Surface collapse and resume (plan 162) adds the read-only resume packet compiler, the core/full help split, and the shared packet redaction helper.
 // Codex hardening for plan 162 redacts JSON/run/plan identifiers, missing-plan errors, workspace paths, .osc/run/evidence/lesson symlinks and unsafe lesson roots/stores, mission/plan-file/stage/root symlinks, and fixes final evidence-before-verify resume guidance.
 // Docs-tranche downstream template hardening adds a standard-tier task/run template so generated scaffolds avoid broken links to max-tier docs.
+// 163: +src/usage.ts usage-receipt ledger (+277 LOC, +1 file)
 // 165: evolution enforced-loop auto-fill + fingerprint plateau (+170 LOC)
 // 165 follow-up: question-the-requirement fires with scores present; reachability-reason filter (+4 LOC)
 // 165 completion: product-side judgment checkpoint + ambient postflight record (+298 LOC, +1 file)
-const cleanupTargetLoc = 16_563;
-const cleanupTargetFiles = 40;
+const cleanupTargetLoc = 16_840;
+const cleanupTargetFiles = 41;
 
 interface MaintainedSourceFile {
   path: string;
@@ -61,7 +62,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(16_563);
+    expect(cleanupTargetLoc).toBe(16_840);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);
