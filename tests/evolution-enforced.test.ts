@@ -280,6 +280,19 @@ describe('165 evolution fingerprint plateau detection', () => {
     expect(analysis.plateau.status).not.toBe('plateau');
   });
 
+  it('does not report frozen fingerprints as plateau while scores improve', () => {
+    const { root, outDir } = writeScorelessFingerprintLoop(['fail', 'fail', 'fail']);
+    const attemptsPath = join(outDir, 'attempts.jsonl');
+    const attempts = readFileSync(attemptsPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    attempts.forEach((attempt, index) => { attempt.score = (index + 1) / 10; });
+    writeFileSync(attemptsPath, `${attempts.map((attempt) => JSON.stringify(attempt)).join('\n')}\n`);
+
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+
+    expect(analysis.plateau).toMatchObject({ status: 'improving', fingerprintPlateau: true });
+    expect(analysis.recommendation.action).toBe('continue');
+  });
+
   it('does not report a fingerprint plateau with only two frozen attempts', () => {
     const { root, outDir } = writeScorelessFingerprintLoop(['fail', 'fail']);
 

@@ -509,7 +509,7 @@ describe('osc evolve CLI', () => {
     expect(efficiency.additionalTargetsAtLeastOnePointFiveX).toBeGreaterThanOrEqual(10);
     expect(efficiency.publicSummaryTargetsAtLeastOnePointFiveX).toBeGreaterThanOrEqual(10);
     expect(efficiency.publicSummaryTargetsAtLeastOnePointFiveX).toBeLessThan(efficiency.additionalTargetsAtLeastOnePointFiveX);
-    expect(efficiency.marginalTargets).toContain('target.terminal.packet_to_action_block');
+    expect(efficiency.marginalTargets).not.toContain('target.terminal.packet_to_action_block');
     expect(efficiency.targets).toHaveLength(12);
     expect(efficiency.caveats.join('\n')).toContain('not model intelligence');
 

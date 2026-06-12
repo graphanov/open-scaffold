@@ -753,7 +753,8 @@ describe('evolution analysis', () => {
       reasons: expect.arrayContaining(['probe_only']),
     });
     expect(analysis.recommendation).toMatchObject({ action: 'redesign' });
-    expect(analysis.recommendation.summary).toContain('remaining failing criteria');
+    expect(analysis.recommendation.reasons).toContain('question_the_requirement');
+    expect(analysis.recommendation.summary).toContain('question');
     expect(analysis.nextActionPacket).toMatchObject({
       schema: EVOLUTION_NEXT_ACTION_PACKET_SCHEMA,
       recommendedAction: 'redesign',
@@ -834,8 +835,8 @@ describe('evolution analysis', () => {
     expect(report.targets).toHaveLength(12);
     expect(report.targets.every((target) => target.requiredFieldsPreserved)).toBe(true);
     expect(report.targets.find((target) => target.id === 'target.markdown.control_to_compact_bullets')?.requiredFields).not.toContain('summary');
-    expect(report.targets.find((target) => target.id === 'target.terminal.packet_to_action_block')).toMatchObject({ classification: 'marginal', publicSummaryCounted: false });
-    expect(report.marginalTargets).toContain('target.terminal.packet_to_action_block');
+    expect(report.targets.find((target) => target.id === 'target.terminal.packet_to_action_block')).toMatchObject({ classification: 'strong', publicSummaryCounted: true });
+    expect(report.marginalTargets).not.toContain('target.terminal.packet_to_action_block');
     expect(report.baseline.requiredControlFieldsPresent).toBe(report.compact.requiredControlFieldsPresent);
     expect(report.compact.requiredControlFieldRatio).toBe(1);
     expect(report.telemetry).toMatchObject({ present: 2, total: 3, missing: ['estimated_usd'] });

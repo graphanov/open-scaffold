@@ -1413,7 +1413,7 @@ function analyzePlateau(attempts: EvolutionCompareAttempt[], threshold: number, 
   // 165: a stable AC-state fingerprint across >=3 consecutive attempts escalates
   // a non-regressed score path to plateau, so frozen criteria are reported even
   // when the score wobbles below the threshold.
-  if (fingerprintPlateau && status !== 'regressed' && status !== 'plateau') {
+  if (fingerprintPlateau && status === 'stagnating') {
     status = 'plateau';
     noImprovementCount = Math.max(noImprovementCount, trailingFingerprintRun(fingerprints) - 1);
   }
@@ -1500,14 +1500,6 @@ function recommendAnalysis(plateau: EvolutionAnalysisResult['plateau'], criteria
     return { action: 'stop', summary: 'Current evaluation has all criteria passing; stop retrying and route to human approval/closeout.', reasons: ['all_current_criteria_pass'] };
   }
   const plateaued = plateau.status === 'plateau' || plateau.status === 'stagnating';
-  const remainingNonMoving = remaining.every((criterion) => criterion.impossible || criterion.sensitivity === 'none');
-  if (plateaued && missingCurrent.length === 0 && remainingNonMoving) {
-    return {
-      action: 'redesign',
-      summary: `Plateaued with ${remaining.length} remaining failing criteria that are impossible or not moving the score; redesign the criterion, scorer, artifact shape, or benchmark instead of retrying.`,
-      reasons: ['plateau', 'remaining_failures_non_score_moving'],
-    };
-  }
   // 165: zero-sensitivity plateau — criteria failing in every attempt with no
   // observed delta, with or without score signals (plan 165 AC3: a coordinator
   // recording scores must still get the question-the-requirement prompt). The
@@ -1523,6 +1515,14 @@ function recommendAnalysis(plateau: EvolutionAnalysisResult['plateau'], criteria
       action: 'redesign',
       summary: `Plateaued with ${alwaysFailing.length} remaining failing criteria (${ids}) that failed in every attempt with no observed delta; the requirement itself may be unsatisfiable — question and redesign the criterion before another retry instead of only inspecting the scorer.`,
       reasons: ['plateau', 'zero_sensitivity_plateau', 'question_the_requirement'],
+    };
+  }
+  const remainingNonMoving = remaining.every((criterion) => criterion.impossible || criterion.sensitivity === 'none');
+  if (plateaued && missingCurrent.length === 0 && remainingNonMoving) {
+    return {
+      action: 'redesign',
+      summary: `Plateaued with ${remaining.length} remaining failing criteria that are impossible or not moving the score; redesign the criterion, scorer, artifact shape, or benchmark instead of retrying.`,
+      reasons: ['plateau', 'remaining_failures_non_score_moving'],
     };
   }
   if (plateaued) {
