@@ -1,0 +1,4 @@
+{"role":"user","ts":"2026-06-13T12:00:00.000Z","content":"Summarize the changelog."}
+{"role":"assistant","ts":"2026-06-13T12:00:03.000Z","content":"Here is the summary."}
+{"role":"user","ts":"2026-06-13T12:00:05.000Z","content":"Thanks."}
+{"role":"assistant","ts":"2026-06-13T12:00:08.000Z","content":"You're welcome."}

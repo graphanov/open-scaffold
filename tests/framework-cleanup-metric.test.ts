@@ -24,8 +24,9 @@ const cleanupBaselineLoc = 20_890;
 // 167 AC6: OpenAI-compatible reviewer profile — src/reviewer.ts + gate --judge-endpoint wiring (+166 LOC, +1 file)
 // 168: retired $-verb harness/dispatch/adapter layers and kept only runtime-profile metadata (-2,726 LOC, -3 files net)
 // 168 Codex review: adapter validator accepts core-generated ralplan packets, dispatch receipt schema stays registered, and review alias help is explicit (+17 LOC)
-const cleanupTargetLoc = 14_437;
-const cleanupTargetFiles = 39;
+// 170: osc capture — pluggable ambient extraction, claude-code + codex parsers (+651 LOC, +1 file: src/capture.ts plus shared transcript-record helpers in src/ambient.ts and cli wiring)
+const cleanupTargetLoc = 15_088;
+const cleanupTargetFiles = 40;
 
 interface MaintainedSourceFile {
   path: string;
@@ -67,7 +68,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(14_437);
+    expect(cleanupTargetLoc).toBe(15_088);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);
