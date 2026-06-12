@@ -12,7 +12,7 @@ import { compareBareAttempts, compareProofManifest, renderAttemptComparisonJson,
 import { DispatchUsageError, formatDispatchSummary, runDispatch } from './dispatch.js';
 import { collectEvidence } from './evidence.js';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
-import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, analyzeEvolutionLoop, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionAnalysis, renderEvolutionComparison, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionAnalysisFormat, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionStrategy } from './evolution.js';
+import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, analyzeEvolutionLoop, buildEvolutionJudgmentCheckpoint, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionAnalysis, renderEvolutionComparison, renderEvolutionJudgmentCheckpoint, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionAnalysisFormat, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionJudgeAction, type EvolutionStrategy } from './evolution.js';
 import { measureEvolutionAnalysisEfficiency, renderEvolutionEfficiencyReport } from './evolution-efficiency.js';
 import { analyzeFeedback, recordFeedback } from './feedback.js';
 import { askInteractiveFirstRun, formatFirstRunResult, runFirstRun } from './first-run.js';
@@ -125,7 +125,7 @@ Harness command surface:
   osc harness '$plan ...' [--json]
   osc harness '$work ...' [--json]
   osc harness '$work ... --adapter <id> --allow-spawn [--timeout-ms <n>] [--max-log-bytes <n>]' [--json]
-  osc harness '$work ... --retry-of <run-id> [--handoff --handoff-max-chars <n>]' [--json]
+  osc harness '$work ... --retry-of <run-id> [--checkpoint <loop-dir>] [--handoff --handoff-max-chars <n>]' [--json]
   osc harness '$team ... [--worker <id>]... [--worker-adapter <worker>:<adapter>] [--worker-outcome <worker>:complete|needs-human|blocked|failed] [--worker-question <worker>:<text>] [--repair-hypothesis <text>]' [--json]
   osc harness status <run-id> [--json]
   osc harness answer <run-id> --gate <id> --answer <text> [--json]
@@ -145,6 +145,7 @@ Lab and experimental:
   osc evolve record <loop-dir> --run <run-packet> [--evaluation <evaluation-json>] [--receipt <dispatch-receipt.json>] [--evidence <path>]... --decision <promote|reject|retry|block> [--score <0..1>] --rationale <text> [--repair-hypothesis <text>] [--target-metric <name>] [--expected-gain <number>] [--actual-delta <number>] [--tokens-total <integer>] [--estimated-usd <number>] [--usage-source <source>] [--usage-unavailable-reason <text>]
   osc evolve compare <loop-dir> [--a <attempt-id|run-id|frontier>] [--b <attempt-id|run-id|frontier>] [--format <terminal|markdown|json>] [--out <path>]
   osc evolve analyze <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>]
+  osc evolve checkpoint <loop-dir> [--format <terminal|markdown|json>] [--out <path>] [--judge-action <continue|stop_impossible|stop_blocked>] [--judge-impossible-ac <id>]... [--judge-rationale <text>]
   osc evolve check <loop-dir>
   osc cockpit config
   osc cockpit test [--dry-run]
@@ -670,8 +671,8 @@ function proofCommand(args: string[]): void {
 }
 
 function evolveCommand(args: string[]): void {
-  const sub = args[0] ?? die('Usage: osc evolve init|record|compare|analyze|check');
-  if (isHelpArg(sub)) { console.log('Usage: osc evolve init|record|compare|analyze|check <args>'); return; }
+  const sub = args[0] ?? die('Usage: osc evolve init|record|compare|analyze|checkpoint|check');
+  if (isHelpArg(sub)) { console.log('Usage: osc evolve init|record|compare|analyze|checkpoint|check <args>'); return; }
   if (sub === 'init') {
     const source = args[1] ?? die('Usage: osc evolve init <run-or-plan> [--out <dir>] [--strategy <manual|greedy>]');
     const rawStrategy = value(args, '--strategy') ?? 'manual';
@@ -710,6 +711,21 @@ function evolveCommand(args: string[]): void {
     const out = value(args, '--out') ?? value(args, '--output');
     if (out) { writeFileSync(resolve(out), output); console.log(`Wrote evolution analysis: ${resolve(out)}`); }
     else process.stdout.write(output);
+  } else if (sub === 'checkpoint') {
+    const format = (value(args, '--format') ?? 'terminal') as EvolutionAnalysisFormat;
+    const judgeAction = value(args, '--judge-action') as EvolutionJudgeAction | undefined;
+    if (judgeAction && !['continue', 'stop_impossible', 'stop_blocked'].includes(judgeAction)) die('Invalid --judge-action. Expected continue, stop_impossible, or stop_blocked.', 2);
+    const analysis = analyzeEvolutionLoop(args[1] ?? die('Usage: osc evolve checkpoint <loop-dir>'), { plateauThreshold: value(args, '--plateau-threshold') ? Number(value(args, '--plateau-threshold')) : undefined }, process.cwd());
+    const checkpoint = buildEvolutionJudgmentCheckpoint(analysis, judgeAction ? {
+      action: judgeAction,
+      impossibleAcs: values(args, '--judge-impossible-ac'),
+      rationale: value(args, '--judge-rationale'),
+    } : null);
+    const output = renderEvolutionJudgmentCheckpoint(checkpoint, format);
+    const out = value(args, '--out') ?? value(args, '--output');
+    if (out) { writeFileSync(resolve(out), output); console.log(`Wrote evolution checkpoint: ${resolve(out)}`); }
+    else process.stdout.write(output);
+    if (!checkpoint.retryAuthorized.allow) process.exitCode = 1;
   } else if (sub === 'check') {
     const loopDir = args[1] ?? die('Usage: osc evolve check <loop-dir>');
     const loopAbs = resolve(loopDir);
@@ -719,7 +735,7 @@ function evolveCommand(args: string[]): void {
     if (result.failures.length > 0) process.exit(1);
     console.log(`PASS evolution loop structure valid; ${result.warnings.length} warning(s)`);
     console.log('Note: this validates local loop structure only; it does not execute attempts, rank models, certify compliance, or approve release.');
-  } else die('Usage: osc evolve init|record|compare|analyze|check');
+  } else die('Usage: osc evolve init|record|compare|analyze|checkpoint|check');
 }
 
 async function cockpitCommand(args: string[]): Promise<void> {
@@ -857,7 +873,7 @@ function runtimesCommand(args: string[]): void {
 }
 
 function harnessCommand(args: string[]): void {
-  if (isHelpArg(args[0])) { console.log("Usage: osc harness '$interview|$plan|$work|$team ...' [--json]\n  osc harness '$work ... --adapter <id> --allow-spawn [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>]' [--json]\n  osc harness '$work ... --retry-of <run-id> [--handoff --handoff-max-chars <n>]' [--json]\n  osc harness '$team ... [--worker <id>]... [--worker-adapter <worker>:<adapter>] [--worker-outcome <worker>:complete|needs-human|blocked|failed] [--worker-question <worker>:<text>] [--repair-hypothesis <text>]' [--json]\n  osc harness status <run-id> [--json]\n  osc harness answer <run-id> --gate <id> --answer <text> [--json]\n\nFor $work, omit --allow-spawn to write a dry-run receipt without launching the adapter. Gate answers, feedback, repair hypotheses, and handoff packets are task input, not owner approval."); return; }
+  if (isHelpArg(args[0])) { console.log("Usage: osc harness '$interview|$plan|$work|$team ...' [--json]\n  osc harness '$work ... --adapter <id> --allow-spawn [--timeout-ms <n>] [--max-log-bytes <n>] [--model <id>] [--effort <level>]' [--json]\n  osc harness '$work ... --retry-of <run-id> [--checkpoint <loop-dir>] [--handoff --handoff-max-chars <n>]' [--json]\n  osc harness '$team ... [--worker <id>]... [--worker-adapter <worker>:<adapter>] [--worker-outcome <worker>:complete|needs-human|blocked|failed] [--worker-question <worker>:<text>] [--repair-hypothesis <text>]' [--json]\n  osc harness status <run-id> [--json]\n  osc harness answer <run-id> --gate <id> --answer <text> [--json]\n\nFor $work, omit --allow-spawn to write a dry-run receipt without launching the adapter. --checkpoint <loop-dir> runs a judgment checkpoint before dispatch and can block another retry. Gate answers, feedback, repair hypotheses, and handoff packets are task input, not owner approval."); return; }
   const json = has(args, '--json');
   try {
     if (args[0] === 'status') {

@@ -155,6 +155,20 @@ Missing, duplicated, non-final, timed-out, signaled, or non-zero output fails cl
 
 For failed and blocked outcomes, `$work` records feedback before the next attempt. The feedback file carries the repair hypothesis and repo-relative evidence refs. `--retry-of <run-id>` starts a sibling run that links to the old evidence and inherits the newest actionable repair hypothesis instead of overwriting it. If the parent has no feedback yet, the retry packet keeps moving with a bounded fallback repair hypothesis and the same evidence-linking rules.
 
+`$work ... --checkpoint <loop-dir>` adds a mandatory judgment checkpoint before
+runtime dispatch. The harness runs the evolution analysis, writes
+`judgment-checkpoint.json` and `controller-signal.md`, injects the compact signal
+into the work context, and refuses to launch an adapter when retry is blocked by
+`stop` or `redesign`. This is the product-side version of enforced retry
+discipline: judgment is mandatory, bookkeeping stays ambient.
+
+Every `$work` postflight with a runtime receipt writes `ambient-record.json`
+(`osc.ambient-work-record.v1`). It is extracted by the harness from the run
+packet, runtime receipt, artifact list, and evidence paths. The worker does not
+author this record in-loop, and the record is not approval or correctness
+certification. Core does not spawn subprocesses to collect git state for this
+record.
+
 When requested, `$work --handoff --handoff-max-chars <n>` writes `.osc/runs/<run-id>/handoff.md` with required resume sections under the budget. This packet is a continuation aid only.
 
 `$team` keeps parity with the same loop: shared evidence, shared feedback path, accepted improvement inheritance when requested, repair hypotheses for blocked or failed worker lanes, worker-level human gates, and one postflight record. A worker lane has:
