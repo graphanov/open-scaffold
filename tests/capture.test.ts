@@ -71,8 +71,9 @@ describe('codex parser', () => {
     expect(o.usage.cache_read_input_tokens).toBe(1500);
     // codex has no cache-creation split: recorded null with a note, never invented.
     expect(o.usage.cache_creation_input_tokens).toBeNull();
-    expect(o.notes.some((note: string) => note.includes('cache-creation split is unavailable'))).toBe(true);
-    expect(runtime.tokenTotal).toBe(5200 + 340 + 1500);
+    expect(o.usage.total_tokens).toBe(5750);
+    expect(o.notes.some((note: string) => note.includes('total_tokens is authoritative'))).toBe(true);
+    expect(runtime.tokenTotal).toBe(5750);
     expect(o.tool_calls.shell).toBe(1);
     expect(o.tool_calls['mcp:open_scaffold.get_handoff']).toBe(1);
     expect(o.files_touched).toEqual(['/repo/src/helper.ts']);

@@ -38,6 +38,7 @@ export interface AmbientUsage {
   output_tokens: number | null;
   cache_creation_input_tokens: number | null;
   cache_read_input_tokens: number | null;
+  total_tokens?: number | null;
 }
 
 /** Observed facts a transcript parser extracts; mirrors the osc.ambient-work-record.v1 observed block. */
@@ -68,10 +69,12 @@ export function buildTranscriptWorkRecord(input: {
   createdAt?: string;
 }): Record<string, unknown> {
   const { usage } = input.observed;
-  const tokenTotal = (usage.input_tokens ?? 0)
-    + (usage.output_tokens ?? 0)
-    + (usage.cache_creation_input_tokens ?? 0)
-    + (usage.cache_read_input_tokens ?? 0);
+  const tokenTotal = typeof usage.total_tokens === 'number'
+    ? usage.total_tokens
+    : (usage.input_tokens ?? 0)
+      + (usage.output_tokens ?? 0)
+      + (usage.cache_creation_input_tokens ?? 0)
+      + (usage.cache_read_input_tokens ?? 0);
   return {
     schema: AMBIENT_WORK_RECORD_SCHEMA,
     runId: input.runId,

@@ -27,51 +27,12 @@ notify = ["node", "/absolute/path/to/open-scaffold/examples/hooks/codex-notify.m
 
 ## Notify program (`codex-notify.mjs`)
 
-A minimal, hook-safe program. It reads the newest rollout and runs capture with
-`--hook-safe`, so it can never break a Codex session.
+The checked-in `examples/hooks/codex-notify.mjs` is the program referenced above. It:
 
-```js
-#!/usr/bin/env node
-import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, statSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-
-// Only act on turn-complete / end-style events; ignore the rest.
-let event = {};
-try { event = JSON.parse(process.argv[2] ?? '{}'); } catch { process.exit(0); }
-if (event.type && !/turn-complete|complete|end/.test(event.type)) process.exit(0);
-
-// Find the newest rollout under ~/.codex/sessions/**.
-const root = join(homedir(), '.codex', 'sessions');
-function newestRollout(dir) {
-  let best = null;
-  if (!existsSync(dir)) return best;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      const candidate = newestRollout(full);
-      if (candidate && (!best || candidate.mtime > best.mtime)) best = candidate;
-    } else if (entry.isFile() && entry.name.startsWith('rollout-') && entry.name.endsWith('.jsonl')) {
-      const mtime = statSync(full).mtimeMs;
-      if (!best || mtime > best.mtime) best = { path: full, mtime };
-    }
-  }
-  return best;
-}
-const rollout = newestRollout(root);
-if (!rollout) process.exit(0);
-
-// Adjust this path to your open-scaffold checkout.
-const distCli = '/absolute/path/to/open-scaffold/dist/cli.js';
-spawnSync(process.execPath, [
-  distCli, 'capture',
-  '--from', 'codex',
-  '--transcript', rollout.path,
-  '--hook-safe',
-], { stdio: 'ignore', timeout: 30_000 });
-process.exit(0);
-```
+- ignores non-complete events;
+- finds the newest `~/.codex/sessions/**/rollout-*.jsonl`;
+- invokes this checkout's built `dist/cli.js` (or `src/cli.ts` via `tsx` in development);
+- runs `osc capture --from codex --hook-safe`, so it can never break a Codex session.
 
 ## Boundary
 

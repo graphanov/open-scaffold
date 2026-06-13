@@ -9,6 +9,7 @@ const cli = resolve(repoRoot, 'src/cli.ts');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const fixtures = resolve(repoRoot, 'tests/fixtures/capture');
 const ambientHook = resolve(repoRoot, 'examples/hooks/ambient-hook.mjs');
+const codexNotifyHook = resolve(repoRoot, 'examples/hooks/codex-notify.mjs');
 
 // Run via the tsx binary (resolves regardless of cwd) with cwd set to the temp repo so
 // capture resolves the .osc root and default output path from there, exactly like a hook.
@@ -74,6 +75,23 @@ describe('osc capture CLI surface', () => {
     expect(result.status).toBe(0);
     expect(existsSync(join(repo, '.osc-dev/ambient/sess-hook-nested.json'))).toBe(true);
     expect(existsSync(join(nested, 'sess-hook-nested.ambient-record.json'))).toBe(false);
+  });
+
+  it('checked-in Codex notify hook captures the newest rollout from HOME', () => {
+    const repo = tempRepo();
+    const home = mkdtempSync(join(tmpdir(), 'osc-codex-home-'));
+    const sessionDir = join(home, '.codex', 'sessions', '2026', '06', '13');
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(join(sessionDir, 'rollout-synthetic.jsonl'), readFileSync(join(fixtures, 'codex.jsonl'), 'utf8'), 'utf8');
+
+    const result = spawnSync(process.execPath, [codexNotifyHook, JSON.stringify({ type: 'agent-turn-complete' })], {
+      cwd: repo,
+      env: { ...process.env, HOME: home },
+      encoding: 'utf8',
+    });
+
+    expect(result.status).toBe(0);
+    expect(existsSync(join(repo, '.osc-dev/ambient/rollout-synthetic.json'))).toBe(true);
   });
 
   it('exits 2 on direct CLI misuse (unknown --from value)', () => {

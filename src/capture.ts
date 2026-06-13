@@ -252,8 +252,9 @@ const codexParser: CaptureParser = {
       usage.input_tokens = numberOr(lastTotalUsage.input_tokens, 0);
       usage.output_tokens = numberOr(lastTotalUsage.output_tokens, 0);
       usage.cache_read_input_tokens = numberOr(lastTotalUsage.cached_input_tokens, 0);
+      usage.total_tokens = numberOr(lastTotalUsage.total_tokens, usage.input_tokens + usage.output_tokens);
       usage.cache_creation_input_tokens = null;
-      notes.push('codex reports cumulative token_count.info.total_token_usage; cache-creation split is unavailable (recorded null).');
+      notes.push('codex reports cumulative token_count.info.total_token_usage; total_tokens is authoritative and cache-creation split is unavailable (recorded null).');
     } else {
       usage.input_tokens = null;
       usage.output_tokens = null;

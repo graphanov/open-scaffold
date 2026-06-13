@@ -26,7 +26,8 @@ const cleanupBaselineLoc = 20_890;
 // 168 Codex review: adapter validator accepts core-generated ralplan packets, dispatch receipt schema stays registered, and review alias help is explicit (+17 LOC)
 // 170: osc capture — pluggable ambient extraction, claude-code + codex parsers (+651 LOC, +1 file: src/capture.ts plus shared transcript-record helpers in src/ambient.ts and cli wiring)
 // 170 review hardening: prevent transcript overwrite, honor hook-safe malformed option values, redact transcript intent digests, and register capture in schema list (+44 LOC)
-const cleanupTargetLoc = 15_132;
+// 170 Codex review: preserve reported Codex total_tokens without double-counting cache reads (+4 LOC)
+const cleanupTargetLoc = 15_136;
 const cleanupTargetFiles = 40;
 
 interface MaintainedSourceFile {
@@ -69,7 +70,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(15_132);
+    expect(cleanupTargetLoc).toBe(15_136);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);
