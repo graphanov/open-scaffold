@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process'; // spawnSync used by run()
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -8,6 +8,7 @@ const repoRoot = resolve(import.meta.dirname, '..');
 const cli = resolve(repoRoot, 'src/cli.ts');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const fixtures = resolve(repoRoot, 'tests/fixtures/capture');
+const ambientHook = resolve(repoRoot, 'examples/hooks/ambient-hook.mjs');
 
 // Run via the tsx binary (resolves regardless of cwd) with cwd set to the temp repo so
 // capture resolves the .osc root and default output path from there, exactly like a hook.
@@ -54,6 +55,25 @@ describe('osc capture CLI surface', () => {
     const result = run(['capture', '--from', 'codex', '--transcript', join(fixtures, 'codex.jsonl'), '--session-id', 'sess-default'], repo);
     expect(result.status).toBe(0);
     expect(existsSync(join(repo, '.osc-dev/ambient/sess-default.json'))).toBe(true);
+  });
+
+  it('hook wrapper climbs from nested cwd to the scaffold root for default output', () => {
+    const repo = tempRepo();
+    const nested = join(repo, 'work', 'nested');
+    mkdirSync(nested, { recursive: true });
+    const result = spawnSync(process.execPath, [ambientHook], {
+      cwd: nested,
+      input: JSON.stringify({
+        transcript_path: join(fixtures, 'claude-code.jsonl'),
+        session_id: 'sess-hook-nested',
+        cwd: nested,
+      }),
+      encoding: 'utf8',
+    });
+
+    expect(result.status).toBe(0);
+    expect(existsSync(join(repo, '.osc-dev/ambient/sess-hook-nested.json'))).toBe(true);
+    expect(existsSync(join(nested, 'sess-hook-nested.ambient-record.json'))).toBe(false);
   });
 
   it('exits 2 on direct CLI misuse (unknown --from value)', () => {

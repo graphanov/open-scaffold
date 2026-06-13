@@ -35,8 +35,9 @@ capture boundary language explicit: observed facts only, not approval or correct
 - Pinned-test review — PASS: framework LOC/file count pin, section-parser corpus hash, and
   CLI help arrays carry plan-170 rationale comments.
 - Review hardening — PASS: `--out` may not overwrite the transcript, malformed capture options
-  remain hook-safe under `--hook-safe`, transcript intent is redacted before digesting, and the
-  schema registry names `osc capture` as an `osc.ambient-work-record.v1` emitter.
+  remain hook-safe under `--hook-safe`, the example hook climbs from nested cwd to the
+  scaffold root, transcript intent is redacted before digesting, and the schema registry
+  names `osc capture` as an `osc.ambient-work-record.v1` emitter.
 - Commit-structure review — PASS: only the final feature commit touches `src/cli.ts`; capture
   implementation/tests/docs remain isolated in earlier commits, with one follow-up test-only
   rationale commit.

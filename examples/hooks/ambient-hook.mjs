@@ -15,7 +15,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -40,7 +40,18 @@ try {
 
 const transcript = payload.transcript_path;
 const sessionId = payload.session_id ?? 'unknown-session';
-const cwd = payload.cwd && existsSync(join(payload.cwd, '.osc')) ? payload.cwd : process.cwd();
+
+function nearestScaffoldRoot(start) {
+  let current = resolve(start || process.cwd());
+  while (true) {
+    if (existsSync(join(current, '.osc'))) return current;
+    const parent = dirname(current);
+    if (parent === current) return resolve(start || process.cwd());
+    current = parent;
+  }
+}
+
+const cwd = nearestScaffoldRoot(payload.cwd || process.cwd());
 
 if (!transcript || !existsSync(transcript)) process.exit(0);
 
