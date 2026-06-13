@@ -12,19 +12,20 @@ capture boundary language explicit: observed facts only, not approval or correct
 - Roadmap / issue / task: plan 170 (`osc capture` ambient transcript extraction).
 - Plan: `.osc/plans/done/170-ambient-capture.md` after closeout.
 - Run ID / run packet: N/A — this slice adds a transcript capture command, not a spawned run.
-- Branch / PR: `170-ambient-capture`; PR pending after local verification and branch push.
+- Branch / PR: `170-ambient-capture`; https://github.com/graphanov/open-scaffold/pull/215.
 
 ## Verification
 
 - `npm run build` — PASS after rebase and closeout candidate; TypeScript compiled core and runtime-omx.
-- `npm test` — PASS after rebase and closeout candidate; 48 files / 527 tests passed.
+- `npm test` — PASS after rebase and closeout candidate; 48 files / 532 tests passed.
 - `./verify.sh --strict` — PASS after rebase and closeout candidate; 10 pass / 0 fail / 0 warn.
 - `git diff --check` — PASS after rebase and closeout candidate.
 - Real Codex rollout capture (owner-local transcript, output written only under `/tmp`) — PASS:
   schema `osc.ambient-work-record.v1`, source `transcript-extraction`, adapter `codex-rollout`,
-  assistant turns 1, user events 2, token total 109,596, tool census keys
-  `get_handoff`, `mcp:open-scaffold.get_handoff`, `tool_search_call`, notes record that Codex
-  cache-creation split is unavailable and stored as `null`.
+  assistant turns 1, user events 2, token total 64,924 (Codex-reported `total_tokens`),
+  tool census keys `get_handoff`, `mcp:open-scaffold.get_handoff`, `tool_search_call`, notes
+  record that `total_tokens` is authoritative and Codex cache-creation split is unavailable
+  and stored as `null`.
 - Real Claude Code transcript capture (owner-local transcript, output written only under `/tmp`) — PASS:
   schema `osc.ambient-work-record.v1`, source `transcript-extraction`, adapter
   `claude-code-transcript`, assistant turns 1,566, user events 804, token total 673,577,801,
