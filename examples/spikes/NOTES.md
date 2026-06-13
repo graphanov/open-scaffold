@@ -15,6 +15,11 @@ benchmark scorer involved anywhere.
 
 ## Spike A core: ambient record from a real session transcript (ambient-from-transcript.mjs)
 
+> Promoted to product (plan 170): this transcript extractor became `osc capture`
+> with pluggable parsers (claude-code, codex, jsonl-generic). See
+> [`docs/CAPTURE.md`](../../docs/CAPTURE.md); the SessionEnd hook lives at
+> `examples/hooks/ambient-hook.mjs`. The spike stays here as the original reference.
+
 Demonstrated 2026-06-12 on a real Claude Code session transcript (a review-bench
 judge session): produced an osc.ambient-work-record.v1-aligned record with
 source "transcript-extraction" — 35 assistant turns, full usage breakdown

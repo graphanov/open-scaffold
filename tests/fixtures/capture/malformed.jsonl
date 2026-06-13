@@ -1,0 +1,6 @@
+{"type":"user","timestamp":"2026-06-13T13:00:00.000Z","message":{"role":"user","content":"go"}}
+this is not json at all
+{"type":"assistant","timestamp":"2026-06-13T13:00:02.000Z","message":{"role":"assistant","usage":{"input_tokens":10,"output_tokens":5},"content":[{"type":"text","text":"ok done"}]}}
+{"type":"assistant","timestamp":"2026-06-13T13
+42
+[1,2,3]

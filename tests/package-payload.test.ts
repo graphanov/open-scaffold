@@ -69,6 +69,11 @@ describe('npm package payload', () => {
     expect(paths).toContain('examples/attempt-compare/attempt-b/rationale.txt');
     expect(paths).toContain('examples/attempt-compare/attempt-b/transcript.md');
 
+    // capture hooks must ship because docs/CAPTURE.md includes copy-paste registrations.
+    expect(paths).toContain('examples/hooks/ambient-hook.mjs');
+    expect(paths).toContain('examples/hooks/codex-notify.mjs');
+    expect(paths).toContain('examples/hooks/codex-notify.md');
+
     // proof harness fixture must ship so `npx open-scaffold prove compare ...` has an inspectable bounded result
     expect(paths).toContain('examples/proof/scaffold-vs-naked-codex/manifest.json');
     expect(paths).toContain('examples/proof/scaffold-vs-naked-codex/receipts/aggregate.json');

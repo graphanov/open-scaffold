@@ -25,8 +25,83 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function digest(value: unknown): string {
+/** sha256 over a canonical JSON encoding; shared by postflight and transcript-extraction records. */
+export function ambientDigest(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value), 'utf8').digest('hex');
+}
+
+const digest = ambientDigest;
+
+/** Token usage breakdown shared by transcript parsers; nulls mean "the runtime does not report this split". */
+export interface AmbientUsage {
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cache_creation_input_tokens: number | null;
+  cache_read_input_tokens: number | null;
+  total_tokens?: number | null;
+}
+
+/** Observed facts a transcript parser extracts; mirrors the osc.ambient-work-record.v1 observed block. */
+export interface AmbientObserved {
+  assistant_turns: number;
+  user_events: number;
+  started_at: string | null;
+  ended_at: string | null;
+  usage: AmbientUsage;
+  tool_calls: Record<string, number>;
+  files_touched: string[];
+  final_message_digest: string | null;
+  final_message_claim_words: string[];
+  notes: string[];
+}
+
+function transcriptTokenTotal(usage: AmbientUsage): number | null {
+  if (typeof usage.total_tokens === 'number') return usage.total_tokens;
+  const splits = [usage.input_tokens, usage.output_tokens, usage.cache_creation_input_tokens, usage.cache_read_input_tokens];
+  if (!splits.some((value) => typeof value === 'number')) return null;
+  return splits.reduce<number>((sum, value) => sum + (typeof value === 'number' ? value : 0), 0);
+}
+
+/**
+ * Build an osc.ambient-work-record.v1 record from facts a transcript parser observed,
+ * with source "transcript-extraction". This is the shared shape for `osc capture`
+ * parsers so each runtime normalizer stays a thin mapper, not a record fork.
+ */
+export function buildTranscriptWorkRecord(input: {
+  runId: string;
+  adapter: string;
+  command: string;
+  intent: unknown;
+  observed: AmbientObserved;
+  createdAt?: string;
+}): Record<string, unknown> {
+  const { usage } = input.observed;
+  const tokenTotal = transcriptTokenTotal(usage);
+  return {
+    schema: AMBIENT_WORK_RECORD_SCHEMA,
+    runId: input.runId,
+    createdAt: input.createdAt ?? nowIso(),
+    source: 'transcript-extraction',
+    intentDigest: digest(input.intent ?? null),
+    command: input.command,
+    state: 'observed',
+    runtime: {
+      adapter: input.adapter,
+      spawned: false,
+      status: 'observed',
+      failureCode: null,
+      markerState: null,
+      tokenTotal,
+    },
+    observed: input.observed,
+    artifacts: [],
+    evidencePaths: [],
+    boundary: {
+      worker_authored: false,
+      approval: false,
+      note: 'Extracted from an observed session transcript; facts, not claims. Not approval, not correctness.',
+    },
+  };
 }
 
 function tokenTotal(receipt: AmbientRuntimeReceipt): number | null {

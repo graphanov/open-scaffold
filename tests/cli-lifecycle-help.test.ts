@@ -23,6 +23,8 @@ const topLevelHelpSections = [
   'Diagnostics and advanced:',
 ];
 
+// 170: capture surfaces in full help because it is a stable record command with
+// hook recipes, extended options, and direct CLI exit-code semantics.
 const topLevelHelpCommands = [
   'osc init --tier <min|standard|max> --target <dir> [--force]',
   'osc init --from-existing --tier min --target <dir> [--force]',
@@ -37,6 +39,7 @@ const topLevelHelpCommands = [
   'osc amend <plan-slug> [--message <text>]',
   'osc evidence new <slug>',
   'osc evidence collect <slug> [--ci] [--dry-run] [--verbose]',
+  'osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> [--out <path>] [--detect] [--session-id <id>] [--repo <root>] [--hook-safe]',
   'osc close <plan-slug> [--message <text>]',
   'osc trace <plan-slug> [--json] [--include-unverified]',
   'osc verify [--evidence-chain [--plan <slug>] [--json] [--strict] [--online-github]]',
@@ -83,6 +86,8 @@ const coreHelpSections = [
   'More:',
 ];
 
+// 170: capture appears in core help under Record so finished-session transcript
+// extraction is discoverable without pushing advanced/lab commands onto first read.
 const coreHelpCommands = [
   'osc first-run',
   'osc init --tier <min|standard|max> --target <dir>',
@@ -95,6 +100,7 @@ const coreHelpCommands = [
   'osc plan new <slug> --stage <active|backlog|blocked>',
   'osc amend <plan-slug> [--message <text>]',
   'osc evidence new <slug>',
+  'osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> [--out <path>] [--detect]',
   'osc verify [--evidence-chain]',
   'osc close <plan-slug> [--message <text>]',
   'osc help --all',
