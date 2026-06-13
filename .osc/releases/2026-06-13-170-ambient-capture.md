@@ -41,7 +41,7 @@ capture boundary language explicit: observed facts only, not approval or correct
   to the scaffold root, transcript captures remain not-spawned observed records, unknown token totals stay
   `null`, split final-message text is accumulated before digesting/claim sniffing, Codex records
   preserve the runtime-reported `total_tokens`, the Codex notify hook scopes capture to the event
-  `thread-id` instead of a newest-rollout race, example hooks use this checkout's absolute `tsx`
+  `thread-id` and respects `CODEX_HOME` instead of a newest-rollout or default-home race, example hooks use this checkout's absolute `tsx`
   loader fallback, the checked-in Codex notify hook matches the documented registration path and
   `examples/hooks` ships in the npm package, transcript intent and touched local paths are redacted
   before recording/digesting, and the schema registry names `osc capture` as an

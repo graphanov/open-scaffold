@@ -64,7 +64,9 @@ function findRolloutByThreadId(dir, threadId) {
 const threadId = nestedString(event, ['thread-id', 'thread_id', 'threadId', 'session_id', 'sessionId']);
 if (!threadId) process.exit(0);
 
-const rollout = findRolloutByThreadId(join(homedir(), '.codex', 'sessions'), threadId);
+const configuredCodexHome = process.env.CODEX_HOME?.trim();
+const codexHome = configuredCodexHome || join(homedir(), '.codex');
+const rollout = findRolloutByThreadId(join(codexHome, 'sessions'), threadId);
 if (!rollout) process.exit(0);
 
 const eventCwd = nestedString(event, ['cwd', 'workdir', 'working_directory', 'workingDirectory']);

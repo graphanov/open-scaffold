@@ -14,7 +14,7 @@ event, e.g.:
 { "type": "agent-turn-complete", "thread-id": "…", "cwd": "/path/to/repo", "turn-id": "…", "input-messages": ["…"], "last-assistant-message": "…" }
 ```
 
-Codex writes session rollouts to `~/.codex/sessions/<YYYY>/<MM>/<DD>/rollout-*.jsonl`.
+Codex writes session rollouts to `${CODEX_HOME:-~/.codex}/sessions/<YYYY>/<MM>/<DD>/rollout-*.jsonl`.
 The notify program matches the rollout filename containing `thread-id`; if the event has
 no thread id or the matching rollout is not present yet, it exits 0 without capturing
 rather than risking the wrong concurrent session.
@@ -32,7 +32,7 @@ notify = ["node", "/absolute/path/to/open-scaffold/examples/hooks/codex-notify.m
 The checked-in `examples/hooks/codex-notify.mjs` is the program referenced above. It:
 
 - ignores non-complete events;
-- finds `~/.codex/sessions/**/rollout-*<thread-id>*.jsonl` for the event thread;
+- finds `${CODEX_HOME:-~/.codex}/sessions/**/rollout-*<thread-id>*.jsonl` for the event thread;
 - runs from event `cwd` when Codex provides it, so default output lands in the project scaffold;
 - invokes this checkout's built `dist/cli.js` (or this checkout's absolute `tsx` loader in development);
 - runs `osc capture --from codex --hook-safe`, so it can never break a Codex session.

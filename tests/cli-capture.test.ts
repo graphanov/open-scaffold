@@ -80,7 +80,8 @@ describe('osc capture CLI surface', () => {
   it('checked-in Codex notify hook captures the event thread rollout, not a newer sibling', () => {
     const repo = tempRepo();
     const home = mkdtempSync(join(tmpdir(), 'osc-codex-home-'));
-    const sessionDir = join(home, '.codex', 'sessions', '2026', '06', '13');
+    const codexHome = join(home, 'custom-codex-home');
+    const sessionDir = join(codexHome, 'sessions', '2026', '06', '13');
     mkdirSync(sessionDir, { recursive: true });
     const fixture = readFileSync(join(fixtures, 'codex.jsonl'), 'utf8');
     writeFileSync(join(sessionDir, 'rollout-2026-06-13T00-00-00-thread-keep.jsonl'), fixture, 'utf8');
@@ -92,7 +93,7 @@ describe('osc capture CLI surface', () => {
       cwd: repo,
     })], {
       cwd: join(repo, '.osc'),
-      env: { ...process.env, HOME: home },
+      env: { ...process.env, HOME: home, CODEX_HOME: codexHome },
       encoding: 'utf8',
     });
 
