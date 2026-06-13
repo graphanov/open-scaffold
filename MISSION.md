@@ -48,6 +48,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-13: closed 171-capture-package-sync — Published open-scaffold@0.32.0 to npm latest and created GitHub Release v0.32.0 as Latest.
 - 2026-06-13: closed 170-ambient-capture — Shipped osc capture ambient transcript extraction with claude-code, codex, and generic JSONL parsers; verified against owner-local real transcripts.
 - 2026-06-12: closed 168-dollar-verb-retirement — retired the dollar-verb harness/dispatch layer, made osc review the recorded-attempt analysis front door, and removed the outdated README GIF
 - 2026-06-12: Owner added README first-screen cleanup: remove the outdated resume screencast GIF from README and delete the obsolete tracked GIF asset in this slice. — see .osc/plans/done/168-dollar-verb-retirement-amendment-1.md
