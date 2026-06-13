@@ -55,6 +55,13 @@ export interface AmbientObserved {
   notes: string[];
 }
 
+function transcriptTokenTotal(usage: AmbientUsage): number | null {
+  if (typeof usage.total_tokens === 'number') return usage.total_tokens;
+  const splits = [usage.input_tokens, usage.output_tokens, usage.cache_creation_input_tokens, usage.cache_read_input_tokens];
+  if (!splits.some((value) => typeof value === 'number')) return null;
+  return splits.reduce<number>((sum, value) => sum + (typeof value === 'number' ? value : 0), 0);
+}
+
 /**
  * Build an osc.ambient-work-record.v1 record from facts a transcript parser observed,
  * with source "transcript-extraction". This is the shared shape for `osc capture`
@@ -69,12 +76,7 @@ export function buildTranscriptWorkRecord(input: {
   createdAt?: string;
 }): Record<string, unknown> {
   const { usage } = input.observed;
-  const tokenTotal = typeof usage.total_tokens === 'number'
-    ? usage.total_tokens
-    : (usage.input_tokens ?? 0)
-      + (usage.output_tokens ?? 0)
-      + (usage.cache_creation_input_tokens ?? 0)
-      + (usage.cache_read_input_tokens ?? 0);
+  const tokenTotal = transcriptTokenTotal(usage);
   return {
     schema: AMBIENT_WORK_RECORD_SCHEMA,
     runId: input.runId,
@@ -85,7 +87,7 @@ export function buildTranscriptWorkRecord(input: {
     state: 'observed',
     runtime: {
       adapter: input.adapter,
-      spawned: true,
+      spawned: false,
       status: 'observed',
       failureCode: null,
       markerState: null,

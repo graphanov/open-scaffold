@@ -138,6 +138,7 @@ const claudeCodeParser: CaptureParser = {
         usage.cache_creation_input_tokens = numberOr(usage.cache_creation_input_tokens, 0) + numberOr(turnUsage.cache_creation_input_tokens, 0);
         usage.cache_read_input_tokens = numberOr(usage.cache_read_input_tokens, 0) + numberOr(turnUsage.cache_read_input_tokens, 0);
       }
+      const turnText: string[] = [];
       for (const block of asArray(message.content)) {
         const blockRecord = asRecord(block);
         if (!blockRecord) continue;
@@ -146,9 +147,10 @@ const claudeCodeParser: CaptureParser = {
           addFilePathsFromObject(blockRecord.input, files);
         }
         if (blockRecord.type === 'text' && typeof blockRecord.text === 'string' && blockRecord.text.trim()) {
-          finalText = blockRecord.text;
+          turnText.push(blockRecord.text);
         }
       }
+      if (turnText.length > 0) finalText = turnText.join('');
     }
 
     stamps.sort();
@@ -281,15 +283,15 @@ const codexParser: CaptureParser = {
 };
 
 function textFromContentBlocks(content: unknown): string | null {
-  let text: string | null = null;
+  const text: string[] = [];
   for (const block of asArray(content)) {
     const blockRecord = asRecord(block);
     if (!blockRecord) continue;
     if ((blockRecord.type === 'output_text' || blockRecord.type === 'input_text' || blockRecord.type === 'text') && typeof blockRecord.text === 'string') {
-      text = blockRecord.text;
+      text.push(blockRecord.text);
     }
   }
-  return text;
+  return text.length > 0 ? text.join('') : null;
 }
 
 function addCodexCallFiles(rawArguments: unknown, files: Set<string>): void {

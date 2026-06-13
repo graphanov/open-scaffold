@@ -1038,9 +1038,10 @@ function captureCommand(args: string[]): void {
       console.log(JSON.stringify({ path: relativeToCwd(writtenPath), format: result.format, detected: result.detected, record: result.record }, null, 2));
     } else {
       const observed = result.record.observed as { assistant_turns?: number };
-      const runtime = result.record.runtime as { tokenTotal?: number };
+      const runtime = result.record.runtime as { tokenTotal?: number | null };
+      const tokenTotal = typeof runtime.tokenTotal === 'number' ? String(runtime.tokenTotal) : 'unknown';
       console.log(`Wrote ambient record (${result.format}${result.detected ? ', detected' : ''}): ${relativeToCwd(writtenPath)}`);
-      console.log(`runId=${runId} turns=${observed.assistant_turns ?? 0} tokenTotal=${runtime.tokenTotal ?? 0} schema=${result.record.schema}`);
+      console.log(`runId=${runId} turns=${observed.assistant_turns ?? 0} tokenTotal=${tokenTotal} schema=${result.record.schema}`);
     }
   } catch (error) {
     if (error instanceof CaptureUsageError) { fail(error.message); return; }

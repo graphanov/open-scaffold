@@ -40,6 +40,7 @@ describe('claude-code parser', () => {
     expect(result.record.schema).toBe('osc.ambient-work-record.v1');
     expect(result.record.source).toBe('transcript-extraction');
     expect(runtime.adapter).toBe('claude-code-transcript');
+    expect(runtime.spawned).toBe(false);
     expect(o.assistant_turns).toBe(3);
     expect(o.user_events).toBe(2);
     // usage is per-turn in claude-code, so the parser sums across turns.
@@ -56,6 +57,20 @@ describe('claude-code parser', () => {
     expect(o.ended_at).toBe('2026-06-13T10:00:20.000Z');
     expect(o.final_message_claim_words).toEqual(['complete']);
   });
+  it('accumulates split final-message text before digesting and claim sniffing', () => {
+    const finalText = 'Blocked first half; complete second half.';
+    const rawText = [
+      JSON.stringify({ type: 'assistant', timestamp: '2026-06-13T10:00:00.000Z', message: { role: 'assistant', usage: { input_tokens: 1, output_tokens: 1 }, content: [{ type: 'text', text: 'Earlier turn.' }] } }),
+      JSON.stringify({ type: 'assistant', timestamp: '2026-06-13T10:00:01.000Z', message: { role: 'assistant', usage: { input_tokens: 1, output_tokens: 1 }, content: [{ type: 'text', text: 'Blocked first half; ' }, { type: 'text', text: 'complete second half.' }] } }),
+    ].join('\n');
+
+    const record = captureRecord({ transcriptPath: 'inline-claude', format: 'claude-code', rawText });
+    const observedRecord = record.record.observed as Record<string, any>;
+
+    expect(observedRecord.assistant_turns).toBe(2);
+    expect(observedRecord.final_message_digest).toBe(ambientDigest(redactSecrets(finalText)));
+    expect(observedRecord.final_message_claim_words).toEqual(['blocked', 'complete']);
+  });
 });
 
 describe('codex parser', () => {
@@ -63,6 +78,7 @@ describe('codex parser', () => {
     const { result, observed: o, runtime } = observed(codexFixture, 'codex');
 
     expect(runtime.adapter).toBe('codex-rollout');
+    expect(runtime.spawned).toBe(false);
     expect(o.assistant_turns).toBe(1);
     expect(o.user_events).toBe(1);
     // codex token_count is cumulative: the parser takes the LAST event, not a sum.
@@ -90,7 +106,7 @@ describe('codex parser', () => {
     });
     const o = record.record.observed as Record<string, any>;
     expect(o.usage.input_tokens).toBeNull();
-    expect((record.record.runtime as Record<string, any>).tokenTotal).toBe(0);
+    expect((record.record.runtime as Record<string, any>).tokenTotal).toBeNull();
     expect(o.notes.some((note: string) => note.includes('no codex token_count event found'))).toBe(true);
   });
 });
@@ -102,6 +118,7 @@ describe('jsonl-generic parser', () => {
     expect(o.assistant_turns).toBe(2);
     expect(o.user_events).toBe(2);
     expect(o.usage.input_tokens).toBeNull();
+    expect(runtime.tokenTotal).toBeNull();
     expect(o.tool_calls).toEqual({});
     expect(o.files_touched).toEqual([]);
     expect(o.started_at).toBe('2026-06-13T12:00:00.000Z');
