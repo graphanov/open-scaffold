@@ -148,17 +148,13 @@ osc bench suite --mode simulated --out .osc/bench/simulated-runtime-smoke
 # 2. Handoff lab — tests 15 deterministic handoff candidates, keeps the best under budget
 osc bench handoff-lab --out .osc/bench/handoff-lab-15
 
-# 3. Targeted live handoff — budget-gated live run for compact handoff reproduction
-osc bench suite --mode live \
-  --fixture token-efficient-handoff-resume \
-  --include-ablations \
-  --ablation-fixture token-efficient-handoff-resume \
-  --allow-spawn \
-  --effort low \
-  --out .osc/bench/targeted-live-handoff
+# 3. Live adapter runs — external harness only
+# Open Scaffold core retired live mode for `osc bench suite` in plan 168.
+# Run live adapter benchmarks in a runtime-specific/external harness, then
+# record compact source-labeled receipts or an evidence note back in this repo.
 ```
 
-Live mode only counts as runtime evidence when `--allow-spawn` is present. Each suite writes `.osc/bench/<suite-id>/aggregate.json` and `.osc/bench/<suite-id>/REPORT.md`; the handoff lab also writes per-method `resume.md` and `score.json` under `.osc/bench/<suite-id>/methods/<method>/`. Raw live logs and local runtime residue are gitignored; commit a short evidence note when a PR needs a durable readout.
+Core bench suites write `.osc/bench/<suite-id>/aggregate.json` and `.osc/bench/<suite-id>/REPORT.md`; the handoff lab also writes per-method `resume.md` and `score.json` under `.osc/bench/<suite-id>/methods/<method>/`. Raw live logs and local runtime residue stay gitignored; commit a short evidence note when an external live run needs a durable readout.
 
 ## Current evidence status
 

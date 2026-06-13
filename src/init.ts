@@ -278,12 +278,12 @@ function downstreamAgentInstructionsTemplate(file: 'AGENTS.md' | 'CLAUDE.md'): s
     '',
     '1. Before any work, run `osc resume` (or `npx open-scaffold resume`) and follow the packet: it states the goal, acceptance criteria, and next bounded action.',
     '2. The CLI writes the files — never hand-write plans, amendments, or evidence skeletons.',
-    "3. New work: `osc plan new <slug> --stage active`; clarify fuzzy intent first with `osc harness '$interview \"...\"'`.",
+    '3. New work: `osc plan new <slug> --stage active`; clarify fuzzy intent first, then promote the result into the plan.',
     '4. Scope change: `osc amend <slug> --message "what changed"`. Committed plans are immutable.',
-    '5. Bounded execution: `osc harness \'$work "..." --context "..."\'`; a runtime spawns only with `--adapter <id> --allow-spawn`.',
+    '5. Bounded execution: use the plan or `osc run <plan-path>` package with the external worker/runtime/coordinator; Open Scaffold core does not spawn the worker.',
     '6. Evidence before done: `osc evidence new <slug>`, then `osc verify`.',
     '7. Close: `osc close <slug> --message "what shipped"`.',
-    '8. Failures become feedback with a repair hypothesis; retry with `--retry-of <run-id>` instead of looping blind.',
+    '8. Failures become feedback with a repair hypothesis; inspect with `osc trace <plan-slug>`, then create a fresh bounded `osc run <plan-path> --dry-run` package instead of looping blind.',
     '9. Chat is working context, not truth. If it matters, it goes in a repo file.',
     '10. If `osc resume` reports no mission or plan, run `npx open-scaffold@latest first-run` with the owner.',
   ].join('\n') + '\n';
@@ -341,7 +341,7 @@ function downstreamTaskRunModelDocTemplate(): string {
     '- Keep approvals in evidence or PR review, not only chat.',
     '',
     'For the local workflow, see [`WORKFLOW.md`](WORKFLOW.md) and [`SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md).',
-    'Adapter/runtime binding details live in the upstream Open Scaffold docs or the max tier.',
+    'Runtime handoff details live in the upstream Open Scaffold docs or the max tier; Open Scaffold core does not spawn workers.',
   ].join('\n') + '\n';
 }
 

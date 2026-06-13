@@ -36,7 +36,7 @@ export interface ValidatedRunPacket {
   };
   executor: {
     lane: 'omx-codex';
-    harnessSkill: '$ralplan';
+    harnessSkill: 'ralplan';
     spawning: false;
   };
   runtime: {

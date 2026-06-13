@@ -97,7 +97,7 @@ When a runtime lane (Claude Code, Codex, OMC, OMX, a custom adapter, or a human 
 
 Reading path:
 
-- [`docs/ADAPTERS.md`](../ADAPTERS.md) — choosing a runtime and writing adapters.
+- [`docs/ADAPTERS.md`](../ADAPTERS.md) — historical adapter notes plus current runtime/coordinator label taxonomy.
 - [`docs/RUNTIME_BINDING_CONTRACT.md`](../RUNTIME_BINDING_CONTRACT.md) — lifecycle/responsibilities for any binding that consumes a `run.json` work package (run packet).
 - [`runtime-profiles/company-review-bot.json`](runtime-profiles/company-review-bot.json) — example project-local profile.
 - [`runtime-binding-conformance/README.md`](runtime-binding-conformance/README.md) — fake/local adapter conformance fixture.
@@ -147,7 +147,7 @@ node docs/examples/runtime-binding-conformance/fake-local-adapter.mjs \
 Expected result:
 
 - exits `0` for an executable package;
-- writes `dispatch-receipt.json` using `open-scaffold.dispatch-receipt.v1`;
+- writes a deterministic receipt file for the external conformance fixture;
 - writes a deterministic evidence artifact;
 - states that no runtime was launched, no credentials were read, and no network was required.
 

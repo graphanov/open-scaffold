@@ -44,6 +44,7 @@ describe('tiered scaffold initialization', () => {
     const taskRunModel = readFileSync(join(target, 'docs/TASK_RUN_MODEL.md'), 'utf8');
     expect(taskRunModel).toContain('Task owns intent/lifecycle');
     expect(taskRunModel).toContain('[`WORKFLOW.md`](WORKFLOW.md)');
+    expect(taskRunModel).not.toContain('`osc review`, and `osc ultrareview` generate `run.json`');
     expect(taskRunModel).toContain('[`SLICE_CLOSE_PROTOCOL.md`](SLICE_CLOSE_PROTOCOL.md)');
     expect(taskRunModel).not.toContain('RUNTIME_BINDING_CONTRACT.md');
     expect(taskRunModel).not.toContain('HARNESS_ARCHITECTURE.md');
@@ -77,6 +78,8 @@ describe('tiered scaffold initialization', () => {
     expect(readFileSync(join(target, 'docs/OPEN_SCAFFOLD_SYSTEM.md'), 'utf8')).toContain('Open Scaffold');
     const maxTaskRunModel = readFileSync(join(target, 'docs/TASK_RUN_MODEL.md'), 'utf8');
     expect(maxTaskRunModel).toContain('RUNTIME_BINDING_CONTRACT.md');
+    expect(maxTaskRunModel).toContain('`osc review`/`osc analyze` read recorded attempts later');
+    expect(maxTaskRunModel).not.toContain('`osc review`, and `osc ultrareview` generate `run.json`');
     expect(maxTaskRunModel).toContain('HARNESS_ARCHITECTURE.md');
     expect(maxTaskRunModel).toContain('ADAPTERS.md#runtime-dispatch-pattern');
     expect(existsSync(join(target, 'docs/ADAPTERS.md'))).toBe(true);

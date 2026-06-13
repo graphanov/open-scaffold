@@ -118,6 +118,8 @@ describe('osc init CLI', () => {
     const agents = readFileSync(join(target, 'AGENTS.md'), 'utf8');
     expect(readme).toContain('TODO: replace this with your project overview.');
     expect(agents).toContain('This repository uses Open Scaffold. It is not the Open Scaffold product repository.');
+    expect(agents).toContain('osc run <plan-path> --dry-run');
+    expect(agents).not.toContain('--retry-of');
     expect(readme).toContain('npx open-scaffold plan new');
     expect(readme).toContain('npx open-scaffold evidence new');
     expect(readme).toContain('cp .osc/plans/handoff-template.md');
@@ -250,7 +252,7 @@ describe('osc init CLI', () => {
     const manifest = JSON.parse(readFileSync(join(runsDir, runId!, 'run.json'), 'utf8'));
 
     expect(manifest.runtimeSelection).toMatchObject({ runtime: 'omx', workflow: 'plan', profileId: 'omx', profileSource: 'builtin' });
-    expect(manifest.executor).toMatchObject({ lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false });
+    expect(manifest.executor).toMatchObject({ lane: 'omx-codex', harnessSkill: 'ralplan', spawning: false });
   }, 15_000);
 
 
@@ -268,9 +270,9 @@ describe('osc init CLI', () => {
     const omxManifest = JSON.parse(readFileSync(join(runsDir, runIds.at(-1)!, 'run.json'), 'utf8'));
 
     expect(codexManifest.runtimeSelection).toMatchObject({ runtime: 'codex', workflow: 'plan', profileId: 'codex', profileSource: 'builtin' });
-    expect(codexManifest.executor).toMatchObject({ lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false });
+    expect(codexManifest.executor).toMatchObject({ lane: 'omx-codex', harnessSkill: 'ralplan', spawning: false });
     expect(omxManifest.runtimeSelection).toMatchObject({ runtime: 'omx', workflow: 'plan', profileId: 'omx', profileSource: 'builtin' });
-    expect(omxManifest.executor).toMatchObject({ lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false });
+    expect(omxManifest.executor).toMatchObject({ lane: 'omx-codex', harnessSkill: 'ralplan', spawning: false });
   }, 15_000);
 
 
@@ -279,13 +281,13 @@ describe('osc init CLI', () => {
     execFileSync(tsx, [cli, 'init', '--standard', '--target', target], { encoding: 'utf8' });
     const planPath = writeRuntimeSelectionPlan(target, 'Demo runtime mismatch rejection.');
 
-    const result = spawnSync(tsx, [cli, 'run', planPath, '--runtime', 'omx', '--workflow', 'plan', '--harness-skill', '$team', '--repo', target], {
+    const result = spawnSync(tsx, [cli, 'run', planPath, '--runtime', 'omx', '--workflow', 'plan', '--harness-skill', 'team', '--repo', target], {
       cwd: target,
       encoding: 'utf8',
     });
 
     expect(result.status).toBe(2);
-    expect(result.stderr).toContain('--runtime omx with --workflow plan requires --harness-skill $ralplan');
+    expect(result.stderr).toContain('--runtime omx with --workflow plan requires --harness-skill ralplan');
   }, 15_000);
 
   it('rejects unmapped workflows for runtime profiles unless harness skill is explicit', () => {
@@ -352,10 +354,19 @@ describe('osc init CLI', () => {
 
     const codexShown = JSON.parse(execFileSync(tsx, [cli, 'runtimes', 'show', 'codex'], { cwd: target, encoding: 'utf8' }));
     expect(codexShown).toMatchObject({ id: 'codex', source: 'builtin', lane: 'omx-codex' });
-    expect(codexShown.launch).toMatchObject({ expectedAdapterId: 'runtime-omx', spawning: false });
+    expect(codexShown.launch).toMatchObject({ expectedAdapterId: null, spawning: false });
+    expect(codexShown.evidence).toMatchObject({
+      receiptSchema: 'open-scaffold.dispatch-receipt.v1',
+      expectedPaths: ['.osc/runs/<run_id>/dispatch-receipt.json'],
+    });
+    expect(codexShown.evidence.expectedPaths).not.toContain('.osc/runs/<run_id>/run.json');
 
     const shown = JSON.parse(execFileSync(tsx, [cli, 'runtimes', 'show', 'omx'], { cwd: target, encoding: 'utf8' }));
     expect(shown).toMatchObject({ id: 'omx', source: 'builtin', lane: 'omx-codex' });
+    expect(shown.evidence).toMatchObject({
+      receiptSchema: 'open-scaffold.dispatch-receipt.v1',
+      expectedPaths: ['.osc/runs/<run_id>/dispatch-receipt.json'],
+    });
   }, 15_000);
 
   it('uses a project-local runtime profile in run packets', () => {

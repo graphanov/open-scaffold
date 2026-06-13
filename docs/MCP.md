@@ -57,7 +57,7 @@ Read tools work without extra flags:
 The product front door is exposed read-only (plan 167):
 
 - `get_handoff` — compile the handoff/resume packet from repo truth; equivalent to `osc handoff`.
-- `analyze_loop` — analyze a recorded evolution loop: plateau state, per-criterion deltas, recommendation; equivalent to `osc analyze`.
+- `analyze_loop` — analyze a recorded evolution loop: plateau state, per-criterion deltas, recommendation; equivalent to `osc review` / `osc analyze`.
 - `gate_loop` — compute the judgment checkpoint and retry authorization for a loop, optionally folding in an independent judge ruling; equivalent to `osc gate`. The gate rules on the record but cannot modify it, so a cheap or locally-hosted judge model needs no write access.
 
 Write tools are intentionally gated:

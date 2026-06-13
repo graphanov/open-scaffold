@@ -2,7 +2,7 @@
 
 This page is the single home for Open Scaffold's maturity boundary: what is stable, what is experimental, what is future, and what the project does not claim. Other surfaces state their promise once and link here.
 
-The short version: Open Scaffold is on a pre-1.0 line (`v0.31.x`). The stable core is the work loop and its record — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus the review/trust helpers (`osc first-run`, `osc pr check`, adapter trust inspection, `osc compare`, `osc trace`). Runtime launch beyond the explicit `$work --adapter <id> --allow-spawn` path, evaluation helpers, and external event transports are labeled lab/experimental until a release promotes them.
+The short version: Open Scaffold is on a pre-1.0 line (`v0.31.x`). The stable core is the work loop and its record — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus the handoff/review/gate helpers (`osc first-run`, `osc handoff`, `osc review`, `osc gate`, `osc pr check`, `osc compare`, `osc trace`). Core runtime launch, root adapter dispatch, and the old harness command grammar are not current-package promises.
 
 ## Honest limits
 
@@ -56,7 +56,6 @@ The stable day-two CLI surface is:
 - `osc verify`
 - `osc first-run` as guided repo initialization for the minimum work record
 - `osc pr check` as a PR-native structural check surface
-- `osc adapter check`, `osc adapter trust`, and trusted adapter listing for adapter trust inspection
 - `osc schemas list` and `osc schemas show` for package-visible schema discovery
 - `osc compare` as a read-only first-read demo for comparing two recorded attempts
 - `osc trace` as a read-only replay of one plan's local work-record chain
@@ -81,9 +80,8 @@ The zero-dependency shell helpers remain a stable fallback floor:
 These surfaces are usable but not promised as final API shape. They may change while the project is still below a mature 1.0 contract; pin exact package versions if you depend on their current output shape.
 
 - Runtime profiles and runtime selection beyond run-packet metadata.
-- `osc run`, `osc delegate`, `osc review`, and `osc ultrareview` beyond their current no-spawn artifact-generation role.
-- `osc dispatch` as explicit local-adapter invocation glue; adapter commands, receipts, and launch policy remain experimental and adapter-owned.
-- Historical/repositioned: `osc work --dry-run` previously explored no-spawn natural-language composition, but it is not a live reduced-CLI command after the framework cleanup; future work execution remains gated behind the 2026-05-28 control-loop decision and backlog plan `119-osc-work-execute-controller`.
+- `osc run` and `osc delegate` as no-spawn package-generation helpers.
+- Historical/repositioned: `osc harness`, root `osc dispatch`, root `osc adapter`, runtime-package `osc review`/`osc ultrareview`, and `osc work --dry-run` are no longer live maintained commands after plan 168; future work execution remains external-runner/coordinator-owned unless a new plan restores a controller with fresh evidence.
 - `osc evolve` ledger helpers for repeated attempts; they record attempt/frontier decisions but do not execute or approve work.
 - Evaluation and audit envelope helpers.
 - Optional MCP server interface.
@@ -171,21 +169,20 @@ A version is live only after the registry/package smoke checks and GitHub Releas
 
 The core surface is `osc help`; the full backend/lab surface is `osc help --all`.
 
-Pivot note (plan 167): the core surface is `handoff` / `analyze` / `gate` plus
-the structured-intent commands. The harness `$`-verb grammar and the
-runtime-dispatch surfaces (`start`, `delegate`, `run`, `dispatch`, runtime
-`review`/`ultrareview`) are deprecated, remain functional behind `osc help
---all`, and their removal is staged as plan 168. Migration recipe for scripted
-dispatch while it remains available:
+Pivot note (plan 168): the core surface is `handoff` / `review` / `gate` plus
+the structured-intent commands. `osc analyze` remains a synonym for `osc review`.
+The old harness grammar, root adapter commands, root dispatch command, and
+runtime-package `review`/`ultrareview` command names were removed/repositioned.
+Migration recipe for external execution now stops at a reviewable run packet:
 
 ```bash
 osc plan new <slug> --stage active
 osc run .osc/plans/active/<slug>.md --runtime codex --workflow plan
-osc dispatch .osc/runs/RUN_ID/run.json --adapter <id>
+# hand .osc/runs/RUN_ID/run.json to the external worker/coordinator, then record evidence
 ```
 
 Use `osc run ... --dry-run` only to preview the run packet; rerun without
-`--dry-run` before dispatch so the run package actually exists.
+`--dry-run` only when you want the package written under `.osc/runs/`.
 
 Labels:
 
@@ -201,13 +198,4 @@ Rules:
 - Runtime/spawn-capable commands point at the trust boundaries.
 - Help wording must not imply semantic correctness, compliance, merge/publish authority, or default runtime spawning.
 
-Harness backend maturity:
-
-| Surface | Current maturity |
-|---|---|
-| `$interview`, `$plan`, no-spawn `$work`, `$team` via `osc harness` | lab backend |
-| `$work --allow-spawn --adapter <id>` | experimental adapter-owned execution |
-| `osc feedback record/analyze` | lab backend |
-| `osc bench suite` / `osc bench handoff-lab` | lab/backend reproduction tools |
-
-Removed/repositioned command migration notes live here: use `osc plan new/validate/move`, `osc evidence collect`, `osc trace`, `osc verify --evidence-chain`, external task trackers, and current harness backend routes instead of retired framework-cleanup commands.
+Retired command migration notes live here: use `osc plan new/validate/move`, `osc run` for no-spawn run packets, `osc evidence collect`, `osc trace`, `osc verify --evidence-chain`, `osc review`, `osc gate`, external task trackers, and external runtime/coordinator routes instead of retired framework-cleanup commands.

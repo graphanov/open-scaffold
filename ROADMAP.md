@@ -152,7 +152,7 @@ Goal: support specific harnesses without making them the core system.
 Deliverables:
 
 - OMC binding guidance for Claude Code workflows: `/deep-interview`, `/ralplan`, `/team`, `/ralph`, `/ultrawork` where applicable. First public contract shape: `docs/RUNTIME_BINDING_CONTRACT.md`.
-- OMX binding guidance for Codex workflows: `$deep-interview`, `$ralplan`, `$team`, `$ralph`, `$ultrawork`, `$ultragoal`. First public contract shape: `docs/RUNTIME_BINDING_CONTRACT.md`.
+- Historical OMX binding guidance for Codex workflows lived in runtime-native command tokens. Current core guidance is packet handoff plus external runtime evidence; contract shape: `docs/RUNTIME_BINDING_CONTRACT.md`.
 - Generic handoff packet schema for any future harness. First public contract shape: runtime binding lifecycle, package validation gate, and evidence return contract in `docs/RUNTIME_BINDING_CONTRACT.md`.
 - Failure-state taxonomy: prompt not accepted, session blocked, artifact missing, verification failed, human input needed.
 
@@ -440,7 +440,7 @@ Implementation sequence:
 1. Done — verification trust issue: unsafe strict-mode filename quoting fixed.
 2. Done — `osc start` added as a no-spawn, paste-ready Codex/OMX agent-entry command.
 3. Done — Codex-first adapter package path hardened around `runtime-omx` and the broad `codex` preset.
-4. Done — `osc dispatch <run.json> --adapter <id>` added as explicit local-adapter invocation glue.
+4. Historical/repositioned — `osc dispatch <run.json> --adapter <id>` was added as explicit local-adapter invocation glue and later removed from core in plan 168.
 5. Historical/repositioned — `osc work --dry-run` previously previewed a natural-language task as candidate plan/run/dispatch steps; it is no longer a live reduced-CLI command.
 6. Backlog — `119-osc-work-execute-controller`: design and implement a safe `osc work` run-lifecycle controller that owns plan/package/run/receipt/evidence/verification/human gates while explicit adapters own execution, auth, spawning, sandbox translation, and sessions.
 7. Later — reconsider native runtime ownership only after at least two credible adapter proofs or one production adapter, closed security P0s, real adoption evidence that adapters are insufficient, and a separate ADR accepting process lifecycle and credential burden.

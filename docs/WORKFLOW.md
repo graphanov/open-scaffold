@@ -1,10 +1,10 @@
 # Workflow
 
-A phase-to-tool reference for agent-orchestrated development. This file is the operational reference; `README.md` is the landing page. When in doubt about which tool to reach for, start with the stable repo record: `MISSION.md` → plan → run packet or amendment → evidence → verification → close. Across every phase, the product front door is three commands: `osc handoff` (resume packet for the next session or model), `osc analyze` (review recorded attempts), and `osc gate` (authorize or block the next attempt).
+A phase-to-tool reference for agent-orchestrated development. This file is the operational reference; `README.md` is the landing page. When in doubt about which tool to reach for, start with the stable repo record: `MISSION.md` → plan → run packet or amendment → evidence → verification → close. Across every phase, the product front door is three commands: `osc handoff` (resume packet for the next session or model), `osc review` (review recorded attempts; `osc analyze` remains a synonym), and `osc gate` (authorize or block the next attempt).
 
-The stable core is the file protocol and lifecycle helpers. Lab surfaces such as evolution ledgers, cockpit webhooks, runtime profiles, and adapter dispatch glue are optional layers around that record; they do not replace the plan/evidence/verification/close chain. Historical helpers removed from the reduced maintained CLI, such as `osc work`, `osc dashboard`, `osc task`, `osc plan wizard`, `osc plan graph`, `osc metrics`, and broad `osc doctor --fix`, are migration references only unless a future plan restores them with fresh evidence.
+The stable core is the file protocol and lifecycle helpers. Lab surfaces such as evolution ledgers, cockpit webhooks, and runtime profiles are optional layers around that record; they do not replace the plan/evidence/verification/close chain. Historical helpers removed from the reduced maintained CLI, such as `osc work`, `osc dashboard`, `osc task`, `osc plan wizard`, `osc plan graph`, `osc metrics`, and broad `osc doctor --fix`, are migration references only unless a future plan restores them with fresh evidence.
 
-Named coordinators, harnesses, and status/approval channels (operator surfaces) in this guide are examples. Use the adapter/reference-label taxonomy in the upstream Open Scaffold docs to distinguish public examples, private deployment examples, runtime lanes, adapter candidates, and operator surfaces.
+Named coordinators, harnesses, and status/approval channels (operator surfaces) in this guide are examples. Use the reference-label taxonomy in the upstream Open Scaffold docs to distinguish public examples, private deployment examples, runtime lanes, adapter candidates, and operator surfaces.
 
 ## Development phases
 
@@ -20,7 +20,7 @@ Ask structured questions until the goal, constraints, and acceptance criteria ar
 >
 > **With OMC harness:** use OMC `/deep-interview` from a Claude Code/OMC session, then promote the clarified result into the Open Scaffold plan/spec chain.
 >
-> **With OMX harness:** use OMX `$deep-interview` from a Codex/OMX session, then promote the clarified result into the Open Scaffold plan/spec chain. Runtime-only question/session state remains debug-only until promoted into repo evidence.
+> **With OMX harness:** use an OMX/Codex clarification workflow, then promote the clarified result into the Open Scaffold plan/spec chain. Runtime-only question/session state remains debug-only until promoted into repo evidence.
 
 ### 2. Plan (when the task is non-trivial)
 
@@ -59,9 +59,9 @@ osc plan move <slug> --to backlog
 
 Then fill every TODO before implementation. The helpers create and move structure only; they do not invent acceptance criteria. Shell fallback remains the day-zero floor: copy `.osc/plans/handoff-template.md` into the right stage folder and move files manually when needed.
 
-> **With OMC harness:** Claude Code/OMC planning flows can use `/ralplan` against an Open Scaffold plan or `run.json` work package (run packet).
+> **With OMC harness:** Claude Code/OMC planning flows can use their native planning workflow against an Open Scaffold plan or `run.json` work package (run packet).
 >
-> **With OMX harness:** Codex/OMX planning flows can use `$ralplan` against an Open Scaffold plan or `run.json` work package (run packet).
+> **With OMX harness:** Codex/OMX planning flows can use their native planning workflow against an Open Scaffold plan or `run.json` work package (run packet).
 
 ### 3. Execute (build it)
 
@@ -89,9 +89,9 @@ osc evolve check .osc/evolution/<loop-id>
 
 The evolution ledger records attempts and frontier state only. Retry records must include a repair hypothesis before continuing. External coordinators or OMX-based runtime packages execute attempts; Open Scaffold core does not spawn runtimes or choose a winner.
 
-> **With OMC harness:** `/ralph` for Claude Code completion loops; `/team` or `/ultrawork` for parallel fan-out across multiple Claude Code-oriented agents.
+> **With OMC harness:** Claude Code/OMC completion or team workflows for parallel fan-out across multiple Claude Code-oriented agents.
 >
-> **With OMX harness:** `$ralph` for Codex persistent completion loops; `$team` for tmux-backed Codex worker teams; `$ultrawork` for parallel execution; promote runtime evidence back into Open Scaffold.
+> **With OMX harness:** Codex/OMX completion or team workflows for persistent and parallel execution; promote runtime evidence back into Open Scaffold.
 >
 > **IDE-native:** Antigravity + Gemini agent pane for inline refactors and UI tweaks.
 
@@ -160,7 +160,7 @@ When your plan has multiple tasks, use this decision tree to decide how to execu
 
 3. **Do you have a capable runtime/agent?** (Can it read plan files and use tools?)
    - **Yes, with OMC harness →** Use Claude Code/OMC-specific workflows such as `/team`, `/ultrawork`, or `/ralph` against the Open Scaffold plan or `run.json` work package.
-   - **Yes, with OMX harness →** Use Codex/OMX-specific workflows such as `$team`, `$ralph`, `$ultrawork`, or `$ralplan` against the Open Scaffold plan or `run.json` work package.
+   - **Yes, with OMX harness →** Use Codex/OMX-specific workflows such as team, retry, execution, or planning workflows against the Open Scaffold plan or `run.json` work package.
    - **Yes, plain Claude Code/Codex or similar →** The agent reads the Execution Strategy section and describes the parallelism opportunity. You decide how to act on it.
    - **No agent, or local LLM →** Run `./delegate.sh <plan-path>` to generate actionable prompts you can paste into separate terminal sessions.
 
@@ -171,7 +171,7 @@ What works at each level of tooling:
 | Tier | Agent reads Execution Strategy? | Auto-proposes delegation? | Fallback |
 |------|--------------------------------|--------------------------|----------|
 | **OMC harness** | Yes | Yes — Claude Code/OMC workflows can propose `/team`, `/ultrawork`, `/ralph` with specific groups | Claude Code + OMC automation |
-| **OMX harness** | Yes | Yes — Codex/OMX workflows can propose `$team`, `$ralph`, `$deep-interview`, `$ralplan` handoffs | Codex + OMX automation |
+| **OMX harness** | Yes | Yes — Codex/OMX workflows can propose team, retry, clarification, or planning handoffs | Codex + OMX automation |
 | **Plain Claude Code/Codex** (or similar capable agent) | Yes, if instructed via CLAUDE.md/AGENTS.md | Describes the opportunity; human decides | Agent-assisted |
 | **Local LLM / no agent** | No | No | Run `./delegate.sh <plan-path>` for terminal prompts |
 

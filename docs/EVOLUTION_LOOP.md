@@ -1,6 +1,6 @@
 # Evolution Loop Contract — the record and the gate
 
-This is the engine behind the product front door: `osc analyze` (alias of
+This is the engine behind the product front door: `osc review` (with `osc analyze` as a synonym of
 `osc evolve analyze`) reads recorded attempts and reports plateaus, failing
 criteria, and requirements that deserve questioning; `osc gate` (alias of
 `osc evolve checkpoint`) converts that — plus an optional independent judge
@@ -164,9 +164,7 @@ Actions:
   or task design is amended.
 - `stop` routes to closeout/human review instead of another retry.
 
-`osc harness '$work ... --checkpoint <loop-dir>'` runs the same checkpoint before
-runtime dispatch. If retry is blocked, `$work` writes `judgment-checkpoint.json`,
-`controller-signal.md`, feedback, status, and postflight, then refuses to launch
+External workers can run `osc gate <loop-dir>` before another attempt. If retry is blocked, record the gate output, feedback, and next action in evidence before handing a new package to the worker
 the adapter even when `--allow-spawn` is present.
 
 This makes judgment the mandatory step and makes the work record ambient: the

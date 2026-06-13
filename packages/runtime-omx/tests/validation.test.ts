@@ -15,7 +15,7 @@ function expectValidationError(fn: () => unknown, message: string) {
 }
 
 describe('runtime-omx validation and default no-spawn receipt', () => {
-  it('accepts a valid OMX $ralplan run packet and writes deterministic artifacts', () => {
+  it('accepts a valid core-generated OMX ralplan run packet and writes deterministic artifacts', () => {
     const { root, path } = tempRunPacket();
 
     const result = runNoSpawnOmx(path);
@@ -69,6 +69,9 @@ describe('runtime-omx validation and default no-spawn receipt', () => {
     expect(evidence).toContain('Workflow: $ralplan');
     expect(evidence).toContain('Spawned: false');
     expect(evidence).toContain('Commit/push/merge/publish authority: false');
+
+    const legacy = tempRunPacket({ executor: { lane: 'omx-codex', harnessSkill: '$ralplan', spawning: false } });
+    expect(() => runNoSpawnOmx(legacy.path)).not.toThrow();
   });
 
   it('rejects unsupported schemaVersion', () => {
@@ -172,16 +175,16 @@ describe('runtime-omx validation and default no-spawn receipt', () => {
     expectValidationError(() => runNoSpawnOmx(path), 'runtimeSelection.workflow must be plan');
   });
 
-  it('rejects mismatched executor lane or missing $ralplan harness skill', () => {
-    const lane = tempRunPacket({ executor: { lane: 'plain-agent', harnessSkill: '$ralplan', spawning: false } });
+  it('rejects mismatched executor lane or missing ralplan harness skill', () => {
+    const lane = tempRunPacket({ executor: { lane: 'plain-agent', harnessSkill: 'ralplan', spawning: false } });
     expectValidationError(() => runNoSpawnOmx(lane.path), 'executor.lane must be omx-codex');
 
     const skill = tempRunPacket({ executor: { lane: 'omx-codex', harnessSkill: '$team', spawning: false } });
-    expectValidationError(() => runNoSpawnOmx(skill.path), 'executor.harnessSkill must be $ralplan');
+    expectValidationError(() => runNoSpawnOmx(skill.path), 'executor.harnessSkill must be ralplan');
   });
 
   it('rejects executor spawning true and runtime process handles', () => {
-    const spawning = tempRunPacket({ executor: { lane: 'omx-codex', harnessSkill: '$ralplan', spawning: true } });
+    const spawning = tempRunPacket({ executor: { lane: 'omx-codex', harnessSkill: 'ralplan', spawning: true } });
     expectValidationError(() => runNoSpawnOmx(spawning.path), 'executor.spawning must be false');
 
     const handle = tempRunPacket({ runtime: { repoPath: spawning.root, worktreePath: spawning.root, branch: 'main', tmuxSession: 'omx-demo', processId: 123 } });
@@ -196,7 +199,7 @@ describe('runtime-omx validation and default no-spawn receipt', () => {
   });
 
   it('writes no artifacts when validation fails', () => {
-    const { root, path } = tempRunPacket({ executor: { lane: 'omx-codex', harnessSkill: '$ralplan', spawning: true } });
+    const { root, path } = tempRunPacket({ executor: { lane: 'omx-codex', harnessSkill: 'ralplan', spawning: true } });
     expectValidationError(() => runNoSpawnOmx(path), 'executor.spawning must be false');
     expect(existsSync(join(root, '.osc/runs/demo/dispatch-receipt.json'))).toBe(false);
     expect(existsSync(join(root, '.osc/runs/demo/runtime-omx-evidence.md'))).toBe(false);

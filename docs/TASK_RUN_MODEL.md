@@ -106,7 +106,7 @@ Runtime state is live/forensic — useful for investigation, not durable project
 
 ## Minimal run record
 
-`osc run`, `osc delegate`, `osc review`, and `osc ultrareview` generate `run.json` with this v1 shape:
+`osc run` and `osc delegate` generate `run.json` with this v1 shape. `osc review`/`osc analyze` read recorded attempts later; they do not create run packets.
 
 ```json
 {
@@ -146,7 +146,7 @@ Runtime state is live/forensic — useful for investigation, not durable project
   },
   "executor": {
     "lane": "omx-codex",
-    "harnessSkill": "$ralplan",
+    "harnessSkill": "ralplan",
     "spawning": false,
     "note": "Generic open-scaffold creates prompt/artifact bundles only. Coordinators or runtime adapters perform autonomous spawning."
   },

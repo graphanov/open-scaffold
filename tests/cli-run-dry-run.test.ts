@@ -126,7 +126,7 @@ describe('osc run --dry-run', () => {
     expect(result.stdout).toContain('Would create run');
     expect(result.stdout).toContain('executor omx-codex');
     expect(result.stdout).toContain('workflow plan');
-    expect(result.stdout).toContain('harness skill $ralplan');
+    expect(result.stdout).toContain('harness skill ralplan');
     expect(result.stdout).toContain('src/demo.ts');
     const after = existsSync(join(target, '.osc/runs')) ? readdirSync(join(target, '.osc/runs')) : [];
     expect(after).toEqual(before);

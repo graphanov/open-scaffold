@@ -33,6 +33,9 @@ const removedCommandPatterns = [
   /osc study(?=\s|`|<|"|$)/g,
   /osc ab(?=\s|`|<|"|$)/g,
   /osc doctor --fix/g,
+  /osc harness(?=\s|`|<|\"|$)/g,
+  /osc dispatch(?=\s|`|<|\"|$)/g,
+  /osc adapter(?=\s|`|<|\"|$)/g,
   /osc commands(?=\s|`|<|"|$)/g,
   /src\/command-maturity\.ts/g,
   /tests\/resume-snapshot\.test\.ts/g,
@@ -63,14 +66,13 @@ describe('reduced CLI documentation coherence', () => {
     expect(unmarked).toEqual([]);
   });
 
-  it('keeps the removed work replacement recipe dispatchable', () => {
-    // 167: the dispatch surfaces left the README with the pivot; the migration
-    // recipe lives in STABILITY's command-maturity section until plan 168
-    // removes the surfaces themselves.
+  it('keeps the removed work replacement recipe packet-only', () => {
+    // 168: dispatch/adapter execution left the maintained CLI. The migration
+    // recipe now stops at a reviewable run packet for an external worker.
     const stability = readFileSync(resolve(repoRoot, 'docs/STABILITY.md'), 'utf8');
 
     expect(stability).toContain('osc run .osc/plans/active/<slug>.md --runtime codex --workflow plan');
     expect(stability).toContain('Use `osc run ... --dry-run` only to preview the run packet');
-    expect(stability).not.toContain('osc run .osc/plans/active/<slug>.md --dry-run --runtime codex --workflow plan\nosc dispatch .osc/runs/RUN_ID/run.json');
+    expect(stability).not.toContain('osc dispatch .osc/runs/RUN_ID/run.json');
   });
 });

@@ -214,10 +214,10 @@ function deriveNextAction(input: {
   if (input.run && input.run.pending_gates > 0) {
     const gateId = input.run.pending_gate_ids[0] ?? '<gate-id>';
     return {
-      action: `Answer the pending human gate "${gateId}" on run ${input.run.run_id}, then continue the run.`,
+      action: `Record the answer for gate ${gateId} in evidence or the external coordinator, then continue from repo truth.`,
       commands: [
-        `osc harness answer ${input.run.run_id} --gate ${gateId} --answer "<your answer>"`,
-        `osc harness status ${input.run.run_id}`,
+        `osc trace ${input.plan?.slug ?? '<plan-slug>'}`,
+        `osc evidence new ${input.plan?.slug ?? '<plan-slug>'}`,
       ],
     };
   }
@@ -227,8 +227,8 @@ function deriveNextAction(input: {
         ? `Retry run ${input.run.run_id} with the recorded repair hypothesis: ${input.repairHypothesis}`
         : `Inspect why run ${input.run.run_id} is ${input.run.state}, record feedback with a repair hypothesis, then retry.`,
       commands: [
-        `osc harness status ${input.run.run_id}`,
-        `osc harness '$work "retry the failed slice" --context "see resume packet" --retry-of ${input.run.run_id} --handoff'`,
+        `osc trace ${input.plan?.slug ?? '<plan-slug>'}`,
+        `osc run .osc/plans/active/${input.plan?.slug ?? '<plan-slug>'}.md --dry-run`,
       ],
     };
   }

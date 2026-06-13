@@ -31,30 +31,20 @@ Local operator state is intentionally gitignored and must not become public trut
 
 ## Dispatch and adapters
 
-`osc dispatch` invokes only an explicitly selected project-local adapter config at `.osc/adapters/<id>.json`.
+Root `osc adapter` trust commands and root `osc dispatch` execution were retired in plan 168. Current Open Scaffold core writes run packets, handoff/review/gate records, and schema metadata; external coordinators or runtime-specific packages consume those packets outside the core CLI.
 
-Adapter configs are **untrusted by default**. Review the file, then record a local digest:
+Adapter configs and launchers are still **untrusted by default**. Review them outside Open Scaffold core before use, and keep any local trust record gitignored. A future command that reintroduces adapter trust must restore digest checks, restricted environment handling, bounded logs, path-contained receipt/evidence output, and explicit owner approval before spawn-capable behavior.
 
-```bash
-osc adapter check <id>
-osc adapter trust <id>
-osc adapter list --trusted
-```
+Runtime-specific packages such as `@open-scaffold/runtime-omx` must:
 
-Dispatch refuses an untrusted adapter or a trusted adapter whose config digest changed. Trust records live under `.osc/state/trusted-adapters.json` and are gitignored by default.
+- pass a restricted environment only;
+- report environment key names, never values;
+- bound timeouts and stdout/stderr log bytes;
+- redact common token/webhook/path patterns from retained logs;
+- keep receipt/evidence discovery path-contained under the run directory;
+- stop before commit, push, PR creation, merge, publish, release, deploy, or credential changes.
 
-By default dispatch:
-
-- passes a restricted environment only;
-- allows parent environment variables only through `envAllowlist`;
-- allows explicit adapter-provided `env` values from the reviewed config;
-- reports environment key names, never values;
-- bounds adapter timeout and stdout/stderr log bytes;
-- redacts common token/webhook/path patterns from retained logs;
-- keeps receipt/evidence discovery path-contained under the run directory;
-- stops before commit, push, PR creation, merge, publish, release, deploy, or credential changes.
-
-`--allow-full-env` is an unsafe local override. It is for exceptional local debugging only, is refused in CI unless separately acknowledged, and should not be used in reusable workflows.
+Unsafe local overrides such as full environment passthrough belong in package-specific debugging flows only. They should be refused in CI unless separately acknowledged and should not be used in reusable workflows.
 
 ## Runtime spawning boundary
 

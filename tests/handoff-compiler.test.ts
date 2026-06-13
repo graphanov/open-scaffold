@@ -4,9 +4,9 @@ import { compileHandoffPacket, validateHandoffPacket } from '../src/handoff.js';
 describe('handoff compiler', () => {
   it('enforces required sections and a character budget for compact continuation packets', () => {
     const compiled = compileHandoffPacket({
-      state: 'Prior work attempted the harness router and docs, but verification evidence is incomplete. '.repeat(12),
+      state: 'Prior work attempted the retired command router and docs, but verification evidence is incomplete. '.repeat(12),
       decisions: [
-        'Use four commands only: $interview, $plan, $work, $team.',
+        'Use handoff/review/gate over recorded facts.',
         'Keep evidence refs instead of raw logs.',
       ],
       blockers: ['Exact live Codex reproduction is not available in this smoke.'],
