@@ -249,8 +249,8 @@ This sample must not count as the real section.
     expect(hash(planIssueSnapshot)).toBe('fcba259ea43964013a5a23e4e0847b1398a49e27a8acb6d5f424132eedcf0f8b');
     expect(scaffold.failures).toEqual([]);
     // 168: evidence note 2026-06-12-168-dollar-verb-retirement.md added to .osc/releases.
-    // 170 closeout: evidence note 2026-06-13-170-ambient-capture.md added with live capture receipts.
-    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('50f774fe1c9f25be8493ba0855608aeabee974ee8e6beb143c0beceddd796a89');
+    // 170 review hardening: evidence note refreshed with PR URL, final test count, and Codex-reported total_tokens.
+    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('2b719557cc593d3f0c8a18536e876fbeb9185bab9f437f1b4bb77ca7b141375e');
     expect(realPlanFiles().every((path) => statSync(path).isFile())).toBe(true);
   });
 });
