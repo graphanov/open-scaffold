@@ -48,6 +48,7 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-13: closed 170-ambient-capture — Shipped osc capture ambient transcript extraction with claude-code, codex, and generic JSONL parsers; verified against owner-local real transcripts.
 - 2026-06-12: closed 168-dollar-verb-retirement — retired the dollar-verb harness/dispatch layer, made osc review the recorded-attempt analysis front door, and removed the outdated README GIF
 - 2026-06-12: Owner added README first-screen cleanup: remove the outdated resume screencast GIF from README and delete the obsolete tracked GIF asset in this slice. — see .osc/plans/done/168-dollar-verb-retirement-amendment-1.md
 - 2026-06-12: closed 167-provenance-review-pivot — Product recentered on record/handoff/review-gate with receipts: read-only MCP front door smoke-tested vs Claude Code and Codex, OpenAI-compatible reviewer profile validated with a local judge on a real record, live ambient SessionEnd hook, and a 6/8-to-8/8 judge-feeds-worker run; $-verb removal staged as plan 168.

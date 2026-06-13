@@ -245,11 +245,12 @@ This sample must not count as the real section.
     const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
     // 169 planning: staged review-battery backlog plan after dollar-verb retirement.
-    // 170: added active plan 170-ambient-capture (osc capture) to the corpus.
-    expect(hash(planIssueSnapshot)).toBe('d14aa648f280c04baf4aa6e047cbe449e29c2298e5271e17b095388e902e3e32');
+    // 170 closeout: moved capture plan to done and added local evidence note.
+    expect(hash(planIssueSnapshot)).toBe('fcba259ea43964013a5a23e4e0847b1398a49e27a8acb6d5f424132eedcf0f8b');
     expect(scaffold.failures).toEqual([]);
     // 168: evidence note 2026-06-12-168-dollar-verb-retirement.md added to .osc/releases.
-    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('77d3ca8072b68fddcc790d96171145c744b770bf3f681145bc0fd0c56a77c618');
+    // 170 closeout: evidence note 2026-06-13-170-ambient-capture.md added with live capture receipts.
+    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('50f774fe1c9f25be8493ba0855608aeabee974ee8e6beb143c0beceddd796a89');
     expect(realPlanFiles().every((path) => statSync(path).isFile())).toBe(true);
   });
 });
