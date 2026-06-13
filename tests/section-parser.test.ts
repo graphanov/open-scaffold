@@ -246,12 +246,12 @@ This sample must not count as the real section.
 
     // 169 planning: staged review-battery backlog plan after dollar-verb retirement.
     // 170 closeout: moved capture plan to done and added local evidence note.
-    // 171 release-sync candidate: active package-sync plan for publishing osc capture as v0.32.0.
-    expect(hash(planIssueSnapshot)).toBe('14ef772b59d40494cf04148f7915fdd185c464d3f7bf166a0c4baa0cc6c5d0fb');
+    // 171 release closeout: moved package-sync plan to done after npm/GitHub Release publication proof.
+    expect(hash(planIssueSnapshot)).toBe('e3fcec1d420d1028af71196ba77ee2733376e204408394e4a53fb5b67ee2e90c');
     expect(scaffold.failures).toEqual([]);
     // 168: evidence note 2026-06-12-168-dollar-verb-retirement.md added to .osc/releases.
     // 170 review hardening: evidence note refreshed with PR URL, final test count, and Codex-reported total_tokens.
-    // 171 release-sync candidate: added v0.32.0 release evidence note with publication gates still pending.
+    // 171 release closeout: finalized v0.32.0 publication evidence note; release-warning set unchanged.
     expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('09888cbb861ca90060a1fd4ad1cda2f99dc87284da775ab3eceaacfafbc2ff5a');
     expect(realPlanFiles().every((path) => statSync(path).isFile())).toBe(true);
   });

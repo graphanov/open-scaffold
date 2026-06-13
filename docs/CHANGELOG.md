@@ -6,11 +6,11 @@ For live package truth, check npm. For live release truth, check GitHub Releases
 
 ## v0.32.0 — Ambient capture package sync
 
-Status: release candidate in repo for `open-scaffold@0.32.0`; live npm `latest` and GitHub Latest Release remain `v0.31.1` until owner-approved trusted publishing and release follow-through complete.
+Status: published to npm as `open-scaffold@0.32.0`; GitHub Release `v0.32.0` is Latest after owner-approved trusted publishing and release follow-through.
 
 Highlights:
 
-- Publishes merged `osc capture` work from PR #215 to the public `npx open-scaffold@latest` package surface once the release is approved and published.
+- Publishes merged `osc capture` work from PR #215 to the public `npx open-scaffold@latest` package surface.
 - Adds read-only transcript capture for Claude Code, Codex, and generic JSONL into the existing `osc.ambient-work-record.v1` schema.
 - Ships capture docs plus Claude Code/Codex hook examples, with default records written under ignored `.osc/state/ambient/` and Codex notify capture scoped by event `thread-id` / `CODEX_HOME`.
 - Keeps capture explicitly observational: no runtime spawning, no approval, no correctness certification, no compliance claim, and no 1.0 maturity claim.
@@ -19,13 +19,13 @@ Evidence:
 
 - Source plan: `.osc/plans/done/170-ambient-capture.md`
 - Source PR: https://github.com/graphanov/open-scaffold/pull/215
-- Release-sync plan: `.osc/plans/active/171-capture-package-sync.md`
+- Release-sync plan: `.osc/plans/done/171-capture-package-sync.md`
 - Release-sync PR: https://github.com/graphanov/open-scaffold/pull/216
 - Release-sync evidence note: `.osc/releases/2026-06-13-171-capture-package-sync.md`
 
 ## v0.31.1 — Harness release readiness package sync
 
-Status: published to npm as `open-scaffold@0.31.1`; GitHub Release `v0.31.1` is Latest after owner-approved trusted publishing and release follow-through.
+Status: published to npm as `open-scaffold@0.31.1`; GitHub Release `v0.31.1` was Latest after owner-approved trusted publishing and release follow-through, then was superseded by `v0.32.0`.
 
 Highlights:
 
