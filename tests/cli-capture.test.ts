@@ -78,6 +78,24 @@ describe('osc capture CLI surface', () => {
     expect(result.stderr).toContain('Transcript not found');
   });
 
+  it('refuses to overwrite the transcript when --out resolves to the input file', () => {
+    const repo = tempRepo();
+    const transcript = join(repo, 'copy.jsonl');
+    const original = readFileSync(join(fixtures, 'codex.jsonl'), 'utf8');
+    writeFileSync(transcript, original, 'utf8');
+    const result = run(['capture', '--from', 'codex', '--transcript', transcript, '--out', transcript], repo);
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('--out must not overwrite --transcript');
+    expect(readFileSync(transcript, 'utf8')).toBe(original);
+  });
+
+  it('is hook-safe: --hook-safe never breaks the session on malformed option values', () => {
+    const repo = tempRepo();
+    const result = run(['capture', '--from', 'codex', '--transcript', '--hook-safe'], repo);
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+  });
+
   it('is hook-safe: --hook-safe never breaks the session on missing input (exit 0, no record)', () => {
     const repo = tempRepo();
     const result = run(['capture', '--from', 'codex', '--transcript', join(repo, 'missing.jsonl'), '--hook-safe'], repo);

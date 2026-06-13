@@ -975,6 +975,29 @@ function captureHelp(): string {
   ].join('\n');
 }
 
+function validateCaptureOptions(args: string[]): string | null {
+  const valueFlags = new Set(['--from', '--transcript', '--out', '--output', '--session-id', '--repo']);
+  const booleanFlags = new Set(['--detect', '--json', '--hook-safe']);
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (!arg.startsWith('--')) continue;
+    const [flag, inlineValue] = arg.split('=', 2);
+    if (valueFlags.has(flag)) {
+      if (arg.includes('=')) {
+        if (!inlineValue) return `Missing value for ${flag}`;
+      } else {
+        const next = args[i + 1];
+        if (!next || next.startsWith('--')) return `Missing value for ${flag}`;
+        i += 1;
+      }
+      continue;
+    }
+    if (booleanFlags.has(flag) && !arg.includes('=')) continue;
+    return `Unknown option for capture: ${flag}`;
+  }
+  return null;
+}
+
 // `osc capture` runs after a session ends and must be hook-safe: a malformed or missing
 // transcript can never break the triggering session. Exit-code contract:
 //   - successful capture -> 0
@@ -983,12 +1006,13 @@ function captureHelp(): string {
 // All errors are caught here; nothing bubbles to main()'s catch (which would exit 1).
 function captureCommand(args: string[]): void {
   if (isHelpArg(args[0])) { console.log(captureHelp()); return; }
-  validateOptions(args, ['--from', '--transcript', '--out', '--output', '--session-id', '--repo'], ['--detect', '--json', '--hook-safe'], 'capture');
   const hookSafe = has(args, '--hook-safe');
   const fail = (message: string): void => {
     if (hookSafe) return; // hook wrapper path: record nothing, never break the session
     die(message, 2);
   };
+  const optionError = validateCaptureOptions(args);
+  if (optionError) { fail(optionError); return; }
 
   const fromRaw = value(args, '--from');
   let format: CaptureFormat | undefined;
@@ -1009,7 +1033,7 @@ function captureCommand(args: string[]): void {
     const runId = String(result.record.runId);
     const explicitOut = value(args, '--out') ?? value(args, '--output');
     const outPath = explicitOut ?? defaultOutPath(repoRoot, runId);
-    const writtenPath = writeCaptureRecord(repoRoot, outPath, result.record, explicitOut !== undefined);
+    const writtenPath = writeCaptureRecord(repoRoot, outPath, result.record, explicitOut !== undefined, [transcriptPath]);
     if (has(args, '--json')) {
       console.log(JSON.stringify({ path: relativeToCwd(writtenPath), format: result.format, detected: result.detected, record: result.record }, null, 2));
     } else {

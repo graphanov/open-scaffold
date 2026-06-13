@@ -86,6 +86,14 @@ function addFilePathsFromObject(value: unknown, files: Set<string>): void {
   }
 }
 
+function redactUnknown(value: unknown): unknown {
+  if (typeof value === 'string') return redactSecrets(value);
+  if (Array.isArray(value)) return value.map((item) => redactUnknown(item));
+  const record = asRecord(value);
+  if (!record) return value;
+  return Object.fromEntries(Object.entries(record).map(([key, item]) => [key, redactUnknown(item)]));
+}
+
 // --- Claude Code: session JSONL ({type:"assistant", message:{usage, content:[...]}}) ---
 // Ports examples/spikes/ambient-from-transcript.mjs: assistant turns, per-turn usage
 // totals (input/output/cache split), tool-call census, files touched, session span,
@@ -412,7 +420,7 @@ export function captureRecord(options: CaptureOptions): CaptureResult {
   if (parsed.malformed > 0) {
     observed.notes.push(`tolerated ${parsed.malformed} malformed/non-object json line(s).`);
   }
-  const record = buildTranscriptWorkRecord({ runId, adapter, command, intent, observed });
+  const record = buildTranscriptWorkRecord({ runId, adapter, command, intent: redactUnknown(intent), observed });
   return { record, format, detected };
 }
 
@@ -458,11 +466,23 @@ export function defaultOutPath(repoRoot: string, runId: string): string {
  *   The default path is never `explicit`, so it can never silently escape the repo.
  * Returns the absolute path written.
  */
-export function writeCaptureRecord(repoRoot: string, out: string, record: Record<string, unknown>, explicit = false): string {
+export function writeCaptureRecord(
+  repoRoot: string,
+  out: string,
+  record: Record<string, unknown>,
+  explicit = false,
+  forbiddenPaths: string[] = [],
+): string {
   const root = realOrResolve(resolve(repoRoot));
   // Realpath both sides so a symlinked root prefix (e.g. macOS /var -> /private/var)
   // cancels and the relativeness check reflects the true tree, not the link surface.
   const absolute = realOrResolve(isAbsolute(out) ? resolve(out) : resolve(root, out));
+  for (const forbiddenPath of forbiddenPaths) {
+    const forbiddenAbsolute = realOrResolve(isAbsolute(forbiddenPath) ? resolve(forbiddenPath) : resolve(process.cwd(), forbiddenPath));
+    if (absolute === forbiddenAbsolute) {
+      throw new CaptureUsageError('--out must not overwrite --transcript; choose a separate record path.');
+    }
+  }
   const relativeOut = relative(root, absolute).split('\\').join('/');
   const insideRepo = relativeOut !== '' && relativeOut !== '.' && !relativeOut.startsWith('..');
   if (insideRepo) {

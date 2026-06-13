@@ -130,6 +130,21 @@ describe('malformed-line tolerance', () => {
 });
 
 describe('redaction', () => {
+  it('redacts transcript intent before digesting it', () => {
+    const intentText = 'Use token sk-proj-abcdefghijklmnopqrstuvwxyzABCDEF123456 and inspect /Users/someone/secret.txt.';
+    const rawIntent = [{ type: 'text', text: intentText }];
+    const redactedIntent = [{ type: 'text', text: redactSecrets(intentText) }];
+    const rawText = [
+      JSON.stringify({ type: 'user', timestamp: '2026-06-13T10:00:00.000Z', message: { role: 'user', content: rawIntent } }),
+      JSON.stringify({ type: 'assistant', timestamp: '2026-06-13T10:00:01.000Z', message: { role: 'assistant', usage: { input_tokens: 1, output_tokens: 1 }, content: [{ type: 'text', text: 'Done.' }] } }),
+    ].join('\n');
+
+    const record = captureRecord({ transcriptPath: 'inline-claude', format: 'claude-code', rawText });
+
+    expect(record.record.intentDigest).toBe(ambientDigest(redactedIntent));
+    expect(record.record.intentDigest).not.toBe(ambientDigest(rawIntent));
+  });
+
   it('redacts secrets before digesting the final message (no token leaks into the record)', () => {
     const record = captureRecord({ transcriptPath: claudeFixture, format: 'claude-code' });
     const serialized = JSON.stringify(record.record);
