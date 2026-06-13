@@ -17,7 +17,7 @@ capture boundary language explicit: observed facts only, not approval or correct
 ## Verification
 
 - `npm run build` — PASS after rebase and closeout candidate; TypeScript compiled core and runtime-omx.
-- `npm test` — PASS after rebase and closeout candidate; 48 files / 532 tests passed.
+- `npm test` — PASS after rebase and closeout candidate; 48 files / 533 tests passed.
 - `./verify.sh --strict` — PASS after rebase and closeout candidate; 10 pass / 0 fail / 0 warn.
 - `git diff --check` — PASS after rebase and closeout candidate.
 - Real Codex rollout capture (owner-local transcript, output written only under `/tmp`) — PASS:
