@@ -82,7 +82,7 @@ function addFilePathsFromObject(value: unknown, files: Set<string>): void {
   const record = asRecord(value);
   if (!record) return;
   for (const key of ['file_path', 'path', 'filePath', 'notebook_path']) {
-    if (typeof record[key] === 'string' && record[key]) files.add(record[key] as string);
+    if (typeof record[key] === 'string' && record[key]) files.add(redactSecrets(record[key] as string));
   }
 }
 

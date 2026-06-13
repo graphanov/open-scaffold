@@ -146,6 +146,20 @@ describe('redaction', () => {
     expect(record.record.intentDigest).not.toBe(ambientDigest(rawIntent));
   });
 
+  it('redacts private local paths before recording touched files', () => {
+    const rawText = [
+      JSON.stringify({ timestamp: '2026-06-13T11:00:00.000Z', type: 'response_item', payload: { type: 'function_call', name: 'shell', arguments: JSON.stringify({ file_path: '/Users/someone/project/secret.ts' }) } }),
+      JSON.stringify({ timestamp: '2026-06-13T11:00:01.000Z', type: 'event_msg', payload: { type: 'agent_message', message: 'Done.' } }),
+    ].join('\n');
+
+    const record = captureRecord({ transcriptPath: 'inline-codex', format: 'codex', rawText });
+    const observedRecord = record.record.observed as Record<string, any>;
+    const serialized = JSON.stringify(record.record);
+
+    expect(observedRecord.files_touched).toEqual(['/[local-path-redacted]']);
+    expect(serialized).not.toContain('/Users/someone');
+  });
+
   it('redacts secrets before digesting the final message (no token leaks into the record)', () => {
     const record = captureRecord({ transcriptPath: claudeFixture, format: 'claude-code' });
     const serialized = JSON.stringify(record.record);

@@ -37,9 +37,10 @@ capture boundary language explicit: observed facts only, not approval or correct
   CLI help arrays carry plan-170 rationale comments.
 - Review hardening — PASS: `--out` may not overwrite the transcript, malformed capture options
   remain hook-safe under `--hook-safe`, the example hook climbs from nested cwd to the
-  scaffold root, Codex records preserve the runtime-reported `total_tokens`, the checked-in
-  Codex notify hook matches the documented registration path, transcript intent is redacted
-  before digesting, and the schema registry names `osc capture` as an
+  scaffold root, Codex records preserve the runtime-reported `total_tokens`, example hooks use
+  this checkout's absolute `tsx` loader fallback, the checked-in Codex notify hook matches the
+  documented registration path, transcript intent and touched local paths are redacted before
+  recording/digesting, and the schema registry names `osc capture` as an
   `osc.ambient-work-record.v1` emitter.
 - Commit-structure review — PASS: only the final feature commit touches `src/cli.ts`; capture
   implementation/tests/docs remain isolated in earlier commits, with one follow-up test-only

@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, '..', '..');
 const distCli = join(repoRoot, 'dist', 'cli.js');
+const tsxLoader = join(repoRoot, 'node_modules', 'tsx', 'dist', 'loader.mjs');
 
 let event = {};
 try {
@@ -45,7 +46,10 @@ if (!rollout) process.exit(0);
 
 const cliArgs = existsSync(distCli)
   ? [distCli]
-  : ['--import', 'tsx', join(repoRoot, 'src', 'cli.ts')];
+  : existsSync(tsxLoader)
+    ? ['--import', tsxLoader, join(repoRoot, 'src', 'cli.ts')]
+    : null;
+if (!cliArgs) process.exit(0);
 
 spawnSync(process.execPath, [
   ...cliArgs,

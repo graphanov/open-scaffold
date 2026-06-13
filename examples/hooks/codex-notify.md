@@ -31,7 +31,7 @@ The checked-in `examples/hooks/codex-notify.mjs` is the program referenced above
 
 - ignores non-complete events;
 - finds the newest `~/.codex/sessions/**/rollout-*.jsonl`;
-- invokes this checkout's built `dist/cli.js` (or `src/cli.ts` via `tsx` in development);
+- invokes this checkout's built `dist/cli.js` (or this checkout's absolute `tsx` loader in development);
 - runs `osc capture --from codex --hook-safe`, so it can never break a Codex session.
 
 ## Boundary
