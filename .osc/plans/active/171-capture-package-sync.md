@@ -26,6 +26,7 @@ Prepare a verified `open-scaffold@0.32.0` release-sync PR that bumps package met
 
 - `package.json` and `package-lock.json` — bump package version to `0.32.0`.
 - `docs/CHANGELOG.md` — add the adoption-facing `v0.32.0` candidate entry while keeping `v0.31.1` as the live Latest until publication.
+- `README.md`, `docs/STABILITY.md`, and `ROADMAP.md` — move adoption-facing forward-line wording from `v0.31.x` to `v0.32.x` so the published package is internally consistent.
 - `.osc/plans/active/171-capture-package-sync.md` — this release-sync plan.
 - `.osc/releases/2026-06-13-171-capture-package-sync.md` — candidate release evidence note.
 - `tests/section-parser.test.ts` — only if the live-corpus hash changes after adding this plan/evidence.
@@ -36,7 +37,7 @@ Prepare a verified `open-scaffold@0.32.0` release-sync PR that bumps package met
 - [x] Release-truth docs distinguish candidate repo state from live npm/GitHub Release state before publication.
 - [x] Local release gates pass: `npm ci`, `git diff --check`, `./verify.sh --strict`, `npm test -- --run`, `npm run build`, `npm run osc -- doctor --check secret-scan`, `npm pack --dry-run --json`, and `npm publish --dry-run --tag latest`.
 - [x] Package payload inspection confirms `open-scaffold@0.32.0`, includes `dist/cli.js`, `docs/CAPTURE.md`, and `examples/hooks/*`, and excludes `__pycache__`/`.pyc` files.
-- [ ] Release-sync PR is opened against `main`; CI/review state is reported, but merge remains owner-gated.
+- [x] Release-sync PR is opened against `main`; CI/review state is reported, but merge remains owner-gated.
 - [x] No npm publish, GitHub Release, version tag, deploy, or `main` push occurs in this slice.
 
 ## Verification steps

@@ -37,7 +37,7 @@ Candidate gates before PR-ready:
 - [x] `npm run osc -- doctor --check secret-scan` — PASS: `PASS secret-scan: no obvious token/webhook strings found.`
 - [x] `npm pack --dry-run --json` payload inspection after rebuilding — PASS for `open-scaffold@0.32.0`; entry count 205; required `dist/cli.js`, `dist/capture.js`, `dist/ambient.js`, `docs/CAPTURE.md`, and `examples/hooks/*` files present; no `__pycache__`/`.pyc` files.
 - [x] `npm publish --dry-run --tag latest` — PASS for `open-scaffold@0.32.0` with tag `latest`; dry-run only.
-- [ ] Release candidate PR CI and review/thread gate — pending PR creation.
+- [x] Release candidate PR opened: https://github.com/graphanov/open-scaffold/pull/216. Local candidate gates are green; latest GitHub CI/review/thread status is intentionally kept as live PR truth rather than a static committed claim.
 
 Post-merge/publication gates after future owner-approved follow-through:
 
