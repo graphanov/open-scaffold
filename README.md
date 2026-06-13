@@ -205,7 +205,7 @@ not need a work record.
 
 ## Honest limits
 
-Open Scaffold is pre-1.0 (`v0.31.x`) and it does not make your model smarter —
+Open Scaffold is pre-1.0 (`v0.32.x`) and it does not make your model smarter —
 it makes the *loop around the model* disciplined: bounded slices, gated
 execution, compact resumes, receipts for everything. A bounded
 scaffold-vs-naked fixture ships in [`examples/proof/`](examples/proof/) and is
