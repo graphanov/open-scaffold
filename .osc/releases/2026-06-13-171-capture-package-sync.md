@@ -13,7 +13,7 @@ Release-sync candidate for publishing merged `osc capture` work as `open-scaffol
 - Source PR: https://github.com/graphanov/open-scaffold/pull/215.
 - Release-sync plan: `.osc/plans/active/171-capture-package-sync.md`.
 - Run ID / run packet: N/A for this scoped package/release sync.
-- Branch / PR: `chore/release-0.32.0-package-sync` / PR pending.
+- Branch / PR: `chore/release-0.32.0-package-sync` / https://github.com/graphanov/open-scaffold/pull/216.
 
 ## Verification
 

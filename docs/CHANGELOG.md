@@ -20,7 +20,7 @@ Evidence:
 - Source plan: `.osc/plans/done/170-ambient-capture.md`
 - Source PR: https://github.com/graphanov/open-scaffold/pull/215
 - Release-sync plan: `.osc/plans/active/171-capture-package-sync.md`
-- Release-sync PR: pending
+- Release-sync PR: https://github.com/graphanov/open-scaffold/pull/216
 - Release-sync evidence note: `.osc/releases/2026-06-13-171-capture-package-sync.md`
 
 ## v0.31.1 — Harness release readiness package sync
