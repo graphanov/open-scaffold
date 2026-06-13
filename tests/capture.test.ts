@@ -194,11 +194,11 @@ describe('redaction', () => {
 });
 
 describe('output writer', () => {
-  it('chooses an .osc-dev/ambient path inside an .osc repo and a cwd path otherwise', () => {
+  it('chooses a gitignored .osc/state/ambient path inside an .osc repo and a cwd path otherwise', () => {
     const repo = mkdtempSync(join(tmpdir(), 'osc-cap-repo-'));
     const noRepo = mkdtempSync(join(tmpdir(), 'osc-cap-norepo-'));
     mkdirSync(join(repo, '.osc'), { recursive: true });
-    expect(defaultOutPath(repo, 'sess-1')).toBe('.osc-dev/ambient/sess-1.json');
+    expect(defaultOutPath(repo, 'sess-1')).toBe('.osc/state/ambient/sess-1.json');
     expect(defaultOutPath(noRepo, 'sess-1')).toBe('sess-1.ambient-record.json');
     // unsafe run-id characters are sanitized for the filename
     expect(defaultOutPath(noRepo, '../evil')).toBe('.._evil.ambient-record.json');

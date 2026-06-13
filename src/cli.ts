@@ -968,7 +968,7 @@ function captureHelp(): string {
     '  --from <format>     transcript format: claude-code | codex | jsonl-generic',
     '  --transcript <path> path to the session JSONL to read',
     '  --detect            sniff the format from the first parseable lines (exit 2 on ambiguity)',
-    '  --out <path>        record output path (default: .osc-dev/ambient/<session-id>.json in an .osc repo)',
+    '  --out <path>        record output path (default: .osc/state/ambient/<session-id>.json in an .osc repo)',
     '  --hook-safe         never exit non-zero on bad/missing input (for SessionEnd-style hook wrappers)',
     '',
     'capture observes facts; it does not approve work, certify correctness, or spawn a runtime.',

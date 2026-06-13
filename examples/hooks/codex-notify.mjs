@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Codex notify hook: capture the newest Codex rollout as an
-// osc.ambient-work-record.v1 record without blocking the Codex session.
+// Codex notify hook: capture the rollout for the Codex thread that emitted the
+// notify event as an osc.ambient-work-record.v1 record without blocking Codex.
 // Register from ~/.codex/config.toml with:
 //   notify = ["node", "/absolute/path/to/open-scaffold/examples/hooks/codex-notify.mjs"]
 
@@ -25,24 +25,50 @@ try {
 // Only act on turn-complete / end-style events; ignore the rest.
 if (event.type && !/turn-complete|complete|end/.test(event.type)) process.exit(0);
 
-function newestRollout(dir) {
-  let best = null;
-  if (!existsSync(dir)) return best;
+function nestedString(source, keys) {
+  if (!source || typeof source !== 'object') return null;
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return nestedString(source.payload, keys);
+}
+
+function isDirectory(path) {
+  try {
+    return existsSync(path) && statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function findRolloutByThreadId(dir, threadId) {
+  if (!existsSync(dir)) return null;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      const candidate = newestRollout(full);
-      if (candidate && (!best || candidate.mtime > best.mtime)) best = candidate;
-    } else if (entry.isFile() && entry.name.startsWith('rollout-') && entry.name.endsWith('.jsonl')) {
-      const mtime = statSync(full).mtimeMs;
-      if (!best || mtime > best.mtime) best = { path: full, mtime };
+      const candidate = findRolloutByThreadId(full, threadId);
+      if (candidate) return candidate;
+    } else if (
+      entry.isFile() &&
+      entry.name.startsWith('rollout-') &&
+      entry.name.endsWith('.jsonl') &&
+      entry.name.includes(threadId)
+    ) {
+      return full;
     }
   }
-  return best;
+  return null;
 }
 
-const rollout = newestRollout(join(homedir(), '.codex', 'sessions'));
+const threadId = nestedString(event, ['thread-id', 'thread_id', 'threadId', 'session_id', 'sessionId']);
+if (!threadId) process.exit(0);
+
+const rollout = findRolloutByThreadId(join(homedir(), '.codex', 'sessions'), threadId);
 if (!rollout) process.exit(0);
+
+const eventCwd = nestedString(event, ['cwd', 'workdir', 'working_directory', 'workingDirectory']);
+const captureCwd = eventCwd && isDirectory(eventCwd) ? eventCwd : process.cwd();
 
 const cliArgs = existsSync(distCli)
   ? [distCli]
@@ -55,8 +81,8 @@ spawnSync(process.execPath, [
   ...cliArgs,
   'capture',
   '--from', 'codex',
-  '--transcript', rollout.path,
+  '--transcript', rollout,
   '--hook-safe',
-], { stdio: 'ignore', timeout: 30_000, cwd: process.cwd() });
+], { stdio: 'ignore', timeout: 30_000, cwd: captureCwd });
 
 process.exit(0);

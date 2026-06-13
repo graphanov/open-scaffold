@@ -36,17 +36,19 @@ capture boundary language explicit: observed facts only, not approval or correct
 - Pinned-test review — PASS: framework LOC/file count pin, section-parser corpus hash, and
   CLI help arrays carry plan-170 rationale comments.
 - Review hardening — PASS: `--out` may not overwrite the transcript, malformed capture options
-  remain hook-safe under `--hook-safe`, the example hook climbs from nested cwd to the
-  scaffold root, transcript captures remain not-spawned observed records, unknown token totals stay
+  remain hook-safe under `--hook-safe`, default repo-local captures land under `.osc/state/ambient/`
+  so scaffolded `.osc/.gitignore` excludes them from git, the example hook climbs from nested cwd
+  to the scaffold root, transcript captures remain not-spawned observed records, unknown token totals stay
   `null`, split final-message text is accumulated before digesting/claim sniffing, Codex records
-  preserve the runtime-reported `total_tokens`, example hooks use this checkout's absolute `tsx`
+  preserve the runtime-reported `total_tokens`, the Codex notify hook scopes capture to the event
+  `thread-id` instead of a newest-rollout race, example hooks use this checkout's absolute `tsx`
   loader fallback, the checked-in Codex notify hook matches the documented registration path and
   `examples/hooks` ships in the npm package, transcript intent and touched local paths are redacted
   before recording/digesting, and the schema registry names `osc capture` as an
   `osc.ambient-work-record.v1` emitter.
-- Commit-structure review — PASS: only the final feature commit touches `src/cli.ts`; capture
-  implementation/tests/docs remain isolated in earlier commits, with one follow-up test-only
-  rationale commit.
+- Commit-structure review — PASS: the original feature layering kept capture implementation/docs/CLI
+  wiring separated; subsequent review-hardening commits are small, defect-scoped follow-ups with
+  targeted tests and evidence updates.
 
 ## Outcome
 

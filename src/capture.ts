@@ -451,12 +451,13 @@ function deriveRunId(transcriptPath: string, sessionId?: string): string {
 
 /**
  * Default output path for a captured record. Inside an .osc repo it lands under
- * .osc-dev/ambient/<runId>.json (gitignored owner notes); otherwise next to cwd.
+ * .osc/state/ambient/<runId>.json, which is covered by the scaffolded .osc/.gitignore;
+ * otherwise it lands next to cwd.
  */
 export function defaultOutPath(repoRoot: string, runId: string): string {
   const safeRunId = runId.replace(/[^A-Za-z0-9._-]/g, '_') || 'session';
   return existsSync(resolve(repoRoot, '.osc'))
-    ? `.osc-dev/ambient/${safeRunId}.json`
+    ? `.osc/state/ambient/${safeRunId}.json`
     : `${safeRunId}.ambient-record.json`;
 }
 

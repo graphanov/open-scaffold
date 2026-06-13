@@ -5,7 +5,8 @@
 // command instead of the spike extractor.
 //
 // Claude Code feeds hook JSON on stdin including transcript_path, session_id, and cwd.
-// Records land under .osc-dev/ambient/<session-id>.json (gitignored owner notes).
+// Records land under .osc/state/ambient/<session-id>.json, which .osc/.gitignore
+// ignores via state/.
 // Owner-scoped registration (.claude/settings.local.json, gitignored):
 //   { "hooks": { "SessionEnd": [ { "hooks": [ { "type": "command",
 //     "command": "node examples/hooks/ambient-hook.mjs" } ] } ] } }

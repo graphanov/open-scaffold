@@ -20,9 +20,9 @@ osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> \
 - `--from <format>` — the transcript format (below). Omit it and pass `--detect` to sniff.
 - `--transcript <path>` — the session JSONL to read.
 - `--detect` — infer the format from the first parseable lines; exits 2 on ambiguity.
-- `--out <path>` — where to write the record. Default: `.osc-dev/ambient/<session-id>.json`
-  inside an `.osc` repo (gitignored owner notes), otherwise `<session-id>.ambient-record.json`
-  next to the working directory.
+- `--out <path>` — where to write the record. Default: `.osc/state/ambient/<session-id>.json`
+  inside an `.osc` repo (covered by `.osc/.gitignore`'s `state/` rule), otherwise
+  `<session-id>.ambient-record.json` next to the working directory.
 - `--session-id <id>` — overrides the record `runId` (defaults to the transcript filename).
 - `--repo <root>` — the repository the record is written under (defaults to the nearest
   `.osc` root, then the working directory).
@@ -62,10 +62,11 @@ The hook always exits 0 and can never block or fail a session.
 
 ### Codex (notify)
 
-`examples/hooks/codex-notify.md` documents capturing the newest rollout from Codex's
-`notify` program on `agent-turn-complete` / session end. The notify program receives
-event JSON and runs `osc capture --from codex --hook-safe` on the latest
-`~/.codex/sessions/.../rollout-*.jsonl`.
+`examples/hooks/codex-notify.md` documents capturing the rollout named by Codex's
+`notify` event `thread-id` on `agent-turn-complete` / session end. The notify program
+receives event JSON and runs `osc capture --from codex --hook-safe` on the matching
+`~/.codex/sessions/.../rollout-*<thread-id>*.jsonl`, so concurrent sessions cannot be
+cross-captured.
 
 ## Boundary
 

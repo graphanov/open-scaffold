@@ -51,11 +51,11 @@ describe('osc capture CLI surface', () => {
     }
   });
 
-  it('defaults the output under .osc-dev/ambient inside an .osc repo', () => {
+  it('defaults the output under .osc/state/ambient inside an .osc repo', () => {
     const repo = tempRepo();
     const result = run(['capture', '--from', 'codex', '--transcript', join(fixtures, 'codex.jsonl'), '--session-id', 'sess-default'], repo);
     expect(result.status).toBe(0);
-    expect(existsSync(join(repo, '.osc-dev/ambient/sess-default.json'))).toBe(true);
+    expect(existsSync(join(repo, '.osc/state/ambient/sess-default.json'))).toBe(true);
   });
 
   it('hook wrapper climbs from nested cwd to the scaffold root for default output', () => {
@@ -73,25 +73,32 @@ describe('osc capture CLI surface', () => {
     });
 
     expect(result.status).toBe(0);
-    expect(existsSync(join(repo, '.osc-dev/ambient/sess-hook-nested.json'))).toBe(true);
+    expect(existsSync(join(repo, '.osc/state/ambient/sess-hook-nested.json'))).toBe(true);
     expect(existsSync(join(nested, 'sess-hook-nested.ambient-record.json'))).toBe(false);
   });
 
-  it('checked-in Codex notify hook captures the newest rollout from HOME', () => {
+  it('checked-in Codex notify hook captures the event thread rollout, not a newer sibling', () => {
     const repo = tempRepo();
     const home = mkdtempSync(join(tmpdir(), 'osc-codex-home-'));
     const sessionDir = join(home, '.codex', 'sessions', '2026', '06', '13');
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(join(sessionDir, 'rollout-synthetic.jsonl'), readFileSync(join(fixtures, 'codex.jsonl'), 'utf8'), 'utf8');
+    const fixture = readFileSync(join(fixtures, 'codex.jsonl'), 'utf8');
+    writeFileSync(join(sessionDir, 'rollout-2026-06-13T00-00-00-thread-keep.jsonl'), fixture, 'utf8');
+    writeFileSync(join(sessionDir, 'rollout-2026-06-13T00-01-00-thread-other.jsonl'), fixture, 'utf8');
 
-    const result = spawnSync(process.execPath, [codexNotifyHook, JSON.stringify({ type: 'agent-turn-complete' })], {
+    const result = spawnSync(process.execPath, [codexNotifyHook, JSON.stringify({
+      type: 'agent-turn-complete',
+      'thread-id': 'thread-keep',
       cwd: repo,
+    })], {
+      cwd: join(repo, '.osc'),
       env: { ...process.env, HOME: home },
       encoding: 'utf8',
     });
 
     expect(result.status).toBe(0);
-    expect(existsSync(join(repo, '.osc-dev/ambient/rollout-synthetic.json'))).toBe(true);
+    expect(existsSync(join(repo, '.osc/state/ambient/rollout-2026-06-13T00-00-00-thread-keep.json'))).toBe(true);
+    expect(existsSync(join(repo, '.osc/state/ambient/rollout-2026-06-13T00-01-00-thread-other.json'))).toBe(false);
   });
 
   it('exits 2 on direct CLI misuse (unknown --from value)', () => {
