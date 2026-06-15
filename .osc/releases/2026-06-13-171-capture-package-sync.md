@@ -2,7 +2,7 @@
 
 ## Summary
 
-Published `open-scaffold@0.32.0` as the public `latest` npm package and created GitHub Release `v0.32.0` as Latest after owner-approved release follow-through.
+Published `open-scaffold@0.32.0` as the public `latest` npm package and created GitHub Release `v0.32.0` as Latest after owner-approved release follow-through. It was later superseded by `v0.32.1`.
 
 `0.32.0` is used because `osc capture` is a new package-visible CLI/docs/hooks surface. The release remains pre-1.0 and bounded to observed transcript capture, not runtime spawning, semantic approval, compliance, production-readiness, or a 1.0 maturity contract.
 
@@ -48,12 +48,12 @@ Post-merge/publication gates after owner-approved follow-through:
 - [x] Re-run post-merge local publish gates — PASS: version checks, `npm ci`, production audit, `git diff --check`, `./verify.sh --strict`, `npm test -- --run`, `npm run build`, secret scan, pack dry-run, and publish dry-run.
 - [x] Trusted publishing workflow published `open-scaffold@0.32.0` with dist-tag `latest` — PASS: https://github.com/graphanov/open-scaffold/actions/runs/27465464440.
 - [x] Fresh isolated-cache `npx open-scaffold@latest` smokes prove the published package surface — PASS for top-level help and `capture --help`.
-- [x] GitHub Release `v0.32.0` exists, targets merged commit `61b858ac79761264ef1b10fb2a2206df13b4f188`, and is marked Latest — PASS: https://github.com/graphanov/open-scaffold/releases/tag/v0.32.0.
+- [x] GitHub Release `v0.32.0` exists, targets merged commit `61b858ac79761264ef1b10fb2a2206df13b4f188`, and was marked Latest at publication time before `v0.32.1` superseded it — PASS: https://github.com/graphanov/open-scaffold/releases/tag/v0.32.0.
 - [x] This plan is closed to `done` with final public proof.
 
 ## Outcome
 
-`open-scaffold@0.32.0` is published on npm with dist-tag `latest`, fresh `npx open-scaffold@latest` smokes passed, and GitHub Release `v0.32.0` is Latest. No deploy was performed and no 1.0 maturity claim was made.
+`open-scaffold@0.32.0` was published on npm with dist-tag `latest`, fresh `npx open-scaffold@latest` smokes passed, and GitHub Release `v0.32.0` was Latest until superseded by `v0.32.1`. No deploy was performed and no 1.0 maturity claim was made.
 
 ## Follow-up
 
