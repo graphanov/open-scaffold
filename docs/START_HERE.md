@@ -6,6 +6,8 @@ The single first action for a developer or AI agent entering this repository col
 
 Open Scaffold keeps a repo-native work record for AI-assisted work — goal, plan, attempts, evidence, approvals, lessons — as git-tracked, observed-fact files, and turns it into three things: a handoff packet (`osc handoff`) so a fresh session, a smaller model, or a person resumes from truth instead of inventing history; review (`osc review`, with `osc analyze` as a synonym) and a gate (`osc gate`) so cheap or locally-hosted models can judge recorded work and authorize or block the next attempt. It never runs or disciplines your workflow — you work however you already work; the record accumulates around it.
 
+Current readiness boundary: Open Scaffold is a pre-1.0 repo record layer, not a production platform, hosted orchestrator, compliance certification, or universal benchmark. Use it for structural records and evidence-backed handoffs; read [`PROOF_HARNESS.md`](PROOF_HARNESS.md) and [`STABILITY.md`](STABILITY.md) before turning evidence into broader readiness claims.
+
 ## The one first action
 
 In the repo you want to scaffold:
@@ -14,7 +16,7 @@ In the repo you want to scaffold:
 npx open-scaffold@latest first-run
 ```
 
-Three guided questions produce the minimum work record — `MISSION.md`, one active plan with acceptance criteria, an evidence skeleton — and print the exact commands to run next.
+Three guided questions produce the minimum work record — `MISSION.md`, one active plan with acceptance criteria, an evidence skeleton — and print the exact commands to run next. The generated evidence is a starting point, not a readiness claim: add real command output, then use `osc verify --evidence-chain` to check structural linkage before closing.
 
 From there, the working grammar is the lifecycle helpers (`osc plan new`, `osc evidence new`, `osc amend`, `osc close`) plus the three-command front door:
 

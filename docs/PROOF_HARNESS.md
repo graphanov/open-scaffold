@@ -2,6 +2,10 @@
 
 Status: lab/experimental, source-labeled, bounded comparison surface.
 
+Readiness boundary: The reviewability numbers are evidence for the record layer, not a production-readiness claim. They do not prove broad third-party adoption,
+deployment safety, compliance readiness, a durable 1.0 contract, or universal
+superiority over naked agents.
+
 ## The benchmark program (2026-06): the claim ledger
 
 Plan 163's benchmark evidence is public in the independent

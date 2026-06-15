@@ -15,13 +15,16 @@ trust what happened instead of taking anyone's word for it.
 ## How the mission is pursued today (subject to change)
 
 Open Scaffold brings lower-tier, cheaper, and locally-hosted models into
-AI-assisted work as trusted participants. It records what agents actually did as
+AI-assisted work as bounded reviewers and resumers when the repo record gives
+them enough observed facts to check. It records what agents actually did as
 git-tracked, observed-fact files (the repo-native work record), compiles that
 record into handoff packets a fresh session or a different model can pick up
 without inventing history, and equips small models to review, gate, and feed
 evidence back to the next attempt — so frontier models are spent only where
-frontier capability is needed, and everything around them runs on rigor instead
-of trust.
+frontier capability is needed, and everything around them runs on recorded
+receipts instead of trust. The current public line is intentionally pre-1.0:
+useful for structural records and evidence-backed handoffs, not a mature
+production-readiness guarantee.
 
 ## Goals
 
@@ -29,7 +32,7 @@ of trust.
 - Make handoff lossless and cheap: `osc handoff` compiles the record into a packet that lets the next reader — fresh session, smaller model, other vendor, or human — reconstruct what happened instead of hallucinating it.
 - Make cheap review real: reviewer profiles for low-tier and locally-hosted models (haiku-class, DeepSeek, Qwen, Ollama/MLX) that read the record, judge claims against evidence, and authorize or block the next attempt via `osc review`/`osc analyze` and `osc gate` — with feedback packets that flow upward to the frontier worker's next attempt.
 - Be an open, vendor-neutral standard for recording and handing off agent work: versioned schemas, plain files, a generic MCP server; no runtime becomes the canonical brain.
-- Claim only what is measured, publish the boundaries, and keep the dead claims next to the live ones (evidence: `docs/PROOF_HARNESS.md` and the independent benchmark repo).
+- Claim only what is measured, publish the boundaries, keep public surfaces clear that current evidence is pilot-grade and pre-1.0, and keep the dead claims next to the live ones (evidence: `docs/PROOF_HARNESS.md` and the independent benchmark repo).
 - Dogfood Open Scaffold on Open Scaffold itself: use the framework to grow the framework.
 
 ## Non-Goals
@@ -42,12 +45,14 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 - Open Scaffold core does not require Claude Code, Codex, Gemini, OMC, OMX, or any other specific runtime; capture adapters are thin and optional.
 - Open Scaffold core does not store secrets, raw runtime sessions, or uncurated agent logs as public product truth; records are curated, redacted, observed facts.
 - Open Scaffold core does not replace GitHub Issues/branches/PRs for public/versioned implementation work, and it is not a compliance certification.
+- Open Scaffold does not claim mature production readiness, broad third-party adoption, or universal benchmark dominance; current evidence is pilot-grade and bounded to recorded surfaces.
 
 ## Changelog
 
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-15: closed public-readiness-hardening — hardened public readiness messaging
 - 2026-06-13: closed 171-capture-package-sync — Published open-scaffold@0.32.0 to npm latest and created GitHub Release v0.32.0 as Latest.
 - 2026-06-13: closed 170-ambient-capture — Shipped osc capture ambient transcript extraction with claude-code, codex, and generic JSONL parsers; verified against owner-local real transcripts.
 - 2026-06-12: closed 168-dollar-verb-retirement — retired the dollar-verb harness/dispatch layer, made osc review the recorded-attempt analysis front door, and removed the outdated README GIF

@@ -163,6 +163,24 @@ describe('public work-record positioning', () => {
     expect(faq).toContain('token/cost savings require receipts');
   });
 
+  it('keeps public readiness and package metadata bounded to pre-1.0 evidence-backed claims', () => {
+    const readme = read('README.md');
+    const faq = read('docs/FAQ.md');
+    const proof = read('docs/PROOF_HARNESS.md');
+    const startHere = read('docs/START_HERE.md');
+    const pkg = JSON.parse(read('package.json')) as { description: string; keywords: string[] };
+
+    expect(firstLines(readme, 100)).toContain('published, pilot-grade evidence and explicit proof boundaries');
+    expect(readme).toContain('This is not a production-readiness claim');
+    expect(faq).toContain('Not as a mature production platform.');
+    expect(faq).toContain('pre-1.0');
+    expect(faq).not.toContain('Production-ready in the **methodology** sense');
+    expect(proof).toContain('The reviewability numbers are evidence for the record layer, not a production-readiness claim.');
+    expect(startHere).toContain('pre-1.0 repo record layer');
+    expect(pkg.description).toBe('Pre-1.0 repo-native work-record CLI for AI-agent handoff, evidence, and review.');
+    expect(pkg.keywords).toEqual(expect.arrayContaining(['work-record', 'handoff', 'proof-boundaries', 'pre-1-0']));
+  });
+
   it('positions comparison tools as adjacent layers rather than enemies', () => {
     const comparison = read('docs/FAQ.md');
 

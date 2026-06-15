@@ -1,7 +1,7 @@
 {
   "name": "open-scaffold",
   "version": "0.32.0",
-  "description": "Runtime-neutral scaffold and prompt/artifact CLI for disciplined AI-agent development.",
+  "description": "Pre-1.0 repo-native work-record CLI for AI-agent handoff, evidence, and review.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -14,12 +14,15 @@
   "keywords": [
     "ai-agents",
     "agentic-development",
-    "scaffold",
-    "workflow",
-    "evidence",
     "repo-native",
-    "codex",
-    "claude-code"
+    "work-record",
+    "handoff",
+    "evidence",
+    "review",
+    "proof-boundaries",
+    "pre-1-0",
+    "scaffold",
+    "workflow"
   ],
   "type": "module",
   "bin": {
