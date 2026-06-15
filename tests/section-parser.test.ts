@@ -248,13 +248,15 @@ This sample must not count as the real section.
     // 170 closeout: moved capture plan to done and added local evidence note.
     // 171 release closeout: moved package-sync plan to done after npm/GitHub Release publication proof.
     // public-readiness-hardening: added done plan and release note for bounded public readiness copy.
-    expect(hash(planIssueSnapshot)).toBe('ec0e019e95b92820adde7334b70ddab5b074c4dafe2dad7de7a5d577e4c04a89');
+    // 172 release candidate: added active public-readiness package-sync plan.
+    expect(hash(planIssueSnapshot)).toBe('5cb202c35cc1763eb7feda96fa8e96f90092611548c6861acffd22efc045c9e3');
     expect(scaffold.failures).toEqual([]);
     // 168: evidence note 2026-06-12-168-dollar-verb-retirement.md added to .osc/releases.
     // 170 review hardening: evidence note refreshed with PR URL, final test count, and Codex-reported total_tokens.
     // 171 release closeout: finalized v0.32.0 publication evidence note; release-warning set unchanged.
     // public-readiness-hardening: release note added with no new release warnings.
-    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('dd1b7451952cb18163aede013ae50b17de6c0511430c9ac66349af6e9cff57f1');
+    // 172 release candidate: release note added with no new release warnings.
+    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('69c2c3f35a7e509d9c3d23e4ee20b5ddb1d8c13f28dad7f242843b04c3d74f37');
     expect(realPlanFiles().every((path) => statSync(path).isFile())).toBe(true);
   });
 });
