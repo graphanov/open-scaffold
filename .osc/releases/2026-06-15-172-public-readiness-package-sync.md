@@ -2,15 +2,17 @@
 
 ## Summary
 
-Release-sync candidate for `open-scaffold@0.32.1`. This patch release publishes the public-readiness hardening from PR #219 plus the clean Dependabot lockfile update from PR #218 to npm/GitHub release surfaces, so public package metadata matches the repo's current pre-1.0, proof-boundary-aware positioning.
+`open-scaffold@0.32.1` is published as npm `latest`, and GitHub Release `v0.32.1 — Public-readiness package sync` is published as Latest. This patch release publishes the public-readiness hardening from PR #219 plus the clean Dependabot lockfile update from PR #218 to npm/GitHub release surfaces, so public package metadata matches the repo's current pre-1.0, proof-boundary-aware positioning.
 
 ## Traceability
 
 - Roadmap / issue / task: owner-approved package sync after PR #219 public-readiness hardening and PR #218 dev-dependency lockfile update.
 - Source PRs: https://github.com/graphanov/open-scaffold/pull/219 and https://github.com/graphanov/open-scaffold/pull/218.
-- Release-sync plan: `.osc/plans/active/172-public-readiness-package-sync.md` until publication proof exists.
-- Run ID / run packet: N/A; scoped release/package sync with local and GitHub workflow verification.
-- Branch / PR: `release/public-readiness-0.32.1`; https://github.com/graphanov/open-scaffold/pull/220.
+- Release-sync plan: `.osc/plans/done/172-public-readiness-package-sync.md`.
+- Release-sync PR: https://github.com/graphanov/open-scaffold/pull/220.
+- Trusted publishing run: https://github.com/graphanov/open-scaffold/actions/runs/27569365137.
+- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v0.32.1.
+- Target commit: `ea701e76b6e0a00974f09e830eafca129e2a4460`.
 
 ## Verification
 
@@ -24,10 +26,10 @@ Baseline live-truth inspection before release-sync edits:
 - PR #219 post-merge `main` CI — PASS.
 - PR #218 pre-merge checks and post-merge `main` CI — PASS.
 
-Candidate gates before PR-ready:
+Candidate and PR gates before merge:
 
 - [x] Version alignment — PASS: `0.32.1 / 0.32.1 / 0.32.1` for `package.json`, `package-lock.json`, and lockfile root package version.
-- [x] Live registry check before publication — PASS: `open-scaffold@0.32.1` returned 404 / not published; current live registry reports `0.32.0`, `latest: 0.32.0`, and old metadata.
+- [x] Live registry check before publication — PASS: `open-scaffold@0.32.1` returned 404 / not published; current live registry reported `0.32.0`, `latest: 0.32.0`, and old metadata.
 - [x] `npm ci` — PASS: 51 packages installed/audited; 0 vulnerabilities.
 - [x] `git diff --check` — PASS.
 - [x] `./verify.sh --strict` — PASS: 10 pass / 0 fail / 0 warn after the intentional live-corpus hash update.
@@ -36,14 +38,33 @@ Candidate gates before PR-ready:
 - [x] `npm run osc -- doctor --check secret-scan` — PASS: `PASS secret-scan: no obvious token/webhook strings found.`
 - [x] `npm pack --dry-run --json` payload inspection — PASS for `open-scaffold@0.32.1`; entry count 205; required `dist/cli.js`, `README.md`, `docs/CHANGELOG.md`, `docs/PROOF_HARNESS.md`, `docs/STABILITY.md`, and `docs/START_HERE.md` present; no `__pycache__`/`.pyc` files.
 - [x] `npm publish --dry-run --tag latest` — PASS for `open-scaffold@0.32.1` with tag `latest`; dry-run only.
-- [ ] Release-sync PR opened, merged, npm trusted publishing run completed, fresh `npx open-scaffold@latest --version` returns `0.32.1`, fresh help smokes passed, and GitHub Release `v0.32.1` created as Latest — pending.
+- [x] PR #220 checks — PASS: `ci`, `Validate changed plans`, `Validate evidence notes`, and `Structural Open Scaffold PR check`; skipped mirrors were non-blocking.
+- [x] PR #220 latest-head Codex review — PASS: latest clean artifact at `2026-06-15T18:51:53Z` for head `cecddc9413`; unresolved current review threads `0`.
+- [x] PR #220 merge — PASS: squash-merged to `main` as `ea701e76b6e0a00974f09e830eafca129e2a4460`.
+
+Post-merge and publication gates:
+
+- [x] Post-merge local `main` — PASS: fast-forwarded to `ea701e76b6e0a00974f09e830eafca129e2a4460`.
+- [x] Post-merge `main` CI — PASS: `ci` completed successfully for `ea701e76b6e0a00974f09e830eafca129e2a4460`.
+- [x] `npm ci` — PASS: 51 packages installed/audited; 0 vulnerabilities.
+- [x] `git diff --check` — PASS.
+- [x] `./verify.sh --strict` — PASS: 10 pass / 0 fail / 0 warn.
+- [x] `npm test -- --run` — PASS: 48 files / 535 tests.
+- [x] `npm run build` — PASS.
+- [x] `npm run osc -- doctor --check secret-scan` — PASS.
+- [x] `npm pack --dry-run --json` — PASS for `open-scaffold@0.32.1`; 205 files; required CLI/docs present; no `__pycache__`, `.pyc`, or `.DS_Store` residue; shasum `8fc5125a854b37bb2f8667af7690464af9829176`.
+- [x] `npm publish --dry-run --tag latest` — PASS.
+- [x] Trusted publishing workflow — PASS: run `27569365137`, job `Publish package`, conclusion `success`.
+- [x] npm registry verification — PASS: `open-scaffold@0.32.1`, `latest: 0.32.1`, description `Pre-1.0 repo-native work-record CLI for AI-agent handoff, evidence, and review.`, proof-boundary keywords present.
+- [x] Fresh isolated-cache `npx open-scaffold@latest --version` — PASS: `0.32.1`.
+- [x] Fresh isolated-cache `npx open-scaffold@latest --help` — PASS: help exposed `osc` and `first-run`.
+- [x] Fresh isolated-cache `npx open-scaffold@latest first-run --non-interactive ...` — PASS: created mission/plan/evidence skeleton and printed evidence-chain, proof-harness, stability, production-readiness, and semantic-correctness boundary guidance.
+- [x] GitHub Release `v0.32.1` — PASS: published as Latest, target `ea701e76b6e0a00974f09e830eafca129e2a4460`.
 
 ## Outcome
 
-Candidate in progress. Publication, GitHub Release creation/Latest movement, final closeout, and public verification are owner-preapproved for this scoped release sync, but not yet executed in this evidence note.
+Complete. Public package, GitHub Release, shipped docs, and first-run output now expose the public-readiness hardening from PR #219 under `open-scaffold@0.32.1` / `v0.32.1`.
 
 ## Follow-up
 
-- Open and merge the release-sync PR after candidate gates pass.
-- Dispatch trusted publishing for `open-scaffold@0.32.1` with npm tag `latest`.
-- Verify npm registry metadata, fresh isolated-cache `npx open-scaffold@latest --version` plus help smokes, GitHub Release `v0.32.1` as Latest, and then close this plan with final proof.
+- This closeout moves the release-sync plan to `.osc/plans/done/172-public-readiness-package-sync.md`, updates adoption-facing release truth, and leaves proof-harness v2 work out of scope.

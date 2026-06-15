@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -26,18 +26,18 @@ Publish `open-scaffold@0.32.1` and create GitHub Release `v0.32.1` as Latest so 
 
 - `package.json` and `package-lock.json` — bump package version to `0.32.1` while preserving the public-readiness metadata from PR #219.
 - `docs/CHANGELOG.md` — add the adoption-facing `v0.32.1` release-sync entry and mark `v0.32.0` as superseded after publication.
-- `.osc/plans/active/172-public-readiness-package-sync.md` — this release-sync plan until publication proof exists.
+- `.osc/plans/done/172-public-readiness-package-sync.md` — completed release-sync plan after publication proof.
 - `.osc/releases/2026-06-15-172-public-readiness-package-sync.md` — candidate and final publication evidence.
 - `tests/section-parser.test.ts` — update live-corpus hashes if the plan/evidence/changelog changes require it.
 
 ## Acceptance criteria
 
-- [ ] `package.json`, `package-lock.json`, and the lockfile root package version all read `0.32.1`.
-- [ ] Candidate release docs distinguish repo candidate state from live npm/GitHub Release state before publication, and final closeout records npm/GitHub proof after publication.
-- [ ] Local release gates pass: `npm ci`, `git diff --check`, `./verify.sh --strict`, `npm test -- --run`, `npm run build`, `npm run osc -- doctor --check secret-scan`, `npm pack --dry-run --json`, and `npm publish --dry-run --tag latest`.
-- [ ] Package payload inspection confirms `open-scaffold@0.32.1`, includes `dist/cli.js`, README/docs, and package metadata carrying the pre-1.0 work-record positioning.
-- [ ] Release-sync PR is opened, reviewed, merged, npm trusted publishing succeeds, fresh isolated-cache `npx open-scaffold@latest --version` returns `0.32.1`, fresh `--help` smokes pass, and GitHub Release `v0.32.1` is Latest.
-- [ ] No unrelated proof-harness, runtime-controller, benchmark, deployment, or announcement scope is included.
+- [x] `package.json`, `package-lock.json`, and the lockfile root package version all read `0.32.1`.
+- [x] Candidate release docs distinguish repo candidate state from live npm/GitHub Release state before publication, and final closeout records npm/GitHub proof after publication.
+- [x] Local release gates pass: `npm ci`, `git diff --check`, `./verify.sh --strict`, `npm test -- --run`, `npm run build`, `npm run osc -- doctor --check secret-scan`, `npm pack --dry-run --json`, and `npm publish --dry-run --tag latest`.
+- [x] Package payload inspection confirms `open-scaffold@0.32.1`, includes `dist/cli.js`, README/docs, and package metadata carrying the pre-1.0 work-record positioning.
+- [x] Release-sync PR is opened, reviewed, merged, npm trusted publishing succeeds, fresh isolated-cache `npx open-scaffold@latest --version` returns `0.32.1`, fresh `--help` smokes pass, and GitHub Release `v0.32.1` is Latest.
+- [x] No unrelated proof-harness, runtime-controller, benchmark, deployment, or announcement scope is included.
 
 ## Verification steps
 

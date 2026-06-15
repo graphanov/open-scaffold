@@ -6,7 +6,7 @@ For live package truth, check npm. For live release truth, check GitHub Releases
 
 ## v0.32.1 — Public-readiness package sync
 
-Status: `v0.32.1` release-sync entry. The authoritative live package/release state is npm plus GitHub Releases; packaged changelog files are immutable once published.
+Status: published to npm as `open-scaffold@0.32.1`; GitHub Release `v0.32.1` is Latest after owner-approved trusted publishing and release follow-through.
 
 Highlights:
 
@@ -18,12 +18,15 @@ Highlights:
 Evidence:
 
 - Source PRs: https://github.com/graphanov/open-scaffold/pull/219 and https://github.com/graphanov/open-scaffold/pull/218
-- Release-sync plan: `.osc/plans/active/172-public-readiness-package-sync.md`
+- Release-sync plan: `.osc/plans/done/172-public-readiness-package-sync.md`
+- Release-sync PR: https://github.com/graphanov/open-scaffold/pull/220
 - Release-sync evidence note: `.osc/releases/2026-06-15-172-public-readiness-package-sync.md`
+- Trusted publishing run: https://github.com/graphanov/open-scaffold/actions/runs/27569365137
+- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v0.32.1
 
 ## v0.32.0 — Ambient capture package sync
 
-Status: published to npm as `open-scaffold@0.32.0` with GitHub Release `v0.32.0`; later release supersession is determined by npm plus GitHub Releases.
+Status: published to npm as `open-scaffold@0.32.0`; GitHub Release `v0.32.0` was Latest after owner-approved trusted publishing and release follow-through, then was superseded by `v0.32.1`.
 
 Highlights:
 
