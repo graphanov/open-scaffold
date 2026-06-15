@@ -5,7 +5,7 @@
 **Your AI agent's work belongs in your repo, not its chat history.**
 
 Ambient work records, lossless handoffs, and near-frontier review from cheap and
-local models — for AI-assisted work, with published evidence.
+local models — for AI-assisted work, with published, pilot-grade evidence and explicit proof boundaries.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/open-scaffold.svg)](https://www.npmjs.com/package/open-scaffold)
@@ -51,16 +51,18 @@ The front door is three commands:
 | `osc review` | Review recorded attempts: plateaus, failing criteria, question-the-requirement signals. |
 | `osc gate` | Authorize or block the next attempt from the analysis plus an optional independent judge. |
 
-Why cheap models? Because with the record they stop guessing. In replicated
-trials, a mid-tier reviewer answering factual questions about finished work —
-graded against answer keys committed before it ran — scored 96-97% with the
-record vs 36-46% on the bare workspace, with zero confabulation and at roughly
-half the review cost. And when a judge is too weak to be trusted, the gate
-fails closed: no parseable verdict means no authorization, and the record's
-own blocks override a permissive ruling. Small and locally-hosted models
-(haiku-class, DeepSeek, Qwen, Ollama/MLX) become viable reviewers, resumers,
-and bookkeepers, so the frontier model is spent only where frontier capability
-is needed.
+Why cheap models? Because with the record they stop guessing. In pilot-grade,
+preregistered reviewability trials, a mid-tier reviewer answering factual
+questions about finished work — graded against answer keys committed before it
+ran — reconstructed the work at 94% accuracy with the record vs 30% on the bare
+workspace, with zero confident wrong-history answers and roughly half the review
+cost. This is not a production-readiness claim or universal benchmark; it is
+bounded evidence that the repo record helps the next reader. And when a judge is
+too weak to be trusted, the gate fails closed: no parseable verdict means no
+authorization, and the record's own blocks override a permissive ruling. Small
+and locally-hosted models (haiku-class, DeepSeek, Qwen, Ollama/MLX) become viable
+reviewers, resumers, and bookkeepers inside those boundaries, so the frontier
+model is spent only where frontier capability is needed.
 
 ## What's measured
 
@@ -89,7 +91,13 @@ npx open-scaffold@latest first-run
 
 Three guided questions (plan slug, mission, first goal) produce the minimum
 work record — `MISSION.md`, one active plan with acceptance criteria, an
-evidence skeleton — and print the exact commands to run next.
+evidence skeleton — and print the exact commands to run next. That first record
+is structural: it does not certify the work, prove production readiness, or make
+a claim about model quality. Before closing the slice, replace the evidence
+skeleton with real command output and use `osc verify --evidence-chain` as a file
+linkage check; broader proof boundaries live in
+[`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) and
+[`docs/STABILITY.md`](docs/STABILITY.md).
 
 Work however you already work — your agent, your editor, your loop. The record
 accumulates as files; you close each slice with evidence:

@@ -247,12 +247,14 @@ This sample must not count as the real section.
     // 169 planning: staged review-battery backlog plan after dollar-verb retirement.
     // 170 closeout: moved capture plan to done and added local evidence note.
     // 171 release closeout: moved package-sync plan to done after npm/GitHub Release publication proof.
-    expect(hash(planIssueSnapshot)).toBe('e3fcec1d420d1028af71196ba77ee2733376e204408394e4a53fb5b67ee2e90c');
+    // public-readiness-hardening: added done plan and release note for bounded public readiness copy.
+    expect(hash(planIssueSnapshot)).toBe('ec0e019e95b92820adde7334b70ddab5b074c4dafe2dad7de7a5d577e4c04a89');
     expect(scaffold.failures).toEqual([]);
     // 168: evidence note 2026-06-12-168-dollar-verb-retirement.md added to .osc/releases.
     // 170 review hardening: evidence note refreshed with PR URL, final test count, and Codex-reported total_tokens.
     // 171 release closeout: finalized v0.32.0 publication evidence note; release-warning set unchanged.
-    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('09888cbb861ca90060a1fd4ad1cda2f99dc87284da775ab3eceaacfafbc2ff5a');
+    // public-readiness-hardening: release note added with no new release warnings.
+    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('dd1b7451952cb18163aede013ae50b17de6c0511430c9ac66349af6e9cff57f1');
     expect(realPlanFiles().every((path) => statSync(path).isFile())).toBe(true);
   });
 });

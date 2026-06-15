@@ -72,9 +72,9 @@ Questions that did not fit in the main README but are still worth answering.
 
 > [@graphanov](https://github.com/graphanov). Scoped, planned, implemented, reviewed, and shipped using the scaffold's own methodology.
 
-### Is it production-ready, or a toy?
+### How ready is it — is it a toy?
 
-> Production-ready in the **methodology** sense — the rules are stable, the scripts work, the template boots in one session. Early in the **adoption** sense — very few people are using it yet. Expect the schema to stay backward-compatible; expect the tooling around it to grow.
+> Not as a mature production platform. Open Scaffold is a pre-1.0 repo-record layer with a stable-enough local workflow for mission, plan, evidence, handoff, structural verification, review, and gate files. It is not a hosted orchestrator, compliance program, production-readiness guarantee, or proof of broad adoption. Pin versions if you depend on exact CLI output, read [`STABILITY.md`](STABILITY.md) for command maturity, and treat the proof ledger as bounded evidence rather than a universal benchmark.
 
 ### Was this built with AI? Isn't that ironic?
 

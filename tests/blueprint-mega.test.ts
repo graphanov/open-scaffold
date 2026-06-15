@@ -82,10 +82,17 @@ describe('blueprint first-run and PR check surfaces', () => {
       expect(result.stdout).toContain('Open Scaffold first-run complete');
       expect(result.stdout).toContain('osc trace first-work-record');
       expect(result.stdout).toContain('osc verify --evidence-chain --plan first-work-record --strict');
+      expect(result.stdout).toContain('Readiness guidance:');
+      expect(result.stdout).toContain('Evidence-chain checks are structural; they do not prove semantic correctness or production readiness.');
+      expect(result.stdout).toContain('https://github.com/graphanov/open-scaffold/blob/main/docs/PROOF_HARNESS.md');
       expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).not.toContain('mission:unset');
       expect(existsSync(join(root, '.osc/plans/active/first-work-record.md'))).toBe(true);
-      const evidenceFiles = require('node:fs').readdirSync(join(root, '.osc/releases'));
+      const evidenceFiles = readdirSync(join(root, '.osc/releases'));
       expect(evidenceFiles.some((file: string) => file.endsWith('-first-work-record.md'))).toBe(true);
+      const evidenceFile = evidenceFiles.find((file: string) => file.endsWith('-first-work-record.md')) as string;
+      const evidence = readFileSync(join(root, '.osc/releases', evidenceFile), 'utf8');
+      expect(evidence).toContain('Structural-only first-run skeleton');
+      expect(evidence).toContain('https://github.com/graphanov/open-scaffold/blob/main/docs/PROOF_HARNESS.md');
       const validation = runOsc(root, ['plan', 'validate', 'first-work-record', '--strict']);
       expect(validation.status, validation.stdout + validation.stderr).toBe(0);
     } finally {
