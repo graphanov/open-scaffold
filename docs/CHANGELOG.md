@@ -4,9 +4,26 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v0.32.1 — Public-readiness package sync
+
+Status: `v0.32.1` release-sync entry. The authoritative live package/release state is npm plus GitHub Releases; packaged changelog files are immutable once published.
+
+Highlights:
+
+- Publishes the PR #219 public-readiness hardening to the public `npx open-scaffold@latest` package surface.
+- Updates npm package metadata to describe Open Scaffold as a pre-1.0 repo-native work-record CLI for AI-agent handoff, evidence, and review.
+- Keeps the proof boundary explicit: this is not production-readiness, compliance certification, broad adoption proof, mature 1.0 status, or universal benchmark superiority.
+- Includes the PR #218 development-dependency lockfile refresh before publication.
+
+Evidence:
+
+- Source PRs: https://github.com/graphanov/open-scaffold/pull/219 and https://github.com/graphanov/open-scaffold/pull/218
+- Release-sync plan: `.osc/plans/active/172-public-readiness-package-sync.md`
+- Release-sync evidence note: `.osc/releases/2026-06-15-172-public-readiness-package-sync.md`
+
 ## v0.32.0 — Ambient capture package sync
 
-Status: published to npm as `open-scaffold@0.32.0`; GitHub Release `v0.32.0` is Latest after owner-approved trusted publishing and release follow-through.
+Status: published to npm as `open-scaffold@0.32.0` with GitHub Release `v0.32.0`; later release supersession is determined by npm plus GitHub Releases.
 
 Highlights:
 
