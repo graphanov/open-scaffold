@@ -52,19 +52,16 @@ pinned [`results/`](https://github.com/graphanov/harness-bench/tree/7caa1e4044af
 (C-ambient; review-2 in flight at the time of writing), the D-light minimal-gate
 overhead floor, human-reviewer replication, multi-agent coordination.
 
-The sections below describe the older bounded `osc prove` fixture, which remains
-a separate, narrower comparison surface.
+The sections below describe the checked-in `osc prove` fixture surface. The
+current headline fixture is the Codex 2x cold-resume comparison. The older
+`scaffold-vs-naked-codex` evolution-controller fixture is retained later as a
+legacy example and should not be read as the current result.
 
 `osc prove` is Open Scaffold's answer to a hard question: *is the scaffold actually better than a naked agent run, or are we just telling ourselves a nice story?* Bounded fixture proof only: every result is tied to the supplied receipts and caveats.
 
 The command does not run Codex, call an LLM, rank models, approve work, or certify correctness. It reads a committed manifest plus source-labeled receipts and renders the comparison honestly, including ties and regressions.
 
 For Open Scaffold-owned reproduction runs, use `osc bench suite` and `osc bench handoff-lab` instead. `osc prove` compares checked-in proof receipts; `osc bench` creates local reproduction evidence and must still report `reproduced`, `partially_reproduced`, or `not_reproduced` without promoting source-prototype evidence into Open Scaffold proof. The current Open Scaffold-run harness migration verdict is `partially_reproduced`, with broad dominance still `mixed_not_proven`.
-
-```bash
-osc prove check examples/proof/scaffold-vs-naked-codex/manifest.json
-osc prove compare examples/proof/scaffold-vs-naked-codex/manifest.json --format markdown
-```
 
 ## Current Codex 2x cold-resume fixture
 
@@ -121,9 +118,20 @@ now target what a human reader needs from the answer: readability, comprehension
 clarity, enough decision detail, unambiguous resume routing, and explicit
 authority boundaries. It is not a blind human-reader study.
 
-## What the shipped fixture compares
+## Legacy evolution-controller fixture
 
-The first checked-in fixture is deliberately narrow:
+Before the Codex 2x cold-resume fixture, the first checked-in `osc prove`
+fixture compared a compact evolution-controller signal against raw artifacts. It
+remains useful as an example fixture, but it is not the current headline result.
+
+To reproduce this legacy fixture:
+
+```bash
+osc prove check examples/proof/scaffold-vs-naked-codex/manifest.json
+osc prove compare examples/proof/scaffold-vs-naked-codex/manifest.json --format markdown
+```
+
+The legacy fixture is deliberately narrow:
 
 - **Control arm:** naked Codex receives raw evolution-loop artifacts as prompt payload.
 - **Scaffolded arm:** Codex receives the Open Scaffold compact evolution controller signal generated from the same loop.
@@ -133,7 +141,7 @@ The first checked-in fixture is deliberately narrow:
 
 This fixture asks whether the scaffold can preserve decision quality while making the handoff lighter and faster. It is not a universal benchmark for all AI work.
 
-## Current result
+## Legacy result
 
 From `examples/proof/scaffold-vs-naked-codex/receipts/aggregate.json`:
 
@@ -146,7 +154,7 @@ From `examples/proof/scaffold-vs-naked-codex/receipts/aggregate.json`:
 | Decision quality per 1k Codex tokens | 0.141323 | 0.158053 | scaffolded is 1.118381× better |
 | Evolution-loop frontier delta | 0 | +1 accepted criterion | scaffolded records improvement over repeated attempts |
 
-The proof report therefore passes for this bounded fixture because Open Scaffold preserved decision quality, reduced prompt payload, reduced median Codex token receipt, reduced median wall time, and showed an evolution-loop improvement record.
+The legacy proof report therefore passes for this bounded fixture because Open Scaffold preserved decision quality, reduced prompt payload, reduced median Codex token receipt, reduced median wall time, and showed an evolution-loop improvement record.
 
 ## Honesty rules
 
@@ -220,10 +228,10 @@ Core bench suites write `.osc/bench/<suite-id>/aggregate.json` and `.osc/bench/<
 | Claim | Status | Notes |
 |---|---|---|
 | Codex cold-resume 2x token-efficiency fixture passes `osc prove compare` | demonstrated | `examples/proof/codex-token-efficient-resume/`; median reported total tokens 137,327 vs 31,715, ratio 4.330033x, quality tied 6/6 on a deterministic human-facing reader-usability rubric |
-| Checked-in fixture passes `osc prove check` | demonstrated | `examples/proof/scaffold-vs-naked-codex/` |
-| Decision quality preserved (5/5 both arms) | demonstrated | committed receipts |
-| Prompt payload reduction (~11.6×) | demonstrated | committed receipts |
-| Token and wall-clock reduction | demonstrated | committed receipts |
+| Legacy evolution-controller fixture passes `osc prove check` | demonstrated | `examples/proof/scaffold-vs-naked-codex/`; retained as a legacy example fixture, not the current headline result |
+| Legacy decision quality preserved (5/5 both arms) | demonstrated | committed receipts for `examples/proof/scaffold-vs-naked-codex/` |
+| Legacy prompt payload reduction (~11.6×) | demonstrated | committed receipts for `examples/proof/scaffold-vs-naked-codex/` |
+| Legacy token and wall-clock reduction | demonstrated | committed receipts for `examples/proof/scaffold-vs-naked-codex/` |
 | Live-lane reproduction of efficiency win | partially_reproduced | Compact handoff did not reproduce the source efficiency win in the rerun; runtime token receipts unavailable from live Codex adapter output |
 | Broad dominance over naked Codex | mixed_not_proven | Ablations did not isolate a harness-specific causal effect; fixture count below broad proof gate |
 | Third-party or production adoption | not_demonstrated | No entries beyond placeholder in the adoption index |
