@@ -57,10 +57,12 @@ previously committed usage and wall-time receipts:
 node examples/proof/codex-token-efficient-resume/score-fixture.mjs --reuse-committed-receipts
 ```
 
-Raw Codex event logs are local runtime residue and are not committed. The
-committed receipts record that the usage values originated from the original
-live `codex exec --json` `turn.completed` events and that wall time came from
-the per-run meta receipts captured during those live invocations. Public source
-refs are the prompts, answers, receipts, aggregate, generator, scorer, and
-manifest in this directory.
+Raw Codex event logs and per-run meta receipts are local runtime residue and are
+not committed. This fixture's `.gitignore` keeps `raw-events/` and
+`receipts/*-meta.json` out of the public repo during refresh runs. The committed
+receipts record that the usage values originated from the original live `codex
+exec --json` `turn.completed` events and that wall time came from the per-run
+meta receipts captured during those live invocations. Public source refs are the
+prompts, answers, receipts, aggregate, generator, scorer, and manifest in this
+directory.
 

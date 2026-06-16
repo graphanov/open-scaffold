@@ -1,0 +1,3 @@
+# Local Codex refresh inputs; committed receipts preserve public provenance.
+raw-events/
+receipts/*-meta.json

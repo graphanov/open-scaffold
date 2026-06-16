@@ -156,6 +156,16 @@ describe('proof comparison harness', () => {
     expect(aggregate.quality_rubric.criteria.find((criterion) => criterion.id === 'reader_next_fields_and_evidence_are_traceable')?.label).toContain('at least one direct evidence reference');
     expect(aggregateBoundary).toContain('Original per-replicate codex exec --json turn.completed usage');
 
+    const ignoredRefreshInputs = [
+      'examples/proof/codex-token-efficient-resume/raw-events/control-r1.jsonl',
+      'examples/proof/codex-token-efficient-resume/receipts/control-r1-meta.json',
+    ];
+    for (const ignoredPath of ignoredRefreshInputs) {
+      const ignored = spawnSync('git', ['check-ignore', '-v', ignoredPath], { cwd: repoRoot, encoding: 'utf8' });
+      expect(ignored.status, ignored.stdout + ignored.stderr).toBe(0);
+      expect(ignored.stdout).toContain('examples/proof/codex-token-efficient-resume/.gitignore');
+    }
+
     for (const receiptPath of [...aggregate.arms.control.receipts, ...aggregate.arms.scaffolded.receipts]) {
       const receipt = JSON.parse(readFileSync(resolve(fixture, receiptPath), 'utf8')) as {
         quality: { rubric: string; human_facing: boolean; score: number; total: number; checks: Array<{ id: string; label: string; pass: boolean }> };
