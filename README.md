@@ -76,6 +76,14 @@ the verdicts both ways:
   vs 30% without — with zero confabulated history — at half the review cost**
   (pilot-grade n; boundaries and raw-data pointers in
   [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md)).
+- **Bounded Codex cold-resume token efficiency:** a checked-in read-only Codex
+  fixture compares a naked prompt over 419,233 bytes of raw paused-session
+  artifacts with a 1,557-byte Open Scaffold resume capsule compiled from the
+  same facts. Three `codex exec`/`gpt-5.5` replicates per arm tied decision
+  quality at 6/6 on a deterministic human-facing reader-usability rubric, while
+  median reported total tokens fell from 137,327 to
+  31,715 - **4.330033x fewer tokens**. This is one cold-resume decision fixture,
+  not a universal cost or workload claim.
 - **What it does not do, measured:** it does not improve a strong model's
   in-session task output — an explicit non-goal. Resume value scales with how
   much recoverable state an interruption leaves behind. The dead claims stay
@@ -215,11 +223,11 @@ not need a work record.
 
 Open Scaffold is pre-1.0 (`v0.32.x`) and it does not make your model smarter —
 it makes the *loop around the model* disciplined: bounded slices, gated
-execution, compact resumes, receipts for everything. A bounded
-scaffold-vs-naked fixture ships in [`examples/proof/`](examples/proof/) and is
-honest about its current scope; the broader benchmark program now lives in the
-source-labeled claim ledger in [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md),
-with raw receipts in the public
+execution, compact resumes, receipts for everything. A bounded Codex
+cold-resume fixture and the older scaffold-vs-naked fixture ship in
+[`examples/proof/`](examples/proof/) and are honest about their current scope;
+the broader benchmark program now lives in the source-labeled claim ledger in
+[`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md), with raw receipts in the public
 [`harness-bench`](https://github.com/graphanov/harness-bench) results tree. The full maturity contract —
 what is stable, what is experimental, what is future — lives in one place:
 [`docs/STABILITY.md`](docs/STABILITY.md).

@@ -1,0 +1,76 @@
+{
+  "schema": "open-scaffold.codex-token-efficiency-receipt.v1",
+  "arm": "scaffolded",
+  "replicate": 1,
+  "runtime": "codex-cli exec / gpt-5.5",
+  "prompt": "prompts/scaffolded-resume-capsule-prompt.md",
+  "answer": "answers/scaffolded-r1.json",
+  "usage": {
+    "input_tokens": 31414,
+    "cached_input_tokens": 2432,
+    "output_tokens": 320,
+    "reasoning_output_tokens": 131,
+    "total_tokens": 31734,
+    "total_tokens_derivation": "Codex CLI reported input_tokens and output_tokens; this fixture uses input_tokens + output_tokens as total_tokens and records cached/reasoning splits separately."
+  },
+  "wall_seconds": 23.05,
+  "prompt_bytes": 1557,
+  "quality": {
+    "rubric": "deterministic-human-facing-decision-rubric-v1",
+    "human_facing": true,
+    "score": 6,
+    "total": 6,
+    "checks": [
+      {
+        "id": "reader_action_is_plain",
+        "label": "The answer gives a plain closeout/stop action.",
+        "pass": true
+      },
+      {
+        "id": "reader_reasons_explain_decision",
+        "label": "The reasons explain the frontier, acceptance evidence, and why another attempt is not authorized.",
+        "pass": true
+      },
+      {
+        "id": "reader_resume_pointer_is_unambiguous",
+        "label": "The resume pointer names attempt-f-closeout-candidate as the current/frontier state.",
+        "pass": true
+      },
+      {
+        "id": "reader_acceptance_and_remaining_work_are_clear",
+        "label": "The acceptance status and remaining work are explicit.",
+        "pass": true
+      },
+      {
+        "id": "reader_next_fields_and_evidence_are_traceable",
+        "label": "The next fields are complete and at least one direct evidence reference lets a reader continue.",
+        "pass": true
+      },
+      {
+        "id": "reader_boundary_is_plain",
+        "label": "The boundary plainly says this is decision support, not approval/release/deployment/compliance.",
+        "pass": true
+      }
+    ]
+  },
+  "source": {
+    "local_codex_json_event_log": "raw-events/scaffolded-r1.jsonl (not committed; original measurement came from this live Codex event log; rerun live Codex before a fresh score)",
+    "usage_wall_time_provenance": {
+      "origin": "original live codex-cli exec / gpt-5.5 run",
+      "usage_source": "Codex CLI --json turn.completed usage event",
+      "wall_time_source": "per-run meta receipt captured during the live Codex invocation",
+      "raw_event_log_committed": false,
+      "raw_event_log_policy": "raw-events/*.jsonl are local runtime residue; rerun live Codex to regenerate them before a fresh score",
+      "recomputed_from_raw_events_this_invocation": false,
+      "preserved_during_rubric_rescore": true
+    },
+    "quality_score_source": "committed answer JSON re-scored; usage and wall time kept from original event-derived receipt",
+    "committed_public_receipt": "receipts/scaffolded-r1.json"
+  },
+  "boundary": {
+    "read_only_codex_exec": true,
+    "no_tools_requested": true,
+    "bounded_cold_resume_fixture_only": true,
+    "not_broad_model_or_workload_proof": true
+  }
+}

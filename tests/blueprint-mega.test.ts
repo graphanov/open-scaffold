@@ -206,12 +206,18 @@ describe('blueprint registry and schema surfaces', () => {
       'open-scaffold.pr_check.v1',
       'open-scaffold.audit-envelope.v1',
       'open-scaffold.evaluation.v1',
+      'open-scaffold.codex-token-efficiency-receipt.v1',
     ]));
     expect(schemaIds).not.toContain('open-scaffold.compact-evidence.v1');
 
     const auditSchema = spawnSync(tsx, [cli, 'schemas', 'show', 'open-scaffold.audit-envelope.v1'], { cwd: repoRoot, encoding: 'utf8' });
     expect(auditSchema.status, auditSchema.stderr).toBe(0);
     expect(auditSchema.stdout).toContain('Owner: src/audit.ts');
+
+    const tokenReceiptSchema = spawnSync(tsx, [cli, 'schemas', 'show', 'open-scaffold.codex-token-efficiency-receipt.v1'], { cwd: repoRoot, encoding: 'utf8' });
+    expect(tokenReceiptSchema.status, tokenReceiptSchema.stderr).toBe(0);
+    expect(tokenReceiptSchema.stdout).toContain('Owner: examples/proof/codex-token-efficient-resume/score-fixture.mjs');
+    expect(tokenReceiptSchema.stdout).toContain('Codex usage and wall time provenance');
 
     const evalSchema = spawnSync(tsx, [cli, 'schemas', 'show', 'open-scaffold.evaluation.v1'], { cwd: repoRoot, encoding: 'utf8' });
     expect(evalSchema.status, evalSchema.stderr).toBe(0);

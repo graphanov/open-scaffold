@@ -1,0 +1,116 @@
+{
+  "schema": "open-scaffold.proof-comparison.v1",
+  "comparison_id": "codex-token-efficient-resume-2026-06-16",
+  "title": "Codex cold-resume token efficiency: raw artifacts vs Open Scaffold capsule",
+  "question": "For a bounded paused-work resume decision, does an Open Scaffold compact resume capsule let Codex preserve decision quality while using at least 2x fewer reported total tokens than a naked raw-artifact prompt?",
+  "arms": {
+    "control": {
+      "id": "naked-codex-raw-paused-session",
+      "label": "Naked Codex over raw paused-session artifacts",
+      "runtime": "codex-cli exec / gpt-5.5"
+    },
+    "scaffolded": {
+      "id": "open-scaffold-resume-capsule-codex",
+      "label": "Open Scaffold resume capsule + Codex",
+      "runtime": "codex-cli exec / gpt-5.5"
+    }
+  },
+  "metrics": [
+    {
+      "id": "quality.decision_score_median",
+      "label": "Median human-facing decision quality score",
+      "category": "quality",
+      "unit": "points / 6",
+      "direction": "higher",
+      "control": 6,
+      "scaffolded": 6,
+      "source_refs": [
+        "receipts/aggregate.json",
+        "receipts/control-r1.json",
+        "receipts/control-r2.json",
+        "receipts/control-r3.json",
+        "receipts/scaffolded-r1.json",
+        "receipts/scaffolded-r2.json",
+        "receipts/scaffolded-r3.json"
+      ],
+      "notes": "Six deterministic reader-usability checks cover plain action, explanatory reasons, unambiguous resume pointer, clear acceptance/remaining-work status, complete next fields plus at least one traceable evidence ref, and a plain no-approval boundary."
+    },
+    {
+      "id": "usage.codex_reported_total_tokens_median",
+      "label": "Median Codex-reported total tokens",
+      "category": "tokens",
+      "unit": "tokens",
+      "direction": "lower",
+      "control": 137327,
+      "scaffolded": 31715,
+      "minimum_ratio": 2,
+      "source_refs": [
+        "receipts/aggregate.json",
+        "receipts/control-r1.json",
+        "receipts/control-r2.json",
+        "receipts/control-r3.json",
+        "receipts/scaffolded-r1.json",
+        "receipts/scaffolded-r2.json",
+        "receipts/scaffolded-r3.json"
+      ],
+      "notes": "Derived from Codex CLI input_tokens + output_tokens in turn.completed usage for three read-only replicates per arm."
+    },
+    {
+      "id": "usage.prompt_payload_bytes",
+      "label": "Prompt payload bytes given to Codex",
+      "category": "tokens",
+      "unit": "bytes",
+      "direction": "lower",
+      "control": 419233,
+      "scaffolded": 1557,
+      "minimum_ratio": 2,
+      "source_refs": [
+        "prompts/control-naked-raw-prompt.txt",
+        "prompts/scaffolded-resume-capsule-prompt.md",
+        "receipts/aggregate.json"
+      ],
+      "notes": "Direct prompt payload size, not an inferred model-token count."
+    },
+    {
+      "id": "speed.wall_seconds_median",
+      "label": "Median wall-clock seconds for Codex response",
+      "category": "speed",
+      "unit": "seconds",
+      "direction": "lower",
+      "control": 33.533,
+      "scaffolded": 26.894,
+      "source_refs": [
+        "receipts/aggregate.json",
+        "receipts/control-r1.json",
+        "receipts/control-r2.json",
+        "receipts/control-r3.json",
+        "receipts/scaffolded-r1.json",
+        "receipts/scaffolded-r2.json",
+        "receipts/scaffolded-r3.json"
+      ],
+      "notes": "Wall time includes local Codex CLI startup/plugin overhead on the measured machine."
+    },
+    {
+      "id": "evolution.compiled_record_available",
+      "label": "Compiled Open Scaffold resume record available",
+      "category": "evolution",
+      "unit": "present",
+      "direction": "higher",
+      "control": 0,
+      "scaffolded": 1,
+      "source_refs": [
+        "prompts/scaffolded-resume-capsule-prompt.md",
+        "generate-fixture.mjs",
+        "receipts/aggregate.json"
+      ],
+      "notes": "This is the mechanism difference: raw artifacts vs a compiled Open Scaffold resume capsule. It is not a claim that the model became smarter."
+    }
+  ],
+  "caveats": [
+    "Bounded fixture proof only: one paused-work cold-resume decision, not all AI work or all repositories.",
+    "Codex CLI did not emit total_tokens directly in this environment; receipts record input/output splits and derive total as input_tokens + output_tokens.",
+    "The raw control prompt is intentionally a long paused-session artifact stream; the scaffolded arm is the compact packet compiled from those facts.",
+    "The quality score is deterministic and human-facing, but it is still a rubric over committed answers rather than a blind human-reader study.",
+    "Open Scaffold did not approve closeout, merge, publish, release, deployment, or compliance."
+  ]
+}
