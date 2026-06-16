@@ -318,6 +318,17 @@ describe('proof comparison harness', () => {
     expect(nearThreshold.summary.thresholdsPass).toBe(false);
     expect(nearThreshold.summary.thresholdViolations[0].actual).toBeCloseTo(1.9999996);
 
+    const controlWinnerPath = manifest(root);
+    const controlWinnerManifest = JSON.parse(readFileSync(controlWinnerPath, 'utf8')) as { metrics: Array<{ id: string; control: number; scaffolded: number; minimum_ratio?: number }> };
+    for (const metric of controlWinnerManifest.metrics) {
+      if (metric.id === 'usage.total_tokens') { metric.control = 50; metric.scaffolded = 100; metric.minimum_ratio = 2; }
+    }
+    writeFileSync(controlWinnerPath, `${JSON.stringify(controlWinnerManifest, null, 2)}\n`);
+    const controlWinner = compareProofManifest(controlWinnerPath);
+    const controlWinnerTokenMetric = controlWinner.metrics.find((metric) => metric.id === 'usage.total_tokens');
+    expect(controlWinnerTokenMetric).toMatchObject({ winner: 'control', improvementRatio: 0.5, minimumRatioPassed: false });
+    expect(controlWinner.summary.thresholdViolations[0].actual).toBe(0.5);
+
     const zeroThresholdPath = manifest(root);
     const zeroThresholdManifest = JSON.parse(readFileSync(zeroThresholdPath, 'utf8')) as { metrics: Array<{ id: string; control: number; scaffolded: number; minimum_ratio?: number }> };
     for (const metric of zeroThresholdManifest.metrics) {
