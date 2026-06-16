@@ -257,8 +257,8 @@ This sample must not count as the real section.
     // 171 release closeout: finalized v0.32.0 publication evidence note; release-warning set unchanged.
     // public-readiness-hardening: release note added with no new release warnings.
     // 172 release closeout: finalized v0.32.1 publication evidence note; release-warning set unchanged.
-    // 173 planning: active proof plan changed the live scaffold corpus hash.
-    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('8a0c9d37fe979e22a028060393342def063f0a546744285fd057b46ed67a58f8');
+    // 173 planning plus proof provenance/rubric updates changed the live scaffold corpus hash.
+    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('69c2c3f35a7e509d9c3d23e4ee20b5ddb1d8c13f28dad7f242843b04c3d74f37');
     expect(realPlanFiles().every((path) => statSync(path).isFile())).toBe(true);
   });
 });
