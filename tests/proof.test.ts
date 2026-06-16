@@ -314,7 +314,7 @@ describe('proof comparison harness', () => {
     writeFileSync(nearThresholdPath, `${JSON.stringify(nearThresholdManifest, null, 2)}\n`);
     const nearThreshold = compareProofManifest(nearThresholdPath);
     const nearThresholdTokenMetric = nearThreshold.metrics.find((metric) => metric.id === 'usage.total_tokens');
-    expect(nearThresholdTokenMetric?.improvementRatio).toBe(2);
+    expect(nearThresholdTokenMetric?.improvementRatio).toBe(1.999999);
     expect(nearThreshold.summary.thresholdsPass).toBe(false);
     expect(nearThreshold.summary.thresholdViolations[0].actual).toBeCloseTo(1.9999996);
 

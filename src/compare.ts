@@ -392,7 +392,7 @@ export function validateProofManifestFile(pathArg: string): ProofValidationResul
 }
 const proofWinner = (metric: ProofMetric): ProofWinner => metric.scaffolded === metric.control ? 'tie' : metric.direction === 'higher' ? (metric.scaffolded > metric.control ? 'scaffolded' : 'control') : (metric.scaffolded < metric.control ? 'scaffolded' : 'control');
 const proofScaffoldedRatio = (metric: ProofMetric): ProofRatio => metric.direction === 'higher' ? (metric.control === 0 ? (metric.scaffolded > 0 ? 'unbounded' : 1) : metric.scaffolded / metric.control) : (metric.scaffolded === 0 ? (metric.control > 0 ? 'unbounded' : 1) : metric.control / metric.scaffolded);
-const proofReportedRatio = (ratio: ProofRatio): ProofRatio => typeof ratio === 'number' ? Number(ratio.toFixed(6)) : ratio;
+const proofReportedRatio = (ratio: ProofRatio): ProofRatio => typeof ratio === 'number' ? Math.floor(ratio * 1_000_000) / 1_000_000 : ratio;
 const proofRatioPasses = (ratio: ProofRatio, minimumRatio: number | null, winner: ProofWinner) => minimumRatio === null ? null : winner === 'scaffolded' && (ratio === 'unbounded' || (typeof ratio === 'number' && ratio >= minimumRatio));
 function proofCategoryStatus(metrics: Array<ProofMetric & { winner: ProofWinner }>, category: ProofCategory) { const scoped = metrics.filter((metric) => metric.category === category); return scoped.length === 0 ? 'missing' : scoped.some((metric) => metric.winner === 'control') ? 'regressed' : scoped.some((metric) => metric.winner === 'scaffolded') ? 'improved' : 'tied'; }
 export function compareProofManifest(pathArg: string) {
