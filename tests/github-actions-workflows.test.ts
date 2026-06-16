@@ -23,6 +23,14 @@ describe('GitHub Actions workflow templates', () => {
     expect(workflow).toContain("grep -v -- '-amendment-'");
   });
 
+  it('keeps the stale active plans workflow on maintained CLI surfaces', () => {
+    const workflow = read('.github/workflows/stale-plans.yml');
+
+    expect(workflow).toContain('node dist/cli.js status --json > scaffold-status.json');
+    expect(workflow).not.toContain('node dist/cli.js metrics');
+    expect(workflow).not.toContain('scaffold-metrics.json');
+  });
+
   it('checks out workflows with authenticated fetch and public fallback', () => {
     for (const workflowPath of [
       '.github/workflows/ci.yml',
