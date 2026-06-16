@@ -66,6 +66,61 @@ osc prove check examples/proof/scaffold-vs-naked-codex/manifest.json
 osc prove compare examples/proof/scaffold-vs-naked-codex/manifest.json --format markdown
 ```
 
+## Current Codex 2x cold-resume fixture
+
+The strongest checked-in Codex token-efficiency fixture is now separate from the
+older evolution-controller fixture:
+
+```bash
+osc prove check examples/proof/codex-token-efficient-resume/manifest.json
+osc prove compare examples/proof/codex-token-efficient-resume/manifest.json --format markdown
+```
+
+It compares one bounded paused-work resume decision:
+
+- **Control arm:** naked Codex receives 419,233 bytes of raw paused-session
+  transcript/work-record artifacts.
+- **Scaffolded arm:** Codex receives a 1,557-byte Open Scaffold resume capsule
+  compiled from the same facts.
+- **Task:** decide whether the next controller action is another attempt or
+  closeout without running tools.
+- **Replicates:** three read-only `codex exec` runs per arm, `gpt-5.5`.
+- **Quality rubric:** six deterministic human-facing reader-usability checks:
+  plain closeout/stop action, explanatory reasons, unambiguous attempt-f resume
+  pointer, clear 5/5 acceptance and remaining-work status, complete next fields
+  plus at least one traceable evidence ref, and a plain no-approval/no-release
+  boundary.
+
+From `examples/proof/codex-token-efficient-resume/receipts/aggregate.json`:
+
+| Metric | Naked Codex/raw artifacts | Open Scaffold resume capsule | Result |
+|---|---:|---:|---|
+| Prompt payload | 419,233 bytes | 1,557 bytes | scaffolded is 269.256904x smaller |
+| Median Codex-reported total tokens | 137,327 | 31,715 | scaffolded is 4.330033x lighter |
+| Median wall-clock time | 33.533 s | 26.894 s | scaffolded is 1.246858x faster |
+| Median decision quality | 6/6 | 6/6 | tied; no quality regression on the human-facing rubric |
+| Decision quality per 1k Codex tokens | 0.043691 | 0.189185 | scaffolded is 4.330034x better |
+
+The manifest sets `minimum_ratio: 2` on the Codex-reported total-token metric.
+`osc prove compare` fails the bounded proof if that threshold is not met. The
+Codex CLI build used here emitted `input_tokens` and `output_tokens`, not a
+direct `total_tokens` field; receipts therefore record both splits and derive
+total tokens as `input_tokens + output_tokens`. The per-run committed receipts
+also record measurement provenance: usage originated from original live
+`codex exec --json` `turn.completed` events, while wall time came from per-run
+meta receipts captured during those live invocations. The raw event logs are
+left uncommitted as local runtime residue.
+
+Boundary: this proves a compact Open Scaffold resume packet can be more than 2x
+token-efficient for this cold-resume decision while preserving quality. It does
+not prove universal cost savings, broad workload dominance, model improvement,
+or production readiness.
+
+The quality score is still deterministic. The improvement is that the criteria
+now target what a human reader needs from the answer: readability, comprehension,
+clarity, enough decision detail, unambiguous resume routing, and explicit
+authority boundaries. It is not a blind human-reader study.
+
 ## What the shipped fixture compares
 
 The first checked-in fixture is deliberately narrow:
@@ -164,6 +219,7 @@ Core bench suites write `.osc/bench/<suite-id>/aggregate.json` and `.osc/bench/<
 
 | Claim | Status | Notes |
 |---|---|---|
+| Codex cold-resume 2x token-efficiency fixture passes `osc prove compare` | demonstrated | `examples/proof/codex-token-efficient-resume/`; median reported total tokens 137,327 vs 31,715, ratio 4.330033x, quality tied 6/6 on a deterministic human-facing reader-usability rubric |
 | Checked-in fixture passes `osc prove check` | demonstrated | `examples/proof/scaffold-vs-naked-codex/` |
 | Decision quality preserved (5/5 both arms) | demonstrated | committed receipts |
 | Prompt payload reduction (~11.6×) | demonstrated | committed receipts |
@@ -172,7 +228,9 @@ Core bench suites write `.osc/bench/<suite-id>/aggregate.json` and `.osc/bench/<
 | Broad dominance over naked Codex | mixed_not_proven | Ablations did not isolate a harness-specific causal effect; fixture count below broad proof gate |
 | Third-party or production adoption | not_demonstrated | No entries beyond placeholder in the adoption index |
 
-Live-lane reproduction has not yet fully succeeded; raw attempts are in `.osc/bench/`. Do not claim Open Scaffold broadly beats naked Codex from the current evidence.
+Broad live-lane reproduction has not yet fully succeeded; raw attempts are in
+`.osc/bench/`. The Codex cold-resume fixture above is narrower and demonstrated.
+Do not claim Open Scaffold broadly beats naked Codex from the current evidence.
 
 ## Adoption proof entries
 

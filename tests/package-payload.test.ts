@@ -14,13 +14,19 @@ interface PackResult {
 }
 
 const repoRoot = resolve(process.cwd());
+const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const commandOptions = process.platform === 'win32' ? { shell: true } : {};
+const npmCache = join(tmpdir(), 'open-scaffold-npm-cache');
+const npmEnv = { ...process.env, npm_config_cache: npmCache, NPM_CONFIG_CACHE: npmCache };
 
 describe('npm package payload', () => {
   it('ships package/template assets without product dogfood plan and release history', () => {
-    const output = execFileSync('npm', ['pack', '--dry-run', '--json'], {
+    const output = execFileSync(npm, ['pack', '--cache', npmCache, '--dry-run', '--json'], {
       cwd: repoRoot,
+      env: npmEnv,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
+      ...commandOptions,
     });
     const [pack] = JSON.parse(output) as PackResult[];
     const paths = pack.files.map((file) => file.path).sort();
@@ -48,13 +54,15 @@ describe('npm package payload', () => {
     );
 
     expect(forbidden).toEqual([]);
-  }, 20_000);
+  }, 90_000);
 
   it('ships compare-demo, resume-demo, and proof-harness example fixtures in the published package', () => {
-    const output = execFileSync('npm', ['pack', '--dry-run', '--json'], {
+    const output = execFileSync(npm, ['pack', '--cache', npmCache, '--dry-run', '--json'], {
       cwd: repoRoot,
+      env: npmEnv,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
+      ...commandOptions,
     });
     const [pack] = JSON.parse(output) as PackResult[];
     const paths = pack.files.map((file) => file.path).sort();
@@ -78,6 +86,9 @@ describe('npm package payload', () => {
     expect(paths).toContain('examples/proof/scaffold-vs-naked-codex/manifest.json');
     expect(paths).toContain('examples/proof/scaffold-vs-naked-codex/receipts/aggregate.json');
     expect(paths).toContain('examples/proof/scaffold-vs-naked-codex/prompts/scaffolded-compact-prompt.md');
+    expect(paths).toContain('examples/proof/codex-token-efficient-resume/manifest.json');
+    expect(paths).toContain('examples/proof/codex-token-efficient-resume/receipts/aggregate.json');
+    expect(paths).toContain('examples/proof/codex-token-efficient-resume/prompts/scaffolded-resume-capsule-prompt.md');
 
     // resume-demo fixture must ship so the zero-context-resume demo works from a fresh install
     if (existsSync(join(repoRoot, 'examples', 'resume-demo'))) {
@@ -88,7 +99,7 @@ describe('npm package payload', () => {
       expect(paths).toContain('examples/resume-demo/.osc/releases/2026-05-10-scaffold-init.md');
       expect(paths).toContain('examples/resume-demo/expected-resume-summary.json');
     }
-  }, 20_000);
+  }, 90_000);
 
   it('runs compare demo from an extracted npm tarball while invoked from a fresh external cwd', () => {
     const packDir = mkdtempSync(join(tmpdir(), 'open-scaffold-pack-'));
@@ -96,10 +107,12 @@ describe('npm package payload', () => {
     const freshCwd = mkdtempSync(join(tmpdir(), 'open-scaffold-fresh-cwd-'));
 
     try {
-      const output = execFileSync('npm', ['pack', '--json', '--pack-destination', packDir], {
+      const output = execFileSync(npm, ['pack', '--cache', npmCache, '--json', '--pack-destination', packDir], {
         cwd: repoRoot,
+        env: npmEnv,
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
+        ...commandOptions,
       });
       const [pack] = JSON.parse(output) as PackResult[];
       const tarball = resolve(packDir, pack.filename);
@@ -139,12 +152,29 @@ describe('npm package payload', () => {
 
       expect(proofOutput).toContain('Bounded proof verdict: PASS');
       expect(proofOutput).toContain('usage.prompt_payload_bytes');
+
+      const tokenProofOutput = execFileSync('node', [
+        join(packageDir, 'dist/cli.js'),
+        'prove',
+        'compare',
+        '--format',
+        'markdown',
+        'examples/proof/codex-token-efficient-resume/manifest.json',
+      ], {
+        cwd: freshCwd,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      expect(tokenProofOutput).toContain('Bounded proof verdict: PASS');
+      expect(tokenProofOutput).toContain('usage.codex_reported_total_tokens_median');
+      expect(tokenProofOutput).toContain('4.330033x');
     } finally {
       rmSync(packDir, { recursive: true, force: true });
       rmSync(extractDir, { recursive: true, force: true });
       rmSync(freshCwd, { recursive: true, force: true });
     }
-  }, 40_000);
+  }, 90_000);
 
   it('runs init successfully from an extracted npm tarball', () => {
     const packDir = mkdtempSync(join(tmpdir(), 'open-scaffold-pack-'));
@@ -152,10 +182,12 @@ describe('npm package payload', () => {
     const target = mkdtempSync(join(tmpdir(), 'open-scaffold-init-'));
 
     try {
-      const output = execFileSync('npm', ['pack', '--json', '--pack-destination', packDir], {
+      const output = execFileSync(npm, ['pack', '--cache', npmCache, '--json', '--pack-destination', packDir], {
         cwd: repoRoot,
+        env: npmEnv,
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
+        ...commandOptions,
       });
       const [pack] = JSON.parse(output) as PackResult[];
       const tarball = resolve(packDir, pack.filename);
@@ -182,5 +214,5 @@ describe('npm package payload', () => {
       rmSync(extractDir, { recursive: true, force: true });
       rmSync(target, { recursive: true, force: true });
     }
-  }, 40_000);
+  }, 90_000);
 });

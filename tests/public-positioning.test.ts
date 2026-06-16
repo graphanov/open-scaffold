@@ -153,14 +153,22 @@ describe('public work-record positioning', () => {
     expect(evolution).toContain('osc evolve analyze .osc/evolution/demo-loop --efficiency');
     expect(proof).toContain('Bounded fixture proof only');
     expect(proof).toContain('not a universal benchmark');
+    expect(proof).toContain('codex-token-efficient-resume');
+    expect(proof).toContain('4.330033x');
+    expect(proof).toContain('minimum_ratio: 2');
+    expect(proof).toContain('deterministic human-facing reader-usability rubric');
+    expect(proof).toContain('not a blind human-reader study');
+    expect(readme).toContain('deterministic human-facing reader-usability rubric');
     expect(proof).toContain('15,225 bytes');
     expect(proof).toContain('31,635');
     expect(proof).toContain('Live adapter runs — external harness only');
     expect(proof).toContain('Open Scaffold core retired live mode for `osc bench suite`');
     expect(proof).not.toContain('osc bench suite --mode live');
     expect(readme).toContain('docs/PROOF_HARNESS.md');
+    expect(readme).toContain('4.330033x fewer tokens');
     expect(readme).toContain('docs/STABILITY.md');
     expect(faq).toContain('token/cost savings require receipts');
+    expect(faq).toContain('examples/proof/codex-token-efficient-resume/manifest.json');
   });
 
   it('keeps public readiness and package metadata bounded to pre-1.0 evidence-backed claims', () => {

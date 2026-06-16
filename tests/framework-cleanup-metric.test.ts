@@ -62,7 +62,7 @@ function maintainedSourceFiles(): MaintainedSourceFile[] {
   return maintainedRoots
     .flatMap((root) => walkTypeScriptFiles(root))
     .sort()
-    .map((file) => ({ path: relative(repoRoot, file), loc: physicalLoc(file) }));
+    .map((file) => ({ path: relative(repoRoot, file).replace(/\\/g, '/'), loc: physicalLoc(file) }));
 }
 
 describe('framework cleanup maintained-source metric', () => {

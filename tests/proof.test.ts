@@ -11,6 +11,8 @@ import {
 } from '../src/compare.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
+const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const commandOptions = process.platform === 'win32' ? { shell: true } : {};
 
 function fixtureRoot() {
   const root = mkdtempSync(join(tmpdir(), 'osc-proof-'));
@@ -116,6 +118,186 @@ describe('proof comparison harness', () => {
     expect(result.summary.verdict).toContain('preserves decision quality');
   });
 
+  it('passes the Codex cold-resume fixture only because the declared 2x token threshold is met', () => {
+    const result = compareProofManifest(resolve(repoRoot, 'examples/proof/codex-token-efficient-resume/manifest.json'));
+    const qualityMetric = result.metrics.find((metric) => metric.id === 'quality.decision_score_median');
+    const tokenMetric = result.metrics.find((metric) => metric.id === 'usage.codex_reported_total_tokens_median');
+
+    expect(result.summary.boundedProof).toBe(true);
+    expect(result.summary.thresholdsPass).toBe(true);
+    expect(result.summary.categories.quality).toBe('tied');
+    expect(qualityMetric?.label).toBe('Median human-facing decision quality score');
+    expect(qualityMetric?.notes).toContain('reader-usability checks');
+    expect(tokenMetric?.improvementRatio).toBe(4.330033);
+    expect(tokenMetric?.minimumRatio).toBe(2);
+    expect(tokenMetric?.minimumRatioPassed).toBe(true);
+  });
+
+  it('records the Codex fixture quality score as a human-facing reader-usability rubric', () => {
+    const fixture = resolve(repoRoot, 'examples/proof/codex-token-efficient-resume');
+    const aggregate = JSON.parse(readFileSync(resolve(fixture, 'receipts/aggregate.json'), 'utf8')) as {
+      quality_rubric: { id: string; kind: string; note: string; criteria: Array<{ id: string; label: string }> };
+      arms: { control: { receipts: string[] }; scaffolded: { receipts: string[] } };
+    };
+    const expectedCriteria = [
+      'reader_action_is_plain',
+      'reader_reasons_explain_decision',
+      'reader_resume_pointer_is_unambiguous',
+      'reader_acceptance_and_remaining_work_are_clear',
+      'reader_next_fields_and_evidence_are_traceable',
+      'reader_boundary_is_plain',
+    ];
+    const aggregateBoundary = JSON.stringify(aggregate);
+
+    expect(aggregate.quality_rubric.id).toBe('deterministic-human-facing-decision-rubric-v1');
+    expect(aggregate.quality_rubric.kind).toBe('deterministic reader-usability proxy');
+    expect(aggregate.quality_rubric.note).toContain('human reader can understand and act');
+    expect(aggregate.quality_rubric.criteria.map((criterion) => criterion.id)).toEqual(expectedCriteria);
+    expect(aggregate.quality_rubric.criteria.find((criterion) => criterion.id === 'reader_next_fields_and_evidence_are_traceable')?.label).toContain('at least one direct evidence reference');
+    expect(aggregateBoundary).toContain('Original per-replicate codex exec --json turn.completed usage');
+
+    for (const receiptPath of [...aggregate.arms.control.receipts, ...aggregate.arms.scaffolded.receipts]) {
+      const receipt = JSON.parse(readFileSync(resolve(fixture, receiptPath), 'utf8')) as {
+        quality: { rubric: string; human_facing: boolean; score: number; total: number; checks: Array<{ id: string; label: string; pass: boolean }> };
+        source: {
+          local_codex_json_event_log: string;
+          usage_wall_time_provenance: {
+            origin: string;
+            usage_source: string;
+            wall_time_source: string;
+            raw_event_log_committed: boolean;
+            raw_event_log_policy: string;
+            recomputed_from_raw_events_this_invocation: boolean;
+            preserved_during_rubric_rescore: boolean;
+          };
+          quality_score_source: string;
+        };
+      };
+      expect(receipt.quality.rubric).toBe(aggregate.quality_rubric.id);
+      expect(receipt.quality.human_facing).toBe(true);
+      expect(receipt.quality.score).toBe(6);
+      expect(receipt.quality.total).toBe(6);
+      expect(receipt.quality.checks.map((check) => check.id)).toEqual(expectedCriteria);
+      expect(receipt.quality.checks.every((check) => check.pass && check.label.length > 0)).toBe(true);
+      expect(receipt.source.local_codex_json_event_log).toContain('original measurement came from this live Codex event log');
+      expect(receipt.source.usage_wall_time_provenance.origin).toBe('original live codex-cli exec / gpt-5.5 run');
+      expect(receipt.source.usage_wall_time_provenance.usage_source).toBe('Codex CLI --json turn.completed usage event');
+      expect(receipt.source.usage_wall_time_provenance.wall_time_source).toContain('live Codex invocation');
+      expect(receipt.source.usage_wall_time_provenance.raw_event_log_committed).toBe(false);
+      expect(receipt.source.usage_wall_time_provenance.raw_event_log_policy).toContain('local runtime residue');
+      expect(receipt.source.usage_wall_time_provenance.recomputed_from_raw_events_this_invocation).toBe(false);
+      expect(receipt.source.usage_wall_time_provenance.preserved_during_rubric_rescore).toBe(true);
+      expect(receipt.source.quality_score_source).toContain('committed answer JSON re-scored');
+      expect(receipt.source).not.toHaveProperty('usage_wall_time_reused_from_committed_receipt');
+    }
+  });
+
+  it('enforces declared minimum improvement ratios before passing a bounded proof', () => {
+    const root = fixtureRoot();
+    const passing = compareProofManifest(manifest(root, {
+      metrics: [
+        {
+          id: 'quality.acceptance_passes',
+          label: 'Accepted criteria passed',
+          category: 'quality',
+          unit: 'criteria',
+          direction: 'higher',
+          control: 5,
+          scaffolded: 5,
+          source_refs: ['evidence/control.json', 'evidence/scaffolded.json'],
+        },
+        {
+          id: 'usage.total_tokens',
+          label: 'Codex tokens used',
+          category: 'tokens',
+          unit: 'tokens',
+          direction: 'lower',
+          control: 100000,
+          scaffolded: 50000,
+          minimum_ratio: 2,
+          source_refs: ['evidence/control.json', 'evidence/scaffolded.json'],
+        },
+        {
+          id: 'speed.wall_seconds',
+          label: 'Wall-clock run time',
+          category: 'speed',
+          unit: 'seconds',
+          direction: 'lower',
+          control: 12,
+          scaffolded: 10,
+          source_refs: ['evidence/control.json', 'evidence/scaffolded.json'],
+        },
+        {
+          id: 'evolution.frontier_delta',
+          label: 'Loop frontier improvement',
+          category: 'evolution',
+          unit: 'accepted criteria delta',
+          direction: 'higher',
+          control: 0,
+          scaffolded: 1,
+          source_refs: ['evidence/scaffolded.json'],
+        },
+      ],
+    }));
+
+    expect(passing.summary.thresholdsPass).toBe(true);
+    expect(passing.summary.thresholdViolations).toEqual([]);
+    expect(passing.summary.boundedProof).toBe(true);
+    expect(passing.metrics.find((metric) => metric.id === 'usage.total_tokens')?.minimumRatioPassed).toBe(true);
+
+    const failing = compareProofManifest(manifest(root, {
+      metrics: [
+        {
+          id: 'quality.acceptance_passes',
+          label: 'Accepted criteria passed',
+          category: 'quality',
+          unit: 'criteria',
+          direction: 'higher',
+          control: 5,
+          scaffolded: 5,
+          source_refs: ['evidence/control.json', 'evidence/scaffolded.json'],
+        },
+        {
+          id: 'usage.total_tokens',
+          label: 'Codex tokens used',
+          category: 'tokens',
+          unit: 'tokens',
+          direction: 'lower',
+          control: 100000,
+          scaffolded: 60000,
+          minimum_ratio: 2,
+          source_refs: ['evidence/control.json', 'evidence/scaffolded.json'],
+        },
+        {
+          id: 'speed.wall_seconds',
+          label: 'Wall-clock run time',
+          category: 'speed',
+          unit: 'seconds',
+          direction: 'lower',
+          control: 12,
+          scaffolded: 10,
+          source_refs: ['evidence/control.json', 'evidence/scaffolded.json'],
+        },
+        {
+          id: 'evolution.frontier_delta',
+          label: 'Loop frontier improvement',
+          category: 'evolution',
+          unit: 'accepted criteria delta',
+          direction: 'higher',
+          control: 0,
+          scaffolded: 1,
+          source_refs: ['evidence/scaffolded.json'],
+        },
+      ],
+    }));
+
+    expect(failing.summary.thresholdsPass).toBe(false);
+    expect(failing.summary.boundedProof).toBe(false);
+    expect(failing.summary.thresholdViolations).toEqual([
+      { metricId: 'usage.total_tokens', required: 2, actual: 1.666667 },
+    ]);
+  });
+
   it('renders an honest markdown report with source refs and non-universal caveats', () => {
     const root = fixtureRoot();
     const result = compareProofManifest(manifest(root));
@@ -208,24 +390,27 @@ describe('proof comparison harness', () => {
     const root = fixtureRoot();
     const manifestPath = manifest(root);
 
-    const compare = execFileSync('npx', ['tsx', 'src/cli.ts', 'prove', 'compare', '--format', 'markdown', manifestPath], {
+    const compare = execFileSync(npx, ['tsx', 'src/cli.ts', 'prove', 'compare', '--format', 'markdown', manifestPath], {
       cwd: repoRoot,
       encoding: 'utf8',
+      ...commandOptions,
     });
     expect(compare).toContain('Bounded proof verdict: PASS');
     expect(compare).toContain('usage.total_tokens');
 
-    const check = execFileSync('npx', ['tsx', 'src/cli.ts', 'prove', 'check', manifestPath], {
+    const check = execFileSync(npx, ['tsx', 'src/cli.ts', 'prove', 'check', manifestPath], {
       cwd: repoRoot,
       encoding: 'utf8',
+      ...commandOptions,
     });
     expect(check).toContain('PASS proof comparison manifest valid');
 
-    const trailing = spawnSync('npx', ['tsx', 'src/cli.ts', 'prove', 'check', manifestPath, 'extra'], {
+    const trailing = spawnSync(npx, ['tsx', 'src/cli.ts', 'prove', 'check', manifestPath, 'extra'], {
       cwd: repoRoot,
       encoding: 'utf8',
+      ...commandOptions,
     });
     expect(trailing.status).toBe(2);
     expect(trailing.stderr).toContain('Usage: osc prove check <manifest.json>');
-  });
+  }, 60_000);
 });
