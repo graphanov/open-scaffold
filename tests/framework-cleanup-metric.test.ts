@@ -30,8 +30,8 @@ const cleanupBaselineLoc = 20_890;
 // 170 review hardening: unknown token totals stay null, transcript captures stay not-spawned, and split final text is concatenated (+5 LOC)
 // 170 review hardening: default captures move to gitignored .osc/state/ambient and help text follows (+1 LOC)
 // Public readiness hardening adds first-run proof-boundary guidance (+6 LOC).
-// 173 Codex token-efficiency proof review registers the specialized receipt schema (+1 LOC).
-const cleanupTargetLoc = 15_149;
+// 173 Codex token-efficiency proof review registers the specialized receipt schema and zero-threshold ratio helper (+2 LOC).
+const cleanupTargetLoc = 15_150;
 const cleanupTargetFiles = 40;
 
 interface MaintainedSourceFile {
@@ -74,7 +74,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(15_149);
+    expect(cleanupTargetLoc).toBe(15_150);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

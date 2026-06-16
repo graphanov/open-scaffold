@@ -306,6 +306,19 @@ describe('proof comparison harness', () => {
     expect(failing.summary.thresholdViolations).toEqual([
       { metricId: 'usage.total_tokens', required: 2, actual: 1.666667 },
     ]);
+
+    const zeroThresholdPath = manifest(root);
+    const zeroThresholdManifest = JSON.parse(readFileSync(zeroThresholdPath, 'utf8')) as { metrics: Array<{ id: string; control: number; scaffolded: number; minimum_ratio?: number }> };
+    for (const metric of zeroThresholdManifest.metrics) {
+      if (metric.id === 'usage.total_tokens') { metric.control = 10; metric.scaffolded = 0; metric.minimum_ratio = 100; }
+      if (metric.id === 'evolution.frontier_delta') { metric.control = 0; metric.scaffolded = 1; metric.minimum_ratio = 100; }
+    }
+    writeFileSync(zeroThresholdPath, `${JSON.stringify(zeroThresholdManifest, null, 2)}\n`);
+    const zeroThreshold = compareProofManifest(zeroThresholdPath);
+    expect(zeroThreshold.summary.thresholdsPass).toBe(true);
+    expect(zeroThreshold.summary.boundedProof).toBe(true);
+    expect(zeroThreshold.metrics.find((metric) => metric.id === 'usage.total_tokens')).toMatchObject({ improvementRatio: 'unbounded', minimumRatioPassed: true });
+    expect(zeroThreshold.metrics.find((metric) => metric.id === 'evolution.frontier_delta')).toMatchObject({ improvementRatio: 'unbounded', minimumRatioPassed: true });
   });
 
   it('renders an honest markdown report with source refs and non-universal caveats', () => {
