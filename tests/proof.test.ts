@@ -303,9 +303,20 @@ describe('proof comparison harness', () => {
 
     expect(failing.summary.thresholdsPass).toBe(false);
     expect(failing.summary.boundedProof).toBe(false);
-    expect(failing.summary.thresholdViolations).toEqual([
-      { metricId: 'usage.total_tokens', required: 2, actual: 1.666667 },
-    ]);
+    expect(failing.summary.thresholdViolations[0]).toMatchObject({ metricId: 'usage.total_tokens', required: 2 });
+    expect(failing.summary.thresholdViolations[0].actual).toBeCloseTo(1.6666666666666667);
+
+    const nearThresholdPath = manifest(root);
+    const nearThresholdManifest = JSON.parse(readFileSync(nearThresholdPath, 'utf8')) as { metrics: Array<{ id: string; control: number; scaffolded: number; minimum_ratio?: number }> };
+    for (const metric of nearThresholdManifest.metrics) {
+      if (metric.id === 'usage.total_tokens') { metric.control = 19999996; metric.scaffolded = 10000000; metric.minimum_ratio = 2; }
+    }
+    writeFileSync(nearThresholdPath, `${JSON.stringify(nearThresholdManifest, null, 2)}\n`);
+    const nearThreshold = compareProofManifest(nearThresholdPath);
+    const nearThresholdTokenMetric = nearThreshold.metrics.find((metric) => metric.id === 'usage.total_tokens');
+    expect(nearThresholdTokenMetric?.improvementRatio).toBe(2);
+    expect(nearThreshold.summary.thresholdsPass).toBe(false);
+    expect(nearThreshold.summary.thresholdViolations[0].actual).toBeCloseTo(1.9999996);
 
     const zeroThresholdPath = manifest(root);
     const zeroThresholdManifest = JSON.parse(readFileSync(zeroThresholdPath, 'utf8')) as { metrics: Array<{ id: string; control: number; scaffolded: number; minimum_ratio?: number }> };
