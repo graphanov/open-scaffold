@@ -70,8 +70,8 @@ jobs:
       - name: Build CLI
         run: npm run build
 
-      - name: Capture scaffold metrics
-        run: node dist/cli.js metrics --json --verbose > scaffold-metrics.json
+      - name: Capture scaffold status
+        run: node dist/cli.js status --json > scaffold-status.json
 
       - name: Detect stale active plans
         id: stale
