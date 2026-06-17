@@ -158,9 +158,13 @@ describe('public work-record positioning', () => {
     expect(proof).toContain('minimum_ratio: 2');
     expect(proof).toContain('deterministic human-facing reader-usability rubric');
     expect(proof).toContain('not a blind human-reader study');
+    expect(proof).toContain('legacy example and should not be read as the current result');
+    expect(proof).toContain('## Legacy result');
+    expect(proof).not.toContain('## Current result');
     expect(readme).toContain('deterministic human-facing reader-usability rubric');
     expect(proof).toContain('15,225 bytes');
     expect(proof).toContain('31,635');
+    expect(proof).toContain('Legacy token and wall-clock reduction');
     expect(proof).toContain('Live adapter runs — external harness only');
     expect(proof).toContain('Open Scaffold core retired live mode for `osc bench suite`');
     expect(proof).not.toContain('osc bench suite --mode live');
