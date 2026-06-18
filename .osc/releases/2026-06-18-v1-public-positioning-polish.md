@@ -25,7 +25,7 @@ This note records local release-readiness evidence only. It does not claim merge
 - Retired-command smoke loop for `work dispatch adapter metrics dashboard task study ab harness` — each exited `2` and included `removed/repositioned` plus `docs/STABILITY.md#command-maturity`.
 - Added-line public-safety scan over the diff — passed for local paths, personal names/emails/phone, and known Discord IDs.
 - `npm run -s osc -- doctor --check secret-scan` — `PASS secret-scan: no obvious token/webhook strings found.`
-- `npm pack --dry-run --json` — passed after prepack build; package payload contained `224` files, dry-run package size `387021` bytes.
+- `npm pack --dry-run --json` — passed after prepack build; package payload contained `224` files, dry-run package size `387096` bytes.
 
 ## Outcome
 

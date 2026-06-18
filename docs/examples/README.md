@@ -33,10 +33,14 @@ Reading path:
 Loop in shell:
 
 ```bash
-npx open-scaffold@latest first-run                         # mission + first plan + evidence skeleton
-# ... agent or human edits against the generated plan ...
-npx open-scaffold@latest evidence collect <slug>            # append real verification output to the existing evidence note
+npx open-scaffold@latest first-run --non-interactive \
+  --slug "<slug>" --mission "<mission>" --goal "<goal>"
+# ... complete the first bounded task ...
+npx open-scaffold@latest plan validate <slug> --strict
+# edit .osc/plans/active/<slug>.md: mark the acceptance criteria that actually passed
+# edit .osc/releases/<date>-<slug>.md: replace Pending with real command output
 npx open-scaffold@latest close <slug> --message "verified" # move plan to done/
+# if the evidence note still points at active/, update its Plan line to .osc/plans/done/<slug>.md
 npx open-scaffold@latest verify --evidence-chain --plan <slug> --strict
 ```
 

@@ -42,11 +42,15 @@ describe('first-run documentation truth', () => {
     const examples = read('docs/examples/README.md');
     const loop = examples.split('Loop in shell:')[1]?.split('```bash')[1]?.split('```')[0] ?? '';
 
-    expect(loop).toContain('npx open-scaffold@latest first-run');
-    expect(loop).toContain('npx open-scaffold@latest evidence collect <slug>');
+    expect(loop).toContain('npx open-scaffold@latest first-run --non-interactive');
+    expect(loop).toContain('npx open-scaffold@latest plan validate <slug> --strict');
+    expect(loop).toContain('edit .osc/plans/active/<slug>.md');
+    expect(loop).toContain('edit .osc/releases/<date>-<slug>.md');
+    expect(loop).toContain('update its Plan line to .osc/plans/done/<slug>.md');
     expect(loop).toContain('npx open-scaffold@latest close <slug> --message "verified"');
     expect(loop).toContain('npx open-scaffold@latest verify --evidence-chain --plan <slug> --strict');
     expect(loop).not.toMatch(/^osc /m);
+    expect(loop.indexOf('mark the acceptance criteria')).toBeLessThan(loop.indexOf('close <slug>'));
     expect(loop.indexOf('close <slug>')).toBeLessThan(loop.indexOf('verify --evidence-chain'));
   });
 
