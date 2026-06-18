@@ -35,7 +35,7 @@ Loop in shell:
 ```bash
 npx open-scaffold@latest first-run               # mission + first plan + evidence skeleton
 # ... agent or human edits against the generated plan ...
-osc evidence new <slug>                           # record real verification output before close
+osc evidence collect <slug>                       # append real verification output to the existing evidence note
 osc verify --evidence-chain                       # structural linkage check
 osc close <slug> --message "verified"            # move plan to done/
 ```

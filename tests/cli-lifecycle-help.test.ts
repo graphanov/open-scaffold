@@ -282,16 +282,15 @@ describe('plan lifecycle help flags', () => {
 
 
 describe('removed/repositioned command shims', () => {
+  const retiredCommandCases: string[][] = [['harness'], ['harness', '--help'], ['dispatch'], ['adapter'], ['ultrareview'], ['work'], ['task'], ['metrics'], ['dashboard'], ['study'], ['ab']];
 
-  it('routes retired harness, dispatch, and framework-cleanup commands to the migration notice', () => {
-    for (const args of [['harness'], ['harness', '--help'], ['dispatch'], ['adapter'], ['ultrareview'], ['work'], ['task'], ['metrics'], ['dashboard'], ['study'], ['ab']]) {
-      const result = spawnSync(node, [...cliArgs, ...args], { cwd: repoRoot, encoding: 'utf8' });
+  it.each(retiredCommandCases.map((args) => [args]))('routes retired command %j to the migration notice', (args) => {
+    const result = spawnSync(node, [...cliArgs, ...args], { cwd: repoRoot, encoding: 'utf8' });
 
-      expect(result.status).toBe(2);
-      expect(result.stdout).toBe('');
-      expect(result.stderr).toContain('was removed/repositioned by the framework cleanup');
-      expect(result.stderr).toContain('docs/STABILITY.md#command-maturity');
-    }
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('was removed/repositioned by the framework cleanup');
+    expect(result.stderr).toContain('docs/STABILITY.md#command-maturity');
   });
 
   it('treats missing amend/close operands as errors, not help', () => {
