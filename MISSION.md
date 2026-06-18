@@ -1,35 +1,33 @@
 # Mission
 
-Open Scaffold exists to ensure the level-headed distribution of AI-assisted
-work: every task matched — by difficulty, complexity, and sophistication — to
-the model appropriate for the job, without sacrificing speed, quality, or
-visibility of the work done.
+Open Scaffold exists to keep AI-assisted work in the repository instead of in
+vanishing chat history. It is the repo-native work record for goals, plans,
+attempts, handoffs, evidence, reviews, gates, approvals, and lessons — durable
+files that a fresh session, smaller model, teammate, reviewer, or client can
+read later without inventing what happened.
 
 The mission is timeless; the means are not. Models, schemas, tools, and
 workflows will keep changing with the technology, and everything below this
 paragraph is expected to change with them. What does not change is the
-commitment: work routed to right-sized intelligence, and a record honest enough
-that whoever comes next — a fresh session, a smaller model, a person — can
-trust what happened instead of taking anyone's word for it.
+commitment: AI work should leave an honest, reviewable record so future readers
+can recover context, check claims against evidence, and route expensive frontier
+model effort only where it is actually needed.
 
 ## How the mission is pursued today (subject to change)
 
-Open Scaffold brings lower-tier, cheaper, and locally-hosted models into
-AI-assisted work as bounded reviewers and resumers when the repo record gives
-them enough observed facts to check. It records what agents actually did as
-git-tracked, observed-fact files (the repo-native work record), compiles that
-record into handoff packets a fresh session or a different model can pick up
-without inventing history, and equips small models to review, gate, and feed
-evidence back to the next attempt — so frontier models are spent only where
-frontier capability is needed, and everything around them runs on recorded
-receipts instead of trust. The current public line is intentionally pre-1.0:
-useful for structural records and evidence-backed handoffs, not a mature
-production-readiness guarantee.
+Open Scaffold records what agents actually did as git-tracked, observed-fact
+files, compiles that record into handoff packets a fresh session or a different
+model can pick up without inventing history, and lets cheap or locally-hosted
+models review and gate recorded attempts inside explicit proof boundaries.
+Developers and teams use it when AI work must survive context loss, PR review,
+client delivery, audit-sensitive handoff, or repeated attempts. The current
+public package line remains intentionally pre-1.0: useful for structural records
+and evidence-backed handoffs, not a mature production-readiness guarantee.
 
 ## Goals
 
 - Make the work record ambient: extracted from observed facts (transcripts, receipts, test results, scores) around any workflow — never worker-authored ceremony, never a tax on the model doing the work.
-- Make handoff lossless and cheap: `osc handoff` compiles the record into a packet that lets the next reader — fresh session, smaller model, other vendor, or human — reconstruct what happened instead of hallucinating it.
+- Make handoff compact and evidence-backed: `osc handoff` compiles the record into a packet that lets the next reader — fresh session, smaller model, other vendor, or human — reconstruct what happened from files instead of hallucinating it.
 - Make cheap review real: reviewer profiles for low-tier and locally-hosted models (haiku-class, DeepSeek, Qwen, Ollama/MLX) that read the record, judge claims against evidence, and authorize or block the next attempt via `osc review`/`osc analyze` and `osc gate` — with feedback packets that flow upward to the frontier worker's next attempt.
 - Be an open, vendor-neutral standard for recording and handing off agent work: versioned schemas, plain files, a generic MCP server; no runtime becomes the canonical brain.
 - Claim only what is measured, publish the boundaries, keep public surfaces clear that current evidence is pilot-grade and pre-1.0, and keep the dead claims next to the live ones (evidence: `docs/PROOF_HARNESS.md` and the independent benchmark repo).
@@ -49,9 +47,12 @@ Explicit things this project is NOT trying to do. Legitimate scope discipline st
 
 ## Changelog
 
+Historical entries below preserve the wording used at the time, including superseded identities such as harness, cockpit, or operating-system language. The current product identity is the mission above: repo-native work record, handoff, review/gate, and evidence boundaries.
+
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-18: closed v1-public-positioning-polish — polished v1 public positioning and release-readiness boundaries
 - 2026-06-15: closed 172-public-readiness-package-sync — Published open-scaffold@0.32.1 to npm latest and created GitHub Release v0.32.1 as Latest.
 - 2026-06-15: closed public-readiness-hardening — hardened public readiness messaging
 - 2026-06-13: closed 171-capture-package-sync — Published open-scaffold@0.32.0 to npm latest and created GitHub Release v0.32.0 as Latest.

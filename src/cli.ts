@@ -744,11 +744,11 @@ function schemasCommand(args: string[]): void {
   else die('Usage: osc schemas list | osc schemas show <schema-id>');
 }
 
-function resumeCommand(args: string[]): void {
-  if (isHelpArg(args[0])) { console.log('Usage: osc resume [--json] [--plan <slug>] [--max-chars <n>]\n\nCompiles a compact, read-only resume packet from repo truth: mission digest, active plan with acceptance criteria, latest run state, repair hypotheses, accepted lessons, and the next bounded action. A fresh agent or session continues from this packet instead of chat history.'); return; }
-  validateOptions(args, ['--plan', '--max-chars'], ['--json'], 'resume');
+function resumeCommand(args: string[], commandName = 'resume'): void {
+  if (isHelpArg(args[0])) { const aliasLine = commandName === 'handoff' ? '\n\n`osc resume` is the original alias for the same read-only packet.' : '\n\n`osc handoff` is the product-named front door for the same read-only packet.'; console.log(`Usage: osc ${commandName} [--json] [--plan <slug>] [--max-chars <n>]\n\nCompiles a compact, read-only handoff/resume packet from repo truth: mission digest, active plan with acceptance criteria, latest run state, repair hypotheses, accepted lessons, and the next bounded action. A fresh agent or session continues from this packet instead of chat history.${aliasLine}`); return; }
+  validateOptions(args, ['--plan', '--max-chars'], ['--json'], commandName);
   const extra = positional(args, ['--plan', '--max-chars']);
-  if (extra.length) die(`Unknown argument for resume: ${extra[0]}`, 2);
+  if (extra.length) die(`Unknown argument for ${commandName}: ${extra[0]}`, 2);
   const maxCharsRaw = value(args, '--max-chars');
   let maxChars: number | undefined;
   if (maxCharsRaw !== undefined) {
@@ -1075,7 +1075,7 @@ async function main(): Promise<void> {
       case 'resume': resumeCommand(args); return;
       // Product-named front door: handoff/review/gate are stable aliases of
       // resume / evolve analyze / evolve checkpoint. analyze stays as a synonym.
-      case 'handoff': resumeCommand(args); return;
+      case 'handoff': resumeCommand(args, 'handoff'); return;
       case 'review': case 'analyze':
         if (args.some(isHelpArg)) { console.log(reviewAliasHelp(command)); return; }
         await evolveCommand(['analyze', ...args]); return;

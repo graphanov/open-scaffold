@@ -11,7 +11,8 @@ function read(path: string): string {
 describe('first-run documentation truth', () => {
   it('advertises the published guided first-run as the default adoption path', () => {
     expect(read('README.md')).toContain('npx open-scaffold@latest first-run');
-    expect(read('docs/START_HERE.md')).toContain('npx open-scaffold init --tier min');
+    expect(read('docs/START_HERE.md')).toContain('npx open-scaffold@latest first-run');
+    expect(read('LLM_QUICKSTART.md')).toContain('npx open-scaffold@latest first-run');
   });
 
   it('keeps a source-checkout fallback path for users who do not want npx', () => {
@@ -21,6 +22,36 @@ describe('first-run documentation truth', () => {
     expect(minimum).toContain('npm install');
     expect(minimum).toContain('npm run build');
     expect(minimum).toContain('node dist/cli.js init');
+  });
+
+  it('keeps the LLM quickstart runnable without assuming a global osc binary', () => {
+    const quickstart = read('LLM_QUICKSTART.md');
+
+    expect(quickstart).toContain('npx open-scaffold@latest first-run --non-interactive');
+    expect(quickstart).toContain('--slug "<slug>"');
+    expect(quickstart).toContain('--mission "<mission>"');
+    expect(quickstart).toContain('--goal "<goal>"');
+    expect(quickstart).toContain('npx open-scaffold@latest handoff');
+    expect(quickstart).not.toContain('\nosc handoff\n');
+    expect(quickstart).toContain('TARGET_REPO=/path/to/your/project');
+    expect(quickstart).toContain('cd "$TARGET_REPO"');
+    expect(quickstart).toContain('node "$OSC_SOURCE/dist/cli.js" first-run --non-interactive');
+  });
+
+  it('keeps the solo example loop runnable from npx and checks the closed plan chain', () => {
+    const examples = read('docs/examples/README.md');
+    const loop = examples.split('Loop in shell:')[1]?.split('```bash')[1]?.split('```')[0] ?? '';
+
+    expect(loop).toContain('npx open-scaffold@latest first-run --non-interactive');
+    expect(loop).toContain('npx open-scaffold@latest plan validate <slug> --strict');
+    expect(loop).toContain('edit .osc/plans/active/<slug>.md');
+    expect(loop).toContain('edit .osc/releases/<date>-<slug>.md');
+    expect(loop).toContain('update its Plan line to .osc/plans/done/<slug>.md');
+    expect(loop).toContain('npx open-scaffold@latest close <slug> --message "verified"');
+    expect(loop).toContain('npx open-scaffold@latest verify --evidence-chain --plan <slug> --strict');
+    expect(loop).not.toMatch(/^osc /m);
+    expect(loop.indexOf('mark the acceptance criteria')).toBeLessThan(loop.indexOf('close <slug>'));
+    expect(loop.indexOf('close <slug>')).toBeLessThan(loop.indexOf('verify --evidence-chain'));
   });
 
   it('documents lifecycle helper commands without removing shell fallbacks', () => {

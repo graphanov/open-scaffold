@@ -4,11 +4,11 @@ Open Scaffold is developed with Open Scaffold. This roadmap is both a product pl
 
 ## Product thesis
 
-Open Scaffold is a runtime-neutral, repo-native work record and repository protocol for AI-assisted work. It gives humans and agents a durable shared record for mission, roadmap, plans, amendments, evidence, handoffs, verification, GitHub traceability, and operator-room reporting.
+Open Scaffold is a runtime-neutral, repo-native work record and repository protocol for AI-assisted work. It gives developers and teams a durable shared record for mission, roadmap, plans, amendments, evidence, handoffs, review/gate decisions, GitHub traceability, and status-room reporting.
 
 The core promise:
 
-> Any capable agent or orchestrator can enter a repository, understand what matters, pick up bounded work, prove what changed, and hand the project back without relying on vanished chat context.
+> A fresh session, smaller model, teammate, or reviewer can enter a repository, understand what mattered, pick up bounded work, check claims against evidence, and hand the project back without relying on vanished chat context.
 
 ## System ontology
 
@@ -38,9 +38,13 @@ ROADMAP item
 
 Not every small task needs every link, but meaningful work should make the chain explicit.
 
+## Historical baseline milestones
+
+The early milestones below preserve the project-history shape that was once called v1. The current public package line is `v0.32.x` pre-1.0; these entries are proof of dogfood history, not a fresh npm/GitHub Release authorization.
+
 ## Milestone 0 — Product contract and dogfood baseline
 
-Status: v1 complete; product mission, roadmap, ontology, and self-dogfood baseline are established.
+Status: historical baseline complete; product mission, roadmap, ontology, and self-dogfood baseline are established.
 
 Goal: make the product identity and ontology precise enough that agents stop making wrong boundary assumptions.
 
@@ -61,13 +65,13 @@ Acceptance criteria:
 
 ## Milestone 1 — Core documentation hardening
 
-Status: v1 complete; README/root docs explain Open Scaffold as a runtime-neutral product rather than only a template.
+Status: historical baseline complete; README/root docs explain Open Scaffold as a runtime-neutral product rather than only a template.
 
 Goal: make Open Scaffold understandable as a product, not only as a template.
 
 Deliverables:
 
-- Rewrite README positioning around repo-native agent-orchestrated development.
+- Rewrite README positioning around repo-native AI-assisted work records.
 - Add concise diagrams or examples for the identity chain.
 - Update `docs/WORKFLOW.md` to separate generic phases from runtime/harness choices.
 - Update `docs/ADAPTERS.md` or replace it with an integrations/harnesses guide.
@@ -81,7 +85,7 @@ Acceptance criteria:
 
 ## Milestone 2 — Evolutionary closed-loop protocol
 
-Status: v1 complete in PR #5 via `docs/SLICE_CLOSE_PROTOCOL.md`; future CLI validation is an optional backlog follow-up, not required for the v1 milestone to count as done.
+Status: historical baseline complete in PR #5 via `docs/SLICE_CLOSE_PROTOCOL.md`; future CLI validation is an optional backlog follow-up, not required for the historical milestone to count as done.
 
 Goal: productize the “slice → feedback → correction → approval → next slice” learning loop.
 
@@ -98,17 +102,17 @@ Acceptance criteria:
 - Weak-positive / procedural approvals can be marked differently from strong product approval.
 - The next slice can inherit corrections without relying on chat memory.
 
-## Milestone 3 — Glass cockpit MVP
+## Milestone 3 — Historical status-room event protocol
 
-Status: v1 complete in PR #6 via the glass-cockpit event protocol (archived 2026-06-10; see git history); implementation examples are optional follow-up slices, not required for the protocol milestone to count as done.
+Status: historical baseline complete in PR #6 via the archived glass-cockpit/status-event protocol (archived 2026-06-10; see git history); implementation examples are optional follow-up slices, not required for the protocol milestone to count as done.
 
-Goal: make build-in-public / private control-room operation a first-class Open Scaffold capability.
+Goal: make build-in-public / private status-room operation a first-class Open Scaffold capability.
 
 Deliverables:
 
-- Define glass-cockpit event types: nudge, active session, blocker, question, answer, approval request, completion report, evidence receipt, PR link. First public shape: the glass-cockpit event protocol (archived 2026-06-10; see git history).
+- Define status-event types: nudge, active session, blocker, question, answer, approval request, completion report, evidence receipt, PR link. First public shape: the archived glass-cockpit/status-event protocol (archived 2026-06-10; see git history).
 - Define event/session transport separately from the cockpit: clawhip-style routers, webhooks, gateway adapters, and session hooks carry events but do not plan or execute.
-- Define public/team/private modes. First public shape: private, team, build-in-public, and stakeholder modes in the glass-cockpit event protocol (archived 2026-06-10; see git history).
+- Define public/team/private modes. First public shape: private, team, build-in-public, and stakeholder status modes in the archived protocol (archived 2026-06-10; see git history).
 - Provide Discord-first examples while keeping the protocol surface generic enough for Slack/Telegram/CLI/GitHub comments.
 - Specify that chat is a surface, not canonical truth.
 
@@ -121,7 +125,7 @@ Acceptance criteria:
 
 ## Milestone 4 — ROADMAP / GitHub / task bridge
 
-Status: v1 complete via PR #3, PR #4, and the Milestone 6 proof in PR #9: task/run identity, GitHub issue/PR templates, run binding options, runtime dispatch pattern, and public issue -> task/run -> PR -> release-note chain exist.
+Status: historical baseline complete via PR #3, PR #4, and the Milestone 6 proof in PR #9: task/run identity, GitHub issue/PR templates, run binding options, runtime dispatch pattern, and public issue -> task/run -> PR -> release-note chain exist.
 
 Goal: connect roadmap intent to live work without duplicating truth.
 
@@ -145,7 +149,7 @@ Acceptance criteria:
 
 ## Milestone 5 — Runtime harness bindings
 
-Status: v1 complete in PR #7 via `docs/RUNTIME_BINDING_CONTRACT.md`; executable OMC/OMX launchers and JSON-schema enforcement remain adapter/backlog work, not core spawning work.
+Status: historical baseline complete in PR #7 via `docs/RUNTIME_BINDING_CONTRACT.md`; executable OMC/OMX launchers and JSON-schema enforcement remain adapter/backlog work, not core spawning work.
 
 Goal: support specific harnesses without making them the core system.
 
@@ -165,7 +169,7 @@ Acceptance criteria:
 
 ## Milestone 6 — Self-dogfood release loop
 
-Status: v1 complete in PR #9 via GitHub issue #8, `.osc/plans/done/005-self-dogfood-release-loop.md`, run ID `20260512T135850Z-005-self-dogfood-release-loop-run`, Codex clean review, and `.osc/releases/2026-05-12-self-dogfood-release-loop.md`.
+Status: historical baseline complete in PR #9 via GitHub issue #8, `.osc/plans/done/005-self-dogfood-release-loop.md`, run ID `20260512T135850Z-005-self-dogfood-release-loop-run`, Codex clean review, and `.osc/releases/2026-05-12-self-dogfood-release-loop.md`.
 
 Goal: ship Open Scaffold improvements through Open Scaffold itself.
 
@@ -186,7 +190,7 @@ Acceptance criteria:
 
 ## V2 roadmap — harden the protocol into a usable product
 
-The v1 baseline proves the model. V2 should make it harder for agents to drift, easier for humans to adopt, and cleaner for runtime harnesses to bind without contaminating core.
+The historical baseline proved the model. V2 should make it harder for agents to drift, easier for humans to adopt, and cleaner for runtime harnesses to bind without contaminating core.
 
 ### Public roadmap visibility rule
 
@@ -226,7 +230,7 @@ Goal: make Open Scaffold adoptable by people who have never seen any owner-local
 Deliverables:
 
 - Solo developer example.
-- Team control-room example.
+- Team status-room example.
 - GitHub-only workflow example.
 - Runtime harness handoff example.
 
@@ -378,7 +382,7 @@ Goal: turn the `docs/wiki/` skeleton into a small, public-safe Open Scaffold bod
 Deliverables:
 
 - Seed 8-12 curated wiki pages across concepts, comparisons, and reusable query answers.
-- Prioritize durable project concepts: source-of-truth-first development, repo-native work records, agent resumability, evidence-first development, human-in-the-loop governance, glass cockpit, run packets, and scaffold tiers.
+- Prioritize durable project concepts: source-of-truth-first development, repo-native work records, agent resumability, evidence-first development, human-in-the-loop governance, status/approval surfaces, run packets, and scaffold tiers.
 - Clarify boundaries through comparison pages such as Open Scaffold versus agent memory, README-driven development, and traditional SDLC.
 - Add query pages that help humans and agents answer what Open Scaffold is for, what to read first, and why the project matters.
 - Update `docs/wiki/index.md` and `docs/wiki/log.md` so the wiki remains navigable and traceable.

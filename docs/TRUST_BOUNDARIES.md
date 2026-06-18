@@ -48,7 +48,7 @@ Unsafe local overrides such as full environment passthrough belong in package-sp
 
 ## Runtime spawning boundary
 
-Open Scaffold core does not silently spawn provider agents. It can create run packets, render handoff prompts, and invoke reviewed explicit adapters. Runtime harnesses such as Codex/OMX/Claude/OpenHands own their own authentication, process model, sandboxing, and provider logs.
+Open Scaffold core does not silently spawn provider agents. It creates run packets and handoff prompts; external coordinators, humans, or runtime-specific packages invoke adapters and own authentication, process model, sandboxing, and provider logs.
 
 A write-capable runtime lane must use an isolated non-main branch/worktree and must stop before commit/push/PR/merge/publish unless the owner grants that separate authority.
 
