@@ -27,12 +27,15 @@ describe('first-run documentation truth', () => {
   it('keeps the LLM quickstart runnable without assuming a global osc binary', () => {
     const quickstart = read('LLM_QUICKSTART.md');
 
-    expect(quickstart).toContain('npx open-scaffold@latest first-run');
+    expect(quickstart).toContain('npx open-scaffold@latest first-run --non-interactive');
+    expect(quickstart).toContain('--slug "<slug>"');
+    expect(quickstart).toContain('--mission "<mission>"');
+    expect(quickstart).toContain('--goal "<goal>"');
     expect(quickstart).toContain('npx open-scaffold@latest handoff');
     expect(quickstart).not.toContain('\nosc handoff\n');
     expect(quickstart).toContain('TARGET_REPO=/path/to/your/project');
     expect(quickstart).toContain('cd "$TARGET_REPO"');
-    expect(quickstart).toContain('node "$OSC_SOURCE/dist/cli.js" first-run');
+    expect(quickstart).toContain('node "$OSC_SOURCE/dist/cli.js" first-run --non-interactive');
   });
 
   it('keeps the solo example loop runnable from npx and checks the closed plan chain', () => {

@@ -15,15 +15,24 @@ State which mode you're in before step 1.
 
 Ask which repository should receive the work record. If the user is already inside the right repository, use it. If not, help them navigate to or clone their own project repository first. Do **not** clone `graphanov/open-scaffold` unless the user explicitly wants the Open Scaffold source checkout.
 
+For non-interactive coding-agent shells, also collect three first-run answers before running the command:
+
+- `slug`: safe kebab-case plan slug, for example `first-ai-work-record`
+- `mission`: one sentence describing why the target repo exists
+- `goal`: one bounded first task with a visible verification path
+
 ## Step 2 — Create the first work record
 
-Run the guided first action in the target repo:
+Run the guided first action in the target repo. In coding-agent shells, prefer the non-interactive form so the command does not wait for a TTY prompt:
 
 ```bash
-npx open-scaffold@latest first-run
+npx open-scaffold@latest first-run --non-interactive \
+  --slug "<slug>" \
+  --mission "<mission>" \
+  --goal "<goal>"
 ```
 
-The command asks three questions and creates the minimum record: `MISSION.md`, one active plan with acceptance criteria, and an evidence skeleton. The skeleton is not proof of readiness; it is a place to put real command output before closing the slice.
+Those three answers create the minimum record: `MISSION.md`, one active plan with acceptance criteria, and an evidence skeleton. Interactive shells may omit the non-interactive flags and answer the prompts instead. The skeleton is not proof of readiness; it is a place to put real command output before closing the slice.
 
 ## Step 3 — Verify the structural floor
 
@@ -57,7 +66,10 @@ cd "$OSC_SOURCE"
 npm install
 npm run build
 cd "$TARGET_REPO"
-node "$OSC_SOURCE/dist/cli.js" first-run
+node "$OSC_SOURCE/dist/cli.js" first-run --non-interactive \
+  --slug "<slug>" \
+  --mission "<mission>" \
+  --goal "<goal>"
 ```
 
 ## Stop condition
