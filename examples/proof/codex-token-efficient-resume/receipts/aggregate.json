@@ -37,6 +37,26 @@
       }
     ]
   },
+  "cold_resume_packet_contract": {
+    "id": "cold-resume-packet-v2-readable-closeout",
+    "required_fields": [
+      "plan",
+      "objective",
+      "action",
+      "resume_current_frontier_evaluation",
+      "acceptance_summary",
+      "reasons",
+      "required_next_fields",
+      "evidence_refs",
+      "authority_boundary"
+    ],
+    "source_refs": [
+      "prompts/scaffolded-resume-capsule-prompt.md",
+      "generate-fixture.mjs"
+    ],
+    "fail_closed_if_missing": true,
+    "boundary": "Packet-field contract for this fixture only; it does not claim a stable public schema or universal resume format."
+  },
   "arms": {
     "control": {
       "prompt_bytes": 419233,

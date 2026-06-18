@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -40,11 +40,11 @@ and uses at least 2x fewer Codex-reported total tokens than the naked Codex lane
 
 ## Acceptance criteria
 
-- [ ] `osc prove compare examples/proof/codex-token-efficient-resume/manifest.json --format markdown` reports PASS with a token metric ratio of at least 2x.
-- [ ] If a proof manifest sets a minimum ratio that is not met, `compareProofManifest` marks the bounded proof as failed/inconclusive.
-- [ ] The new fixture's live Codex receipts are source-labeled, committed, and include enough usage data to recompute the medians.
-- [ ] Public docs say exactly what the 2x fixture proves and what it does not prove.
-- [ ] Targeted tests and the full project test suite pass.
+- [x] `osc prove compare examples/proof/codex-token-efficient-resume/manifest.json --format markdown` reports PASS with a token metric ratio of at least 2x. Evidence: `examples/proof/codex-token-efficient-resume/manifest.json`, `examples/proof/codex-token-efficient-resume/receipts/aggregate.json`, `.osc/releases/2026-06-18-173-codex-token-efficiency-proof.md`.
+- [x] If a proof manifest sets a minimum ratio that is not met, `compareProofManifest` marks the bounded proof as failed/inconclusive. Evidence: `src/compare.ts`, `tests/proof.test.ts`, `.osc/releases/2026-06-18-173-codex-token-efficiency-proof.md`.
+- [x] The new fixture's live Codex receipts are source-labeled, committed, and include enough usage data to recompute the medians. Evidence: `examples/proof/codex-token-efficient-resume/receipts/aggregate.json`, `examples/proof/codex-token-efficient-resume/receipts/control-r1.json`, `examples/proof/codex-token-efficient-resume/receipts/scaffolded-r1.json`.
+- [x] Public docs say exactly what the 2x fixture proves and what it does not prove. Evidence: `docs/PROOF_HARNESS.md`, `docs/SCHEMA_REGISTRY.md`, `examples/proof/codex-token-efficient-resume/evidence/human-reviewer-replication-boundary.md`, `examples/proof/codex-token-efficient-resume/evidence/controlled-ablations-boundary.md`.
+- [x] Targeted tests and the full project test suite pass. Evidence: `tests/proof.test.ts`, `tests/package-payload.test.ts`, `.osc/releases/2026-06-18-173-codex-token-efficiency-proof.md`.
 
 ## Verification steps
 

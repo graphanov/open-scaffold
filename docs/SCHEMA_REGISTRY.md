@@ -28,6 +28,8 @@ Use `osc schemas list --json` for the machine-readable list. Representative sche
 - `open-scaffold.audit-envelope.v1` — digest-only audit envelope for curated local artifacts.
 - `open-scaffold.evaluation.v1` — acceptance-criteria evaluation envelope scaffold / external scorer reference.
 - `open-scaffold.evolution-judgment-checkpoint.v1` — retry authorization gate built from evolution analysis plus optional independent judge input.
+- `open-scaffold.proof-comparison.v1` / `open-scaffold.proof-comparison-result.v1` — source-labeled proof manifests and computed comparison verdicts, including evidence-battery rows for fixture/replication/ablation status.
+- `open-scaffold.proof-aggregate.v1` — per-arm proof medians, derived deltas, quality-rubric metadata, and optional cold-resume packet contract.
 - `osc.ambient-work-record.v1` — post-hoc work record extracted from observed run facts so workers do not hand-write bookkeeping in-loop.
 - `osc.feedback.v1` and `osc.feedback-analysis.v1` — feedback records and repair hypotheses.
 - `osc.accepted-improvement.v1` — accepted lesson files for relevant future-run inheritance.

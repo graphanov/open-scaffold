@@ -118,6 +118,22 @@ now target what a human reader needs from the answer: readability, comprehension
 clarity, enough decision detail, unambiguous resume routing, and explicit
 authority boundaries. It is not a blind human-reader study.
 
+The fixture now carries a fail-closed evidence battery in `manifest.json`:
+
+| Evidence item | Status | Required for PASS | Boundary |
+|---|---|---:|---|
+| `codex-2x-cold-resume-replicates` | `demonstrated` | yes | three read-only Codex replicates per arm for one paused-work decision |
+| `cold-resume-packet-contract` | `demonstrated` | yes | packet-field contract for this fixture only, not a universal resume schema |
+| `human-reviewer-replication` | `not_demonstrated` | no | no blind human-reader replication is claimed for this fixture |
+| `controlled-ablations` | `mixed_not_proven` | no | no minimal-checklist, packet-only, or alternate-packet ablation is claimed here |
+
+`osc prove compare` blocks the bounded PASS if any required evidence-battery item
+is not `demonstrated` or `reproduced`. Disclosure-only rows keep adjacent claims
+visible but cannot support the pass gate. The human-reviewer and ablation rows
+point at committed boundary files under
+`examples/proof/codex-token-efficient-resume/evidence/`; they are not substitutes
+for real receipts.
+
 ## Legacy evolution-controller fixture
 
 Before the Codex 2x cold-resume fixture, the first checked-in `osc prove`
@@ -191,7 +207,25 @@ A manifest declares the two arms and a set of metrics:
 }
 ```
 
-Required metric categories are `quality`, `tokens`, `speed`, and `evolution`. `osc prove check` fails when a category is missing or a source ref is missing/private.
+Required metric categories are `quality`, `tokens`, `speed`, and `evolution`. `osc prove check` fails when a category is missing or a source ref is missing/private. Optional `evidence_battery` rows make fixture/replication/ablation claims explicit:
+
+```json
+{
+  "evidence_battery": [
+    {
+      "id": "human-reviewer-replication",
+      "kind": "human_reviewer_replication",
+      "status": "not_demonstrated",
+      "required_for_pass": false,
+      "claim": "No blind human-reader replication is claimed for this fixture.",
+      "boundary": "Deterministic reader-usability scoring only until real human receipts exist.",
+      "source_refs": ["evidence/human-reviewer-replication-boundary.md"]
+    }
+  ]
+}
+```
+
+Evidence-battery `source_refs` follow the same fail-closed rules as metric sources: committed fixture-local files only, no URLs, no absolute paths, no parent escapes, and no private/runtime directories.
 
 ## Boundary
 
@@ -228,6 +262,9 @@ Core bench suites write `.osc/bench/<suite-id>/aggregate.json` and `.osc/bench/<
 | Claim | Status | Notes |
 |---|---|---|
 | Codex cold-resume 2x token-efficiency fixture passes `osc prove compare` | demonstrated | `examples/proof/codex-token-efficient-resume/`; median reported total tokens 137,327 vs 31,715, ratio 4.330033x, quality tied 6/6 on a deterministic human-facing reader-usability rubric |
+| Codex cold-resume evidence-battery required rows | demonstrated | required rows are `codex-2x-cold-resume-replicates` and `cold-resume-packet-contract`; either missing/not-demonstrated row makes `boundedProof=false` |
+| Codex fixture human-reviewer replication | not_demonstrated | explicitly disclosure-only; see `examples/proof/codex-token-efficient-resume/evidence/human-reviewer-replication-boundary.md` |
+| Codex fixture controlled ablations | mixed_not_proven | explicitly disclosure-only; no minimal-checklist/packet-only/alternate-packet ablation is claimed by the current fixture |
 | Legacy evolution-controller fixture passes `osc prove check` | demonstrated | `examples/proof/scaffold-vs-naked-codex/`; retained as a legacy example fixture, not the current headline result |
 | Legacy decision quality preserved (5/5 both arms) | demonstrated | committed receipts for `examples/proof/scaffold-vs-naked-codex/` |
 | Legacy prompt payload reduction (~11.6×) | demonstrated | committed receipts for `examples/proof/scaffold-vs-naked-codex/` |

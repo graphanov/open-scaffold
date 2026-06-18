@@ -89,6 +89,8 @@ describe('npm package payload', () => {
     expect(paths).toContain('examples/proof/codex-token-efficient-resume/manifest.json');
     expect(paths).toContain('examples/proof/codex-token-efficient-resume/receipts/aggregate.json');
     expect(paths).toContain('examples/proof/codex-token-efficient-resume/prompts/scaffolded-resume-capsule-prompt.md');
+    expect(paths).toContain('examples/proof/codex-token-efficient-resume/evidence/human-reviewer-replication-boundary.md');
+    expect(paths).toContain('examples/proof/codex-token-efficient-resume/evidence/controlled-ablations-boundary.md');
 
     // resume-demo fixture must ship so the zero-context-resume demo works from a fresh install
     if (existsSync(join(repoRoot, 'examples', 'resume-demo'))) {
