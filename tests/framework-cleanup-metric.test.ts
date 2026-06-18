@@ -33,7 +33,8 @@ const cleanupBaselineLoc = 20_890;
 // 173 evidence-battery hardening: fail-closed manifest rows for fixture/replication/ablation status and packet-contract gating (+31 LOC).
 // 173 Codex review fix: empty evidence battery reports not_evaluated (nullable pass) instead of overstated pass (+1 LOC).
 // 173 Codex review fix: required_evidence manifest list rejects omitted required rows (+10 LOC).
-const cleanupTargetLoc = 15_193;
+// 173 Codex review fix: render required_evidence rows as required in the proof-battery table (+1 LOC).
+const cleanupTargetLoc = 15_194;
 const cleanupTargetFiles = 40;
 
 interface MaintainedSourceFile {
@@ -76,7 +77,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(15_193);
+    expect(cleanupTargetLoc).toBe(15_194);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

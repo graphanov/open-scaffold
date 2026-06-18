@@ -451,6 +451,39 @@ describe('proof comparison harness', () => {
     expect(validateProofManifestFile(privateSourcePath).failures.map((failure) => failure.code)).toContain('private-source-ref');
   });
 
+  it('renders required_evidence rows as required in the proof-battery table', () => {
+    const root = fixtureRoot();
+    const path = manifest(root, {
+      required_evidence: ['human-reviewer-replication'],
+      evidence_battery: [
+        {
+          id: 'human-reviewer-replication',
+          kind: 'human_reviewer_replication',
+          status: 'demonstrated',
+          required_for_pass: false,
+          claim: 'Replicated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+        {
+          id: 'controlled-ablations',
+          kind: 'controlled_ablation',
+          status: 'mixed_not_proven',
+          required_for_pass: false,
+          claim: 'Disclosure only.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    const result = compareProofManifest(path);
+    const markdown = renderProofComparison(result, 'markdown');
+    // The required_evidence row is labeled required even though required_for_pass is false.
+    expect(markdown).toContain('| human-reviewer-replication | human_reviewer_replication | demonstrated | required |');
+    // A row that is neither required_for_pass nor in required_evidence stays disclosure-only.
+    expect(markdown).toContain('| controlled-ablations | controlled_ablation | mixed_not_proven | disclosure-only |');
+  });
+
   it('normalizes whitespace in required_evidence IDs before gating', () => {
     const root = fixtureRoot();
     const path = manifest(root, {
