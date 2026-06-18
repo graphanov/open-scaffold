@@ -451,6 +451,29 @@ describe('proof comparison harness', () => {
     expect(validateProofManifestFile(privateSourcePath).failures.map((failure) => failure.code)).toContain('private-source-ref');
   });
 
+  it('normalizes whitespace in required_evidence IDs before gating', () => {
+    const root = fixtureRoot();
+    const path = manifest(root, {
+      required_evidence: ['  human-reviewer-replication  '],
+      evidence_battery: [
+        {
+          id: 'human-reviewer-replication',
+          kind: 'human_reviewer_replication',
+          status: 'not_demonstrated',
+          required_for_pass: false,
+          claim: 'Not yet replicated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    const result = compareProofManifest(path);
+    expect(result.summary.evidenceBatteryRequired).toEqual(['human-reviewer-replication']);
+    expect(result.summary.evidenceBatteryBlocking).toContain('human-reviewer-replication');
+    expect(result.summary.evidenceBatteryStatus).toBe('fail');
+    expect(result.summary.boundedProof).toBe(false);
+  });
+
   it('blocks a required_evidence ID whose row is present but not demonstrated, even when required_for_pass is false', () => {
     const root = fixtureRoot();
     const path = manifest(root, {
