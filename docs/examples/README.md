@@ -33,11 +33,11 @@ Reading path:
 Loop in shell:
 
 ```bash
-npx open-scaffold@latest first-run               # mission + first plan + evidence skeleton
+npx open-scaffold@latest first-run                         # mission + first plan + evidence skeleton
 # ... agent or human edits against the generated plan ...
-osc evidence collect <slug>                       # append real verification output to the existing evidence note
-osc verify --evidence-chain                       # structural linkage check
-osc close <slug> --message "verified"            # move plan to done/
+npx open-scaffold@latest evidence collect <slug>            # append real verification output to the existing evidence note
+npx open-scaffold@latest close <slug> --message "verified" # move plan to done/
+npx open-scaffold@latest verify --evidence-chain --plan <slug> --strict
 ```
 
 What this mode does **not** require: a chat surface, a coordinator, a runtime harness, or any private deployment.

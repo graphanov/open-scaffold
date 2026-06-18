@@ -35,6 +35,18 @@ describe('first-run documentation truth', () => {
     expect(quickstart).toContain('node "$OSC_SOURCE/dist/cli.js" first-run');
   });
 
+  it('keeps the solo example loop runnable from npx and checks the closed plan chain', () => {
+    const examples = read('docs/examples/README.md');
+    const loop = examples.split('Loop in shell:')[1]?.split('```bash')[1]?.split('```')[0] ?? '';
+
+    expect(loop).toContain('npx open-scaffold@latest first-run');
+    expect(loop).toContain('npx open-scaffold@latest evidence collect <slug>');
+    expect(loop).toContain('npx open-scaffold@latest close <slug> --message "verified"');
+    expect(loop).toContain('npx open-scaffold@latest verify --evidence-chain --plan <slug> --strict');
+    expect(loop).not.toMatch(/^osc /m);
+    expect(loop.indexOf('close <slug>')).toBeLessThan(loop.indexOf('verify --evidence-chain'));
+  });
+
   it('documents lifecycle helper commands without removing shell fallbacks', () => {
     const readme = read('README.md');
     for (const command of ['osc plan new', 'osc evidence new', 'osc amend', 'osc close']) {
