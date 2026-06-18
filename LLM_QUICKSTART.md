@@ -40,21 +40,24 @@ Report the exact output. If it fails, fix only the missing structural item it na
 For the next agent, model, teammate, or future self, run:
 
 ```bash
-osc handoff
+npx open-scaffold@latest handoff
 ```
 
-`osc resume` is the original alias and may appear in older agent entrypoints; it compiles the same read-only packet. The packet states the mission, current plan, acceptance criteria, evidence state, and next bounded action.
+`osc handoff` works after a global or local install. `osc resume` is the original alias and may appear in older agent entrypoints; it compiles the same read-only packet. The packet states the mission, current plan, acceptance criteria, evidence state, and next bounded action.
 
 ## Optional source-checkout path
 
-Use this only when developing Open Scaffold itself or when npm is unavailable:
+Use this only when developing Open Scaffold itself or when npm is unavailable. Build the source checkout, then run its CLI from the target repo so the scaffold files land in the project selected in Step 1:
 
 ```bash
-git clone https://github.com/graphanov/open-scaffold open-scaffold
-cd open-scaffold
+TARGET_REPO=/path/to/your/project
+OSC_SOURCE=/tmp/open-scaffold-source
+git clone https://github.com/graphanov/open-scaffold "$OSC_SOURCE"
+cd "$OSC_SOURCE"
 npm install
 npm run build
-node dist/cli.js first-run
+cd "$TARGET_REPO"
+node "$OSC_SOURCE/dist/cli.js" first-run
 ```
 
 ## Stop condition

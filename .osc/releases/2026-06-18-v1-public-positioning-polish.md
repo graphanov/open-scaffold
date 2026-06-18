@@ -16,9 +16,9 @@ This note records local release-readiness evidence only. It does not claim merge
 ## Verification
 
 - `npm run -s osc -- plan validate .osc/plans/done/v1-public-positioning-polish.md --strict` — `0 issues found`.
-- Targeted public/readiness tests: `npm test -- tests/public-positioning.test.ts tests/reduced-cli-docs.test.ts tests/first-run-docs.test.ts tests/cli-lifecycle-help.test.ts tests/package-payload.test.ts tests/section-parser.test.ts` — passed: `6 passed`, `57 tests passed`.
+- Targeted public/readiness tests: `npm test -- tests/public-positioning.test.ts tests/reduced-cli-docs.test.ts tests/first-run-docs.test.ts tests/cli-lifecycle-help.test.ts tests/package-payload.test.ts tests/section-parser.test.ts` — passed: `6 passed`, `58 tests passed`.
 - `npm run build` — passed (`build:core` and `build:runtime-omx`).
-- `npm test -- --run` — passed: `48 passed`, `544 tests passed`.
+- `npm test -- --run` — passed: `48 passed`, `545 tests passed`.
 - `./verify.sh --strict` — passed: `10 pass, 0 fail, 0 warn`.
 - `git diff --check` — passed with no output.
 - `npm run -s osc -- --help` and `npm run -s osc -- help --all` — rendered successfully.

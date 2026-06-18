@@ -24,6 +24,17 @@ describe('first-run documentation truth', () => {
     expect(minimum).toContain('node dist/cli.js init');
   });
 
+  it('keeps the LLM quickstart runnable without assuming a global osc binary', () => {
+    const quickstart = read('LLM_QUICKSTART.md');
+
+    expect(quickstart).toContain('npx open-scaffold@latest first-run');
+    expect(quickstart).toContain('npx open-scaffold@latest handoff');
+    expect(quickstart).not.toContain('\nosc handoff\n');
+    expect(quickstart).toContain('TARGET_REPO=/path/to/your/project');
+    expect(quickstart).toContain('cd "$TARGET_REPO"');
+    expect(quickstart).toContain('node "$OSC_SOURCE/dist/cli.js" first-run');
+  });
+
   it('documents lifecycle helper commands without removing shell fallbacks', () => {
     const readme = read('README.md');
     for (const command of ['osc plan new', 'osc evidence new', 'osc amend', 'osc close']) {
