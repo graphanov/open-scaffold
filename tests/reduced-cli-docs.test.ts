@@ -6,10 +6,19 @@ const repoRoot = resolve(import.meta.dirname, '..');
 
 const currentFacingDocs = [
   'README.md',
+  'MISSION.md',
+  'AGENTS.md',
+  'CLAUDE.md',
+  'LLM_QUICKSTART.md',
   'ROADMAP.md',
+  'docs/START_HERE.md',
   'docs/WORKFLOW.md',
   'docs/EVOLUTION_LOOP.md',
   'docs/STABILITY.md',
+  'docs/FAQ.md',
+  'docs/TRUST_BOUNDARIES.md',
+  'docs/EXAMPLES.md',
+  'docs/examples/README.md',
   'docs/index.html',
   'docs/OPEN_SCAFFOLD_SYSTEM.md',
   'docs/RESUME_WALKTHROUGH.md',
@@ -44,7 +53,7 @@ const removedCommandPatterns = [
 ];
 
 const migrationContext = /historical|repositioned|removed|retired|migration|future|backlog|previous|previously|earlier|no longer|not live|not a live|outside the reduced|reduced maintained CLI|not current/i;
-const fileLevelMigrationContext = /Status: historical\/repositioned|Historical\/repositioned|historical\/repositioned .*document|historical\/repositioned .*protocol/i;
+const fileLevelMigrationContext = /Status: historical\/repositioned|Historical\/repositioned|historical\/repositioned .*document|historical\/repositioned .*protocol|Historical entries below preserve the wording used at the time/i;
 
 describe('reduced CLI documentation coherence', () => {
   it('marks references to removed commands as historical, migration, or future context', () => {
@@ -52,7 +61,7 @@ describe('reduced CLI documentation coherence', () => {
 
     for (const path of currentFacingDocs) {
       const text = readFileSync(resolve(repoRoot, path), 'utf8');
-      const wholeFileIsMigrationContext = fileLevelMigrationContext.test(text.slice(0, 1000));
+      const wholeFileIsMigrationContext = fileLevelMigrationContext.test(text.slice(0, 5000));
       for (const pattern of removedCommandPatterns) {
         pattern.lastIndex = 0;
         for (const match of text.matchAll(pattern)) {

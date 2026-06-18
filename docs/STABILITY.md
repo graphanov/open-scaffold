@@ -12,7 +12,7 @@ Everything Open Scaffold does not claim, in one place:
 - **Receipts prove handoff and execution facts, not correctness.** Verification against acceptance criteria is a separate, recorded step — and a human still owns the judgment call.
 - **The benchmark program is pilot-grade and partly self-run.** One worker model, n=1 cells, owner-built instrument (preregistration, hidden inputs, blind double-implementation, and kill rules as mitigations); replication with humans and larger n is open work. The older bounded `examples/proof/` fixture remains a separate, narrower surface.
 - **It is not a compliance certification, sandbox, or security guarantee.** It produces structural evidence a process can build on; it does not replace the process.
-- **Humans own merge, publish, release, and deployment.** Nothing in the harness self-approves.
+- **Humans own merge, publish, release, and deployment.** Nothing in Open Scaffold self-approves.
 - **Historical `v1.0.x` packages exist** as immutable publication history; the forward line is `v0.32.x` and the next 1.0 will be cut when the contract has earned it.
 
 ## Release status
@@ -43,8 +43,12 @@ These surfaces are intended to remain usable across the current pre-1.0 hardenin
 
 The stable day-two CLI surface is:
 
+- `osc first-run` as guided repo initialization for the minimum work record
+- `osc handoff` as the public read-only packet that lets a fresh session continue from repo truth
+- `osc resume` as the original/back-compat alias for `osc handoff`
+- `osc review` as the public recorded-attempt review command (`osc analyze` is the original synonym)
+- `osc gate` as the stop/continue gate over recorded attempts
 - `osc init`
-- `osc resume` as the read-only resume packet that lets a fresh session continue from repo truth
 - `osc status`
 - `osc plan new`
 - `osc plan validate`
@@ -54,7 +58,6 @@ The stable day-two CLI surface is:
 - `osc evidence new`
 - `osc evidence collect`
 - `osc verify`
-- `osc first-run` as guided repo initialization for the minimum work record
 - `osc pr check` as a PR-native structural check surface
 - `osc schemas list` and `osc schemas show` for package-visible schema discovery
 - `osc compare` as a read-only first-read demo for comparing two recorded attempts
@@ -70,7 +73,7 @@ The zero-dependency shell helpers remain a stable fallback floor:
 
 ### Verification expectations
 
-- `./verify.sh --quick`, `--standard`, and `--strict` remain the canonical repository compliance tiers.
+- `./verify.sh --quick`, `--standard`, and `--strict` remain the canonical structural verification tiers.
 - `npm test` and `npm run build` remain the package-level local gates for this repository.
 - Public PRs should cite the plan, evidence note, verification commands, review state, and owner gates.
 - `osc trace <plan-slug>` is a reconstruction aid; `osc verify --evidence-chain` remains the structural integrity check.

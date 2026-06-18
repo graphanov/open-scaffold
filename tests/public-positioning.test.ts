@@ -31,6 +31,50 @@ describe('public work-record positioning', () => {
     expect(firstScreen).not.toMatch(/agent OS|control plane|compliance-grade|operating system|tamper-proof/i);
   });
 
+  it('keeps first-touch identity on one product offering', () => {
+    const missionIntro = firstLines(read('MISSION.md'), 50);
+    const agentsIntro = firstLines(read('AGENTS.md'), 20);
+    const claudeIntro = firstLines(read('CLAUDE.md'), 20);
+    const startHereIntro = firstLines(read('docs/START_HERE.md'), 20);
+
+    for (const [path, text] of [
+      ['MISSION.md', missionIntro],
+      ['AGENTS.md', agentsIntro],
+      ['CLAUDE.md', claudeIntro],
+      ['docs/START_HERE.md', startHereIntro],
+    ] as const) {
+      expect(text, path).toMatch(/repo-native work[- ]record|repo record layer/i);
+      expect(text, path).not.toMatch(/repo-native operating system|agent-orchestrated development|harness is the product|a harness for AI-assisted work/i);
+    }
+
+    expect(agentsIntro).toContain('osc handoff');
+    expect(claudeIntro).toContain('osc handoff');
+    expect(agentsIntro).toContain('source checkout alias');
+    expect(claudeIntro).toContain('source checkout alias');
+  });
+
+  it('keeps README key docs deduplicated and linked to the right first-use surfaces', () => {
+    const readme = read('README.md');
+    const keyDocs = readme.split('## Key docs')[1]?.split('## Dogfooded')[0] ?? '';
+    const links = [...keyDocs.matchAll(/\(([^)]+)\)/g)].map((match) => match[1]);
+
+    expect(links).toContain('docs/START_HERE.md');
+    expect(links).toContain('docs/PROOF_HARNESS.md');
+    expect(links).toContain('docs/STABILITY.md');
+    expect(new Set(links).size).toBe(links.length);
+  });
+
+  it('keeps the docs landing page pointed at the public first-read path and maturity boundary', () => {
+    const index = read('docs/index.html');
+
+    expect(index).toContain('START_HERE.md');
+    expect(index).toContain('PROOF_HARNESS.md');
+    expect(index).toContain('FAQ.md');
+    expect(index).toContain('pre-1.0');
+    expect(index).toContain('not as a hosted orchestrator, compliance program, or production-readiness certificate');
+    expect(index).not.toContain('Any agent or operator can');
+  });
+
   it('documents auditability as evidence substrate, not a compliance program', () => {
     const auditability = read('docs/TRUST_BOUNDARIES.md');
 
@@ -108,6 +152,27 @@ describe('public work-record positioning', () => {
     }
   });
 
+  it('keeps first-touch public docs off broad authority and runtime-product claims', () => {
+    const firstTouchDocs = [
+      'README.md',
+      'MISSION.md',
+      'AGENTS.md',
+      'CLAUDE.md',
+      'LLM_QUICKSTART.md',
+      'docs/START_HERE.md',
+      'docs/STABILITY.md',
+      'docs/FAQ.md',
+      'docs/TRUST_BOUNDARIES.md',
+      'docs/index.html',
+    ];
+
+    for (const path of firstTouchDocs) {
+      const raw = read(path);
+      const text = path === 'MISSION.md' ? raw.split('## Changelog')[0] : raw;
+      expect(text, path).not.toMatch(/is a hosted orchestrator|is the control plane|acts as a control plane|certifies compliance|guarantees compliance|guarantees production readiness|is a production-readiness certificate|offers a production-readiness certificate|proves broad benchmark dominance|ships default runtime spawning|provides native autonomous agent spawning|supports native autonomous agent spawning/i);
+    }
+  });
+
   it('keeps the release evidence summary off software-only framing', () => {
     const evidence = read('.osc/releases/2026-05-27-108-public-work-record-positioning.md');
     const summary = evidence.split('## Traceability')[0];
@@ -182,7 +247,8 @@ describe('public work-record positioning', () => {
     const startHere = read('docs/START_HERE.md');
     const pkg = JSON.parse(read('package.json')) as { description: string; keywords: string[] };
 
-    expect(firstLines(readme, 100)).toContain('published, pilot-grade evidence and explicit proof boundaries');
+    expect(firstLines(readme, 100)).toContain('pilot-grade proof boundaries');
+    expect(firstLines(readme, 100)).toContain('AI-assisted work that needs evidence, recovery, and human gates');
     expect(readme).toContain('This is not a production-readiness claim');
     expect(faq).toContain('Not as a mature production platform.');
     expect(faq).toContain('pre-1.0');

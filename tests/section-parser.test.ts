@@ -250,7 +250,8 @@ This sample must not count as the real section.
     // public-readiness-hardening: added done plan and release note for bounded public readiness copy.
     // 172 release closeout: moved public-readiness package-sync plan to done after npm/GitHub Release publication proof.
     // 173 planning: added active Codex token-efficiency proof plan.
-    expect(hash(planIssueSnapshot)).toBe('bb76c5bf806d92780d0a5952b275eed892c8d931c2cedc9043aec2c0df92dbb4');
+    // v1-public-positioning-polish closeout: added done public-positioning polish plan.
+    expect(hash(planIssueSnapshot)).toBe('55dd29a6c867d789ee41042e20af0f8d720bdc15d394aa086a93a3012b08dcf7');
     expect(scaffold.failures).toEqual([]);
     // 168: evidence note 2026-06-12-168-dollar-verb-retirement.md added to .osc/releases.
     // 170 review hardening: evidence note refreshed with PR URL, final test count, and Codex-reported total_tokens.
@@ -258,7 +259,8 @@ This sample must not count as the real section.
     // public-readiness-hardening: release note added with no new release warnings.
     // 172 release closeout: finalized v0.32.1 publication evidence note; release-warning set unchanged.
     // 173 planning plus proof provenance/rubric updates changed the live scaffold corpus hash.
-    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('69c2c3f35a7e509d9c3d23e4ee20b5ddb1d8c13f28dad7f242843b04c3d74f37');
+    // v1-public-positioning-polish closeout added local evidence note; release-warning set unchanged.
+    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('6e07f75f90220e2b484338bb75520b751202dae6b29a58d226e4ef603db46f24');
     expect(realPlanFiles().every((path) => statSync(path).isFile())).toBe(true);
   });
 });

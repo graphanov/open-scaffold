@@ -11,7 +11,8 @@ function read(path: string): string {
 describe('first-run documentation truth', () => {
   it('advertises the published guided first-run as the default adoption path', () => {
     expect(read('README.md')).toContain('npx open-scaffold@latest first-run');
-    expect(read('docs/START_HERE.md')).toContain('npx open-scaffold init --tier min');
+    expect(read('docs/START_HERE.md')).toContain('npx open-scaffold@latest first-run');
+    expect(read('LLM_QUICKSTART.md')).toContain('npx open-scaffold@latest first-run');
   });
 
   it('keeps a source-checkout fallback path for users who do not want npx', () => {

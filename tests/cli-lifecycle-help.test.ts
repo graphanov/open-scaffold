@@ -116,6 +116,12 @@ const cases: HelpCase[] = [
     forbidden: 'Unknown option',
   },
   {
+    name: 'handoff alias',
+    args: ['handoff', '--help'],
+    expected: 'Usage: osc handoff [--json] [--plan <slug>] [--max-chars <n>]',
+    forbidden: 'Usage: osc resume',
+  },
+  {
     name: 'review alias',
     args: ['review', '--help'],
     expected: 'Usage: osc review <loop-dir> [--compact] [--format <terminal|markdown|json>] [--out <path>] [--plateau-threshold <n>]',
@@ -277,8 +283,8 @@ describe('plan lifecycle help flags', () => {
 
 describe('removed/repositioned command shims', () => {
 
-  it('routes retired harness and dispatch commands to the migration notice', () => {
-    for (const args of [['harness'], ['harness', '--help'], ['dispatch'], ['adapter'], ['ultrareview']]) {
+  it('routes retired harness, dispatch, and framework-cleanup commands to the migration notice', () => {
+    for (const args of [['harness'], ['harness', '--help'], ['dispatch'], ['adapter'], ['ultrareview'], ['work'], ['task'], ['metrics'], ['dashboard'], ['study'], ['ab']]) {
       const result = spawnSync(node, [...cliArgs, ...args], { cwd: repoRoot, encoding: 'utf8' });
 
       expect(result.status).toBe(2);

@@ -47,8 +47,8 @@ npx open-scaffold@latest compare \
 |---|---|
 | Understand the mission and goals | [`MISSION.md`](../MISSION.md) |
 | Learn the review-and-gate loop | [`EVOLUTION_LOOP.md`](EVOLUTION_LOOP.md) |
-| See how the record layer is wired | [`HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md) |
-| Pick or write a runtime adapter | [`ADAPTERS.md`](ADAPTERS.md) |
+| See the current workflow map | [`WORKFLOW.md`](WORKFLOW.md) |
+| Understand runtime/execution boundaries | [`TRUST_BOUNDARIES.md`](TRUST_BOUNDARIES.md) and [`RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md) |
 | Check what is stable vs experimental | [`STABILITY.md`](STABILITY.md) |
 | Understand the version story | [`STABILITY.md#release-status`](STABILITY.md#release-status) |
 | Look up unfamiliar terms | [`GLOSSARY.md`](GLOSSARY.md) |

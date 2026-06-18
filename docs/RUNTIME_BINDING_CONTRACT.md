@@ -229,7 +229,7 @@ A binding should:
    - log path;
    - operator thread/comment ID;
    - PR number if opened.
-7. Emit glass-cockpit events — operator-dashboard/control-room messages — for status, blockers, questions, approval requests, completion, and evidence receipts when an operator surface is bound.
+7. Emit status/approval events — operator-dashboard or team-room messages — for status, blockers, questions, approval requests, completion, and evidence receipts when an operator surface is bound.
 8. Route human answers by `question_id -> run_id`.
 9. Promote final artifacts and evidence to `.osc/runs`, tracked evidence docs, PRs, issues, or release notes.
 10. Leave approval/merge/release to the configured gate.

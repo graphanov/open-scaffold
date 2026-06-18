@@ -4,12 +4,12 @@
 
 **Your AI agent's work belongs in your repo, not its chat history.**
 
-Ambient work records, lossless handoffs, and near-frontier review from cheap and
-local models — for AI-assisted work, with published, pilot-grade evidence and explicit proof boundaries.
+Ambient work records, compact handoffs, and bounded review/gate checks from cheap and
+local models — for AI-assisted work that needs evidence, recovery, and human gates, with pilot-grade proof boundaries.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/open-scaffold.svg)](https://www.npmjs.com/package/open-scaffold)
-[![Works with](https://img.shields.io/badge/Works%20with-Any%20agent-green.svg)](#runtime-neutral-by-design)
+[![Works with](https://img.shields.io/badge/Works%20with-Any%20agent-green.svg)](#vendor-neutral-by-design)
 [![Runtime deps](https://img.shields.io/badge/Runtime%20deps-Zero-blue.svg)](package.json)
 
 </div>
@@ -24,8 +24,7 @@ scrollback buffer, and what it can't reconstruct, it invents.
 
 ## What Open Scaffold does
 
-Open Scaffold keeps a repo-native work record — git-tracked, observed-fact
-files about what your agents actually did — and turns it into three things:
+Open Scaffold is for developers and teams using AI agents on work that must survive context loss, PR review, client handoff, or audit-sensitive delivery. It keeps a repo-native work record — git-tracked, observed-fact files about what your agents actually did — and turns it into three things:
 
 - **Record (ambient).** The record is extracted from observed facts —
   transcripts, receipts, test results, scores — around whatever workflow you
@@ -51,7 +50,7 @@ The front door is three commands:
 | `osc review` | Review recorded attempts: plateaus, failing criteria, question-the-requirement signals. |
 | `osc gate` | Authorize or block the next attempt from the analysis plus an optional independent judge. |
 
-Why cheap models? Because with the record they stop guessing. In pilot-grade,
+Why cheap models? Because the record gives them facts to read instead of a chat archaeology problem to guess through. In pilot-grade,
 preregistered reviewability trials, a mid-tier reviewer answering factual
 questions about finished work — graded against answer keys committed before it
 ran — reconstructed the work at 94% accuracy with the record vs 30% on the bare
@@ -60,8 +59,8 @@ cost. This is not a production-readiness claim or universal benchmark; it is
 bounded evidence that the repo record helps the next reader. And when a judge is
 too weak to be trusted, the gate fails closed: no parseable verdict means no
 authorization, and the record's own blocks override a permissive ruling. Small
-and locally-hosted models (haiku-class, DeepSeek, Qwen, Ollama/MLX) become viable
-reviewers, resumers, and bookkeepers inside those boundaries, so the frontier
+and locally-hosted models (haiku-class, DeepSeek, Qwen, Ollama/MLX) can be useful
+as bounded reviewers, resumers, and bookkeepers inside those boundaries, so the frontier
 model is spent only where frontier capability is needed.
 
 ## What's measured
@@ -221,7 +220,7 @@ not need a work record.
 
 ## Honest limits
 
-Open Scaffold is pre-1.0 (`v0.32.x`) and it does not make your model smarter —
+Open Scaffold's current package line is pre-1.0 (`v0.32.x`) and it does not make your model smarter —
 it makes the *loop around the model* disciplined: bounded slices, gated
 execution, compact resumes, receipts for everything. A bounded Codex
 cold-resume fixture and the older scaffold-vs-naked fixture ship in
@@ -235,15 +234,13 @@ what is stable, what is experimental, what is future — lives in one place:
 ## Key docs
 
 - [`docs/START_HERE.md`](docs/START_HERE.md) — the single entry point.
-- [`docs/EVOLUTION_LOOP.md`](docs/EVOLUTION_LOOP.md) — the record, analyze, and gate in detail.
-- [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) — the measured claim ledger with boundaries.
-- [`docs/MCP.md`](docs/MCP.md) — plugging the record into MCP-capable clients.
-- [`docs/STABILITY.md`](docs/STABILITY.md) — command maturity and honest limits, in one place.
+- [`docs/EVOLUTION_LOOP.md`](docs/EVOLUTION_LOOP.md) — review and gate over recorded attempts.
+- [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) — measured claims, raw pointers, and proof boundaries.
+- [`docs/MCP.md`](docs/MCP.md) — exposing the record to MCP-capable clients.
+- [`docs/STABILITY.md`](docs/STABILITY.md) — command maturity, version truth, and honest limits.
 - [`docs/RESUME_WALKTHROUGH.md`](docs/RESUME_WALKTHROUGH.md) — zero-context resume, narrated.
-- [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) — the proof fixture and its boundaries.
 - [`docs/GITHUB_WORKFLOW.md#structural-pr-review-with-open-scaffold`](docs/GITHUB_WORKFLOW.md#structural-pr-review-with-open-scaffold) — PRs that carry intent and evidence.
 - [`docs/EXAMPLES.md`](docs/EXAMPLES.md) — worked examples and demos.
-- [`docs/STABILITY.md`](docs/STABILITY.md) — the maturity contract and honest limits.
 - [`docs/FAQ.md`](docs/FAQ.md) — deeper questions.
 - [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — the vocabulary.
 

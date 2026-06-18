@@ -1,6 +1,6 @@
 # Workflow
 
-A phase-to-tool reference for agent-orchestrated development. This file is the operational reference; `README.md` is the landing page. When in doubt about which tool to reach for, start with the stable repo record: `MISSION.md` → plan → run packet or amendment → evidence → verification → close. Across every phase, the product front door is three commands: `osc handoff` (resume packet for the next session or model), `osc review` (review recorded attempts; `osc analyze` remains a synonym), and `osc gate` (authorize or block the next attempt).
+A phase-to-tool reference for AI-assisted work. This file is the operational reference; `README.md` is the landing page. When in doubt about which tool to reach for, start with the stable repo record: `MISSION.md` → plan → run packet or amendment → evidence → verification → close. Across every phase, the product front door is three commands: `osc handoff` (resume packet for the next session or model), `osc review` (review recorded attempts; `osc analyze` remains a synonym), and `osc gate` (authorize or block the next attempt).
 
 The stable core is the file protocol and lifecycle helpers. Lab surfaces such as evolution ledgers, cockpit webhooks, and runtime profiles are optional layers around that record; they do not replace the plan/evidence/verification/close chain. Historical helpers removed from the reduced maintained CLI, such as `osc work`, `osc dashboard`, `osc task`, `osc plan wizard`, `osc plan graph`, `osc metrics`, and broad `osc doctor --fix`, are migration references only unless a future plan restores them with fresh evidence.
 
@@ -144,7 +144,7 @@ There is no automatic router between tools. You, the human, decide based on the 
 | Stuck or uncertain | Second opinion | A different model's perspective breaks deadlocks |
 | Public/versioned change | GitHub PR loop | CI, Codex review, and human approval gate merges |
 
-> **Runtime split:** Open Scaffold is the runtime-neutral contract. Hermes, Claw/OpenClaw, Claude Code, Codex, Gemini, or custom scripts can act as orchestrators/agents. OMC is a Claude Code harness; OMX is a Codex harness. Status/approval channels such as Discord are operator surfaces — visible control rooms, not canonical state.
+> **Runtime split:** Open Scaffold is the runtime-neutral contract. Hermes, Claw/OpenClaw, Claude Code, Codex, Gemini, or custom scripts can act as orchestrators/agents. OMC is a Claude Code harness; OMX is a Codex harness. Status/approval channels such as Discord are operator surfaces — visible status rooms, not canonical state.
 
 ### Delegation decision tree
 

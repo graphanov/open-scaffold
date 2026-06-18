@@ -4,7 +4,7 @@ Open Scaffold is not an agent runtime. It is a repo-native work record and repos
 
 ## One-sentence definition
 
-Open Scaffold is a runtime-neutral repository protocol for agent-orchestrated development: mission, roadmap, plans, amendments, evidence, handoffs, verification gates, and publication traces as durable files.
+Open Scaffold is a runtime-neutral, repo-native work record and repository protocol for AI-assisted work: mission, roadmap, plans, amendments, evidence, handoffs, review/gate decisions, verification, and publication traces as durable files.
 
 ## Reader path
 
@@ -121,9 +121,9 @@ Examples:
 - gateway adapters
 - tmux/session notification hooks
 
-Transport can post active-session updates, blockers, and completion events into a glass cockpit — an operator dashboard/control room. It should not become canonical task state or perform planning/execution itself.
+Transport can post active-session updates, blockers, and completion events into a status/approval surface such as an operator dashboard or team room. It should not become canonical task state or perform planning/execution itself.
 
-### 6. Operator surfaces / glass cockpits — human dashboards/control rooms
+### 6. Operator surfaces — human dashboards, chats, and status rooms
 
 Operator surfaces let humans and teams see, steer, approve, or unblock work.
 
@@ -136,14 +136,14 @@ Examples:
 - GitHub issue/PR comments
 - web dashboards
 
-The glass cockpit can run in several modes:
+A status/approval surface can run in several modes:
 
 - **Private cockpit:** solo dev / personal agent room.
 - **Team control room:** internal engineering room.
 - **Build-in-public room:** public or semi-public devlog channel.
 - **Stakeholder room:** curated client/product updates.
 
-Operator surfaces are **not canonical truth**. They should link back to roadmap items, task IDs, `run.json` work packages (run packets), evidence, issues, branches, and PRs. Their event vocabulary is the operator-event table in [`docs/HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md).
+Operator surfaces are **not canonical truth**. They should link back to roadmap items, task IDs, `run.json` work packages (run packets), evidence, issues, branches, and PRs. The historical operator-event vocabulary lives in [`docs/HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md).
 
 ### 7. GitHub/public versioning layer
 
@@ -175,7 +175,7 @@ OMX is a Codex execution/orchestration lane.
 OMX is not automatically the runtime engine for Hermes or OMC; it becomes one only when a coordinator dispatches a bounded package into an OMX/Codex session.
 Runtime-specific packages such as `packages/runtime-omx/` stay separate from core contracts, evidence, and approval boundaries.
 clawhip-style tooling is routing/status/event transport, not the planner or executor.
-Discord is a glass cockpit, not canonical state.
+Discord is a status/approval surface, not canonical state.
 A chat thread is a binding on a task/run, not the task/run itself.
 GitHub is public/versioned work truth.
 ```

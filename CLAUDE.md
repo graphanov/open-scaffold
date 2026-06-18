@@ -2,7 +2,7 @@
 
 # Project Context
 
-This is the [open-scaffold](https://github.com/graphanov/open-scaffold) product repository: a harness for AI-assisted work that keeps the whole work record — mission, plans, run records, evidence, feedback, lessons — in git-tracked files. The repo dogfoods its own protocol. Read this file first, then run the protocol below.
+This is the [open-scaffold](https://github.com/graphanov/open-scaffold) product repository: a repo-native work-record CLI/protocol for AI-assisted work that keeps mission, plans, run records, evidence, feedback, and lessons in git-tracked files. The repo dogfoods its own protocol. Read this file first, then run the protocol below.
 
 ## Layered architecture
 
@@ -10,7 +10,7 @@ Open Scaffold core owns the repo-native work record, handoff packets, review/gat
 
 ## Open Scaffold protocol
 
-1. Before any work, run `osc resume` (source checkout: `npm run osc -- resume`) and follow the packet: it states the goal, acceptance criteria, and next bounded action.
+1. Before any work, run `osc handoff` (source checkout alias: `npm run osc -- resume`) and follow the packet: it states the goal, acceptance criteria, and next bounded action.
 2. The CLI writes the files — never hand-write plans, amendments, evidence skeletons, or close records.
 3. New work: `osc plan new <slug> --stage active`; clarify fuzzy intent in the operator surface or an external runtime, then promote the result into the plan.
 4. Scope change: `osc amend <slug> --message "what changed"`. Committed plans are immutable.

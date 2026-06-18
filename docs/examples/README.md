@@ -1,13 +1,13 @@
 # Examples
 
-Five worked example paths a fresh user or agent can read end-to-end. The first four are operating modes; the fifth shows the evolution-ledger comparison wedge directly. Each path links to existing protocol docs and shipped fixtures rather than inventing new machinery.
+Five worked example paths a fresh user or agent can read end-to-end. The first four are ways to use the repo record; the fifth shows the evolution-ledger comparison wedge directly. Each path links to existing protocol docs and shipped fixtures rather than inventing new machinery.
 
 The example paths:
 
 1. [Solo developer](#1-solo-developer) — one human, one repo, AI assist.
-2. [Team control-room](#2-team-control-room) — multiple humans/agents coordinating with the repo as truth.
+2. [Team status room](#2-team-status-room) — multiple humans/agents coordinating with the repo as truth.
 3. [GitHub-only workflow](#3-github-only-workflow) — issue → plan → PR → evidence with no chat coordinator.
-4. [Runtime harness handoff](#4-runtime-harness-handoff) — packaging work for an external runtime lane to execute.
+4. [External handoff packet](#4-external-handoff-packet) — packaging work for an external agent, runtime lane, or teammate to execute.
 5. [Evolution loop compare](evolution-loop-compare.md) — two attempts → `osc evolve compare` → frontier rationale.
    - [`examples/evolution-ledger-demo/`](../../examples/evolution-ledger-demo/) — runnable fixture: checked-in loop, attempts, evaluations, a promoted frontier, and committed expected compare output. Verified by the evolution CLI tests.
 
@@ -25,7 +25,7 @@ A single operator using AI assistance against one repo. Truth lives in `MISSION.
 
 Reading path:
 
-- [`README.md` Quickstart](../../README.md#quickstart) — initialize the scaffold, bootstrap a mission, write the first plan, run `./verify.sh`.
+- [`README.md` Start in 60 seconds](../../README.md#start-in-60-seconds) — run the guided first work-record command and follow the printed next steps.
 - [`docs/EXAMPLES.md` 60-second viewer demo](../EXAMPLES.md#60-second-viewer-demo) — mission → plan → verification → evidence in four shell commands.
 - [`downstream-walkthrough.md`](downstream-walkthrough.md) — the same loop on Tiny Notes, a small non-Open-Scaffold project with concrete commands, expected outputs, and a day-2 resume check that works without chat history.
 - [`examples/lifecycle-e2e-smoke/`](../../examples/lifecycle-e2e-smoke/README.md) — boring downstream fixture that proves the loop on a non-Open-Scaffold project. Run it with `npm run smoke:e2e`.
@@ -33,20 +33,18 @@ Reading path:
 Loop in shell:
 
 ```bash
-./bootstrap.sh                                    # define mission
-cp .osc/plans/handoff-template.md \
-   .osc/plans/active/my-first-task.md             # scoped plan
-# ... agent edits code against the plan ...
-./verify.sh --standard                            # methodology check
-# write .osc/releases/<date>-<slug>.md when done
-./close.sh my-first-task                          # move plan to done/
+npx open-scaffold@latest first-run               # mission + first plan + evidence skeleton
+# ... agent or human edits against the generated plan ...
+osc evidence new <slug>                           # record real verification output before close
+osc verify --evidence-chain                       # structural linkage check
+osc close <slug> --message "verified"            # move plan to done/
 ```
 
 What this mode does **not** require: a chat surface, a coordinator, a runtime harness, or any private deployment.
 
 ---
 
-## 2. Team control-room
+## 2. Team status room
 
 Multiple humans and/or agents coordinating around the same repo. A team room (Slack/Discord/Telegram/CLI dashboard) shows status and collects approvals; the repo still owns durable truth.
 
@@ -58,7 +56,7 @@ Reading path:
 How the loop differs from solo:
 
 - Each plan binds to a `task_id` so multiple runs and reviewers can attach to the same work.
-- Cockpit events (status, blocker, question, approval) point back at a plan, run, evidence path, or PR — never at a chat thread alone.
+- Status-room events (status, blocker, question, approval) point back at a plan, run, evidence path, or PR — never at a chat thread alone.
 - Approvals land as evidence/PR review, not as chat reactions.
 
 Coordinators that can sit in front of this loop (issue trackers, Kanban tools, custom bots, or private deployment examples) are external by design. Open Scaffold core does not bundle, require, or authenticate against any of them.
@@ -91,7 +89,7 @@ What this mode does **not** require: a chat/status channel (operator surface), a
 
 ---
 
-## 4. Runtime harness handoff
+## 4. External handoff packet
 
 When a runtime lane (Claude Code, Codex, OMC, OMX, a custom adapter, or a human terminal) should execute a plan, Open Scaffold core packages the work into `.osc/runs/<run_id>/run.json`. Core does not launch the lane — `spawning: false` is the boundary that keeps the protocol portable.
 
