@@ -11,7 +11,7 @@ This note records local release-readiness evidence only. It does not claim merge
 - Roadmap / issue / task: owner-scoped public v1 positioning polish request in this session.
 - Plan: `.osc/plans/done/v1-public-positioning-polish.md` after close.
 - Run ID / run packet: `N/A` — documentation/code polish executed directly on branch, no external runtime package was dispatched.
-- Branch / PR: local branch `docs/v1-public-positioning-polish`; PR pending owner decision.
+- Branch / PR: `docs/v1-public-positioning-polish`, https://github.com/graphanov/open-scaffold/pull/225; merge remains pending owner decision.
 
 ## Verification
 
