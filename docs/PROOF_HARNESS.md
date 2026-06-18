@@ -129,8 +129,11 @@ The fixture now carries a fail-closed evidence battery in `manifest.json`:
 
 `osc prove compare` blocks the bounded PASS if any required evidence-battery item
 is not `demonstrated` or `reproduced`. Disclosure-only rows keep adjacent claims
-visible but cannot support the pass gate. The human-reviewer and ablation rows
-point at committed boundary files under
+visible but cannot support the pass gate. A manifest with no `evidence_battery`
+rows reports `evidenceBatteryStatus: not_evaluated` (and `evidenceBatteryPass:
+null`) rather than `pass`, so the report never claims "passes required
+evidence-battery items" for a fixture that supplied no battery; it still does
+not block `boundedProof` on its own. The human-reviewer and ablation rows point at committed boundary files under
 `examples/proof/codex-token-efficient-resume/evidence/`; they are not substitutes
 for real receipts.
 

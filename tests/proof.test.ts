@@ -451,6 +451,20 @@ describe('proof comparison harness', () => {
     expect(validateProofManifestFile(privateSourcePath).failures.map((failure) => failure.code)).toContain('private-source-ref');
   });
 
+  it('reports evidence battery as not evaluated when a manifest supplies no battery rows', () => {
+    const result = compareProofManifest(resolve(repoRoot, 'examples/proof/scaffold-vs-naked-codex/manifest.json'));
+    const markdown = renderProofComparison(result, 'markdown');
+
+    expect(result.summary.evidenceBatteryPresent).toBe(false);
+    expect(result.summary.evidenceBatteryPass).toBeNull();
+    expect(result.summary.evidenceBatteryStatus).toBe('not_evaluated');
+    expect(result.summary.evidenceBatteryBlocking).toEqual([]);
+    expect(result.summary.boundedProof).toBe(true);
+    expect(markdown).toContain('Evidence battery: not evaluated');
+    expect(markdown).toContain('no evidence_battery rows supplied');
+    expect(markdown).not.toContain('passes required evidence-battery items');
+  });
+
   it('renders an honest markdown report with source refs and non-universal caveats', () => {
     const root = fixtureRoot();
     const result = compareProofManifest(manifest(root));
