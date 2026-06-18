@@ -162,6 +162,10 @@
       ]
     }
   ],
+  "required_evidence": [
+    "codex-2x-cold-resume-replicates",
+    "cold-resume-packet-contract"
+  ],
   "caveats": [
     "Bounded fixture proof only: one paused-work cold-resume decision, not all AI work or all repositories.",
     "Codex CLI did not emit total_tokens directly in this environment; receipts record input/output splits and derive total as input_tokens + output_tokens.",

@@ -451,6 +451,50 @@ describe('proof comparison harness', () => {
     expect(validateProofManifestFile(privateSourcePath).failures.map((failure) => failure.code)).toContain('private-source-ref');
   });
 
+  it('rejects a manifest that declares required_evidence but omits the row', () => {
+    const root = fixtureRoot();
+    const missingRowPath = manifest(root, {
+      required_evidence: ['cold-resume-packet-contract'],
+      evidence_battery: [
+        {
+          id: 'codex-2x-cold-resume-replicates',
+          kind: 'cold_resume_fixture',
+          status: 'demonstrated',
+          required_for_pass: true,
+          claim: 'Replicates demonstrated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    // Omission is a structural validation failure: osc prove check reports it,
+    // and osc prove compare throws before computing a verdict.
+    expect(validateProofManifestFile(missingRowPath).failures.map((failure) => failure.code)).toContain('missing-required-evidence-row');
+    expect(() => compareProofManifest(missingRowPath)).toThrow('missing-required-evidence-row');
+
+    const presentPath = manifest(root, {
+      required_evidence: ['codex-2x-cold-resume-replicates'],
+      evidence_battery: [
+        {
+          id: 'codex-2x-cold-resume-replicates',
+          kind: 'cold_resume_fixture',
+          status: 'demonstrated',
+          required_for_pass: true,
+          claim: 'Replicates demonstrated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    const present = compareProofManifest(presentPath);
+    expect(present.summary.evidenceBatteryRequired).toEqual(['codex-2x-cold-resume-replicates']);
+    expect(present.summary.evidenceBatteryStatus).toBe('pass');
+    expect(present.summary.boundedProof).toBe(true);
+
+    const invalidPath = manifest(root, { required_evidence: 'not-an-array' });
+    expect(validateProofManifestFile(invalidPath).failures.map((failure) => failure.code)).toContain('invalid-required-evidence');
+  });
+
   it('reports evidence battery as not evaluated when a manifest supplies no battery rows', () => {
     const result = compareProofManifest(resolve(repoRoot, 'examples/proof/scaffold-vs-naked-codex/manifest.json'));
     const markdown = renderProofComparison(result, 'markdown');

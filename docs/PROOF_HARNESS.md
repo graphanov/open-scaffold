@@ -230,6 +230,15 @@ Required metric categories are `quality`, `tokens`, `speed`, and `evolution`. `o
 
 Evidence-battery `source_refs` follow the same fail-closed rules as metric sources: committed fixture-local files only, no URLs, no absolute paths, no parent escapes, and no private/runtime directories.
 
+A manifest-level `required_evidence` array (of evidence-battery IDs) protects against accidental omission: every listed ID must be *present* in `evidence_battery` and `demonstrated`/`reproduced`, or the gate blocks. This composes with per-row `required_for_pass` (which catches a present row being downgraded to `not_demonstrated`) so deletion and status-downgrade are both fail-closed.
+
+```json
+{
+  "required_evidence": ["codex-2x-cold-resume-replicates", "cold-resume-packet-contract"],
+  "evidence_battery": [ "..." ]
+}
+```
+
 ## Boundary
 
 `osc prove` is a receipt comparator. It does not:
