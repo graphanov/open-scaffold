@@ -451,6 +451,47 @@ describe('proof comparison harness', () => {
     expect(validateProofManifestFile(privateSourcePath).failures.map((failure) => failure.code)).toContain('private-source-ref');
   });
 
+  it('blocks a required_evidence ID whose row is present but not demonstrated, even when required_for_pass is false', () => {
+    const root = fixtureRoot();
+    const path = manifest(root, {
+      required_evidence: ['human-reviewer-replication'],
+      evidence_battery: [
+        {
+          id: 'human-reviewer-replication',
+          kind: 'human_reviewer_replication',
+          status: 'not_demonstrated',
+          required_for_pass: false,
+          claim: 'Not yet replicated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    const result = compareProofManifest(path);
+    expect(result.summary.evidenceBatteryBlocking).toContain('human-reviewer-replication');
+    expect(result.summary.evidenceBatteryStatus).toBe('fail');
+    expect(result.summary.boundedProof).toBe(false);
+
+    // Same row flipped to demonstrated passes the gate.
+    const passingPath = manifest(root, {
+      required_evidence: ['human-reviewer-replication'],
+      evidence_battery: [
+        {
+          id: 'human-reviewer-replication',
+          kind: 'human_reviewer_replication',
+          status: 'demonstrated',
+          required_for_pass: false,
+          claim: 'Replicated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    const passing = compareProofManifest(passingPath);
+    expect(passing.summary.evidenceBatteryStatus).toBe('pass');
+    expect(passing.summary.boundedProof).toBe(true);
+  });
+
   it('rejects a manifest that declares required_evidence but omits the row', () => {
     const root = fixtureRoot();
     const missingRowPath = manifest(root, {
