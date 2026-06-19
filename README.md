@@ -35,7 +35,7 @@ Open Scaffold keeps a repo-native work record — git-tracked, observed-fact fil
 
 The interesting result is not "the scaffold makes your agent smarter" — measured, it does not. A naked frontier model matched or beat every scaffolded arm on in-session task quality. That dead result is published at equal weight with the wins.
 
-What the record fixes is amnesia and confabulation. In preregistered trials, a mid-tier reviewer answering factual questions about finished work — graded against answer keys committed before it ran — hit **94% accuracy with the record vs 30% without, zero confident wrong-history answers, at half the review cost**. The record turns a cheap model into a trustworthy auditor. Boundaries in [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md).
+What the record fixes is amnesia and memory errors. In preregistered trials, a mid-tier reviewer model answering factual questions about finished work — graded against answer keys committed before it ran — hit **94% accuracy with the record vs 30% without, zero confident wrong-history answers, at half the review cost**. The record turns a cheap model into a trustworthy auditor. Boundaries in [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md).
 
 A bounded Codex cold-resume fixture: a 1,557-byte resume capsule vs 419,233 bytes of raw transcript, three replicates per arm, decision quality tied at 6/6 on a deterministic human-facing reader-usability rubric, **4.330033x fewer tokens** (median 137,327 → 31,715). One cold-resume decision, not a universal claim. This is not a production-readiness claim.
 
