@@ -1,5 +1,5 @@
 ---
-name: open-scaffold-discipline
+name: oscd
 description: Keep a durable, checkable work record in your repo so AI-assisted work survives context loss, PR review, and handoff. Amend, don't edit. Verify before claiming done. One focus at a time. Any agent can follow this with plain markdown files; the open-scaffold CLI makes it mechanical and provable.
 ---
 
