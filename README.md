@@ -87,7 +87,7 @@ Pre-1.0 (`v0.32.x`). Does not make your model smarter — it makes the loop arou
 - [`docs/START_HERE.md`](docs/START_HERE.md) — the single entry point.
 - [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) — measured claims, raw pointers, proof boundaries.
 - [`docs/STABILITY.md`](docs/STABILITY.md) — command maturity, version truth, honest limits.
-- [`REPRODUCE.md`](REPRODUCE.md) — audit every receipt yourself, zero spend.
+- [`REPRODUCE.md`](REPRODUCE.md) — audit every receipt, zero spend.
 - [`SKILL.md`](SKILL.md) — the methodology as a portable agent skill.
 - [`docs/FAQ.md`](docs/FAQ.md) — deeper questions.
 - [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — the vocabulary.
