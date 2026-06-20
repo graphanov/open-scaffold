@@ -4,6 +4,24 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v0.33.0 — Evidence battery package sync
+
+Status: release-sync prepared for `open-scaffold@0.33.0`; npm trusted publishing and GitHub Release `v0.33.0` Latest follow-through are owner-approved and execute after merge. `v0.32.1` remains npm `latest` and GitHub Release Latest until `v0.33.0` publication completes; final publication status is recorded in the release follow-through closeout.
+
+Highlights:
+
+- Publishes the fail-closed evidence battery from PR #226 to the public `npx open-scaffold@latest` package surface.
+- Adds `evidence_battery` support to proof manifests: validates evidence-battery source refs with the same local/public-safe rules as metric refs; blocks `boundedProof` when any `required_for_pass` item is not `demonstrated`/`reproduced`; reports empty batteries as `not_evaluated` (not `pass`); enforces a manifest-level `required_evidence` list (omission is a structural failure, membership implies required-for-pass, IDs are trimmed in both paths); and renders a proof-battery table in `osc prove compare`.
+- Keeps the proof boundary explicit: the Codex 2x cold-resume claim remains bounded to its single fixture; human-reviewer replication and controlled ablations remain disclosure-only (`not_demonstrated` / `mixed_not_proven`), not universal claims.
+- Pre-1.0 minor release for a new proof-harness feature; this is not production-readiness, compliance certification, broad adoption proof, mature 1.0 status, or universal benchmark superiority.
+
+Evidence:
+
+- Source PR: https://github.com/graphanov/open-scaffold/pull/226
+- Source plan: `.osc/plans/done/173-codex-token-efficiency-proof.md`
+- Release-sync plan: `.osc/plans/done/174-evidence-battery-package-sync.md`
+- Release-sync evidence note: `.osc/releases/2026-06-20-174-evidence-battery-package-sync.md`
+
 ## v0.32.1 — Public-readiness package sync
 
 Status: published to npm as `open-scaffold@0.32.1`; GitHub Release `v0.32.1` is Latest after owner-approved trusted publishing and release follow-through.

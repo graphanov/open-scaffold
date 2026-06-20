@@ -80,7 +80,7 @@ Use for multi-session AI work, PRs needing intent and evidence, audit-sensitive 
 
 ## Honest limits
 
-Pre-1.0 (`v0.32.x`). Does not make your model smarter — it makes the loop around the model disciplined. Maturity contract: [`docs/STABILITY.md`](docs/STABILITY.md). Claim ledger: [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md). Raw receipts: [`harness-bench`](https://github.com/graphanov/harness-bench).
+Pre-1.0 (`v0.33.x`). Does not make your model smarter — it makes the loop around the model disciplined. Maturity contract: [`docs/STABILITY.md`](docs/STABILITY.md). Claim ledger: [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md). Raw receipts: [`harness-bench`](https://github.com/graphanov/harness-bench).
 
 ## Key docs
 

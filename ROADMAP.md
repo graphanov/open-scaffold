@@ -40,7 +40,7 @@ Not every small task needs every link, but meaningful work should make the chain
 
 ## Historical baseline milestones
 
-The early milestones below preserve the project-history shape that was once called v1. The current public package line is `v0.32.x` pre-1.0; these entries are proof of dogfood history, not a fresh npm/GitHub Release authorization.
+The early milestones below preserve the project-history shape that was once called v1. The current public package line is `v0.33.x` pre-1.0; these entries are proof of dogfood history, not a fresh npm/GitHub Release authorization.
 
 ## Milestone 0 — Product contract and dogfood baseline
 
@@ -397,7 +397,7 @@ Acceptance criteria:
 
 ### Milestone 18 — historical v1.0.0 stability launch
 
-Status: completed as a historical launch line through `.osc/plans/done/069-v1-launch.md`, `.osc/releases/2026-05-25-v1-launch.md`, PR #113, and later package/release follow-through. As of the `123-evidence-chain-package-release-sync` closeout, the forward-moving channel was intentionally corrected back to pre-1.0 hardening; after the `osc capture` package sync, that current hardening line is `v0.32.x` until the public product surface earns a mature 1.0 contract.
+Status: completed as a historical launch line through `.osc/plans/done/069-v1-launch.md`, `.osc/releases/2026-05-25-v1-launch.md`, PR #113, and later package/release follow-through. As of the `123-evidence-chain-package-release-sync` closeout, the forward-moving channel was intentionally corrected back to pre-1.0 hardening; after the `osc capture` package sync, that current hardening line is `v0.33.x` until the public product surface earns a mature 1.0 contract.
 
 Goal: make the adoption contract explicit before the first major-release experiment.
 
