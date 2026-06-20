@@ -106,6 +106,66 @@
       "notes": "This is the mechanism difference: raw artifacts vs a compiled Open Scaffold resume capsule. It is not a claim that the model became smarter."
     }
   ],
+  "evidence_battery": [
+    {
+      "id": "codex-2x-cold-resume-replicates",
+      "kind": "cold_resume_fixture",
+      "status": "demonstrated",
+      "required_for_pass": true,
+      "claim": "3 read-only Codex replicates per arm preserved decision quality at 6/6 while reducing median Codex-reported total tokens by 4.330033x.",
+      "boundary": "One paused-work cold-resume decision on codex-cli exec / gpt-5.5; not a universal workload, model, or production-readiness claim.",
+      "source_refs": [
+        "receipts/aggregate.json",
+        "receipts/control-r1.json",
+        "receipts/control-r2.json",
+        "receipts/control-r3.json",
+        "receipts/scaffolded-r1.json",
+        "receipts/scaffolded-r2.json",
+        "receipts/scaffolded-r3.json"
+      ]
+    },
+    {
+      "id": "cold-resume-packet-contract",
+      "kind": "cold_resume_packet",
+      "status": "demonstrated",
+      "required_for_pass": true,
+      "claim": "The scaffolded arm uses a compact packet with explicit plan, objective, action, resume pointer, acceptance summary, reasons, next fields, evidence refs, and authority boundary.",
+      "boundary": "Packet-field contract for this fixture only; it does not define a universal resume schema or claim human-reviewer replication.",
+      "source_refs": [
+        "prompts/scaffolded-resume-capsule-prompt.md",
+        "generate-fixture.mjs",
+        "receipts/aggregate.json"
+      ]
+    },
+    {
+      "id": "human-reviewer-replication",
+      "kind": "human_reviewer_replication",
+      "status": "not_demonstrated",
+      "required_for_pass": false,
+      "claim": "No blind human-reviewer replication is claimed for this Codex 2x fixture.",
+      "boundary": "The shipped quality score is deterministic and human-facing; a real human-reader replication needs separate preregistration, answer keys, blinded packets, and receipts.",
+      "source_refs": [
+        "evidence/human-reviewer-replication-boundary.md",
+        "receipts/aggregate.json"
+      ]
+    },
+    {
+      "id": "controlled-ablations",
+      "kind": "controlled_ablation",
+      "status": "mixed_not_proven",
+      "required_for_pass": false,
+      "claim": "No minimal-checklist, packet-only, or alternate-packet ablation is claimed by this fixture.",
+      "boundary": "Ablations are disclosure-only here and cannot support broad dominance; future ablation claims must ship their own committed receipts.",
+      "source_refs": [
+        "evidence/controlled-ablations-boundary.md",
+        "receipts/aggregate.json"
+      ]
+    }
+  ],
+  "required_evidence": [
+    "codex-2x-cold-resume-replicates",
+    "cold-resume-packet-contract"
+  ],
   "caveats": [
     "Bounded fixture proof only: one paused-work cold-resume decision, not all AI work or all repositories.",
     "Codex CLI did not emit total_tokens directly in this environment; receipts record input/output splits and derive total as input_tokens + output_tokens.",

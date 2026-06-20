@@ -74,6 +74,17 @@ function manifest(root: string, overrides: Record<string, unknown> = {}) {
         source_refs: ['evidence/scaffolded.json'],
       },
     ],
+    evidence_battery: [
+      {
+        id: 'cold-resume-fixture',
+        kind: 'cold_resume_fixture',
+        status: 'demonstrated',
+        required_for_pass: true,
+        claim: 'This test fixture has source-labeled comparison receipts.',
+        boundary: 'Synthetic unit-test fixture only; not a product benchmark.',
+        source_refs: ['evidence/control.json', 'evidence/scaffolded.json'],
+      },
+    ],
     caveats: [
       'Bounded fixture proof only; not a universal benchmark.',
       'Receipts are source-labeled instead of inferred.',
@@ -106,6 +117,10 @@ describe('proof comparison harness', () => {
     expect(result.summary.categories.speed).toBe('improved');
     expect(result.summary.categories.evolution).toBe('improved');
     expect(result.summary.boundedProof).toBe(true);
+    expect(result.summary.evidenceBatteryPass).toBe(true);
+    expect(result.evidenceBattery.map((item) => [item.id, item.status, item.requiredForPass])).toEqual([
+      ['cold-resume-fixture', 'demonstrated', true],
+    ]);
     expect(result.summary.verdict).toContain('bounded');
   });
 
@@ -200,6 +215,46 @@ describe('proof comparison harness', () => {
       expect(receipt.source.quality_score_source).toContain('committed answer JSON re-scored');
       expect(receipt.source).not.toHaveProperty('usage_wall_time_reused_from_committed_receipt');
     }
+  });
+
+  it('source-labels the Codex fixture evidence battery and adjacent non-claims', () => {
+    const fixture = resolve(repoRoot, 'examples/proof/codex-token-efficient-resume');
+    const result = compareProofManifest(resolve(fixture, 'manifest.json'));
+    const aggregate = JSON.parse(readFileSync(resolve(fixture, 'receipts/aggregate.json'), 'utf8')) as {
+      cold_resume_packet_contract: { id: string; required_fields: string[]; source_refs: string[]; fail_closed_if_missing: boolean };
+    };
+
+    expect(result.summary.boundedProof).toBe(true);
+    expect(result.summary.evidenceBatteryPass).toBe(true);
+    expect(result.evidenceBattery.filter((item) => item.requiredForPass).map((item) => item.status)).toEqual([
+      'demonstrated',
+      'demonstrated',
+    ]);
+    expect(result.evidenceBattery.find((item) => item.kind === 'human_reviewer_replication')).toMatchObject({
+      status: 'not_demonstrated',
+      requiredForPass: false,
+    });
+    expect(result.evidenceBattery.find((item) => item.kind === 'controlled_ablation')).toMatchObject({
+      status: 'mixed_not_proven',
+      requiredForPass: false,
+    });
+    expect(aggregate.cold_resume_packet_contract.id).toBe('cold-resume-packet-v2-readable-closeout');
+    expect(aggregate.cold_resume_packet_contract.fail_closed_if_missing).toBe(true);
+    expect(aggregate.cold_resume_packet_contract.required_fields).toEqual([
+      'plan',
+      'objective',
+      'action',
+      'resume_current_frontier_evaluation',
+      'acceptance_summary',
+      'reasons',
+      'required_next_fields',
+      'evidence_refs',
+      'authority_boundary',
+    ]);
+    expect(aggregate.cold_resume_packet_contract.source_refs).toEqual([
+      'prompts/scaffolded-resume-capsule-prompt.md',
+      'generate-fixture.mjs',
+    ]);
   });
 
   it('enforces declared minimum improvement ratios before passing a bounded proof', () => {
@@ -343,6 +398,214 @@ describe('proof comparison harness', () => {
     expect(zeroThreshold.metrics.find((metric) => metric.id === 'evolution.frontier_delta')).toMatchObject({ improvementRatio: 'unbounded', minimumRatioPassed: true });
   });
 
+  it('fails closed when required proof-battery evidence is blocked or missing source refs', () => {
+    const root = fixtureRoot();
+    const blockedPath = manifest(root, {
+      evidence_battery: [
+        {
+          id: 'human-reviewer-replication',
+          kind: 'human_reviewer_replication',
+          status: 'not_demonstrated',
+          required_for_pass: true,
+          claim: 'Human reviewers replicated the result.',
+          boundary: 'This claim must stay blocked until real human-reviewer receipts exist.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+
+    const blocked = compareProofManifest(blockedPath);
+    expect(blocked.summary.evidenceBatteryPass).toBe(false);
+    expect(blocked.summary.boundedProof).toBe(false);
+    expect(blocked.summary.evidenceBatteryBlocking).toEqual(['human-reviewer-replication']);
+    expect(blocked.summary.verdict).toContain('evidence-battery');
+
+    const missingSourcePath = manifest(root, {
+      evidence_battery: [
+        {
+          id: 'controlled-ablation',
+          kind: 'controlled_ablation',
+          status: 'demonstrated',
+          required_for_pass: false,
+          claim: 'A controlled ablation exists.',
+          boundary: 'Synthetic fixture only.',
+          source_refs: ['evidence/not-committed.json'],
+        },
+      ],
+    });
+    expect(validateProofManifestFile(missingSourcePath).failures.map((failure) => failure.code)).toContain('missing-source-ref');
+
+    const privateSourcePath = manifest(root, {
+      evidence_battery: [
+        {
+          id: 'private-human-review',
+          kind: 'human_reviewer_replication',
+          status: 'demonstrated',
+          required_for_pass: false,
+          claim: 'Private human-review notes exist.',
+          boundary: 'Synthetic fixture only.',
+          source_refs: ['.osc-dev/human-notes.json'],
+        },
+      ],
+    });
+    expect(validateProofManifestFile(privateSourcePath).failures.map((failure) => failure.code)).toContain('private-source-ref');
+  });
+
+  it('renders required_evidence rows as required in the proof-battery table', () => {
+    const root = fixtureRoot();
+    const path = manifest(root, {
+      required_evidence: ['human-reviewer-replication'],
+      evidence_battery: [
+        {
+          id: 'human-reviewer-replication',
+          kind: 'human_reviewer_replication',
+          status: 'demonstrated',
+          required_for_pass: false,
+          claim: 'Replicated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+        {
+          id: 'controlled-ablations',
+          kind: 'controlled_ablation',
+          status: 'mixed_not_proven',
+          required_for_pass: false,
+          claim: 'Disclosure only.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    const result = compareProofManifest(path);
+    const markdown = renderProofComparison(result, 'markdown');
+    // The required_evidence row is labeled required even though required_for_pass is false.
+    expect(markdown).toContain('| human-reviewer-replication | human_reviewer_replication | demonstrated | required |');
+    // A row that is neither required_for_pass nor in required_evidence stays disclosure-only.
+    expect(markdown).toContain('| controlled-ablations | controlled_ablation | mixed_not_proven | disclosure-only |');
+  });
+
+  it('normalizes whitespace in required_evidence IDs before gating', () => {
+    const root = fixtureRoot();
+    const path = manifest(root, {
+      required_evidence: ['  human-reviewer-replication  '],
+      evidence_battery: [
+        {
+          id: 'human-reviewer-replication',
+          kind: 'human_reviewer_replication',
+          status: 'not_demonstrated',
+          required_for_pass: false,
+          claim: 'Not yet replicated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    const result = compareProofManifest(path);
+    expect(result.summary.evidenceBatteryRequired).toEqual(['human-reviewer-replication']);
+    expect(result.summary.evidenceBatteryBlocking).toContain('human-reviewer-replication');
+    expect(result.summary.evidenceBatteryStatus).toBe('fail');
+    expect(result.summary.boundedProof).toBe(false);
+  });
+
+  it('blocks a required_evidence ID whose row is present but not demonstrated, even when required_for_pass is false', () => {
+    const root = fixtureRoot();
+    const path = manifest(root, {
+      required_evidence: ['human-reviewer-replication'],
+      evidence_battery: [
+        {
+          id: 'human-reviewer-replication',
+          kind: 'human_reviewer_replication',
+          status: 'not_demonstrated',
+          required_for_pass: false,
+          claim: 'Not yet replicated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    const result = compareProofManifest(path);
+    expect(result.summary.evidenceBatteryBlocking).toContain('human-reviewer-replication');
+    expect(result.summary.evidenceBatteryStatus).toBe('fail');
+    expect(result.summary.boundedProof).toBe(false);
+
+    // Same row flipped to demonstrated passes the gate.
+    const passingPath = manifest(root, {
+      required_evidence: ['human-reviewer-replication'],
+      evidence_battery: [
+        {
+          id: 'human-reviewer-replication',
+          kind: 'human_reviewer_replication',
+          status: 'demonstrated',
+          required_for_pass: false,
+          claim: 'Replicated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    const passing = compareProofManifest(passingPath);
+    expect(passing.summary.evidenceBatteryStatus).toBe('pass');
+    expect(passing.summary.boundedProof).toBe(true);
+  });
+
+  it('rejects a manifest that declares required_evidence but omits the row', () => {
+    const root = fixtureRoot();
+    const missingRowPath = manifest(root, {
+      required_evidence: ['cold-resume-packet-contract'],
+      evidence_battery: [
+        {
+          id: 'codex-2x-cold-resume-replicates',
+          kind: 'cold_resume_fixture',
+          status: 'demonstrated',
+          required_for_pass: true,
+          claim: 'Replicates demonstrated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    // Omission is a structural validation failure: osc prove check reports it,
+    // and osc prove compare throws before computing a verdict.
+    expect(validateProofManifestFile(missingRowPath).failures.map((failure) => failure.code)).toContain('missing-required-evidence-row');
+    expect(() => compareProofManifest(missingRowPath)).toThrow('missing-required-evidence-row');
+
+    const presentPath = manifest(root, {
+      required_evidence: ['codex-2x-cold-resume-replicates'],
+      evidence_battery: [
+        {
+          id: 'codex-2x-cold-resume-replicates',
+          kind: 'cold_resume_fixture',
+          status: 'demonstrated',
+          required_for_pass: true,
+          claim: 'Replicates demonstrated.',
+          boundary: 'Bounded fixture only.',
+          source_refs: ['evidence/control.json'],
+        },
+      ],
+    });
+    const present = compareProofManifest(presentPath);
+    expect(present.summary.evidenceBatteryRequired).toEqual(['codex-2x-cold-resume-replicates']);
+    expect(present.summary.evidenceBatteryStatus).toBe('pass');
+    expect(present.summary.boundedProof).toBe(true);
+
+    const invalidPath = manifest(root, { required_evidence: 'not-an-array' });
+    expect(validateProofManifestFile(invalidPath).failures.map((failure) => failure.code)).toContain('invalid-required-evidence');
+  });
+
+  it('reports evidence battery as not evaluated when a manifest supplies no battery rows', () => {
+    const result = compareProofManifest(resolve(repoRoot, 'examples/proof/scaffold-vs-naked-codex/manifest.json'));
+    const markdown = renderProofComparison(result, 'markdown');
+
+    expect(result.summary.evidenceBatteryPresent).toBe(false);
+    expect(result.summary.evidenceBatteryPass).toBeNull();
+    expect(result.summary.evidenceBatteryStatus).toBe('not_evaluated');
+    expect(result.summary.evidenceBatteryBlocking).toEqual([]);
+    expect(result.summary.boundedProof).toBe(true);
+    expect(markdown).toContain('Evidence battery: not evaluated');
+    expect(markdown).toContain('no evidence_battery rows supplied');
+    expect(markdown).not.toContain('passes required evidence-battery items');
+  });
+
   it('renders an honest markdown report with source refs and non-universal caveats', () => {
     const root = fixtureRoot();
     const result = compareProofManifest(manifest(root));
@@ -353,6 +616,9 @@ describe('proof comparison harness', () => {
     expect(markdown).toContain('quality.acceptance_passes');
     expect(markdown).toContain('evidence/control.json');
     expect(markdown).toContain('evidence/scaffolded.json');
+    expect(markdown).toContain('Proof battery');
+    expect(markdown).toContain('cold-resume-fixture');
+    expect(markdown).toContain('required');
     expect(markdown).toContain('not a universal benchmark');
     expect(markdown).not.toMatch(/universally better|proves.*anything/i);
   });

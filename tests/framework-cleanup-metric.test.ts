@@ -30,8 +30,11 @@ const cleanupBaselineLoc = 20_890;
 // 170 review hardening: unknown token totals stay null, transcript captures stay not-spawned, and split final text is concatenated (+5 LOC)
 // 170 review hardening: default captures move to gitignored .osc/state/ambient and help text follows (+1 LOC)
 // Public readiness hardening adds first-run proof-boundary guidance (+6 LOC).
-// 173 Codex token-efficiency proof review registers schema and handles zero/near-threshold ratios (+3 LOC).
-const cleanupTargetLoc = 15_151;
+// 173 evidence-battery hardening: fail-closed manifest rows for fixture/replication/ablation status and packet-contract gating (+31 LOC).
+// 173 Codex review fix: empty evidence battery reports not_evaluated (nullable pass) instead of overstated pass (+1 LOC).
+// 173 Codex review fix: required_evidence manifest list rejects omitted required rows (+10 LOC).
+// 173 Codex review fix: render required_evidence rows as required in the proof-battery table (+1 LOC).
+const cleanupTargetLoc = 15_194;
 const cleanupTargetFiles = 40;
 
 interface MaintainedSourceFile {
@@ -74,7 +77,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(15_151);
+    expect(cleanupTargetLoc).toBe(15_194);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

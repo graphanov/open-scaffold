@@ -30,6 +30,26 @@ const qualityRubric = {
     { id: 'reader_boundary_is_plain', label: 'The boundary plainly says this is decision support, not approval/release/deployment/compliance.' },
   ],
 };
+const coldResumePacketContract = {
+  id: 'cold-resume-packet-v2-readable-closeout',
+  required_fields: [
+    'plan',
+    'objective',
+    'action',
+    'resume_current_frontier_evaluation',
+    'acceptance_summary',
+    'reasons',
+    'required_next_fields',
+    'evidence_refs',
+    'authority_boundary',
+  ],
+  source_refs: [
+    'prompts/scaffolded-resume-capsule-prompt.md',
+    'generate-fixture.mjs',
+  ],
+  fail_closed_if_missing: true,
+  boundary: 'Packet-field contract for this fixture only; it does not claim a stable public schema or universal resume format.',
+};
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8').replace(/^\uFEFF/, ''));
@@ -51,6 +71,27 @@ function median(values) {
 
 function round(value) {
   return Number(value.toFixed(6));
+}
+
+function assertColdResumePacketContract() {
+  const packet = readFileSync(join(fixtureRoot, 'prompts', 'scaffolded-resume-capsule-prompt.md'), 'utf8').toLowerCase();
+  const checks = {
+    plan: 'plan:',
+    objective: 'objective:',
+    action: 'action:',
+    resume_current_frontier_evaluation: 'resume: current=',
+    acceptance_summary: 'acceptance: 5/5 pass',
+    reasons: 'reasons:',
+    required_next_fields: 'required next fields:',
+    evidence_refs: 'evidence refs:',
+    authority_boundary: 'boundary:',
+  };
+  const missing = Object.entries(checks)
+    .filter(([, needle]) => !packet.includes(needle))
+    .map(([field]) => field);
+  if (missing.length > 0) {
+    throw new Error(`cold resume packet contract missing fields: ${missing.join(', ')}`);
+  }
 }
 
 function usageFromEvents(events) {
@@ -115,6 +156,8 @@ function scoreAnswer(answer) {
   ];
   return { rubric: qualityRubric.id, human_facing: true, score: checks.filter((check) => check.pass).length, total: checks.length, checks };
 }
+
+assertColdResumePacketContract();
 
 const receipts = [];
 for (const arm of arms) {
@@ -184,6 +227,7 @@ const aggregate = {
     scorer: 'score-fixture.mjs',
   },
   quality_rubric: qualityRubric,
+  cold_resume_packet_contract: coldResumePacketContract,
   arms: { control, scaffolded },
   deltas: {
     prompt_payload_reduction_ratio: round(control.prompt_bytes / scaffolded.prompt_bytes),
@@ -279,6 +323,48 @@ const manifest = {
       source_refs: ['prompts/scaffolded-resume-capsule-prompt.md', 'generate-fixture.mjs', 'receipts/aggregate.json'],
       notes: 'This is the mechanism difference: raw artifacts vs a compiled Open Scaffold resume capsule. It is not a claim that the model became smarter.',
     },
+  ],
+  evidence_battery: [
+    {
+      id: 'codex-2x-cold-resume-replicates',
+      kind: 'cold_resume_fixture',
+      status: 'demonstrated',
+      required_for_pass: true,
+      claim: `${replicates.length} read-only Codex replicates per arm preserved decision quality at ${scaffolded.median_quality_score}/${scaffolded.quality_score_total} while reducing median Codex-reported total tokens by ${aggregate.deltas.codex_total_token_reduction_ratio_median}x.`,
+      boundary: 'One paused-work cold-resume decision on codex-cli exec / gpt-5.5; not a universal workload, model, or production-readiness claim.',
+      source_refs: sourceRefs,
+    },
+    {
+      id: 'cold-resume-packet-contract',
+      kind: 'cold_resume_packet',
+      status: 'demonstrated',
+      required_for_pass: true,
+      claim: 'The scaffolded arm uses a compact packet with explicit plan, objective, action, resume pointer, acceptance summary, reasons, next fields, evidence refs, and authority boundary.',
+      boundary: 'Packet-field contract for this fixture only; it does not define a universal resume schema or claim human-reviewer replication.',
+      source_refs: ['prompts/scaffolded-resume-capsule-prompt.md', 'generate-fixture.mjs', 'receipts/aggregate.json'],
+    },
+    {
+      id: 'human-reviewer-replication',
+      kind: 'human_reviewer_replication',
+      status: 'not_demonstrated',
+      required_for_pass: false,
+      claim: 'No blind human-reviewer replication is claimed for this Codex 2x fixture.',
+      boundary: 'The shipped quality score is deterministic and human-facing; a real human-reader replication needs separate preregistration, answer keys, blinded packets, and receipts.',
+      source_refs: ['evidence/human-reviewer-replication-boundary.md', 'receipts/aggregate.json'],
+    },
+    {
+      id: 'controlled-ablations',
+      kind: 'controlled_ablation',
+      status: 'mixed_not_proven',
+      required_for_pass: false,
+      claim: 'No minimal-checklist, packet-only, or alternate-packet ablation is claimed by this fixture.',
+      boundary: 'Ablations are disclosure-only here and cannot support broad dominance; future ablation claims must ship their own committed receipts.',
+      source_refs: ['evidence/controlled-ablations-boundary.md', 'receipts/aggregate.json'],
+    },
+  ],
+  required_evidence: [
+    'codex-2x-cold-resume-replicates',
+    'cold-resume-packet-contract',
   ],
   caveats: [
     'Bounded fixture proof only: one paused-work cold-resume decision, not all AI work or all repositories.',
