@@ -52,6 +52,7 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-06-20: closed 174-evidence-battery-package-sync — Published open-scaffold@0.33.0 to npm latest and created GitHub Release v0.33.0 as Latest; shipped the fail-closed evidence battery from PR #226 to the public package surface.
 - 2026-06-18: closed v1-public-positioning-polish — polished v1 public positioning and release-readiness boundaries
 - 2026-06-18: closed 173-codex-token-efficiency-proof — closed proof-battery hardening with fail-closed evidence battery and source-labeled Codex 2x fixture boundaries
 - 2026-06-18: Owner expanded proof-battery hardening: add source-labeled evidence-battery metadata for more fixtures, human-reviewer replication status, controlled ablation status, and cold-resume packet contract without broadening the Codex 2x claim. — see .osc/plans/done/173-codex-token-efficiency-proof-amendment-1.md
