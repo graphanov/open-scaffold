@@ -85,6 +85,7 @@ Pre-1.0 (`v0.33.x`). Does not make your model smarter — it makes the loop arou
 ## Key docs
 
 - [`docs/START_HERE.md`](docs/START_HERE.md) — the single entry point.
+- [`docs/MCP.md`](docs/MCP.md) — connect MCP-capable coding agents to repo truth.
 - [`docs/PROOF_HARNESS.md`](docs/PROOF_HARNESS.md) — measured claims, raw pointers, proof boundaries.
 - [`docs/STABILITY.md`](docs/STABILITY.md) — command maturity, version truth, honest limits.
 - [`REPRODUCE.md`](REPRODUCE.md) — audit every receipt, zero spend.
