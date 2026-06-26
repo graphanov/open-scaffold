@@ -519,6 +519,34 @@ describe('Open Scaffold MCP JSON-RPC server', () => {
     expect(lines[1].result.tools.map((tool: { name: string }) => tool.name)).toContain('list_plans');
   }, 20_000);
 
+  it('serves the documented first solo-agent calls over the osc-mcp stdio path', () => {
+    const root = scaffoldFixture();
+    const input = [
+      '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}',
+      '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_status","arguments":{}}}',
+      '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_handoff","arguments":{}}}',
+      '',
+    ].join('\n');
+
+    const run = execFileSync(tsx, [mcpCli, '--repo', root], { cwd: repoRoot, input, encoding: 'utf8' });
+    const lines = run.trim().split(/\r?\n/).map((line) => JSON.parse(line)) as Array<{
+      id: number;
+      result: {
+        structuredContent?: unknown;
+      };
+    }>;
+
+    expect(lines[0]).toMatchObject({ id: 1, result: {} });
+    expect(lines[1].result.structuredContent).toMatchObject({
+      mission: { defined: true },
+      plan_counts: { active: 1, backlog: 1 },
+    });
+    expect(lines[2].result.structuredContent).toMatchObject({
+      summary: { schema: 'open-scaffold.resume.v1' },
+    });
+    expect((lines[2].result.structuredContent as { packet: string }).packet).toContain('001-sample');
+  }, 20_000);
+
   it('responds over stdio with MCP content-length frames', () => {
     const root = scaffoldFixture();
     const input = [

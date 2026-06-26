@@ -10,6 +10,97 @@ The server is local-first and optional:
 - write tools are visible but blocked unless the server starts with `--allow-write`;
 - no agent spawning, runtime launching, deployment, publication, or approval automation.
 
+## Solo coding-agent quickstart
+
+Use this path when you are already inside an MCP-capable coding agent such as
+Claude Code, Codex, Cursor, Continue, or another local MCP client and you want
+the agent to read Open Scaffold repo truth.
+
+Replace `/absolute/path/to/repo` with the repository root you want the agent to
+inspect. This config starts the packaged `osc-mcp` binary through `npx` and
+keeps the server read-only:
+
+```json
+{
+  "mcpServers": {
+    "open_scaffold": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "-p",
+        "open-scaffold@latest",
+        "osc-mcp",
+        "--repo",
+        "/absolute/path/to/repo"
+      ]
+    }
+  }
+}
+```
+
+If your client accepts a single command string instead of JSON command/args, use
+the same argv shape:
+
+```bash
+npx -y -p open-scaffold@latest osc-mcp --repo /absolute/path/to/repo
+```
+
+Client config wrappers differ, but the command and args above are the portable
+part:
+
+- Claude Code / Claude Desktop: put the `open_scaffold` server object in the
+  MCP config surface your client supports.
+- Codex CLI: use an underscore server name (`open_scaffold`) so tool names are
+  sanitized predictably.
+- Cursor: place the same `mcpServers.open_scaffold` object in the project or
+  user MCP config.
+- Continue: put the same command and args under its MCP server list.
+
+This is not a compatibility matrix. It is the local stdio command Open Scaffold
+ships; use each client's current MCP docs for the surrounding config file
+location and reload behavior.
+
+### Try these first
+
+Once connected, ask your agent to call these read tools before it reads source
+files:
+
+- `get_status` — mission state, plan counts, and local scaffold validation.
+- `get_handoff` — the current resume packet compiled from repo truth.
+- `list_plans` — active/backlog/done/blocked plan inventory.
+- `list_evidence`, then `get_evidence` — evidence inventory, then one evidence
+  note by path, file name, or slug. `get_evidence` needs an existing evidence
+  note to read.
+
+### Verify the connection
+
+These line-delimited JSON-RPC smoke checks exercise the same packaged command
+without needing a full client UI.
+
+Call `get_status`:
+
+```bash
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_status","arguments":{}}}' \
+  | npx -y -p open-scaffold@latest osc-mcp --repo /absolute/path/to/repo
+```
+
+Call `get_handoff`:
+
+```bash
+printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_handoff","arguments":{}}}' \
+  | npx -y -p open-scaffold@latest osc-mcp --repo /absolute/path/to/repo
+```
+
+Both responses should be JSON-RPC `result` envelopes with `structuredContent`.
+
+### Authority boundary
+
+By default MCP is read-only. Starting the server with `--allow-write` only
+enables scaffold-file helpers such as plan, amendment, close, and evidence
+file creation/mutation. It still has no authority to spawn runtimes, launch
+adapters, run shell commands, commit, push, open PRs, merge, publish, release,
+deploy, read secrets, or use credentials.
+
 ## Start the server
 
 From an Open Scaffold repository:
@@ -122,20 +213,22 @@ Expected result: JSON-RPC error code `-32000`.
 
 ## Client configuration examples
 
-Replace `/absolute/path/to/repo` with the Open Scaffold repository you want the client to inspect.
+Replace `/absolute/path/to/repo` with the Open Scaffold repository you want the
+client to inspect. These examples use the same packaged `osc-mcp` command from
+the solo quickstart.
 
-### Claude Desktop
+### Claude Code / Claude Desktop
 
 ```json
 {
   "mcpServers": {
-    "open-scaffold": {
+    "open_scaffold": {
       "command": "npx",
       "args": [
         "-y",
+        "-p",
         "open-scaffold@latest",
-        "mcp",
-        "serve",
+        "osc-mcp",
         "--repo",
         "/absolute/path/to/repo"
       ]
@@ -149,13 +242,13 @@ Replace `/absolute/path/to/repo` with the Open Scaffold repository you want the 
 ```json
 {
   "mcpServers": {
-    "open-scaffold": {
+    "open_scaffold": {
       "command": "npx",
       "args": [
         "-y",
+        "-p",
         "open-scaffold@latest",
-        "mcp",
-        "serve",
+        "osc-mcp",
         "--repo",
         "/absolute/path/to/repo"
       ]
@@ -171,13 +264,13 @@ Replace `/absolute/path/to/repo` with the Open Scaffold repository you want the 
   "experimental": {
     "modelContextProtocolServers": [
       {
-        "name": "open-scaffold",
+        "name": "open_scaffold",
         "command": "npx",
         "args": [
           "-y",
+          "-p",
           "open-scaffold@latest",
-          "mcp",
-          "serve",
+          "osc-mcp",
           "--repo",
           "/absolute/path/to/repo"
         ]
@@ -190,7 +283,7 @@ Replace `/absolute/path/to/repo` with the Open Scaffold repository you want the 
 ### Codex CLI
 
 ```bash
-codex mcp add open_scaffold -- node /absolute/path/to/open-scaffold/dist/cli.js mcp serve --repo /absolute/path/to/repo
+codex mcp add open_scaffold -- npx -y -p open-scaffold@latest osc-mcp --repo /absolute/path/to/repo
 ```
 
 Name the server with underscores (`open_scaffold`, not `open-scaffold`).
@@ -208,9 +301,9 @@ mcp_servers:
     command: npx
     args:
       - -y
+      - -p
       - open-scaffold@latest
-      - mcp
-      - serve
+      - osc-mcp
       - --repo
       - /absolute/path/to/repo
 ```
@@ -219,7 +312,7 @@ mcp_servers:
 
 - MCP exposes local scaffold state; it does not make MCP the source of truth.
 - Git-tracked Open Scaffold files, GitHub issues/PRs, evidence notes, and operator approvals remain the durable record.
-- `--allow-write` only enables scaffold file helpers. It still does not authorize merge, publication, release mutation, deployment, credential changes, or runtime spawning.
+- `--allow-write` only enables scaffold file helpers. It still does not authorize runtime spawning, shell execution, commits, pushes, PRs, merges, publication, release mutation, deployment, secret reads, or credential changes.
 
 ## Readiness posture
 
