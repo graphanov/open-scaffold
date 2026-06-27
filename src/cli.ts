@@ -16,6 +16,7 @@ import { measureEvolutionAnalysisEfficiency, renderEvolutionEfficiencyReport } f
 import { analyzeFeedback, recordFeedback } from './feedback.js';
 import { askInteractiveFirstRun, formatFirstRunResult, runFirstRun } from './first-run.js';
 import { runBenchSuite, runHandoffLab } from './bench.js';
+import { CAPTURE_SETUP_TARGETS, isCaptureSetupTarget, renderCaptureSetupText, runCaptureSetup, type CaptureSetupTarget } from './capture-setup.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
 import { runMcpCommand } from './mcp-server.js';
 import { scanPublicFilesForSecrets } from './redaction.js';
@@ -59,6 +60,7 @@ Handoff (compile the work record into a resume packet):
 Record (extract and inspect ambient work records):
   osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> [--out <path>] [--detect]
   osc capture verify <record> [--json]
+  osc capture setup <claude-code|codex|all> [--write] [--json]
 
 Review and gate (judgment over recorded attempts):
   osc review <loop-dir> [--compact] [--format <terminal|markdown|json>]        front door
@@ -108,6 +110,7 @@ Stable core protocol:
   osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
   osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> [--out <path>] [--detect] [--session-id <id>] [--repo <root>] [--hook-safe]
   osc capture verify <record> [--json]
+  osc capture setup <claude-code|codex|all> [--write] [--dry-run] [--json]
   osc close <plan-slug> [--message <text>]
   osc trace <plan-slug> [--json] [--include-unverified]
   osc verify [--evidence-chain [--plan <slug>] [--json] [--strict] [--online-github]]
@@ -963,6 +966,7 @@ function captureHelp(): string {
   return [
     `Usage: osc capture --from <${CAPTURE_FORMATS.join('|')}> --transcript <path> [--out <path>] [--detect] [--session-id <id>] [--repo <root>] [--json] [--hook-safe]`,
     '       osc capture verify <record> [--json]',
+    `       osc capture setup <${CAPTURE_SETUP_TARGETS.join('|')}> [--write] [--dry-run] [--json] [--claude-settings <path>] [--codex-config <path>]`,
     '',
     'Extract an osc.ambient-work-record.v1 record from a finished agent-session transcript:',
     'assistant turns, token usage, tool-call census, files touched, session span, and a',
@@ -970,12 +974,18 @@ function captureHelp(): string {
     '',
     'Verify an existing ambient record and print a sanitized trust report without raw transcript content.',
     '',
+    'Setup ambient capture hooks without recording private config values:',
+    '  setup claude-code   plan/install .claude/settings.local.json SessionEnd hook',
+    '  setup codex         plan/install ${CODEX_HOME:-$HOME/.codex}/config.toml notify hook',
+    '  setup all           plan/install both runtimes; --write is all-or-nothing',
+    '',
     '  --from <format>     transcript format: claude-code | codex | jsonl-generic',
     '  --transcript <path> path to the session JSONL to read',
     '  --detect            sniff the format from the first parseable lines (exit 2 on ambiguity)',
     '  --out <path>        record output path (default: .osc/state/ambient/<session-id>.json in an .osc repo)',
     '  --hook-safe         never exit non-zero on bad/missing input (for SessionEnd-style hook wrappers)',
-    '  --json              with verify, emit the sanitized report model',
+    '  --json              with verify/setup, emit JSON output',
+    '  --write             install setup changes; default setup mode is dry-run',
     '',
     'capture observes facts; it does not approve work, certify correctness, or spawn a runtime.',
   ].join('\n');
@@ -991,6 +1001,62 @@ function captureVerifyHelp(): string {
     '',
     'Malformed JSON, wrong schema, missing runtime, or malformed observed containers exit 2.',
   ].join('\n');
+}
+
+function validateCaptureSetupOptions(args: string[]): string | null {
+  const valueFlags = new Set(['--claude-settings', '--codex-config']);
+  const booleanFlags = new Set(['--write', '--dry-run', '--json']);
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (!arg.startsWith('--')) return `Unexpected argument for capture setup: ${arg}`;
+    const [flag, inlineValue] = arg.split('=', 2);
+    if (valueFlags.has(flag)) {
+      if (arg.includes('=')) {
+        if (!inlineValue) return `Missing value for ${flag}`;
+      } else {
+        const next = args[i + 1];
+        if (!next || next.startsWith('--')) return `Missing value for ${flag}`;
+        i += 1;
+      }
+      continue;
+    }
+    if (booleanFlags.has(flag) && !arg.includes('=')) continue;
+    return `Unknown option for capture setup: ${flag}`;
+  }
+  if (has(args, '--write') && has(args, '--dry-run')) return 'Use either --write or --dry-run, not both.';
+  return null;
+}
+
+function captureSetupCommand(args: string[]): void {
+  if (isHelpArg(args[0])) { console.log(captureHelp()); return; }
+  const targetRaw = args[0] ?? die(captureHelp(), 2);
+  if (!isCaptureSetupTarget(targetRaw)) {
+    die(`Invalid capture setup target: ${targetRaw}. Expected one of: ${CAPTURE_SETUP_TARGETS.join(', ')}`, 2);
+  }
+  const optionArgs = args.slice(1);
+  const optionError = validateCaptureSetupOptions(optionArgs);
+  if (optionError) die(optionError, 2);
+  const write = has(optionArgs, '--write');
+  const repoRoot = findScaffoldRoot(process.cwd()) ?? process.cwd();
+  const options = {
+    write,
+    repoRoot,
+    claudeSettingsPath: value(optionArgs, '--claude-settings'),
+    codexConfigPath: value(optionArgs, '--codex-config'),
+  };
+  try {
+    const results = runCaptureSetup(targetRaw as CaptureSetupTarget, options);
+    const mode = write ? 'write' : 'dry-run';
+    const blocked = results.some((result) => result.status === 'blocked');
+    if (has(optionArgs, '--json')) {
+      console.log(JSON.stringify({ mode, results }, null, 2));
+    } else {
+      console.log(renderCaptureSetupText(results, mode));
+    }
+    if (blocked) process.exitCode = 2;
+  } catch (error) {
+    die(error instanceof Error ? error.message : String(error), 2);
+  }
 }
 
 function validateCaptureOptions(args: string[]): string | null {
@@ -1025,6 +1091,7 @@ function validateCaptureOptions(args: string[]): string | null {
 function captureCommand(args: string[]): void {
   if (isHelpArg(args[0])) { console.log(captureHelp()); return; }
   if (args[0] === 'verify') { captureVerifyCommand(args.slice(1)); return; }
+  if (args[0] === 'setup') { captureSetupCommand(args.slice(1)); return; }
   const hookSafe = has(args, '--hook-safe');
   const fail = (message: string): void => {
     if (hookSafe) return; // hook wrapper path: record nothing, never break the session

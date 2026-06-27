@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -206,6 +206,44 @@ describe('npm package payload', () => {
         cwd: packageDir,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
+
+      const codexSetupOutput = execFileSync('node', [
+        join(packageDir, 'dist/cli.js'),
+        'capture',
+        'setup',
+        'codex',
+        '--dry-run',
+        '--json',
+        '--codex-config',
+        join(target, 'codex-config.toml'),
+      ], {
+        cwd: packageDir,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      const codexSetup = JSON.parse(codexSetupOutput);
+      const packagedCodexHook = realpathSync.native(join(packageDir, 'examples/hooks/codex-notify.mjs'));
+      expect(codexSetup.results[0].hookPath).toBe(packagedCodexHook);
+      expect(codexSetup.results[0].stanza).toContain(packagedCodexHook);
+
+      const claudeSetupOutput = execFileSync('node', [
+        join(packageDir, 'dist/cli.js'),
+        'capture',
+        'setup',
+        'claude-code',
+        '--dry-run',
+        '--json',
+        '--claude-settings',
+        join(target, '.claude/settings.local.json'),
+      ], {
+        cwd: packageDir,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      const claudeSetup = JSON.parse(claudeSetupOutput);
+      const packagedClaudeHook = realpathSync.native(join(packageDir, 'examples/hooks/ambient-hook.mjs'));
+      expect(claudeSetup.results[0].hookPath).toBe(packagedClaudeHook);
+      expect(claudeSetup.results[0].command).toContain(packagedClaudeHook);
 
       const ignore = readFileSync(join(target, '.osc/.gitignore'), 'utf8');
       expect(ignore).toContain('tasks.db*');
