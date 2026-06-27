@@ -127,6 +127,22 @@ describe('capture setup planning', () => {
     expect(read(secret)).toBe('{"private":"SENTINEL_SECRET"}');
   });
 
+  it('rejects a symlinked Claude Code settings directory before writing outside the repo', () => {
+    const dir = tempDir();
+    const external = tempDir();
+    const settingsDir = join(dir, '.claude');
+    const settings = join(settingsDir, 'settings.local.json');
+    symlinkSync(external, settingsDir, 'dir');
+
+    const [dryRun] = runCaptureSetup('claude-code', { claudeSettingsPath: settings, claudeHookPath: claudeHook });
+    const [write] = runCaptureSetup('claude-code', { write: true, claudeSettingsPath: settings, claudeHookPath: claudeHook });
+
+    expect(dryRun.status).toBe('blocked');
+    expect(write.status).toBe('blocked');
+    expect(write.message).toContain('parent directory must not be a symlink');
+    expect(existsSync(join(external, 'settings.local.json'))).toBe(false);
+  });
+
   it('plans a Codex notify install without writing by default', () => {
     const dir = tempDir();
     const config = join(dir, 'config.toml');
@@ -165,6 +181,22 @@ describe('capture setup planning', () => {
     expect(result.changed).toBe(true);
     expect(read(config).startsWith('notify = [')).toBe(true);
     expect(read(config)).toContain('[profiles.foo]\nnotify = ["custom"]');
+  });
+
+  it('inserts Codex notify before the first real table while ignoring multiline string content', () => {
+    const dir = tempDir();
+    const config = join(dir, 'config.toml');
+    writeFileSync(config, 'developer_instructions = """\nnotify = ["not-top-level"]\n[profiles.fake]\n"""\n[profiles.real]\nmodel = "x"\n');
+
+    const [result] = runCaptureSetup('codex', { write: true, codexConfigPath: config, codexHookPath: codexHook });
+    const after = read(config);
+    const generatedNotify = after.indexOf('notify = [', after.indexOf('"""\n', after.indexOf('[profiles.fake]')));
+
+    expect(result.status).toBe('installed');
+    expect(result.changed).toBe(true);
+    expect(after).toContain('developer_instructions = """\nnotify = ["not-top-level"]\n[profiles.fake]\n"""\n');
+    expect(after.indexOf('notify = ["not-top-level"]')).toBeLessThan(generatedNotify);
+    expect(generatedNotify).toBeLessThan(after.indexOf('[profiles.real]'));
   });
 
   it('blocks different single-line and multiline top-level Codex notify values', () => {

@@ -1,6 +1,6 @@
 import { constants, closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, writeSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, parse, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const CAPTURE_SETUP_TARGETS = ['claude-code', 'codex', 'all'] as const;
@@ -186,6 +186,8 @@ function preflightConfig(configPath: string, hookPath: string, label: string): P
   }
   const symlinkMessage = finalSymlinkMessage(configPath, `${label} config`);
   if (symlinkMessage) return { status: 'blocked', changed: false, message: symlinkMessage };
+  const parentSymlinkMessage = parentPathMessage(configPath, `${label} config`);
+  if (parentSymlinkMessage) return { status: 'blocked', changed: false, message: parentSymlinkMessage };
   return null;
 }
 
@@ -221,35 +223,103 @@ function mergeClaudeSettings(settings: JsonObject, command: string): { settings?
 }
 
 function mergeCodexConfig(content: string, stanza: string): { content?: string; changed?: boolean; blocked?: string } {
-  const firstTable = firstTableStart(content);
-  const preamble = firstTable === -1 ? content : content.slice(0, firstTable);
-  const notifyLine = findTopLevelNotifyLine(preamble);
+  const preamble = tomlPreamble(content);
+  const notifyLine = findTopLevelNotifyLine(preamble.lines);
   if (notifyLine) {
     if (notifyLine.trim() === stanza) return { content, changed: false };
     return { blocked: 'Codex config already has a different top-level notify setting; not rewriting it.' };
   }
-  if (firstTable === -1) {
+  if (preamble.firstTable === -1) {
     const prefix = content.length === 0 ? '' : content.endsWith('\n') ? content : `${content}\n`;
     return { content: `${prefix}${stanza}\n`, changed: true };
   }
-  const before = content.slice(0, firstTable);
-  const after = content.slice(firstTable);
+  const before = content.slice(0, preamble.firstTable);
+  const after = content.slice(preamble.firstTable);
   const separator = before.length === 0 || before.endsWith('\n') ? '' : '\n';
   return { content: `${before}${separator}${stanza}\n${after}`, changed: true };
 }
 
-function firstTableStart(content: string): number {
-  let offset = 0;
-  for (const line of content.split(/(?<=\n)/)) {
-    const body = line.replace(/\r?\n$/, '');
-    if (/^\s*\[\[?[A-Za-z0-9_."'-][^\]]*\]\]?\s*(?:#.*)?$/.test(body)) return offset;
-    offset += line.length;
-  }
-  return -1;
+interface TomlPreamble {
+  firstTable: number;
+  lines: string[];
 }
 
-function findTopLevelNotifyLine(preamble: string): string | null {
-  for (const line of preamble.split(/\r?\n/)) {
+type TomlStringState = 'none' | 'multiline-basic' | 'multiline-literal';
+
+function tomlPreamble(content: string): TomlPreamble {
+  let offset = 0;
+  let stringState: TomlStringState = 'none';
+  const lines: string[] = [];
+  for (const line of content.split(/(?<=\n)/)) {
+    const body = line.replace(/\r?\n$/, '');
+    if (stringState === 'none' && isTomlTableHeader(body)) return { firstTable: offset, lines };
+    if (stringState === 'none') lines.push(body);
+    stringState = scanTomlStringState(body, stringState);
+    offset += line.length;
+  }
+  return { firstTable: -1, lines };
+}
+
+function isTomlTableHeader(line: string): boolean {
+  return /^\s*\[\[?[A-Za-z0-9_."'-][^\]]*\]\]?\s*(?:#.*)?$/.test(line);
+}
+
+function scanTomlStringState(line: string, initialState: TomlStringState): TomlStringState {
+  let state = initialState;
+  let i = 0;
+  while (i < line.length) {
+    if (state !== 'none') {
+      const marker = state === 'multiline-basic' ? '"""' : "'''";
+      const end = line.indexOf(marker, i);
+      if (end === -1) return state;
+      state = 'none';
+      i = end + marker.length;
+      continue;
+    }
+    if (line[i] === '#') return state;
+    if (line.startsWith('"""', i)) {
+      state = 'multiline-basic';
+      i += 3;
+      continue;
+    }
+    if (line.startsWith("'''", i)) {
+      state = 'multiline-literal';
+      i += 3;
+      continue;
+    }
+    if (line[i] === '"') {
+      i = skipBasicString(line, i + 1);
+      continue;
+    }
+    if (line[i] === "'") {
+      const end = line.indexOf("'", i + 1);
+      i = end === -1 ? line.length : end + 1;
+      continue;
+    }
+    i += 1;
+  }
+  return state;
+}
+
+function skipBasicString(line: string, start: number): number {
+  let escaped = false;
+  for (let i = start; i < line.length; i += 1) {
+    const char = line[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (char === '"') return i + 1;
+  }
+  return line.length;
+}
+
+function findTopLevelNotifyLine(lines: string[]): string | null {
+  for (const line of lines) {
     if (/^\s*(?:#|$)/.test(line)) continue;
     if (/^\s*notify\s*=/.test(line)) return line.trim();
   }
@@ -266,8 +336,32 @@ function finalSymlinkMessage(path: string, label: string): string | null {
   return null;
 }
 
+function parentPathMessage(path: string, label: string): string | null {
+  let current = dirname(path);
+  const { root } = parse(current);
+  while (current !== root) {
+    try {
+      const stat = lstatSync(current);
+      if (stat.isSymbolicLink()) return `${label} parent directory must not be a symlink: ${current}`;
+      if (!stat.isDirectory()) return `${label} parent path is not a directory: ${current}`;
+      return null;
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'ENOENT') {
+        current = dirname(current);
+        continue;
+      }
+      return `Could not inspect ${label} parent path: ${errorMessage(error)}`;
+    }
+  }
+  return null;
+}
+
 function writeUtf8NoFollow(path: string, content: string, label: string): void {
+  const parentMessage = parentPathMessage(path, label);
+  if (parentMessage) throw new Error(parentMessage);
   mkdirSync(dirname(path), { recursive: true });
+  const postMkdirParentMessage = parentPathMessage(path, label);
+  if (postMkdirParentMessage) throw new Error(postMkdirParentMessage);
   const symlinkMessage = finalSymlinkMessage(path, label);
   if (symlinkMessage) throw new Error(symlinkMessage);
   const flags = constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | (constants.O_NOFOLLOW ?? 0);
