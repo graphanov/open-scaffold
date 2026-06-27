@@ -402,7 +402,7 @@ function skipBasicString(line: string, start: number): number {
 function findTopLevelNotifyLine(lines: string[]): string | null {
   for (const line of lines) {
     if (/^\s*(?:#|$)/.test(line)) continue;
-    if (/^\s*(?:notify|"notify"|'notify')\s*=/.test(line)) return line.trim();
+    if (/^\s*(?:notify|"notify"|'notify')\s*(?:=|\.)/.test(line)) return line.trim();
   }
   return null;
 }

@@ -322,6 +322,25 @@ describe('capture setup planning', () => {
     expect(read(literalConfig)).toBe(literal);
   });
 
+  it('blocks top-level dotted Codex notify keys', () => {
+    const bareDir = tempDir();
+    const bareConfig = join(bareDir, 'config.toml');
+    const bare = 'notify.command = "custom"\n[profiles.foo]\nmodel = "x"\n';
+    const quotedDir = tempDir();
+    const quotedConfig = join(quotedDir, 'config.toml');
+    const quoted = '"notify".command = "custom"\n[profiles.foo]\nmodel = "x"\n';
+    writeFileSync(bareConfig, bare);
+    writeFileSync(quotedConfig, quoted);
+
+    const [bareResult] = runCaptureSetup('codex', { write: true, codexConfigPath: bareConfig, codexHookPath: codexHook });
+    const [quotedResult] = runCaptureSetup('codex', { write: true, codexConfigPath: quotedConfig, codexHookPath: codexHook });
+
+    expect(bareResult.status).toBe('blocked');
+    expect(quotedResult.status).toBe('blocked');
+    expect(read(bareConfig)).toBe(bare);
+    expect(read(quotedConfig)).toBe(quoted);
+  });
+
   it('blocks top-level Codex notify tables', () => {
     const tableDir = tempDir();
     const tableConfig = join(tableDir, 'config.toml');
