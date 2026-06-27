@@ -441,7 +441,10 @@ function gitignorePatternMatchesClaudeSettings(pattern: string): boolean {
   const normalized = pattern.replace(/^\//, '');
   if (normalized === '.claude') return true;
   if (normalized.endsWith('/')) return CLAUDE_SETTINGS_GITIGNORE_ENTRY.startsWith(normalized);
-  return gitignorePatternRegex(normalized).test(CLAUDE_SETTINGS_GITIGNORE_ENTRY);
+  const target = normalized.includes('/')
+    ? CLAUDE_SETTINGS_GITIGNORE_ENTRY
+    : CLAUDE_SETTINGS_GITIGNORE_ENTRY.split('/').at(-1) ?? CLAUDE_SETTINGS_GITIGNORE_ENTRY;
+  return gitignorePatternRegex(normalized).test(target);
 }
 
 function gitignorePatternRegex(pattern: string): RegExp {
