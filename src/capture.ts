@@ -537,7 +537,7 @@ function optionalNumberOrNullField(record: Record<string, unknown>, key: string,
     warnings.push(`${path}.${key} unavailable.`);
     return null;
   }
-  if (typeof value !== 'number' || !Number.isFinite(value)) failAmbientRecord(`${path}.${key} must be number or null`);
+  if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value) || value < 0) failAmbientRecord(`${path}.${key} must be a non-negative integer or null`);
   return value;
 }
 
@@ -608,9 +608,9 @@ export function buildAmbientTrustReport(value: unknown, label = 'ambient record'
   const runtimeTokenTotal = optionalNumberOrNullField(runtime, 'tokenTotal', 'runtime', warnings);
   const observedRaw = record.observed;
   const observedPresent = Object.prototype.hasOwnProperty.call(record, 'observed');
-  if (observedPresent && !asRecord(observedRaw)) failAmbientRecord('observed must be an object when present');
-  if (source === 'transcript-extraction' && !asRecord(observedRaw)) failAmbientRecord('source transcript-extraction requires observed object');
   const observed = asRecord(observedRaw);
+  if (observedPresent && !observed) failAmbientRecord('observed must be an object when present');
+  if (source === 'transcript-extraction' && !observed) failAmbientRecord('source transcript-extraction requires observed object'); if (source === 'transcript-extraction' && observed && !['assistant_turns', 'user_events', 'usage', 'tool_calls', 'files_touched', 'notes'].every((key) => Object.prototype.hasOwnProperty.call(observed, key))) failAmbientRecord('source transcript-extraction requires complete observed transcript facts');
 
   const observedUsage = observed ? validateUsage(observed.usage, warnings) : validateUsage(undefined, warnings);
   const tokenAvailability = Object.values(observedUsage).some((item) => typeof item === 'number') ? 'available' : 'unavailable';

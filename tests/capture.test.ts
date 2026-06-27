@@ -251,13 +251,17 @@ describe('ambient record verifier trust report', () => {
   });
 
   it('fails closed for malformed JSON, roots, schema, runtime, source/observed mismatch, and malformed containers', () => {
-    const controlSuffixedSchema = {
-      schema: 'osc.ambient-work-record.v1\u001b[31m',
+    const validBase = {
+      schema: 'osc.ambient-work-record.v1',
       runId: 'r',
       source: 'transcript-extraction',
       state: 'observed',
       runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null },
-      observed: { usage: {}, tool_calls: {}, files_touched: [], notes: [] },
+      observed: { assistant_turns: 1, user_events: 1, usage: {}, tool_calls: {}, files_touched: [], notes: [] },
+    };
+    const controlSuffixedSchema = {
+      ...validBase,
+      schema: 'osc.ambient-work-record.v1\u001b[31m',
     };
 
     expect(() => verifyAmbientRecordText('{', 'bad.json')).toThrow(/Malformed ambient record JSON/);
@@ -268,10 +272,13 @@ describe('ambient record verifier trust report', () => {
     expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 1, source: 'transcript-extraction', state: 'observed', runtime: {} })).toThrow(/runId/);
     expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 'r', source: 'transcript-extraction', state: 'observed', runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null } })).toThrow(/requires observed object/);
     expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 'r', source: 'transcript-extraction', state: 'observed', runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null }, observed: [] })).toThrow(/observed must be an object/);
-    expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 'r', source: 'transcript-extraction', state: 'observed', runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null }, observed: { usage: [], tool_calls: {}, files_touched: [], notes: [] } })).toThrow(/observed.usage/);
-    expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 'r', source: 'transcript-extraction', state: 'observed', runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null }, observed: { usage: {}, tool_calls: { shell: '1' }, files_touched: [], notes: [] } })).toThrow(/tool_calls/);
-    expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 'r', source: 'transcript-extraction', state: 'observed', runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null }, observed: { usage: {}, tool_calls: {}, files_touched: [1], notes: [] } })).toThrow(/files_touched/);
-    expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 'r', source: 'transcript-extraction', state: 'observed', runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null }, observed: { usage: { input_tokens: '1' }, tool_calls: {}, files_touched: [], notes: [] } })).toThrow(/input_tokens/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: {} })).toThrow(/complete observed transcript facts/);
+    expect(() => buildAmbientTrustReport({ ...validBase, runtime: { ...validBase.runtime, tokenTotal: -1 } })).toThrow(/non-negative integer/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: { ...validBase.observed, usage: [] } })).toThrow(/observed.usage/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: { ...validBase.observed, usage: { input_tokens: 1.5 } } })).toThrow(/non-negative integer/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: { ...validBase.observed, tool_calls: { shell: '1' } } })).toThrow(/tool_calls/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: { ...validBase.observed, files_touched: [1] } })).toThrow(/files_touched/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: { ...validBase.observed, usage: { input_tokens: '1' } } })).toThrow(/input_tokens/);
   });
 
   it('sanitizes hostile record strings, path labels, and terminal controls in reports and errors', () => {
