@@ -80,8 +80,8 @@ export function runCaptureSetup(target: CaptureSetupTarget, options: CaptureSetu
       for (let i = 0; i < writes.length; i += 1) {
         const write = writes[i];
         const snapshot = snapshots[i];
-        writeUtf8NoFollow(write.path, write.content, snapshot.label);
         written.push(snapshot);
+        writeUtf8NoFollow(write.path, write.content, snapshot.label);
       }
     } catch (error) {
       rollbackWrites(written, error);
