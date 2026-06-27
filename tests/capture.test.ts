@@ -251,9 +251,19 @@ describe('ambient record verifier trust report', () => {
   });
 
   it('fails closed for malformed JSON, roots, schema, runtime, source/observed mismatch, and malformed containers', () => {
+    const controlSuffixedSchema = {
+      schema: 'osc.ambient-work-record.v1\u001b[31m',
+      runId: 'r',
+      source: 'transcript-extraction',
+      state: 'observed',
+      runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null },
+      observed: { usage: {}, tool_calls: {}, files_touched: [], notes: [] },
+    };
+
     expect(() => verifyAmbientRecordText('{', 'bad.json')).toThrow(/Malformed ambient record JSON/);
     expect(() => buildAmbientTrustReport([], 'array.json')).toThrow(/record must be an object/);
     expect(() => reportFixture('malformed-schema.json')).toThrow(/record.schema/);
+    expect(() => buildAmbientTrustReport(controlSuffixedSchema)).toThrow(/record.schema/);
     expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 'r', source: 'transcript-extraction', state: 'observed', observed: {} })).toThrow(/runtime/);
     expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 1, source: 'transcript-extraction', state: 'observed', runtime: {} })).toThrow(/runId/);
     expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 'r', source: 'transcript-extraction', state: 'observed', runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null } })).toThrow(/requires observed object/);

@@ -500,7 +500,7 @@ function requireRecord(value: unknown, path: string): Record<string, unknown> {
 function requireStringField(record: Record<string, unknown>, key: string, path: string): string {
   const value = record[key];
   if (typeof value !== 'string' || value.length === 0) failAmbientRecord(`${path}.${key} must be a non-empty string`);
-  return sanitizeReportString(value);
+  return value;
 }
 
 function optionalBooleanField(record: Record<string, unknown>, key: string, path: string, warnings: string[]): boolean | null {
@@ -592,8 +592,8 @@ function sourceBoundary(source: string, observedAvailable: boolean, warnings: st
   if (source === 'transcript-extraction') return 'transcript-observed facts are available.';
   if (source === 'ambient-postflight' && !observedAvailable) return 'postflight runtime receipt only; transcript-observed facts are unavailable.';
   if (source === 'ambient-postflight') return 'postflight runtime receipt with transcript-observed facts present.';
-  warnings.push(`source is unrecognized: ${source}.`);
-  return `unrecognized source: ${source}; source-specific fidelity is not assumed.`;
+  const displaySource = sanitizeReportString(source); warnings.push(`source is unrecognized: ${displaySource}.`);
+  return `unrecognized source: ${displaySource}; source-specific fidelity is not assumed.`;
 }
 
 export function buildAmbientTrustReport(value: unknown, label = 'ambient record'): AmbientTrustReport {
@@ -620,14 +620,14 @@ export function buildAmbientTrustReport(value: unknown, label = 'ambient record'
   const endedAt = observed ? optionalStringOrNullField(observed, 'ended_at', 'observed', warnings) : null;
   const report: AmbientTrustReport = {
     label: sanitizeReportString(label),
-    schema,
-    source,
-    runId,
-    state,
+    schema: sanitizeReportString(schema),
+    source: sanitizeReportString(source),
+    runId: sanitizeReportString(runId),
+    state: sanitizeReportString(state),
     runtime: {
-      adapter: requireStringField(runtime, 'adapter', 'runtime'),
+      adapter: sanitizeReportString(requireStringField(runtime, 'adapter', 'runtime')),
       spawned: optionalBooleanField(runtime, 'spawned', 'runtime', warnings),
-      status: requireStringField(runtime, 'status', 'runtime'),
+      status: sanitizeReportString(requireStringField(runtime, 'status', 'runtime')),
       failureCode: optionalStringOrNullField(runtime, 'failureCode', 'runtime', warnings),
       markerState: optionalStringOrNullField(runtime, 'markerState', 'runtime', warnings),
       tokenTotal: runtimeTokenTotal,
