@@ -1,0 +1,47 @@
+{
+  "schema": "osc.ambient-work-record.v1",
+  "runId": "codex-session-1",
+  "createdAt": "2026-06-13T11:00:20.000Z",
+  "source": "transcript-extraction",
+  "intentDigest": "digest",
+  "command": "codex-session",
+  "state": "observed",
+  "runtime": {
+    "adapter": "codex-rollout",
+    "spawned": false,
+    "status": "observed",
+    "failureCode": null,
+    "markerState": null,
+    "tokenTotal": 5750
+  },
+  "observed": {
+    "assistant_turns": 1,
+    "user_events": 1,
+    "started_at": "2026-06-13T11:00:00.000Z",
+    "ended_at": "2026-06-13T11:00:20.000Z",
+    "usage": {
+      "input_tokens": 5200,
+      "output_tokens": 340,
+      "cache_creation_input_tokens": null,
+      "cache_read_input_tokens": 1500,
+      "total_tokens": 5750
+    },
+    "tool_calls": {
+      "shell": 1,
+      "mcp:open_scaffold.get_handoff": 1
+    },
+    "files_touched": [
+      "src/helper.ts"
+    ],
+    "final_message_digest": "def456",
+    "final_message_claim_words": [
+      "done"
+    ],
+    "notes": [
+      "codex cache-creation split unavailable."
+    ]
+  },
+  "boundary": {
+    "note": "Extracted facts only."
+  }
+}

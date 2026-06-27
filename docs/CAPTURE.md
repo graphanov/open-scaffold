@@ -15,6 +15,7 @@ a new runtime is a new parser, never a new schema.
 ```
 osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> \
   [--out <path>] [--detect] [--session-id <id>] [--repo <root>] [--json] [--hook-safe]
+osc capture verify <record> [--json]
 ```
 
 - `--from <format>` — the transcript format (below). Omit it and pass `--detect` to sniff.
@@ -28,9 +29,41 @@ osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> \
   `.osc` root, then the working directory).
 - `--hook-safe` — never exit non-zero. For SessionEnd-style hook wrappers: bad or missing
   input records nothing and exits 0 rather than breaking the session.
+- `osc capture verify <record>` — validates an existing ambient record and prints a sanitized
+  trust report. `--json` emits the report model, not the original record.
 
 Exit codes: `0` on success; `2` on direct CLI misuse (unknown `--from`, missing
-`--transcript`, neither `--from` nor `--detect`); under `--hook-safe`, always `0`.
+`--transcript`, neither `--from` nor `--detect`). For `capture verify`, malformed JSON,
+wrong schema/version, missing runtime, wrong root identity fields, or malformed observed
+containers exit `2`. Under `--hook-safe`, capture creation always exits `0`.
+
+## Trust report
+
+`osc capture verify <record>` turns record JSON into a review-safe report. It validates:
+
+- root JSON is an object with `schema: "osc.ambient-work-record.v1"`;
+- `runId`, `source`, and `state` are strings;
+- `runtime` is an object with reportable adapter/status/token fields;
+- `observed`, when present, has object `usage` and `tool_calls`, string-list
+  `files_touched` and `notes`, and numeric/null token splits.
+
+The report summarizes source, run/session id, state, runtime adapter/status/failure/marker,
+runtime token availability, transcript-observed availability, assistant turns, user events,
+tool-call census, files touched, usage splits, session span, and missing-fidelity notes.
+Unavailable fields are reported as warnings or `unavailable`; values are never invented.
+
+The verifier never copies `boundary.note` or other record-authored authority prose. It
+generates its own authority boundary:
+
+- `transcript-extraction` with `observed`: transcript-observed facts are available.
+- `ambient-postflight` without `observed`: postflight runtime receipt only; transcript
+  facts are unavailable.
+- unknown source: source is unrecognized, while the no-approval boundary still applies.
+
+Human and JSON modes emit only the sanitized report model. Record-derived strings, path
+labels, parse/read errors, tool names, file labels, notes, and warnings are redacted,
+terminal-control-neutralized, and length-bounded before display; raw transcript content,
+secrets, and private local paths are not exposed.
 
 ## Formats
 

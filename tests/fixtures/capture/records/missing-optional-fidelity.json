@@ -1,0 +1,36 @@
+{
+  "schema": "osc.ambient-work-record.v1",
+  "runId": "missing-fidelity",
+  "createdAt": "2026-06-13T13:00:00.000Z",
+  "source": "transcript-extraction",
+  "intentDigest": "digest",
+  "command": "jsonl-generic",
+  "state": "observed",
+  "runtime": {
+    "adapter": "jsonl-generic",
+    "spawned": false,
+    "status": "observed",
+    "failureCode": null,
+    "markerState": null,
+    "tokenTotal": null
+  },
+  "observed": {
+    "assistant_turns": 1,
+    "user_events": 1,
+    "started_at": null,
+    "ended_at": null,
+    "usage": {
+      "input_tokens": null,
+      "output_tokens": null,
+      "cache_creation_input_tokens": null,
+      "cache_read_input_tokens": null
+    },
+    "tool_calls": {},
+    "files_touched": [],
+    "final_message_digest": null,
+    "final_message_claim_words": [],
+    "notes": [
+      "generic extraction: tokens, tool census, and files are unavailable."
+    ]
+  }
+}
