@@ -297,15 +297,21 @@ interface TomlPreamble {
 
 type TomlStringState = 'none' | 'multiline-basic' | 'multiline-literal';
 
+interface TomlLineState {
+  stringState: TomlStringState;
+  arrayDepth: number;
+}
+
 function tomlPreamble(content: string): TomlPreamble {
   let offset = 0;
   let stringState: TomlStringState = 'none';
+  let arrayDepth = 0;
   const lines: string[] = [];
   for (const line of content.split(/(?<=\n)/)) {
     const body = line.replace(/\r?\n$/, '');
-    if (stringState === 'none' && isTomlTableHeader(body)) return { firstTable: offset, lines };
-    if (stringState === 'none') lines.push(body);
-    stringState = scanTomlStringState(body, stringState);
+    if (stringState === 'none' && arrayDepth === 0 && isTomlTableHeader(body)) return { firstTable: offset, lines };
+    if (stringState === 'none' && arrayDepth === 0) lines.push(body);
+    ({ stringState, arrayDepth } = scanTomlLineState(body, stringState, arrayDepth));
     offset += line.length;
   }
   return { firstTable: -1, lines };
@@ -315,19 +321,20 @@ function isTomlTableHeader(line: string): boolean {
   return /^\s*(?:\[\s*[A-Za-z0-9_."'-][^\]]*?\s*\]|\[\[\s*[A-Za-z0-9_."'-][^\]]*?\s*\]\])\s*(?:#.*)?$/.test(line);
 }
 
-function scanTomlStringState(line: string, initialState: TomlStringState): TomlStringState {
-  let state = initialState;
+function scanTomlLineState(line: string, initialStringState: TomlStringState, initialArrayDepth: number): TomlLineState {
+  let state = initialStringState;
+  let arrayDepth = initialArrayDepth;
   let i = 0;
   while (i < line.length) {
     if (state !== 'none') {
       const marker = state === 'multiline-basic' ? '"""' : "'''";
       const end = line.indexOf(marker, i);
-      if (end === -1) return state;
+      if (end === -1) return { stringState: state, arrayDepth };
       state = 'none';
       i = end + marker.length;
       continue;
     }
-    if (line[i] === '#') return state;
+    if (line[i] === '#') return { stringState: state, arrayDepth };
     if (line.startsWith('"""', i)) {
       state = 'multiline-basic';
       i += 3;
@@ -347,9 +354,19 @@ function scanTomlStringState(line: string, initialState: TomlStringState): TomlS
       i = end === -1 ? line.length : end + 1;
       continue;
     }
+    if (line[i] === '[') {
+      arrayDepth += 1;
+      i += 1;
+      continue;
+    }
+    if (line[i] === ']') {
+      arrayDepth = Math.max(0, arrayDepth - 1);
+      i += 1;
+      continue;
+    }
     i += 1;
   }
-  return state;
+  return { stringState: state, arrayDepth };
 }
 
 function skipBasicString(line: string, start: number): number {

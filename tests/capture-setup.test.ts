@@ -244,6 +244,20 @@ describe('capture setup planning', () => {
     expect(generatedNotify).toBeLessThan(after.indexOf('[profiles.real]'));
   });
 
+  it('inserts Codex notify after top-level arrays without treating array rows as tables', () => {
+    const dir = tempDir();
+    const config = join(dir, 'config.toml');
+    writeFileSync(config, 'sandbox = [\n  ["read", "write"]\n]\n[profiles.real]\nmodel = "x"\n');
+
+    const [result] = runCaptureSetup('codex', { write: true, codexConfigPath: config, codexHookPath: codexHook });
+    const after = read(config);
+
+    expect(result.status).toBe('installed');
+    expect(result.changed).toBe(true);
+    expect(after).toContain('sandbox = [\n  ["read", "write"]\n]\nnotify = [');
+    expect(after.indexOf('notify = [')).toBeLessThan(after.indexOf('[profiles.real]'));
+  });
+
   it('blocks different single-line and multiline top-level Codex notify values', () => {
     const singleDir = tempDir();
     const singleConfig = join(singleDir, 'config.toml');
