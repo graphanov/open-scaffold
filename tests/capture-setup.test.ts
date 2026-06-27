@@ -54,6 +54,22 @@ describe('capture setup planning', () => {
     expect(parsed.hooks.SessionEnd[0].hooks[0].command).toContain(claudeHook);
   });
 
+  it('writes default Claude Code settings with a gitignore guard', () => {
+    const dir = tempDir();
+    const settings = join(dir, '.claude/settings.local.json');
+    const gitignore = join(dir, '.gitignore');
+
+    const [first] = runCaptureSetup('claude-code', { write: true, repoRoot: dir, claudeHookPath: claudeHook });
+    const [second] = runCaptureSetup('claude-code', { write: true, repoRoot: dir, claudeHookPath: claudeHook });
+
+    expect(first.status).toBe('installed');
+    expect(first.changed).toBe(true);
+    expect(second.status).toBe('installed');
+    expect(second.changed).toBe(false);
+    expect(read(settings)).toContain('ambient-hook.mjs');
+    expect(read(gitignore)).toBe('.claude/settings.local.json\n');
+  });
+
   it('blocks malformed Claude Code settings and preserves the file', () => {
     const dir = tempDir();
     const settings = join(dir, '.claude/settings.local.json');
@@ -229,6 +245,25 @@ describe('capture setup planning', () => {
     expect(multi.status).toBe('blocked');
     expect(read(singleConfig)).toBe('notify = ["custom"]\n[profiles.foo]\nmodel = "x"\n');
     expect(read(multiConfig)).toBe('notify = [\n  "custom"\n]\n[profiles.foo]\nmodel = "x"\n');
+  });
+
+  it('blocks quoted top-level Codex notify values', () => {
+    const basicDir = tempDir();
+    const basicConfig = join(basicDir, 'config.toml');
+    const basic = '"notify" = ["custom"]\n[profiles.foo]\nmodel = "x"\n';
+    const literalDir = tempDir();
+    const literalConfig = join(literalDir, 'config.toml');
+    const literal = "'notify' = [\"custom\"]\n[profiles.foo]\nmodel = \"x\"\n";
+    writeFileSync(basicConfig, basic);
+    writeFileSync(literalConfig, literal);
+
+    const [basicResult] = runCaptureSetup('codex', { write: true, codexConfigPath: basicConfig, codexHookPath: codexHook });
+    const [literalResult] = runCaptureSetup('codex', { write: true, codexConfigPath: literalConfig, codexHookPath: codexHook });
+
+    expect(basicResult.status).toBe('blocked');
+    expect(literalResult.status).toBe('blocked');
+    expect(read(basicConfig)).toBe(basic);
+    expect(read(literalConfig)).toBe(literal);
   });
 
   it('rejects a Codex config symlink before reading or writing it', () => {

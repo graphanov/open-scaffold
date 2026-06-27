@@ -33,6 +33,7 @@ export interface CaptureSetupResult {
 
 interface CaptureSetupPlan extends CaptureSetupResult {
   content?: string;
+  extraWrites?: PlannedWrite[];
 }
 
 interface WriteSnapshot {
@@ -40,6 +41,12 @@ interface WriteSnapshot {
   label: string;
   existed: boolean;
   content?: string;
+}
+
+interface PlannedWrite {
+  path: string;
+  content: string;
+  label: string;
 }
 
 type JsonObject = Record<string, unknown>;
@@ -64,14 +71,14 @@ export function runCaptureSetup(target: CaptureSetupTarget, options: CaptureSetu
     });
   }
   if (options.write) {
-    const changedPlans = plans.filter((plan) => plan.changed && plan.content !== undefined);
-    const snapshots = changedPlans.map((plan) => snapshotConfig(plan.configPath, `${plan.runtime} config`));
+    const writes = plans.flatMap(plannedWrites);
+    const snapshots = writes.map((write) => snapshotConfig(write.path, write.label));
     const written: WriteSnapshot[] = [];
     try {
-      for (let i = 0; i < changedPlans.length; i += 1) {
-        const plan = changedPlans[i];
+      for (let i = 0; i < writes.length; i += 1) {
+        const write = writes[i];
         const snapshot = snapshots[i];
-        writeUtf8NoFollow(plan.configPath, plan.content ?? '', snapshot.label);
+        writeUtf8NoFollow(write.path, write.content, snapshot.label);
         written.push(snapshot);
       }
     } catch (error) {
@@ -103,8 +110,17 @@ export function renderCaptureSetupText(results: CaptureSetupResult[], mode: 'dry
 }
 
 function publicResult(plan: CaptureSetupPlan): CaptureSetupResult {
-  const { content: _content, ...result } = plan;
+  const { content: _content, extraWrites: _extraWrites, ...result } = plan;
   return result;
+}
+
+function plannedWrites(plan: CaptureSetupPlan): PlannedWrite[] {
+  const writes: PlannedWrite[] = [];
+  writes.push(...(plan.extraWrites ?? []));
+  if (plan.changed && plan.content !== undefined) {
+    writes.push({ path: plan.configPath, content: plan.content, label: `${plan.runtime} config` });
+  }
+  return writes;
 }
 
 function expandTarget(target: CaptureSetupTarget): CaptureSetupRuntime[] {
@@ -117,12 +133,15 @@ function planRuntime(runtime: CaptureSetupRuntime, options: CaptureSetupOptions)
 
 function planClaude(options: CaptureSetupOptions): CaptureSetupPlan {
   const cwd = resolve(options.cwd ?? process.cwd());
-  const configPath = resolvePath(options.claudeSettingsPath ?? join(options.repoRoot ?? cwd, '.claude', 'settings.local.json'), cwd);
+  const repoRoot = resolvePath(options.repoRoot ?? cwd, cwd);
+  const configPath = resolvePath(options.claudeSettingsPath ?? join(repoRoot, '.claude', 'settings.local.json'), cwd);
   const hookPath = resolvePath(options.claudeHookPath ?? shippedHookPath('ambient-hook.mjs'), cwd);
   const command = `${shellQuote(options.nodePath ?? process.execPath)} ${shellQuote(hookPath)}`;
   const base = basePlan('claude-code', configPath, hookPath, { command });
   const preflight = preflightConfig(configPath, hookPath, 'Claude Code');
   if (preflight) return { ...base, ...preflight };
+  const gitignorePlan = planClaudeGitignore(configPath, repoRoot);
+  if (gitignorePlan.blocked) return blocked(base, gitignorePlan.blocked);
   let settings: JsonObject = {};
   if (existsSync(configPath)) {
     try {
@@ -135,13 +154,27 @@ function planClaude(options: CaptureSetupOptions): CaptureSetupPlan {
   }
   const planned = mergeClaudeSettings(settings, command);
   if (planned.blocked) return blocked(base, planned.blocked);
-  if (!planned.changed) return { ...base, status: 'installed', changed: false, message: 'Claude Code SessionEnd ambient capture hook is already installed.' };
+  if (!planned.changed) {
+    const hasGitignoreWrite = gitignorePlan.extraWrites.length > 0;
+    return {
+      ...base,
+      status: hasGitignoreWrite ? 'would-install' : 'installed',
+      changed: hasGitignoreWrite,
+      extraWrites: gitignorePlan.extraWrites,
+      message: hasGitignoreWrite
+        ? 'Would add .claude/settings.local.json to .gitignore; Claude Code SessionEnd ambient capture hook is already installed.'
+        : 'Claude Code SessionEnd ambient capture hook is already installed.',
+    };
+  }
   return {
     ...base,
     status: 'would-install',
     changed: true,
     content: `${JSON.stringify(planned.settings, null, 2)}\n`,
-    message: 'Would install Claude Code SessionEnd ambient capture hook.',
+    extraWrites: gitignorePlan.extraWrites,
+    message: gitignorePlan.extraWrites.length > 0
+      ? 'Would install Claude Code SessionEnd ambient capture hook and add .claude/settings.local.json to .gitignore.'
+      : 'Would install Claude Code SessionEnd ambient capture hook.',
   };
 }
 
@@ -339,9 +372,51 @@ function skipBasicString(line: string, start: number): number {
 function findTopLevelNotifyLine(lines: string[]): string | null {
   for (const line of lines) {
     if (/^\s*(?:#|$)/.test(line)) continue;
-    if (/^\s*notify\s*=/.test(line)) return line.trim();
+    if (/^\s*(?:notify|"notify"|'notify')\s*=/.test(line)) return line.trim();
   }
   return null;
+}
+
+function planClaudeGitignore(
+  configPath: string,
+  repoRoot: string,
+): { extraWrites: PlannedWrite[]; blocked?: string } {
+  if (configPath !== join(repoRoot, '.claude', 'settings.local.json')) return { extraWrites: [] };
+  const gitignorePath = join(repoRoot, '.gitignore');
+  const symlinkMessage = finalSymlinkMessage(gitignorePath, 'Git ignore file');
+  if (symlinkMessage) return { extraWrites: [], blocked: symlinkMessage };
+  const parentSymlinkMessage = parentPathMessage(gitignorePath, 'Git ignore file');
+  if (parentSymlinkMessage) return { extraWrites: [], blocked: parentSymlinkMessage };
+  let content = '';
+  if (existsSync(gitignorePath)) {
+    try {
+      content = readFileSync(gitignorePath, 'utf8');
+    } catch (error) {
+      return { extraWrites: [], blocked: `Could not read Git ignore file: ${errorMessage(error)}` };
+    }
+  }
+  if (gitignoreCoversClaudeSettings(content)) return { extraWrites: [] };
+  const prefix = content.length === 0 ? '' : content.endsWith('\n') ? content : `${content}\n`;
+  return {
+    extraWrites: [{
+      path: gitignorePath,
+      content: `${prefix}.claude/settings.local.json\n`,
+      label: 'Git ignore file',
+    }],
+  };
+}
+
+function gitignoreCoversClaudeSettings(content: string): boolean {
+  return content.split(/\r?\n/).some((line) => {
+    const pattern = line.trim();
+    if (pattern.length === 0 || pattern.startsWith('#') || pattern.startsWith('!')) return false;
+    const normalized = pattern.replace(/^\//, '');
+    return normalized === '.claude'
+      || normalized === '.claude/'
+      || normalized === '.claude/*'
+      || normalized === '.claude/**'
+      || normalized === '.claude/settings.local.json';
+  });
 }
 
 function finalSymlinkMessage(path: string, label: string): string | null {

@@ -256,6 +256,15 @@ describe('osc capture CLI surface', () => {
     expect(readFileSync(config, 'utf8')).toContain('codex-notify.mjs');
   });
 
+  it('writes default Claude Code setup with a gitignore guard from the CLI', () => {
+    const repo = tempRepo();
+    const result = run(['capture', 'setup', 'claude-code', '--write'], repo);
+
+    expect(result.status).toBe(0);
+    expect(readFileSync(join(repo, '.claude/settings.local.json'), 'utf8')).toContain('ambient-hook.mjs');
+    expect(readFileSync(join(repo, '.gitignore'), 'utf8')).toContain('.claude/settings.local.json');
+  });
+
   it('rejects conflicting capture setup modes', () => {
     const repo = tempRepo();
     const result = run(['capture', 'setup', 'codex', '--write', '--dry-run', '--codex-config', join(repo, 'codex-config.toml')], repo);

@@ -73,8 +73,10 @@ with `--claude-settings <path>` and `--codex-config <path>`.
 `examples/hooks/ambient-hook.mjs` reads the hook JSON on stdin
 (`transcript_path`, `session_id`, `cwd`) and runs `osc capture --from claude-code`.
 `osc capture setup claude-code --write` installs the owner-local
-`.claude/settings.local.json` hook. If you need to register it manually, keep the file
-owner-local/gitignored and use the absolute command printed by the dry-run:
+`.claude/settings.local.json` hook and, for the default path, adds
+`.claude/settings.local.json` to the repository root `.gitignore` if needed. If you need
+to register it manually, keep the file owner-local/gitignored and use the absolute command
+printed by the dry-run:
 
 ```json
 { "hooks": { "SessionEnd": [ { "hooks": [ { "type": "command",
