@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { renderCaptureSetupText, runCaptureSetup } from '../src/capture-setup.js';
@@ -268,6 +268,28 @@ describe('capture setup planning', () => {
     expect(results.some((result) => result.status === 'blocked')).toBe(true);
     expect(existsSync(settings)).toBe(false);
     expect(read(config)).toBe('notify = ["custom"]\n');
+  });
+
+  it('rolls back setup all when a later config write fails', () => {
+    const dir = tempDir();
+    const settings = join(dir, '.claude/settings.local.json');
+    const locked = join(dir, 'locked');
+    const config = join(locked, 'codex', 'config.toml');
+    mkdirSync(locked);
+    chmodSync(locked, 0o555);
+
+    try {
+      expect(() => runCaptureSetup('all', {
+        write: true,
+        claudeSettingsPath: settings,
+        codexConfigPath: config,
+        claudeHookPath: claudeHook,
+        codexHookPath: codexHook,
+      })).toThrow();
+      expect(existsSync(settings)).toBe(false);
+    } finally {
+      chmodSync(locked, 0o755);
+    }
   });
 
   it('blocks missing hook targets with an actionable message', () => {

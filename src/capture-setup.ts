@@ -1,4 +1,4 @@
-import { constants, closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, writeSync } from 'node:fs';
+import { constants, closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, rmSync, writeSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, parse, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,6 +35,13 @@ interface CaptureSetupPlan extends CaptureSetupResult {
   content?: string;
 }
 
+interface WriteSnapshot {
+  configPath: string;
+  label: string;
+  existed: boolean;
+  content?: string;
+}
+
 type JsonObject = Record<string, unknown>;
 
 export function isCaptureSetupTarget(value: string): value is CaptureSetupTarget {
@@ -57,8 +64,19 @@ export function runCaptureSetup(target: CaptureSetupTarget, options: CaptureSetu
     });
   }
   if (options.write) {
-    for (const plan of plans) {
-      if (plan.changed && plan.content !== undefined) writeUtf8NoFollow(plan.configPath, plan.content, `${plan.runtime} config`);
+    const changedPlans = plans.filter((plan) => plan.changed && plan.content !== undefined);
+    const snapshots = changedPlans.map((plan) => snapshotConfig(plan.configPath, `${plan.runtime} config`));
+    const written: WriteSnapshot[] = [];
+    try {
+      for (let i = 0; i < changedPlans.length; i += 1) {
+        const plan = changedPlans[i];
+        const snapshot = snapshots[i];
+        writeUtf8NoFollow(plan.configPath, plan.content ?? '', snapshot.label);
+        written.push(snapshot);
+      }
+    } catch (error) {
+      rollbackWrites(written, error);
+      throw error;
     }
     return plans.map((plan) => publicResult({
       ...plan,
@@ -354,6 +372,29 @@ function parentPathMessage(path: string, label: string): string | null {
     }
   }
   return null;
+}
+
+function snapshotConfig(configPath: string, label: string): WriteSnapshot {
+  if (!existsSync(configPath)) return { configPath, label, existed: false };
+  return { configPath, label, existed: true, content: readFileSync(configPath, 'utf8') };
+}
+
+function rollbackWrites(written: WriteSnapshot[], originalError: unknown): void {
+  let rollbackError: unknown;
+  for (const snapshot of [...written].reverse()) {
+    try {
+      if (snapshot.existed) {
+        writeUtf8NoFollow(snapshot.configPath, snapshot.content ?? '', snapshot.label);
+      } else {
+        rmSync(snapshot.configPath, { force: true });
+      }
+    } catch (error) {
+      rollbackError ??= error;
+    }
+  }
+  if (rollbackError) {
+    throw new Error(`${errorMessage(originalError)}; rollback failed: ${errorMessage(rollbackError)}`);
+  }
 }
 
 function writeUtf8NoFollow(path: string, content: string, label: string): void {
