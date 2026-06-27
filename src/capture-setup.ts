@@ -281,6 +281,9 @@ function mergeCodexConfig(content: string, stanza: string): { content?: string; 
     if (notifyLine.trim() === stanza) return { content, changed: false };
     return { blocked: 'Codex config already has a different top-level notify setting; not rewriting it.' };
   }
+  if (preamble.firstTableLine && isTomlNotifyTableHeader(preamble.firstTableLine)) {
+    return { blocked: 'Codex config already has a top-level notify table; not rewriting it.' };
+  }
   if (preamble.firstTable === -1) {
     const prefix = content.length === 0 ? '' : content.endsWith('\n') ? content : `${content}\n`;
     return { content: `${prefix}${stanza}\n`, changed: true };
@@ -293,6 +296,7 @@ function mergeCodexConfig(content: string, stanza: string): { content?: string; 
 
 interface TomlPreamble {
   firstTable: number;
+  firstTableLine?: string;
   lines: string[];
 }
 
@@ -310,7 +314,7 @@ function tomlPreamble(content: string): TomlPreamble {
   const lines: string[] = [];
   for (const line of content.split(/(?<=\n)/)) {
     const body = line.replace(/\r?\n$/, '');
-    if (stringState === 'none' && arrayDepth === 0 && isTomlTableHeader(body)) return { firstTable: offset, lines };
+    if (stringState === 'none' && arrayDepth === 0 && isTomlTableHeader(body)) return { firstTable: offset, firstTableLine: body, lines };
     if (stringState === 'none' && arrayDepth === 0) lines.push(body);
     ({ stringState, arrayDepth } = scanTomlLineState(body, stringState, arrayDepth));
     offset += line.length;
@@ -320,6 +324,14 @@ function tomlPreamble(content: string): TomlPreamble {
 
 function isTomlTableHeader(line: string): boolean {
   return /^\s*(?:\[\s*[A-Za-z0-9_."'-][^\]]*?\s*\]|\[\[\s*[A-Za-z0-9_."'-][^\]]*?\s*\]\])\s*(?:#.*)?$/.test(line);
+}
+
+function isTomlNotifyTableHeader(line: string): boolean {
+  const header = line.replace(/\s*#.*$/, '').trim();
+  const inner = header.startsWith('[[')
+    ? header.replace(/^\[\[\s*/, '').replace(/\s*\]\]$/, '')
+    : header.replace(/^\[\s*/, '').replace(/\s*\]$/, '');
+  return /^(?:notify|"notify"|'notify')(?:\s*\.|$)/.test(inner.trim());
 }
 
 function scanTomlLineState(line: string, initialStringState: TomlStringState, initialArrayDepth: number): TomlLineState {

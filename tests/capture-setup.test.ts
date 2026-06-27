@@ -322,6 +322,27 @@ describe('capture setup planning', () => {
     expect(read(literalConfig)).toBe(literal);
   });
 
+  it('blocks top-level Codex notify tables', () => {
+    const tableDir = tempDir();
+    const tableConfig = join(tableDir, 'config.toml');
+    const table = '[notify]\ncommand = "custom"\n';
+    const arrayDir = tempDir();
+    const arrayConfig = join(arrayDir, 'config.toml');
+    const arrayTable = '[[notify]]\ncommand = "custom"\n';
+    writeFileSync(tableConfig, table);
+    writeFileSync(arrayConfig, arrayTable);
+
+    const [tableResult] = runCaptureSetup('codex', { write: true, codexConfigPath: tableConfig, codexHookPath: codexHook });
+    const [arrayResult] = runCaptureSetup('codex', { write: true, codexConfigPath: arrayConfig, codexHookPath: codexHook });
+
+    expect(tableResult.status).toBe('blocked');
+    expect(arrayResult.status).toBe('blocked');
+    expect(tableResult.message).toContain('notify table');
+    expect(arrayResult.message).toContain('notify table');
+    expect(read(tableConfig)).toBe(table);
+    expect(read(arrayConfig)).toBe(arrayTable);
+  });
+
   it('rejects a Codex config symlink before reading or writing it', () => {
     const dir = tempDir();
     const config = join(dir, 'config.toml');
