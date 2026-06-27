@@ -21,11 +21,23 @@ rather than risking the wrong concurrent session.
 
 ## Registration
 
-In `~/.codex/config.toml` (owner-local):
+Prefer the setup helper. It dry-runs by default and prints only generated setup data,
+not unrelated local config values:
+
+```bash
+osc capture setup codex
+osc capture setup codex --write
+```
+
+Manual fallback in `~/.codex/config.toml` (owner-local):
 
 ```toml
-notify = ["node", "/absolute/path/to/open-scaffold/examples/hooks/codex-notify.mjs"]
+notify = ["/path/to/node", "/absolute/path/to/open-scaffold/examples/hooks/codex-notify.mjs"]
 ```
+
+The helper inserts the top-level `notify` before the first table and refuses to rewrite
+a different existing top-level `notify`. Absolute hook paths should point at an installed
+package or checkout you intend to keep.
 
 ## Notify program (`codex-notify.mjs`)
 

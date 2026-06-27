@@ -181,4 +181,95 @@ describe('osc capture CLI surface', () => {
     expect(result.stdout).toContain('Usage: osc capture --from');
     expect(result.stderr).toBe('');
   });
+
+  it('dry-runs Claude Code capture setup from the CLI without writing', () => {
+    const repo = tempRepo();
+    const settings = join(repo, '.claude/settings.local.json');
+    const result = run(['capture', 'setup', 'claude-code', '--claude-settings', settings], repo);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('claude-code: would-install');
+    expect(result.stdout).toContain('ambient-hook.mjs');
+    expect(existsSync(settings)).toBe(false);
+  });
+
+  it('dry-runs Codex capture setup from the CLI without writing', () => {
+    const repo = tempRepo();
+    const config = join(repo, 'codex-config.toml');
+    const result = run(['capture', 'setup', 'codex', '--codex-config', config], repo);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('codex: would-install');
+    expect(result.stdout).toContain('codex-notify.mjs');
+    expect(existsSync(config)).toBe(false);
+  });
+
+  it('dry-runs all capture setup targets from the CLI', () => {
+    const repo = tempRepo();
+    const result = run([
+      'capture',
+      'setup',
+      'all',
+      '--claude-settings',
+      join(repo, '.claude/settings.local.json'),
+      '--codex-config',
+      join(repo, 'codex-config.toml'),
+    ], repo);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('claude-code: would-install');
+    expect(result.stdout).toContain('codex: would-install');
+  });
+
+  it('prints safe JSON for capture setup', () => {
+    const repo = tempRepo();
+    const config = join(repo, 'codex-config.toml');
+    writeFileSync(config, 'model = "SENTINEL_SECRET"\n');
+    const result = run(['capture', 'setup', 'codex', '--codex-config', config, '--json'], repo);
+
+    expect(result.status).toBe(0);
+    const payload = JSON.parse(result.stdout);
+    expect(payload.mode).toBe('dry-run');
+    expect(payload.results[0].runtime).toBe('codex');
+    expect(result.stdout).not.toContain('SENTINEL_SECRET');
+  });
+
+  it('writes capture setup config from the CLI', () => {
+    const repo = tempRepo();
+    const settings = join(repo, '.claude/settings.local.json');
+    const config = join(repo, 'codex-config.toml');
+    const result = run([
+      'capture',
+      'setup',
+      'all',
+      '--write',
+      '--claude-settings',
+      settings,
+      '--codex-config',
+      config,
+    ], repo);
+
+    expect(result.status).toBe(0);
+    expect(readFileSync(settings, 'utf8')).toContain('ambient-hook.mjs');
+    expect(readFileSync(config, 'utf8')).toContain('codex-notify.mjs');
+  });
+
+  it('writes default Claude Code setup with a gitignore guard from the CLI', () => {
+    const repo = tempRepo();
+    const result = run(['capture', 'setup', 'claude-code', '--write'], repo);
+
+    expect(result.status).toBe(0);
+    expect(readFileSync(join(repo, '.claude/settings.local.json'), 'utf8')).toContain('ambient-hook.mjs');
+    expect(readFileSync(join(repo, '.gitignore'), 'utf8')).toContain('.claude/settings.local.json');
+  });
+
+  it('rejects conflicting capture setup modes', () => {
+    const repo = tempRepo();
+    const result = run(['capture', 'setup', 'codex', '--write', '--dry-run', '--codex-config', join(repo, 'codex-config.toml')], repo);
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('Use either --write or --dry-run');
+  });
 });

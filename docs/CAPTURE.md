@@ -47,15 +47,40 @@ the record.
 
 ## Hook recipes
 
+Use the setup helper first. It prints a safe dry-run by default and does not dump
+unrelated local config values:
+
+```bash
+osc capture setup claude-code
+osc capture setup codex
+osc capture setup all
+```
+
+Add `--write` to install the proposed local config. Write mode is idempotent; it refuses
+to clobber incompatible existing Claude hooks or Codex top-level `notify` settings. For
+`setup all --write`, any blocker stops all writes so capture is not half-installed.
+
+The generated commands use the current Node executable plus the shipped hook path under
+`examples/hooks`. Because runtime configs store absolute hook paths, run setup from the
+installed package or checkout you intend to keep. If the package cache or checkout is
+deleted later, rerun setup from the durable location.
+
+Use `--json` for a machine-readable summary. Test or owner-local paths can be overridden
+with `--claude-settings <path>` and `--codex-config <path>`.
+
 ### Claude Code (SessionEnd)
 
 `examples/hooks/ambient-hook.mjs` reads the hook JSON on stdin
 (`transcript_path`, `session_id`, `cwd`) and runs `osc capture --from claude-code`.
-Register it owner-locally in `.claude/settings.local.json` (gitignored):
+`osc capture setup claude-code --write` installs the owner-local
+`.claude/settings.local.json` hook and, for the default path, adds
+`.claude/settings.local.json` to the repository root `.gitignore` if needed. If you need
+to register it manually, keep the file owner-local/gitignored and use the absolute command
+printed by the dry-run:
 
 ```json
 { "hooks": { "SessionEnd": [ { "hooks": [ { "type": "command",
-  "command": "node examples/hooks/ambient-hook.mjs" } ] } ] } }
+  "command": "/path/to/node /path/to/open-scaffold/examples/hooks/ambient-hook.mjs" } ] } ] } }
 ```
 
 The hook always exits 0 and can never block or fail a session.
@@ -66,7 +91,19 @@ The hook always exits 0 and can never block or fail a session.
 `notify` event `thread-id` on `agent-turn-complete` / session end. The notify program
 receives event JSON and runs `osc capture --from codex --hook-safe` on the matching
 `~/.codex/sessions/.../rollout-*<thread-id>*.jsonl`, so concurrent sessions cannot be
-cross-captured.
+cross-captured. `osc capture setup codex --write` inserts a top-level `notify` stanza in
+`${CODEX_HOME:-$HOME/.codex}/config.toml` before any tables when no top-level `notify`
+already exists.
+
+Manual fallback:
+
+```toml
+notify = ["/path/to/node", "/path/to/open-scaffold/examples/hooks/codex-notify.mjs"]
+```
+
+If you already have a different top-level `notify` value, the helper blocks instead of
+rewriting it. Merge that setup manually and keep table-local `notify` settings under
+profiles separate from the top-level ambient capture hook.
 
 ## Boundary
 
