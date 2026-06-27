@@ -173,14 +173,14 @@ describe('capture setup planning', () => {
   it('does not treat table-local Codex notify as a top-level conflict', () => {
     const dir = tempDir();
     const config = join(dir, 'config.toml');
-    writeFileSync(config, '[profiles.foo]\nnotify = ["custom"]\n');
+    writeFileSync(config, '[ profiles.foo ]\nnotify = ["custom"]\n');
 
     const [result] = runCaptureSetup('codex', { write: true, codexConfigPath: config, codexHookPath: codexHook });
 
     expect(result.status).toBe('installed');
     expect(result.changed).toBe(true);
     expect(read(config).startsWith('notify = [')).toBe(true);
-    expect(read(config)).toContain('[profiles.foo]\nnotify = ["custom"]');
+    expect(read(config)).toContain('[ profiles.foo ]\nnotify = ["custom"]');
   });
 
   it('inserts Codex notify before the first real table while ignoring multiline string content', () => {

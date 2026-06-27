@@ -261,7 +261,7 @@ function tomlPreamble(content: string): TomlPreamble {
 }
 
 function isTomlTableHeader(line: string): boolean {
-  return /^\s*\[\[?[A-Za-z0-9_."'-][^\]]*\]\]?\s*(?:#.*)?$/.test(line);
+  return /^\s*(?:\[\s*[A-Za-z0-9_."'-][^\]]*?\s*\]|\[\[\s*[A-Za-z0-9_."'-][^\]]*?\s*\]\])\s*(?:#.*)?$/.test(line);
 }
 
 function scanTomlStringState(line: string, initialState: TomlStringState): TomlStringState {
