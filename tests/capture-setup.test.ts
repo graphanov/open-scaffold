@@ -180,6 +180,28 @@ describe('capture setup planning', () => {
     expect(read(settings)).toContain(`'${nodePath}' '${hook}'`);
   });
 
+  it('quotes Claude Code command paths for Windows shells', () => {
+    const dir = tempDir();
+    const hookDir = join(dir, 'hook path');
+    const hook = join(hookDir, 'ambient hook.mjs');
+    const settings = join(dir, '.claude/settings.local.json');
+    const nodePath = 'C:\\Program Files\\nodejs\\node.exe';
+    mkdirSync(hookDir, { recursive: true });
+    writeFileSync(hook, '');
+
+    const [result] = runCaptureSetup('claude-code', {
+      write: true,
+      claudeSettingsPath: settings,
+      claudeHookPath: hook,
+      nodePath,
+      platform: 'win32',
+    });
+
+    const parsed = JSON.parse(read(settings));
+    expect(result.command).toBe(`"${nodePath}" "${hook}"`);
+    expect(parsed.hooks.SessionEnd[0].hooks[0].command).toBe(`"${nodePath}" "${hook}"`);
+  });
+
   it('rejects a Claude Code settings symlink before reading or writing it', () => {
     const dir = tempDir();
     const settings = join(dir, '.claude/settings.local.json');
@@ -362,6 +384,27 @@ describe('capture setup planning', () => {
     const arrayDir = tempDir();
     const arrayConfig = join(arrayDir, 'config.toml');
     const arrayTable = '[[notify]]\ncommand = "custom"\n';
+    writeFileSync(tableConfig, table);
+    writeFileSync(arrayConfig, arrayTable);
+
+    const [tableResult] = runCaptureSetup('codex', { write: true, codexConfigPath: tableConfig, codexHookPath: codexHook });
+    const [arrayResult] = runCaptureSetup('codex', { write: true, codexConfigPath: arrayConfig, codexHookPath: codexHook });
+
+    expect(tableResult.status).toBe('blocked');
+    expect(arrayResult.status).toBe('blocked');
+    expect(tableResult.message).toContain('notify table');
+    expect(arrayResult.message).toContain('notify table');
+    expect(read(tableConfig)).toBe(table);
+    expect(read(arrayConfig)).toBe(arrayTable);
+  });
+
+  it('blocks top-level Codex notify tables after other tables', () => {
+    const tableDir = tempDir();
+    const tableConfig = join(tableDir, 'config.toml');
+    const table = '[profiles.foo]\nmodel = "x"\n[notify]\ncommand = "custom"\n';
+    const arrayDir = tempDir();
+    const arrayConfig = join(arrayDir, 'config.toml');
+    const arrayTable = '[profiles.foo]\nmodel = "x"\n[[notify]]\ncommand = "custom"\n';
     writeFileSync(tableConfig, table);
     writeFileSync(arrayConfig, arrayTable);
 

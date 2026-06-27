@@ -16,6 +16,7 @@ export interface CaptureSetupOptions {
   claudeSettingsPath?: string;
   codexConfigPath?: string;
   nodePath?: string;
+  platform?: NodeJS.Platform;
   claudeHookPath?: string;
   codexHookPath?: string;
 }
@@ -137,7 +138,7 @@ function planClaude(options: CaptureSetupOptions): CaptureSetupPlan {
   const repoRoot = resolvePath(options.repoRoot ?? cwd, cwd);
   const configPath = resolvePath(options.claudeSettingsPath ?? join(repoRoot, '.claude', 'settings.local.json'), cwd);
   const hookPath = resolvePath(options.claudeHookPath ?? shippedHookPath('ambient-hook.mjs'), cwd);
-  const command = `${shellQuote(options.nodePath ?? process.execPath)} ${shellQuote(hookPath)}`;
+  const command = [options.nodePath ?? process.execPath, hookPath].map((path) => shellQuote(path, options.platform ?? process.platform)).join(' ');
   const base = basePlan('claude-code', configPath, hookPath, { command });
   const preflight = preflightConfig(configPath, hookPath, 'Claude Code');
   if (preflight) return { ...base, ...preflight };
@@ -276,13 +277,11 @@ function mergeClaudeSettings(settings: JsonObject, command: string): { settings?
 
 function mergeCodexConfig(content: string, stanza: string): { content?: string; changed?: boolean; blocked?: string } {
   const preamble = tomlPreamble(content);
+  if (preamble.hasNotifyTable) return { blocked: 'Codex config already has a top-level notify table; not rewriting it.' };
   const notifyLine = findTopLevelNotifyLine(preamble.lines);
   if (notifyLine) {
     if (notifyLine.trim() === stanza) return { content, changed: false };
     return { blocked: 'Codex config already has a different top-level notify setting; not rewriting it.' };
-  }
-  if (preamble.firstTableLine && isTomlNotifyTableHeader(preamble.firstTableLine)) {
-    return { blocked: 'Codex config already has a top-level notify table; not rewriting it.' };
   }
   if (preamble.firstTable === -1) {
     const prefix = content.length === 0 ? '' : content.endsWith('\n') ? content : `${content}\n`;
@@ -294,11 +293,7 @@ function mergeCodexConfig(content: string, stanza: string): { content?: string; 
   return { content: `${before}${separator}${stanza}\n${after}`, changed: true };
 }
 
-interface TomlPreamble {
-  firstTable: number;
-  firstTableLine?: string;
-  lines: string[];
-}
+interface TomlPreamble { firstTable: number; hasNotifyTable: boolean; lines: string[] }
 
 type TomlStringState = 'none' | 'multiline-basic' | 'multiline-literal';
 
@@ -308,18 +303,22 @@ interface TomlLineState {
 }
 
 function tomlPreamble(content: string): TomlPreamble {
-  let offset = 0;
-  let stringState: TomlStringState = 'none';
-  let arrayDepth = 0;
+  let offset = 0, arrayDepth = 0, firstTable = -1;
+  let stringState: TomlStringState = 'none', hasNotifyTable = false;
   const lines: string[] = [];
   for (const line of content.split(/(?<=\n)/)) {
     const body = line.replace(/\r?\n$/, '');
-    if (stringState === 'none' && arrayDepth === 0 && isTomlTableHeader(body)) return { firstTable: offset, firstTableLine: body, lines };
-    if (stringState === 'none' && arrayDepth === 0) lines.push(body);
+    if (stringState === 'none' && arrayDepth === 0 && isTomlTableHeader(body)) {
+      if (firstTable === -1) firstTable = offset;
+      hasNotifyTable ||= isTomlNotifyTableHeader(body);
+      offset += line.length;
+      continue;
+    }
+    if (firstTable === -1 && stringState === 'none' && arrayDepth === 0) lines.push(body);
     ({ stringState, arrayDepth } = scanTomlLineState(body, stringState, arrayDepth));
     offset += line.length;
   }
-  return { firstTable: -1, lines };
+  return { firstTable, hasNotifyTable, lines };
 }
 
 function isTomlTableHeader(line: string): boolean {
@@ -578,7 +577,8 @@ function isJsonObject(value: unknown): value is JsonObject {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function shellQuote(value: string): string {
+function shellQuote(value: string, platform: NodeJS.Platform): string {
+  if (platform === 'win32') return `"${value.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/g, '$1$1')}"`;
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
