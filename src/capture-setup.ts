@@ -50,6 +50,7 @@ interface PlannedWrite {
 }
 
 type JsonObject = Record<string, unknown>;
+const CLAUDE_SETTINGS_GITIGNORE_ENTRY = '.claude/settings.local.json';
 
 export function isCaptureSetupTarget(value: string): value is CaptureSetupTarget {
   return (CAPTURE_SETUP_TARGETS as readonly string[]).includes(value);
@@ -417,7 +418,7 @@ function planClaudeGitignore(
   return {
     extraWrites: [{
       path: gitignorePath,
-      content: `${prefix}.claude/settings.local.json\n`,
+      content: `${prefix}${CLAUDE_SETTINGS_GITIGNORE_ENTRY}\n`,
       label: 'Git ignore file',
     }],
   };
@@ -431,15 +432,38 @@ function gitignoreCoversClaudeSettings(content: string): boolean {
     const negated = pattern.startsWith('!');
     if (negated) pattern = pattern.slice(1).trim();
     if (pattern.length === 0) continue;
-    const normalized = pattern.replace(/^\//, '');
-    const matches = normalized === '.claude'
-      || normalized === '.claude/'
-      || normalized === '.claude/*'
-      || normalized === '.claude/**'
-      || normalized === '.claude/settings.local.json';
-    if (matches) ignored = !negated;
+    if (gitignorePatternMatchesClaudeSettings(pattern)) ignored = !negated;
   }
   return ignored;
+}
+
+function gitignorePatternMatchesClaudeSettings(pattern: string): boolean {
+  const normalized = pattern.replace(/^\//, '');
+  if (normalized === '.claude') return true;
+  if (normalized.endsWith('/')) return CLAUDE_SETTINGS_GITIGNORE_ENTRY.startsWith(normalized);
+  return gitignorePatternRegex(normalized).test(CLAUDE_SETTINGS_GITIGNORE_ENTRY);
+}
+
+function gitignorePatternRegex(pattern: string): RegExp {
+  let source = '^';
+  for (let i = 0; i < pattern.length; i += 1) {
+    const char = pattern[i];
+    if (char === '*') {
+      if (pattern[i + 1] === '*') {
+        source += '.*';
+        i += 1;
+      } else {
+        source += '[^/]*';
+      }
+      continue;
+    }
+    if (char === '?') {
+      source += '[^/]';
+      continue;
+    }
+    source += char.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
+  }
+  return new RegExp(`${source}$`);
 }
 
 function finalSymlinkMessage(path: string, label: string): string | null {

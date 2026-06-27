@@ -84,6 +84,20 @@ describe('capture setup planning', () => {
     expect(read(gitignore)).toBe('.claude/*\n!.claude/settings.local.json\n.claude/settings.local.json\n');
   });
 
+  it('respects later gitignore glob negations for Claude settings', () => {
+    const dir = tempDir();
+    const gitignore = join(dir, '.gitignore');
+    writeFileSync(gitignore, '.claude/*\n!.claude/*.json\n');
+
+    const [first] = runCaptureSetup('claude-code', { write: true, repoRoot: dir, claudeHookPath: claudeHook });
+    const [second] = runCaptureSetup('claude-code', { write: true, repoRoot: dir, claudeHookPath: claudeHook });
+
+    expect(first.status).toBe('installed');
+    expect(first.changed).toBe(true);
+    expect(second.changed).toBe(false);
+    expect(read(gitignore)).toBe('.claude/*\n!.claude/*.json\n.claude/settings.local.json\n');
+  });
+
   it('blocks malformed Claude Code settings and preserves the file', () => {
     const dir = tempDir();
     const settings = join(dir, '.claude/settings.local.json');
