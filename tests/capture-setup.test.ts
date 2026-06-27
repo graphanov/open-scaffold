@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { renderCaptureSetupText, runCaptureSetup } from '../src/capture-setup.js';
@@ -143,6 +143,21 @@ describe('capture setup planning', () => {
     expect(existsSync(join(external, 'settings.local.json'))).toBe(false);
   });
 
+  it('rejects a symlinked ancestor even when the immediate settings directory exists', () => {
+    const dir = tempDir();
+    const external = tempDir();
+    const link = join(dir, 'link');
+    mkdirSync(join(external, 'sub'));
+    symlinkSync(external, link, 'dir');
+    const settings = join(link, 'sub', 'settings.local.json');
+
+    const [result] = runCaptureSetup('claude-code', { write: true, claudeSettingsPath: settings, claudeHookPath: claudeHook });
+
+    expect(result.status).toBe('blocked');
+    expect(result.message).toContain('parent directory must not be a symlink');
+    expect(existsSync(join(external, 'sub', 'settings.local.json'))).toBe(false);
+  });
+
   it('plans a Codex notify install without writing by default', () => {
     const dir = tempDir();
     const config = join(dir, 'config.toml');
@@ -270,26 +285,21 @@ describe('capture setup planning', () => {
     expect(read(config)).toBe('notify = ["custom"]\n');
   });
 
-  it('rolls back setup all when a later config write fails', () => {
+  it('does not write earlier setup when a later config path is invalid', () => {
     const dir = tempDir();
     const settings = join(dir, '.claude/settings.local.json');
-    const locked = join(dir, 'locked');
-    const config = join(locked, 'codex', 'config.toml');
-    mkdirSync(locked);
-    chmodSync(locked, 0o555);
+    const config = join(dir, `${'x'.repeat(300)}.toml`);
 
-    try {
-      expect(() => runCaptureSetup('all', {
-        write: true,
-        claudeSettingsPath: settings,
-        codexConfigPath: config,
-        claudeHookPath: claudeHook,
-        codexHookPath: codexHook,
-      })).toThrow();
-      expect(existsSync(settings)).toBe(false);
-    } finally {
-      chmodSync(locked, 0o755);
-    }
+    const results = runCaptureSetup('all', {
+      write: true,
+      claudeSettingsPath: settings,
+      codexConfigPath: config,
+      claudeHookPath: claudeHook,
+      codexHookPath: codexHook,
+    });
+
+    expect(results.some((result) => result.status === 'blocked')).toBe(true);
+    expect(existsSync(settings)).toBe(false);
   });
 
   it('blocks missing hook targets with an actionable message', () => {

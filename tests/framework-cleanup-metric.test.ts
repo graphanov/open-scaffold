@@ -34,8 +34,8 @@ const cleanupBaselineLoc = 20_890;
 // 173 Codex review fix: empty evidence battery reports not_evaluated (nullable pass) instead of overstated pass (+1 LOC).
 // 173 Codex review fix: required_evidence manifest list rejects omitted required rows (+10 LOC).
 // 173 Codex review fix: render required_evidence rows as required in the proof-battery table (+1 LOC).
-// 233: ambient capture setup helper for Claude Code/Codex config planning, idempotent writes, and symlink/TOML/setup-all safety (+515 LOC, +1 file).
-const cleanupTargetLoc = 15_709;
+// 233: ambient capture setup helper for Claude Code/Codex config planning, idempotent writes, and symlink/TOML/setup-all safety (+520 LOC, +1 file).
+const cleanupTargetLoc = 15_714;
 const cleanupTargetFiles = 41;
 
 interface MaintainedSourceFile {
@@ -78,7 +78,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(15_709);
+    expect(cleanupTargetLoc).toBe(15_714);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

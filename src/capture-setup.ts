@@ -355,23 +355,28 @@ function finalSymlinkMessage(path: string, label: string): string | null {
 }
 
 function parentPathMessage(path: string, label: string): string | null {
-  let current = dirname(path);
-  const { root } = parse(current);
-  while (current !== root) {
+  const parent = dirname(path);
+  const { root } = parse(parent);
+  let current = root;
+  for (const part of parent.slice(root.length).split(/[\\/]+/).filter(Boolean)) {
+    current = join(current, part);
     try {
       const stat = lstatSync(current);
-      if (stat.isSymbolicLink()) return `${label} parent directory must not be a symlink: ${current}`;
-      if (!stat.isDirectory()) return `${label} parent path is not a directory: ${current}`;
-      return null;
-    } catch (error) {
-      if ((error as { code?: string })?.code === 'ENOENT') {
-        current = dirname(current);
-        continue;
+      if (stat.isSymbolicLink()) {
+        if (isAllowedSystemSymlink(current)) continue;
+        return `${label} parent directory must not be a symlink: ${current}`;
       }
+      if (!stat.isDirectory()) return `${label} parent path is not a directory: ${current}`;
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'ENOENT') return null;
       return `Could not inspect ${label} parent path: ${errorMessage(error)}`;
     }
   }
   return null;
+}
+
+function isAllowedSystemSymlink(path: string): boolean {
+  return process.platform === 'darwin' && (path === '/var' || path === '/tmp');
 }
 
 function snapshotConfig(configPath: string, label: string): WriteSnapshot {
