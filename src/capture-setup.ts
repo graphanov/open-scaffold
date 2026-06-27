@@ -407,16 +407,22 @@ function planClaudeGitignore(
 }
 
 function gitignoreCoversClaudeSettings(content: string): boolean {
-  return content.split(/\r?\n/).some((line) => {
-    const pattern = line.trim();
-    if (pattern.length === 0 || pattern.startsWith('#') || pattern.startsWith('!')) return false;
+  let ignored = false;
+  for (const line of content.split(/\r?\n/)) {
+    let pattern = line.trim();
+    if (pattern.length === 0 || pattern.startsWith('#')) continue;
+    const negated = pattern.startsWith('!');
+    if (negated) pattern = pattern.slice(1).trim();
+    if (pattern.length === 0) continue;
     const normalized = pattern.replace(/^\//, '');
-    return normalized === '.claude'
+    const matches = normalized === '.claude'
       || normalized === '.claude/'
       || normalized === '.claude/*'
       || normalized === '.claude/**'
       || normalized === '.claude/settings.local.json';
-  });
+    if (matches) ignored = !negated;
+  }
+  return ignored;
 }
 
 function finalSymlinkMessage(path: string, label: string): string | null {
