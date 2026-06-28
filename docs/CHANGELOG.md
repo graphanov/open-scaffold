@@ -4,6 +4,30 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v0.34.0 — Ambient capture trust and setup package sync
+
+Status: release-sync candidate prepared for `open-scaffold@0.34.0`; not yet published to npm, not yet tagged, and no GitHub Release `v0.34.0` exists until owner-gated follow-through after review/merge. npm `latest` remains `0.33.0` before that owner action.
+
+Highlights:
+
+- Prepares the post-`v0.33.0` mainline work for the public npm package surface, cut from current `origin/main`.
+- Adds the ambient capture setup helper for Codex and Claude Code, including dry-run/setup-all behavior and guarded config writes.
+- Adds ambient record verification and trust-report behavior for validating captured records without exposing raw transcript contents.
+- Feeds ambient capture records into `osc resume` / handoff summaries so resumed work can cite observed ambient records without treating transcripts as semantic truth.
+- Adds MCP coding-agent quickstart documentation.
+- Carries the `@types/node` development-dependency refresh and the `0.33.0` publication proof closeout into the release delta.
+- Keeps Open Scaffold core repo-native and authority-limited: it records and verifies work artifacts, but does not grant runtime, merge, publish, release, tag, workflow-dispatch, or settings authority by itself.
+- Keeps ambient capture observational. Trust reports check record shape and captured trust signals; they are not semantic correctness, compliance certification, or transcript truth beyond the captured evidence boundary.
+
+Evidence:
+
+- Issue: https://github.com/graphanov/open-scaffold/issues/239
+- Source PRs: https://github.com/graphanov/open-scaffold/pull/229, https://github.com/graphanov/open-scaffold/pull/230, https://github.com/graphanov/open-scaffold/pull/232, https://github.com/graphanov/open-scaffold/pull/236, https://github.com/graphanov/open-scaffold/pull/237, and https://github.com/graphanov/open-scaffold/pull/238
+- Release-sync plan: `.osc/plans/active/175-ambient-capture-trust-package-sync.md`
+- Release-sync evidence note: `.osc/releases/2026-06-28-175-ambient-capture-trust-package-sync.md`
+- Previous release: https://github.com/graphanov/open-scaffold/releases/tag/v0.33.0
+- npm current latest before owner publishing: https://www.npmjs.com/package/open-scaffold/v/0.33.0
+
 ## v0.33.0 — Evidence battery package sync
 
 Status: published to npm as `open-scaffold@0.33.0`; GitHub Release `v0.33.0` is Latest after owner-approved trusted publishing and release follow-through, superseding `v0.32.1`.
