@@ -44,6 +44,10 @@ function requireOrCreateRoot(start: string): string {
   return created;
 }
 
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
 function formatFirstRunConflictMessage(error: ScaffoldConflictError): string {
   return [
     'Open Scaffold first-run stopped before writing files.',
@@ -59,7 +63,7 @@ function formatFirstRunConflictMessage(error: ScaffoldConflictError): string {
     'npx open-scaffold@latest first-run',
     '',
     'For an existing project, preserve, move, or rename the listed conflicting files first, then initialize brownfield scaffolding:',
-    `npx open-scaffold@latest init --from-existing --tier min --target ${error.target}`,
+    `npx open-scaffold@latest init --from-existing --tier min --target ${shellQuote(error.target)}`,
   ].join('\n');
 }
 

@@ -116,10 +116,13 @@ describe('blueprint first-run and PR check surfaces', () => {
   });
 
   it('explains first-run scaffold file conflicts with safe recovery commands', () => {
-    const root = mkdtempSync(join(tmpdir(), 'osc-first-run-conflict-'));
+    const parent = mkdtempSync(join(tmpdir(), 'osc-first-run-conflict-'));
+    const root = join(parent, "project's path with spaces");
     try {
+      mkdirSync(root);
       writeFileSync(join(root, 'AGENTS.md'), '# Existing agent guidance\n');
       const target = realpathSync(root);
+      const quotedTarget = `'${target.replace(/'/g, `'\\''`)}'`;
 
       const result = runOsc(root, ['first-run', '--non-interactive', '--slug', 'first-work-record', '--mission', 'Build a tiny service safely.', '--goal', 'Add the first reviewed change.']);
 
@@ -133,10 +136,10 @@ describe('blueprint first-run and PR check surfaces', () => {
       expect(result.stderr).toContain('cd ./my-project');
       expect(result.stderr).toContain('npx open-scaffold@latest first-run');
       expect(result.stderr).toContain('preserve, move, or rename the listed conflicting files first');
-      expect(result.stderr).toContain(`npx open-scaffold@latest init --from-existing --tier min --target ${target}`);
+      expect(result.stderr).toContain(`npx open-scaffold@latest init --from-existing --tier min --target ${quotedTarget}`);
       expect(result.stderr).not.toContain('--force');
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(parent, { recursive: true, force: true });
     }
   });
 
