@@ -1,5 +1,6 @@
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { buildAmbientTrustReport, type AmbientTrustReport } from './capture.js';
 import { redactPacketText } from './handoff.js';
 import { loadAcceptedImprovements, readFeedback } from './feedback.js';
 import { inspectScaffold, parseChecklist, parsePlanFile, type ChecklistItem, type PlanSummary } from './scaffold.js';
@@ -12,6 +13,7 @@ export const MAX_RESUME_MAX_CHARS = 20000;
 export interface ResumeOptions {
   planSlug?: string;
   maxChars?: number;
+  ambientSession?: string;
 }
 
 export interface ResumeAcceptanceCriterion {
@@ -46,6 +48,7 @@ export interface ResumeSummary {
   next_bounded_action: string;
   other_active_plans: string[];
   latest_run: ResumeLatestRun | null;
+  ambient_capture: ResumeAmbientCapture;
   repair_hypothesis: string | null;
   lessons: { count: number; slugs: string[] };
   next_commands: string[];
@@ -53,6 +56,20 @@ export interface ResumeSummary {
     read_only: true;
     resume_packet_is_not_approval: true;
     human_owns_merge_publish_release: true;
+  };
+}
+
+export interface ResumeAmbientCapture {
+  status: 'none' | 'included' | 'requested-unavailable' | 'unavailable';
+  records: AmbientTrustReport[];
+  warnings: string[];
+  boundary: {
+    observed_transcript_evidence_only: true;
+    not_approval: true;
+    not_correctness_certification: true;
+    not_retry_authorization: true;
+    not_execution_authority: true;
+    not_spawn_authority: true;
   };
 }
 
@@ -72,6 +89,9 @@ interface RunStatusFile {
   updatedAt?: string;
   pendingHumanGates?: Array<{ id?: string }>;
 }
+
+const DEFAULT_AMBIENT_RECORD_LIMIT = 2;
+const SAFE_AMBIENT_SESSION_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$/;
 
 function planNumber(slug: string): number {
   const match = slug.match(/^(\d+)-/);
@@ -171,6 +191,87 @@ function latestHarnessRun(root: string): InternalResumeLatestRun | null {
     }
   }
   return best;
+}
+
+function ambientBoundary(): ResumeAmbientCapture['boundary'] {
+  return {
+    observed_transcript_evidence_only: true,
+    not_approval: true,
+    not_correctness_certification: true,
+    not_retry_authorization: true,
+    not_execution_authority: true,
+    not_spawn_authority: true,
+  };
+}
+
+function ambientCapture(status: ResumeAmbientCapture['status'], records: AmbientTrustReport[], warnings: string[] = []): ResumeAmbientCapture {
+  return { status, records, warnings, boundary: ambientBoundary() };
+}
+
+function isSafeAmbientSessionSelector(value: string): boolean {
+  return SAFE_AMBIENT_SESSION_PATTERN.test(value) && !value.includes('/') && !value.includes('\\');
+}
+
+function ambientDirectory(root: string): string | null {
+  try {
+    const oscDir = join(root, '.osc');
+    if (!existsSync(oscDir) || !lstatSync(oscDir).isDirectory()) return null;
+    const stateDir = join(oscDir, 'state');
+    if (!existsSync(stateDir) || !lstatSync(stateDir).isDirectory()) return null;
+    const ambientDir = join(stateDir, 'ambient');
+    if (!existsSync(ambientDir) || !lstatSync(ambientDir).isDirectory()) return null;
+    return ambientDir;
+  } catch {
+    return null;
+  }
+}
+
+function compileAmbientCapture(root: string, requestedSession?: string): ResumeAmbientCapture {
+  const requested = requestedSession !== undefined;
+  const selector = requestedSession?.trim();
+  if (requested && (!selector || !isSafeAmbientSessionSelector(selector))) {
+    return ambientCapture('requested-unavailable', [], ['requested ambient session unavailable.']);
+  }
+
+  const dir = ambientDirectory(root);
+  if (!dir) return ambientCapture(requested ? 'requested-unavailable' : 'none', [], requested ? ['requested ambient session unavailable.'] : []);
+
+  let entries: Array<{ name: string; path: string; mtimeMs: number }> = [];
+  try {
+    entries = readdirSync(dir)
+      .filter((name) => name.endsWith('.json'))
+      .flatMap((name) => {
+        const path = join(dir, name);
+        try {
+          const stat = lstatSync(path);
+          if (!stat.isFile()) return [];
+          return [{ name, path, mtimeMs: stat.mtimeMs }];
+        } catch {
+          return [];
+        }
+      })
+      .sort((a, b) => b.mtimeMs - a.mtimeMs || b.name.localeCompare(a.name));
+  } catch {
+    return ambientCapture(requested ? 'requested-unavailable' : 'unavailable', [], ['ambient capture records unavailable.']);
+  }
+
+  const selected = requested
+    ? entries.filter((entry) => entry.name === `${selector}.json` || entry.name.replace(/\.json$/, '') === selector)
+    : entries.slice(0, DEFAULT_AMBIENT_RECORD_LIMIT);
+  if (selected.length === 0) return ambientCapture(requested ? 'requested-unavailable' : 'none', [], requested ? ['requested ambient session unavailable.'] : []);
+
+  const records: AmbientTrustReport[] = [];
+  const warnings: string[] = [];
+  for (const entry of selected) {
+    try {
+      const parsed = JSON.parse(readFileSync(entry.path, 'utf8')) as unknown;
+      records.push(buildAmbientTrustReport(parsed, entry.name));
+    } catch {
+      warnings.push('ambient capture record skipped: invalid or unreadable.');
+    }
+  }
+  if (records.length === 0) return ambientCapture(requested ? 'requested-unavailable' : 'unavailable', [], requested ? ['requested ambient session unavailable.'] : warnings);
+  return ambientCapture('included', records, warnings);
 }
 
 function latestRepairHypothesis(root: string, run: InternalResumeLatestRun | null): string | null {
@@ -273,7 +374,52 @@ function statusLine(input: { scaffoldPresent: boolean; missionDefined: boolean; 
   return `active plan ${input.plan.slug}; ${checked}/${total} acceptance criteria complete`;
 }
 
-function renderPacket(summary: ResumeSummary, extras: { missionText: string; verificationSteps: string[]; acCap: number; includeLessons: boolean }): string {
+function renderAmbientSummary(record: AmbientTrustReport, includeSamples: boolean): string {
+  const span = record.transcript_observed.session_span.available
+    ? `${record.transcript_observed.session_span.started_at} to ${record.transcript_observed.session_span.ended_at}`
+    : 'unavailable';
+  const tools = record.transcript_observed.tool_census.length > 0
+    ? record.transcript_observed.tool_census.slice(0, includeSamples ? 5 : 3).map((entry) => `${entry.name}=${entry.count}`).join(', ')
+    : 'none observed';
+  const files = record.transcript_observed.files_touched;
+  const fileParts = [
+    `count=${files.count}`,
+    includeSamples && files.samples.length > 0 ? `samples=${files.samples.slice(0, 3).join(', ')}` : null,
+    files.redacted_local_path_count > 0 ? `redacted=${files.redacted_local_path_count}` : null,
+    files.suppressed_count > 0 ? `suppressed=${files.suppressed_count}` : null,
+  ].filter(Boolean).join('; ');
+  const digest = record.transcript_observed.final_message_digest ?? 'unavailable';
+  const fidelity = record.transcript_observed.fidelity_notes.slice(0, includeSamples ? 4 : 2).join(', ');
+  return [
+    `${record.session_id} — source=${record.source}; adapter=${record.runtime.adapter}; state=${record.state}`,
+    `span=${span}`,
+    `tools=${tools}`,
+    `files=${fileParts || 'count=0'}`,
+    `final_digest=${digest}`,
+    `fidelity=${fidelity}`,
+  ].join('; ');
+}
+
+function renderAmbientCapture(summary: ResumeSummary, mode: 'full' | 'brief' | 'none'): string[] {
+  const ambient = summary.ambient_capture;
+  if (mode === 'none' && ambient.status !== 'requested-unavailable') return [];
+  if (ambient.status === 'none') return [];
+  const lines = ['## Ambient capture', ''];
+  if (ambient.status === 'requested-unavailable') {
+    lines.push('Requested ambient session unavailable.');
+  } else if (ambient.records.length > 0) {
+    for (const record of ambient.records.slice(0, mode === 'full' ? DEFAULT_AMBIENT_RECORD_LIMIT : 1)) {
+      lines.push(`- ${renderAmbientSummary(record, mode === 'full')}`);
+    }
+    if (ambient.warnings.length > 0 && mode === 'full') lines.push(`- Warnings: ${ambient.warnings.slice(0, 3).join(' | ')}`);
+  } else if (ambient.status === 'unavailable') {
+    lines.push('Ambient capture records unavailable.');
+  }
+  lines.push('', 'Boundary: ambient capture is observed transcript evidence only; not approval, correctness certification, retry authorization, execution authority, or spawn authority.', '');
+  return lines;
+}
+
+function renderPacket(summary: ResumeSummary, extras: { missionText: string; verificationSteps: string[]; acCap: number; includeLessons: boolean; ambientMode: 'full' | 'brief' | 'none' }): string {
   const lines: string[] = ['# Resume Packet', '', `Status: ${summary.status}`, ''];
 
   lines.push('## Mission', '');
@@ -306,6 +452,8 @@ function renderPacket(summary: ResumeSummary, extras: { missionText: string; ver
     if (summary.repair_hypothesis) lines.push(`Repair hypothesis: ${summary.repair_hypothesis}`);
     lines.push('');
   }
+
+  lines.push(...renderAmbientCapture(summary, extras.ambientMode));
 
   if (extras.includeLessons && summary.lessons.count > 0) {
     lines.push(`## Lessons to inherit (${summary.lessons.count})`, '');
@@ -382,6 +530,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
       }
     : null;
   const lessonsList = scaffoldPresent ? safeAcceptedLessons(root) : [];
+  const ambient = compileAmbientCapture(root, options.ambientSession);
   const amendments = listAmendments(root, picked).map((id) => redactPacketText(id, 180));
   const next = deriveNextAction({
     scaffoldPresent,
@@ -406,6 +555,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
     next_bounded_action: next.action,
     other_active_plans: publicOtherActivePlans,
     latest_run: publicRun,
+    ambient_capture: ambient,
     repair_hypothesis: repairHypothesis,
     lessons: { count: lessonsList.length, slugs: lessonsList.map((lesson) => redactPacketText(lesson.slug, 160)) },
     next_commands: next.commands,
@@ -417,8 +567,9 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
   };
 
   const missionText = scaffold.mission.defined ? missionDigest(root) : '';
-  let packet = renderPacket(summary, { missionText, verificationSteps, acCap: 8, includeLessons: true });
-  if (packet.length > maxChars) packet = renderPacket(summary, { missionText, verificationSteps, acCap: 5, includeLessons: false });
+  let packet = renderPacket(summary, { missionText, verificationSteps, acCap: 8, includeLessons: true, ambientMode: 'full' });
+  if (packet.length > maxChars) packet = renderPacket(summary, { missionText, verificationSteps, acCap: 5, includeLessons: false, ambientMode: 'brief' });
+  if (packet.length > maxChars) packet = renderPacket(summary, { missionText, verificationSteps, acCap: 5, includeLessons: false, ambientMode: 'none' });
   if (packet.length > maxChars) packet = `${packet.slice(0, maxChars - 2).trimEnd()}…\n`;
 
   return { summary, packet };

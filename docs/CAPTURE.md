@@ -47,10 +47,13 @@ containers exit `2`. Under `--hook-safe`, capture creation always exits `0`.
 - `observed`, when present, has object `usage` and `tool_calls`, string-list
   `files_touched` and `notes`, and numeric/null token splits.
 
-The report summarizes source, run/session id, state, runtime adapter/status/failure/marker,
-runtime token availability, transcript-observed availability, assistant turns, user events,
-tool-call census, files touched, usage splits, session span, and missing-fidelity notes.
-Unavailable fields are reported as warnings or `unavailable`; values are never invented.
+The report summarizes a verifier-owned session id label, allowlisted source/state,
+allowlisted runtime adapter/status/failure/marker labels, runtime token availability,
+transcript-observed availability, assistant turns, user events, a bounded tool-call
+census, a file-touch count with safe samples/redacted counts, usage splits, strict
+ISO session span, a valid SHA-256 final-message digest when present, and generated
+fidelity notes. Unavailable fields are reported as warnings or `unavailable`; values
+are never invented.
 
 The verifier never copies `boundary.note` or other record-authored authority prose. It
 generates its own authority boundary:
@@ -60,10 +63,11 @@ generates its own authority boundary:
   facts are unavailable.
 - unknown source: source is unrecognized, while the no-approval boundary still applies.
 
-Human and JSON modes emit only the sanitized report model. Record-derived strings, path
-labels, parse/read errors, tool names, file labels, notes, and warnings are redacted,
-terminal-control-neutralized, and length-bounded before display; raw transcript content,
-secrets, and private local paths are not exposed.
+Human and JSON modes emit only the normalized public summary model. Unknown source,
+state, adapter, status, marker, unsafe session ids, unsafe tool names, unsafe file paths,
+record-authored notes, and invalid digests are suppressed or replaced with fixed
+verifier-owned labels. Raw transcript content, record-authored authority prose, secrets,
+terminal controls, and private local paths are not exposed.
 
 ## Formats
 
@@ -138,8 +142,29 @@ If you already have a different top-level `notify` value, the helper blocks inst
 rewriting it. Merge that setup manually and keep table-local `notify` settings under
 profiles separate from the top-level ambient capture hook.
 
+## Resume and handoff flow
+
+After a Codex or Claude Code hook captures a session under `.osc/state/ambient/`, run:
+
+```bash
+osc handoff
+osc handoff --ambient-session <session-id>
+osc resume --json
+```
+
+`osc handoff` and `osc resume` include the latest compact ambient summaries when records
+exist. `--ambient-session` selects one record by its safe ambient filename/session id.
+The packet includes summaries and digests, not raw transcripts. If no records exist the
+normal resume path stays quiet; if an explicit session is missing, the packet says the
+requested ambient session is unavailable without echoing the selector.
+
+MCP clients get the same behavior through `get_handoff` with optional
+`ambient_session`. Direct `osc review` / `osc gate` ingestion of ambient records is
+intentionally deferred; capture remains observed transcript evidence, not approval,
+correctness certification, retry authorization, execution authority, or spawn authority.
+
 ## Boundary
 
 A captured record is observed facts, not claims. It is not approval, not a correctness
-certification, and not authorization to retry. It is the cheapest possible input to the
-next reader — review, gate, or a fresh session.
+certification, not authorization to retry, and not execution or spawn authority. It is
+the cheapest possible input to the next reader: review, gate, or a fresh session.

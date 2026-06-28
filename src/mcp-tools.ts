@@ -130,6 +130,7 @@ export function listMcpTools(): McpToolDefinition[] {
       description: 'Compile the handoff/resume packet from repo truth: mission digest, active plan with acceptance criteria, latest run state, lessons, and the next bounded action. Read-only; equivalent to `osc handoff`.',
       inputSchema: objectSchema({
         plan: { type: 'string' },
+        ambient_session: { type: 'string' },
         max_chars: { type: 'integer', minimum: MIN_RESUME_MAX_CHARS, maximum: MAX_RESUME_MAX_CHARS },
       }),
       outputSchema: objectSchema({ packet: { type: 'string' }, summary: { type: 'object' } }, ['packet', 'summary']),
@@ -558,7 +559,7 @@ function getHandoff(root: string, input: JsonRecord): Record<string, unknown> {
     throw new McpJsonRpcError(-32602, `max_chars must be an integer between ${MIN_RESUME_MAX_CHARS} and ${MAX_RESUME_MAX_CHARS}`);
   }
   try {
-    const result = compileResume(root, { planSlug: optionalString(input, 'plan'), maxChars });
+    const result = compileResume(root, { planSlug: optionalString(input, 'plan'), ambientSession: optionalString(input, 'ambient_session'), maxChars });
     return { packet: result.packet, summary: result.summary };
   } catch (error) {
     throw asMcpError(error, 'handoff packet compilation failed');

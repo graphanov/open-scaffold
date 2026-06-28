@@ -54,6 +54,7 @@ A fresh agent now knows the goal, what is already done, what is open, the next b
 - The active plan (highest-numbered when several are active; pick explicitly with `--plan <slug>`), its goal, and checklist acceptance criteria with their checked state.
 - Amendments in numeric order — the plan is immutable; learnings layer on top.
 - The latest run when one exists: state, pending human gates, and the recorded repair hypothesis for failed or blocked runs, with a next bounded action such as `osc trace <plan-slug>` followed by `osc run .osc/plans/active/<plan-slug>.md --dry-run`.
+- Compact ambient capture summaries from `.osc/state/ambient/*.json` when records exist: session id, normalized source/adapter, time span, tool census, files touched summary, valid final-message digest, and generated fidelity notes. Pick one explicitly with `--ambient-session <id>`.
 - Accepted lessons from `.osc/improvements/applied/` so future runs inherit them.
 - The next bounded action, chosen by precedence: answer a pending gate → repair a failed run → complete the first unchecked acceptance criterion → verify and close → create or promote a plan.
 
@@ -63,8 +64,8 @@ A fresh agent now knows the goal, what is already done, what is open, the next b
 osc resume --json
 ```
 
-Emits the `open-scaffold.resume.v1` summary. The fixture's expected output is committed at [`examples/resume-demo/expected-resume-summary.json`](../examples/resume-demo/expected-resume-summary.json) and locked by the resume test suite.
+Emits the `open-scaffold.resume.v1` summary, including additive `ambient_capture` with normalized records when available. The fixture's expected output is committed at [`examples/resume-demo/expected-resume-summary.json`](../examples/resume-demo/expected-resume-summary.json) and locked by the resume test suite.
 
 ## Budget and boundaries
 
-The packet is budgeted (default 4,000 characters; tune with `--max-chars`), deterministic for a given repo state, and redacts secrets and local absolute paths. It is compiled read-only from repo truth: it spawns nothing, approves nothing, and replaces chat archaeology — not human judgment.
+The packet is budgeted (default 4,000 characters; tune with `--max-chars`), deterministic for a given repo state, and redacts secrets and local absolute paths. Under tight budgets, ambient capture reduces to fewer records and fewer samples or is omitted rather than slicing raw records into output. It is compiled read-only from repo truth: it spawns nothing, approves nothing, certifies no correctness, authorizes no retry, and replaces chat archaeology — not human judgment.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Readable, Writable } from 'node:stream';
@@ -13,6 +13,7 @@ const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const cli = join(repoRoot, 'src/cli.ts');
 const mcpCli = join(repoRoot, 'src/mcp-cli.ts');
+const ambientRecordFixtures = join(repoRoot, 'tests', 'fixtures', 'capture', 'records');
 
 function scaffoldFixture() {
   const root = mkdtempSync(join(tmpdir(), 'osc-mcp-'));
@@ -48,6 +49,14 @@ function scaffoldFixture() {
   writeFileSync(join(root, '.osc/plans/backlog/002-next.md'), samplePlan('002-next', 'backlog', 'Backlog follow-up.'));
   writeFileSync(join(root, '.osc/releases/2026-05-22-001-sample.md'), '# Evidence: 001-sample\n\nVerified sample behavior.\n');
   return root;
+}
+
+function writeAmbientRecord(root: string, name: string, fixture: string, mtime: Date): void {
+  const dir = join(root, '.osc', 'state', 'ambient');
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, name);
+  writeFileSync(path, readFileSync(join(ambientRecordFixtures, fixture), 'utf8'), 'utf8');
+  utimesSync(path, mtime, mtime);
 }
 
 function samplePlan(slug: string, status: string, goal: string) {
@@ -372,6 +381,21 @@ describe('167 front-door MCP tools: get_handoff, analyze_loop, gate_loop', () =>
       expect(error).toBeInstanceOf(McpJsonRpcError);
       expect((error as McpJsonRpcError).code).toBe(-32602);
     }
+  });
+
+  it('includes compact ambient summaries in get_handoff and supports explicit session selection', () => {
+    const root = scaffoldFixture();
+    writeAmbientRecord(root, 'older.json', 'valid-claude-code.json', new Date('2026-06-13T10:00:00.000Z'));
+    writeAmbientRecord(root, 'target-session.json', 'valid-codex.json', new Date('2026-06-13T11:00:00.000Z'));
+
+    const handoff = callMcpTool('get_handoff', { ambient_session: 'target-session' }, { root, allowWrite: false }) as { packet: string; summary: Record<string, any> };
+    const serialized = JSON.stringify(handoff);
+
+    expect(handoff.packet).toContain('## Ambient capture');
+    expect(handoff.packet).toContain('codex-session-1');
+    expect(handoff.packet).not.toContain('claude-session-1');
+    expect(handoff.summary.ambient_capture.records[0].session_id).toBe('codex-session-1');
+    expect(serialized).not.toContain('codex cache-creation split unavailable');
   });
 
   it('analyzes a recorded loop without write access and reports the failing criterion', () => {
