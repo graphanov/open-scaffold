@@ -63,7 +63,7 @@ function formatFirstRunConflictMessage(error: ScaffoldConflictError): string {
     'npx open-scaffold@latest first-run',
     '',
     'For an existing project, preserve, move, or rename the listed conflicting files first, then initialize brownfield scaffolding:',
-    `npx open-scaffold@latest init --from-existing --tier min --target ${shellQuote(error.target)}`,
+    `npx open-scaffold@latest init --from-existing --tier min --target ${shellQuote(error.target)}\n\nAfter brownfield scaffolding is initialized, rerun first-run in that target to create the mission, active plan, and evidence skeleton:\ncd ${shellQuote(error.target)}\nnpx open-scaffold@latest first-run`,
   ].join('\n');
 }
 

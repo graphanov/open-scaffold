@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -137,7 +137,15 @@ describe('blueprint first-run and PR check surfaces', () => {
       expect(result.stderr).toContain('npx open-scaffold@latest first-run');
       expect(result.stderr).toContain('preserve, move, or rename the listed conflicting files first');
       expect(result.stderr).toContain(`npx open-scaffold@latest init --from-existing --tier min --target ${quotedTarget}`);
+      expect(result.stderr).toContain(`After brownfield scaffolding is initialized, rerun first-run in that target to create the mission, active plan, and evidence skeleton:\ncd ${quotedTarget}`);
       expect(result.stderr).not.toContain('--force');
+
+      renameSync(join(root, 'AGENTS.md'), join(root, 'AGENTS.existing.md'));
+      const init = runOsc(root, ['init', '--from-existing', '--tier', 'min', '--target', root]);
+      expect(init.status, init.stderr).toBe(0);
+      const rerun = runOsc(root, ['first-run', '--non-interactive', '--slug', 'first-work-record', '--mission', 'Build a tiny service safely.', '--goal', 'Add the first reviewed change.']);
+      expect(rerun.status, rerun.stderr).toBe(0);
+      expect([existsSync(join(root, '.osc/plans/active/first-work-record.md')), readdirSync(join(root, '.osc/releases')).some((file: string) => file.endsWith('-first-work-record.md'))]).toEqual([true, true]);
     } finally {
       rmSync(parent, { recursive: true, force: true });
     }
