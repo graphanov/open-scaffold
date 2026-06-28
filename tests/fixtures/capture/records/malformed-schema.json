@@ -1,0 +1,20 @@
+{
+  "schema": "osc.ambient-work-record.v0",
+  "runId": "bad-schema",
+  "source": "transcript-extraction",
+  "state": "observed",
+  "runtime": {
+    "adapter": "codex-rollout",
+    "spawned": false,
+    "status": "observed",
+    "failureCode": null,
+    "markerState": null,
+    "tokenTotal": null
+  },
+  "observed": {
+    "usage": {},
+    "tool_calls": {},
+    "files_touched": [],
+    "notes": []
+  }
+}

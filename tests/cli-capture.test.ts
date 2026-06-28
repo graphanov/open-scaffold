@@ -8,6 +8,7 @@ const repoRoot = resolve(import.meta.dirname, '..');
 const cli = resolve(repoRoot, 'src/cli.ts');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
 const fixtures = resolve(repoRoot, 'tests/fixtures/capture');
+const recordFixtures = resolve(fixtures, 'records');
 const ambientHook = resolve(repoRoot, 'examples/hooks/ambient-hook.mjs');
 const codexNotifyHook = resolve(repoRoot, 'examples/hooks/codex-notify.mjs');
 
@@ -179,6 +180,73 @@ describe('osc capture CLI surface', () => {
     const result = run(['capture', '--help'], repo);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Usage: osc capture --from');
+    expect(result.stdout).toContain('osc capture verify <record> [--json]');
+    expect(result.stderr).toBe('');
+  });
+
+  it('verifies a valid ambient record in human-readable mode', () => {
+    const repo = tempRepo();
+    const result = run(['capture', 'verify', join(recordFixtures, 'valid-claude-code.json')], repo);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout).toContain('Ambient record trust report');
+    expect(result.stdout).toContain('Run/session id: claude-session-1');
+    expect(result.stdout).toContain('Tool-call census: Edit=1, Read=1');
+    expect(result.stdout).toContain('not approval; not correctness certification; not retry authorization');
+    expect(result.stdout).not.toContain('APPROVED BY RECORD TEXT');
+  });
+
+  it('verifies a valid ambient record in JSON mode without dumping the raw record', () => {
+    const repo = tempRepo();
+    const result = run(['capture', 'verify', join(recordFixtures, 'valid-codex.json'), '--json'], repo);
+
+    expect(result.status).toBe(0);
+    const payload = JSON.parse(result.stdout);
+    expect(payload.runId).toBe('codex-session-1');
+    expect(payload.transcriptObserved.usage.total_tokens).toBe(5750);
+    expect(payload.boundary.authority).toContain('not approval');
+    expect(payload.observed).toBeUndefined();
+    expect(payload.boundary.note).toBeUndefined();
+  });
+
+  it('verifies postflight records without observed facts as unavailable transcript fidelity', () => {
+    const repo = tempRepo();
+    const result = run(['capture', 'verify', join(recordFixtures, 'valid-postflight-no-observed.json')], repo);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Transcript-observed facts: unavailable');
+    expect(result.stdout).toContain('postflight runtime receipt only');
+  });
+
+  it('exits 2 for malformed ambient records', () => {
+    const repo = tempRepo();
+    const result = run(['capture', 'verify', join(recordFixtures, 'malformed-schema.json')], repo);
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Invalid ambient record');
+    expect(result.stderr).toContain('record.schema');
+  });
+
+  it('sanitizes record path labels on verify failures', () => {
+    const repo = tempRepo();
+    const result = run(['capture', 'verify', '/Users/alice/sk-proj-AAAAAAAAAAAABBBBBBBBBBBBBBBB.json'], repo);
+
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('Ambient record not found');
+    expect(result.stderr).not.toContain('/Users/');
+    expect(result.stderr).not.toContain('sk-proj-AAAAAAAA');
+    expect(result.stderr).toContain('/[local-path-redacted]');
+  });
+
+  it('prints capture verify help without error', () => {
+    const repo = tempRepo();
+    const result = run(['capture', 'verify', '--help'], repo);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Usage: osc capture verify <record> [--json]');
+    expect(result.stdout).toContain('Malformed JSON');
     expect(result.stderr).toBe('');
   });
 

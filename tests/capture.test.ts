@@ -5,10 +5,14 @@ import { join, resolve } from 'node:path';
 import {
   CAPTURE_FORMATS,
   CaptureUsageError,
+  buildAmbientTrustReport,
   captureRecord,
   defaultOutPath,
   detectFormat,
   isCaptureFormat,
+  renderAmbientTrustReport,
+  sanitizeReportString,
+  verifyAmbientRecordText,
   writeCaptureRecord,
 } from '../src/capture.js';
 import { ambientDigest } from '../src/ambient.js';
@@ -19,6 +23,7 @@ const claudeFixture = join(fixtures, 'claude-code.jsonl');
 const codexFixture = join(fixtures, 'codex.jsonl');
 const genericFixture = join(fixtures, 'generic.jsonl');
 const malformedFixture = join(fixtures, 'malformed.jsonl');
+const recordFixtures = resolve(fixtures, 'records');
 
 function observed(path: string, format?: 'claude-code' | 'codex' | 'jsonl-generic') {
   const result = captureRecord({ transcriptPath: path, format });
@@ -190,6 +195,110 @@ describe('redaction', () => {
     const finalText = 'The change is complete and tests pass. My token is sk-proj-AAAAAAAAAAAAAAAAAAAAAAAAAAAA stored at /Users/secret/key.txt.';
     expect(o.final_message_digest).toBe(ambientDigest(redactSecrets(finalText)));
     expect(o.final_message_digest).not.toBe(ambientDigest(finalText));
+  });
+});
+
+describe('ambient record verifier trust report', () => {
+  function reportFixture(name: string) {
+    return verifyAmbientRecordText(readFileSync(join(recordFixtures, name), 'utf8'), name);
+  }
+
+  it('reports a valid Claude Code transcript record without trusting record-authored boundary prose', () => {
+    const report = reportFixture('valid-claude-code.json');
+    const rendered = renderAmbientTrustReport(report);
+
+    expect(report.schema).toBe('osc.ambient-work-record.v1');
+    expect(report.source).toBe('transcript-extraction');
+    expect(report.runId).toBe('claude-session-1');
+    expect(report.runtime.adapter).toBe('claude-code-transcript');
+    expect(report.transcriptObserved.available).toBe(true);
+    expect(report.transcriptObserved.assistantTurns).toBe(2);
+    expect(report.transcriptObserved.userEvents).toBe(1);
+    expect(report.transcriptObserved.toolCalls).toEqual([{ name: 'Edit', count: 1 }, { name: 'Read', count: 1 }]);
+    expect(rendered).toContain('transcript-observed facts are available');
+    expect(rendered).toContain('not approval; not correctness certification; not retry authorization');
+    expect(rendered).not.toContain('APPROVED BY RECORD TEXT');
+  });
+
+  it('reports a valid Codex transcript record and token availability in JSON-safe shape', () => {
+    const report = reportFixture('valid-codex.json');
+
+    expect(report.runtime.tokenTotal).toBe(5750);
+    expect(report.runtime.tokenAvailability).toBe('available');
+    expect(report.transcriptObserved.usage.total_tokens).toBe(5750);
+    expect(report.transcriptObserved.notes).toEqual(['codex cache-creation split unavailable.']);
+    expect(JSON.stringify(report)).not.toContain('boundary.note');
+  });
+
+  it('accepts ambient postflight records without observed facts as a fidelity warning', () => {
+    const report = reportFixture('valid-postflight-no-observed.json');
+    const rendered = renderAmbientTrustReport(report);
+
+    expect(report.source).toBe('ambient-postflight');
+    expect(report.transcriptObserved.available).toBe(false);
+    expect(report.boundary.source).toContain('postflight runtime receipt only');
+    expect(rendered).toContain('Transcript-observed facts: unavailable');
+    expect(rendered).toContain('not approval; not correctness certification; not retry authorization');
+  });
+
+  it('treats missing optional fidelity as unavailable instead of inventing values', () => {
+    const report = reportFixture('missing-optional-fidelity.json');
+
+    expect(report.transcriptObserved.sessionSpan.available).toBe(false);
+    expect(report.transcriptObserved.usage.input_tokens).toBeNull();
+    expect(report.transcriptObserved.tokenAvailability).toBe('unavailable');
+    expect(report.warnings.some((warning) => warning.includes('observed token usage unavailable'))).toBe(true);
+  });
+
+  it('fails closed for malformed JSON, roots, schema, runtime, source/observed mismatch, and malformed containers', () => {
+    const validBase = {
+      schema: 'osc.ambient-work-record.v1',
+      runId: 'r',
+      source: 'transcript-extraction',
+      state: 'observed',
+      runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null },
+      observed: { assistant_turns: 1, user_events: 1, usage: {}, tool_calls: {}, files_touched: [], notes: [] },
+    };
+    const controlSuffixedSchema = {
+      ...validBase,
+      schema: 'osc.ambient-work-record.v1\u001b[31m',
+    };
+
+    expect(() => verifyAmbientRecordText('{', 'bad.json')).toThrow(/Malformed ambient record JSON/);
+    expect(() => buildAmbientTrustReport([], 'array.json')).toThrow(/record must be an object/);
+    expect(() => reportFixture('malformed-schema.json')).toThrow(/record.schema/);
+    expect(() => buildAmbientTrustReport(controlSuffixedSchema)).toThrow(/record.schema/);
+    expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 'r', source: 'transcript-extraction', state: 'observed', observed: {} })).toThrow(/runtime/);
+    expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 1, source: 'transcript-extraction', state: 'observed', runtime: {} })).toThrow(/runId/);
+    expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 'r', source: 'transcript-extraction', state: 'observed', runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null } })).toThrow(/requires observed object/);
+    expect(() => buildAmbientTrustReport({ schema: 'osc.ambient-work-record.v1', runId: 'r', source: 'transcript-extraction', state: 'observed', runtime: { adapter: 'a', spawned: false, status: 's', failureCode: null, markerState: null, tokenTotal: null }, observed: [] })).toThrow(/observed must be an object/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: {} })).toThrow(/complete observed transcript facts/);
+    expect(() => buildAmbientTrustReport({ ...validBase, runtime: { ...validBase.runtime, tokenTotal: -1 } })).toThrow(/non-negative integer/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: { ...validBase.observed, usage: [] } })).toThrow(/observed.usage/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: { ...validBase.observed, usage: { input_tokens: 1.5 } } })).toThrow(/non-negative integer/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: { ...validBase.observed, tool_calls: { shell: '1' } } })).toThrow(/tool_calls/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: { ...validBase.observed, files_touched: [1] } })).toThrow(/files_touched/);
+    expect(() => buildAmbientTrustReport({ ...validBase, observed: { ...validBase.observed, usage: { input_tokens: '1' } } })).toThrow(/input_tokens/);
+  });
+
+  it('sanitizes hostile record strings, path labels, and terminal controls in reports and errors', () => {
+    const report = reportFixture('redaction-sensitive.json');
+    const rendered = renderAmbientTrustReport(report);
+    const serialized = JSON.stringify(report);
+    const pathLabel = sanitizeReportString('/Users/ali\u001b[31mce/sk-proj-AAAAAAAAAAAABBBBBBBBBBBBBBBB.json');
+
+    for (const output of [rendered, serialized, pathLabel]) {
+      expect(output).not.toContain('/Users/');
+      expect(output).not.toContain('sk-proj-AAAAAAAA');
+      expect(output).not.toContain('ghp_AAAAAAAAAAAA');
+      expect(output).not.toContain('\u001b');
+      expect(output).not.toContain('\r');
+      expect(output).not.toContain('\u0000');
+    }
+    for (const output of [serialized, pathLabel]) expect(output).not.toContain('\n');
+    expect(serialized).toContain('/[local-path-redacted]');
+    expect(serialized).toContain('sk-[redacted]');
+    expect(serialized).toContain('gh*_[redacted]');
   });
 });
 

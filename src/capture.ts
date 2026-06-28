@@ -1,6 +1,6 @@
 import { closeSync, constants, existsSync, mkdirSync, openSync, readFileSync, realpathSync, writeSync } from 'node:fs';
 import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
-import { AmbientObserved, AmbientUsage, ambientDigest, buildTranscriptWorkRecord } from './ambient.js';
+import { AMBIENT_WORK_RECORD_SCHEMA, AmbientObserved, AmbientUsage, ambientDigest, buildTranscriptWorkRecord } from './ambient.js';
 import { redactSecrets } from './redaction.js';
 import { writeJsonUnder } from './path-safety.js';
 
@@ -20,6 +20,39 @@ export interface CaptureResult {
   record: Record<string, unknown>;
   format: CaptureFormat;
   detected: boolean;
+}
+
+export interface AmbientTrustReport {
+  label: string;
+  schema: string;
+  source: string;
+  runId: string;
+  state: string;
+  runtime: {
+    adapter: string;
+    spawned: boolean | null;
+    status: string;
+    failureCode: string | null;
+    markerState: string | null;
+    tokenTotal: number | null;
+    tokenAvailability: 'available' | 'unavailable';
+  };
+  transcriptObserved: {
+    available: boolean;
+    assistantTurns: number | null;
+    userEvents: number | null;
+    toolCalls: Array<{ name: string; count: number }>;
+    filesTouched: string[];
+    usage: Record<string, number | null>;
+    tokenAvailability: 'available' | 'unavailable';
+    sessionSpan: { startedAt: string | null; endedAt: string | null; available: boolean };
+    notes: string[];
+  };
+  warnings: string[];
+  boundary: {
+    authority: string;
+    source: string;
+  };
 }
 
 interface ParsedLines {
@@ -425,6 +458,250 @@ export function captureRecord(options: CaptureOptions): CaptureResult {
   }
   const record = buildTranscriptWorkRecord({ runId, adapter, command, intent: redactUnknown(intent), observed });
   return { record, format, detected };
+}
+
+const REPORT_MAX_STRING = 180;
+const REPORT_MAX_ITEMS = 25;
+const REPORT_AUTHORITY_BOUNDARY = 'not approval; not correctness certification; not retry authorization.';
+const ANSI_OSC_PATTERN = /\u001B\][^\u0007]*(?:\u0007|\u001B\\)/g;
+const ANSI_CSI_PATTERN = /\u001B\[[0-?]*[ -/]*[@-~]/g;
+const ANSI_SINGLE_PATTERN = /\u001B[@-_]/g;
+const CONTROL_PATTERN = /[\u0000-\u001F\u007F-\u009F]/g;
+
+function stripTerminalControls(text: string): string {
+  return text
+    .replace(ANSI_OSC_PATTERN, '')
+    .replace(ANSI_CSI_PATTERN, '')
+    .replace(ANSI_SINGLE_PATTERN, '')
+    .replace(CONTROL_PATTERN, '');
+}
+
+export function sanitizeReportString(value: unknown, maxLength = REPORT_MAX_STRING): string {
+  const raw = String(value ?? '');
+  const preRedacted = redactSecrets(raw);
+  const normalizedRaw = stripTerminalControls(raw);
+  const postRedacted = redactSecrets(normalizedRaw);
+  const displaySource = postRedacted !== normalizedRaw ? postRedacted : stripTerminalControls(preRedacted);
+  const display = redactSecrets(displaySource).replace(CONTROL_PATTERN, ' | ').replace(/\s+/g, ' ').trim();
+  if (display.length <= maxLength) return display;
+  return `${display.slice(0, Math.max(0, maxLength - 15))}...[truncated]`;
+}
+
+function failAmbientRecord(message: string): never {
+  throw new CaptureUsageError(`Invalid ambient record: ${sanitizeReportString(message, 260)}`);
+}
+
+function requireRecord(value: unknown, path: string): Record<string, unknown> {
+  const record = asRecord(value);
+  if (!record) failAmbientRecord(`${path} must be an object`);
+  return record;
+}
+
+function requireStringField(record: Record<string, unknown>, key: string, path: string): string {
+  const value = record[key];
+  if (typeof value !== 'string' || value.length === 0) failAmbientRecord(`${path}.${key} must be a non-empty string`);
+  return value;
+}
+
+function optionalBooleanField(record: Record<string, unknown>, key: string, path: string, warnings: string[]): boolean | null {
+  if (!Object.prototype.hasOwnProperty.call(record, key)) {
+    warnings.push(`${path}.${key} unavailable.`);
+    return null;
+  }
+  const value = record[key];
+  if (typeof value !== 'boolean') failAmbientRecord(`${path}.${key} must be boolean`);
+  return value;
+}
+
+function optionalStringOrNullField(record: Record<string, unknown>, key: string, path: string, warnings: string[]): string | null {
+  if (!Object.prototype.hasOwnProperty.call(record, key)) {
+    warnings.push(`${path}.${key} unavailable.`);
+    return null;
+  }
+  const value = record[key];
+  if (value === null) {
+    warnings.push(`${path}.${key} unavailable.`);
+    return null;
+  }
+  if (typeof value !== 'string') failAmbientRecord(`${path}.${key} must be string or null`);
+  return sanitizeReportString(value);
+}
+
+function optionalNumberOrNullField(record: Record<string, unknown>, key: string, path: string, warnings: string[]): number | null {
+  if (!Object.prototype.hasOwnProperty.call(record, key)) {
+    warnings.push(`${path}.${key} unavailable.`);
+    return null;
+  }
+  const value = record[key];
+  if (value === null) {
+    warnings.push(`${path}.${key} unavailable.`);
+    return null;
+  }
+  if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value) || value < 0) failAmbientRecord(`${path}.${key} must be a non-negative integer or null`);
+  return value;
+}
+
+function optionalCountField(record: Record<string, unknown>, key: string, path: string, warnings: string[]): number | null {
+  const value = optionalNumberOrNullField(record, key, path, warnings);
+  if (value === null) return null;
+  if (!Number.isInteger(value) || value < 0) failAmbientRecord(`${path}.${key} must be a non-negative integer`);
+  return value;
+}
+
+function validateUsage(value: unknown, warnings: string[]): Record<string, number | null> {
+  const keys = ['input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens', 'total_tokens'];
+  if (value === undefined) {
+    warnings.push('observed.usage unavailable.');
+    return Object.fromEntries(keys.map((key) => [key, null])) as Record<string, number | null>;
+  }
+  const usage = requireRecord(value, 'observed.usage');
+  return Object.fromEntries(keys.map((key) => [key, optionalNumberOrNullField(usage, key, 'observed.usage', warnings)])) as Record<string, number | null>;
+}
+
+function validateToolCalls(value: unknown, warnings: string[]): Array<{ name: string; count: number }> {
+  if (value === undefined) {
+    warnings.push('observed.tool_calls unavailable.');
+    return [];
+  }
+  const toolCalls = requireRecord(value, 'observed.tool_calls');
+  const entries = Object.entries(toolCalls).map(([name, count]) => {
+    if (typeof count !== 'number' || !Number.isFinite(count) || !Number.isInteger(count) || count < 0) {
+      failAmbientRecord(`observed.tool_calls count for ${sanitizeReportString(name)} must be a non-negative integer`);
+    }
+    return { name: sanitizeReportString(name), count };
+  }).sort((a, b) => a.name.localeCompare(b.name));
+  if (entries.length > REPORT_MAX_ITEMS) warnings.push(`observed.tool_calls truncated to ${REPORT_MAX_ITEMS} entries.`);
+  return entries.slice(0, REPORT_MAX_ITEMS);
+}
+
+function validateStringList(value: unknown, path: string, warnings: string[]): string[] {
+  if (value === undefined) {
+    warnings.push(`${path} unavailable.`);
+    return [];
+  }
+  if (!Array.isArray(value)) failAmbientRecord(`${path} must be an array`);
+  const out = value.map((item, index) => {
+    if (typeof item !== 'string') failAmbientRecord(`${path}[${index}] must be a string`);
+    return sanitizeReportString(item);
+  });
+  if (out.length > REPORT_MAX_ITEMS) warnings.push(`${path} truncated to ${REPORT_MAX_ITEMS} entries.`);
+  return out.slice(0, REPORT_MAX_ITEMS);
+}
+
+function sourceBoundary(source: string, observedAvailable: boolean, warnings: string[]): string {
+  if (source === 'transcript-extraction') return 'transcript-observed facts are available.';
+  if (source === 'ambient-postflight' && !observedAvailable) return 'postflight runtime receipt only; transcript-observed facts are unavailable.';
+  if (source === 'ambient-postflight') return 'postflight runtime receipt with transcript-observed facts present.';
+  const displaySource = sanitizeReportString(source); warnings.push(`source is unrecognized: ${displaySource}.`);
+  return `unrecognized source: ${displaySource}; source-specific fidelity is not assumed.`;
+}
+
+export function buildAmbientTrustReport(value: unknown, label = 'ambient record'): AmbientTrustReport {
+  const warnings: string[] = [];
+  const record = requireRecord(value, 'record');
+  const schema = requireStringField(record, 'schema', 'record');
+  if (schema !== AMBIENT_WORK_RECORD_SCHEMA) failAmbientRecord(`record.schema must be ${AMBIENT_WORK_RECORD_SCHEMA}`);
+  const runId = requireStringField(record, 'runId', 'record');
+  const source = requireStringField(record, 'source', 'record');
+  const state = requireStringField(record, 'state', 'record');
+  const runtime = requireRecord(record.runtime, 'runtime');
+  const runtimeTokenTotal = optionalNumberOrNullField(runtime, 'tokenTotal', 'runtime', warnings);
+  const observedRaw = record.observed;
+  const observedPresent = Object.prototype.hasOwnProperty.call(record, 'observed');
+  const observed = asRecord(observedRaw);
+  if (observedPresent && !observed) failAmbientRecord('observed must be an object when present');
+  if (source === 'transcript-extraction' && !observed) failAmbientRecord('source transcript-extraction requires observed object'); if (source === 'transcript-extraction' && observed && !['assistant_turns', 'user_events', 'usage', 'tool_calls', 'files_touched', 'notes'].every((key) => Object.prototype.hasOwnProperty.call(observed, key))) failAmbientRecord('source transcript-extraction requires complete observed transcript facts');
+
+  const observedUsage = observed ? validateUsage(observed.usage, warnings) : validateUsage(undefined, warnings);
+  const tokenAvailability = Object.values(observedUsage).some((item) => typeof item === 'number') ? 'available' : 'unavailable';
+  if (tokenAvailability === 'unavailable') warnings.push('observed token usage unavailable.');
+
+  const startedAt = observed ? optionalStringOrNullField(observed, 'started_at', 'observed', warnings) : null;
+  const endedAt = observed ? optionalStringOrNullField(observed, 'ended_at', 'observed', warnings) : null;
+  const report: AmbientTrustReport = {
+    label: sanitizeReportString(label),
+    schema: sanitizeReportString(schema),
+    source: sanitizeReportString(source),
+    runId: sanitizeReportString(runId),
+    state: sanitizeReportString(state),
+    runtime: {
+      adapter: sanitizeReportString(requireStringField(runtime, 'adapter', 'runtime')),
+      spawned: optionalBooleanField(runtime, 'spawned', 'runtime', warnings),
+      status: sanitizeReportString(requireStringField(runtime, 'status', 'runtime')),
+      failureCode: optionalStringOrNullField(runtime, 'failureCode', 'runtime', warnings),
+      markerState: optionalStringOrNullField(runtime, 'markerState', 'runtime', warnings),
+      tokenTotal: runtimeTokenTotal,
+      tokenAvailability: typeof runtimeTokenTotal === 'number' ? 'available' : 'unavailable',
+    },
+    transcriptObserved: {
+      available: Boolean(observed),
+      assistantTurns: observed ? optionalCountField(observed, 'assistant_turns', 'observed', warnings) : null,
+      userEvents: observed ? optionalCountField(observed, 'user_events', 'observed', warnings) : null,
+      toolCalls: observed ? validateToolCalls(observed.tool_calls, warnings) : [],
+      filesTouched: observed ? validateStringList(observed.files_touched, 'observed.files_touched', warnings) : [],
+      usage: observedUsage,
+      tokenAvailability,
+      sessionSpan: { startedAt, endedAt, available: Boolean(startedAt && endedAt) },
+      notes: observed ? validateStringList(observed.notes, 'observed.notes', warnings) : [],
+    },
+    warnings,
+    boundary: {
+      authority: REPORT_AUTHORITY_BOUNDARY,
+      source: '',
+    },
+  };
+  report.boundary.source = sourceBoundary(source, report.transcriptObserved.available, report.warnings);
+  return report;
+}
+
+export function verifyAmbientRecordText(rawText: string, label = 'ambient record'): AmbientTrustReport {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawText);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new CaptureUsageError(`Malformed ambient record JSON in ${sanitizeReportString(label)}: ${sanitizeReportString(reason, 220)}`);
+  }
+  return buildAmbientTrustReport(parsed, label);
+}
+
+function availability(value: string | number | boolean | null): string {
+  if (value === null) return 'unavailable';
+  return String(value);
+}
+
+export function renderAmbientTrustReport(report: AmbientTrustReport): string {
+  const toolSummary = report.transcriptObserved.toolCalls.length > 0
+    ? report.transcriptObserved.toolCalls.map((entry) => `${entry.name}=${entry.count}`).join(', ')
+    : 'none observed';
+  const filesSummary = report.transcriptObserved.filesTouched.length > 0
+    ? report.transcriptObserved.filesTouched.join(', ')
+    : 'none observed';
+  const usageSummary = Object.entries(report.transcriptObserved.usage)
+    .map(([key, value]) => `${key}=${availability(value)}`)
+    .join(', ');
+  const notes = report.transcriptObserved.notes.length > 0 ? report.transcriptObserved.notes : ['none'];
+  const warnings = report.warnings.length > 0 ? report.warnings : ['none'];
+  return [
+    'Ambient record trust report',
+    `Record: ${report.label}`,
+    `Schema: ${report.schema}`,
+    `Source: ${report.source}`,
+    `Run/session id: ${report.runId}`,
+    `State: ${report.state}`,
+    `Runtime: adapter=${report.runtime.adapter}; status=${report.runtime.status}; spawned=${availability(report.runtime.spawned)}; failure=${availability(report.runtime.failureCode)}; marker=${availability(report.runtime.markerState)}; tokenTotal=${availability(report.runtime.tokenTotal)}; tokenAvailability=${report.runtime.tokenAvailability}`,
+    `Transcript-observed facts: ${report.transcriptObserved.available ? 'available' : 'unavailable'}`,
+    `Assistant turns: ${availability(report.transcriptObserved.assistantTurns)}`,
+    `User events: ${availability(report.transcriptObserved.userEvents)}`,
+    `Tool-call census: ${toolSummary}`,
+    `Files touched: ${filesSummary}`,
+    `Usage: ${usageSummary}; tokenAvailability=${report.transcriptObserved.tokenAvailability}`,
+    `Session span: started=${availability(report.transcriptObserved.sessionSpan.startedAt)}; ended=${availability(report.transcriptObserved.sessionSpan.endedAt)}; available=${report.transcriptObserved.sessionSpan.available}`,
+    `Fidelity notes: ${notes.join(' | ')}`,
+    `Warnings: ${warnings.join(' | ')}`,
+    `Authority boundary: ${report.boundary.authority}`,
+    `Source boundary: ${report.boundary.source}`,
+  ].join('\n');
 }
 
 function readTranscript(transcriptPath: string): string {

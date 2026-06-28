@@ -1,0 +1,23 @@
+{
+  "schema": "osc.ambient-work-record.v1",
+  "runId": "postflight-run-1",
+  "createdAt": "2026-06-13T12:00:00.000Z",
+  "source": "ambient-postflight",
+  "intentDigest": "digest",
+  "command": "external-work",
+  "state": "completed",
+  "runtime": {
+    "adapter": "codex",
+    "spawned": true,
+    "status": "completed",
+    "failureCode": null,
+    "markerState": "complete",
+    "tokenTotal": null
+  },
+  "artifacts": [],
+  "evidencePaths": [],
+  "boundary": {
+    "not_approval": true,
+    "not_correctness_certification": true
+  }
+}

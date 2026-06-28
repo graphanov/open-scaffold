@@ -1,0 +1,41 @@
+{
+  "schema": "osc.ambient-work-record.v1",
+  "runId": "sess-sk-proj-AAAAAAAAAAAA\u001b[31mBBBBBBBBBBBBBBBB",
+  "createdAt": "2026-06-13T14:00:00.000Z",
+  "source": "transcript-extraction",
+  "intentDigest": "digest",
+  "command": "codex-session",
+  "state": "observed",
+  "runtime": {
+    "adapter": "codex-rollout",
+    "spawned": false,
+    "status": "observed",
+    "failureCode": "failure-/Users/ali\u001b[31mce/secret.txt",
+    "markerState": "blocked\rmanual",
+    "tokenTotal": null
+  },
+  "observed": {
+    "assistant_turns": 1,
+    "user_events": 1,
+    "started_at": "2026-06-13T14:00:00.000Z",
+    "ended_at": "2026-06-13T14:00:01.000Z",
+    "usage": {
+      "input_tokens": null,
+      "output_tokens": null,
+      "cache_creation_input_tokens": null,
+      "cache_read_input_tokens": null
+    },
+    "tool_calls": {
+      "shell-sk-proj-CCCCCCCCCCCC\nDDDDDDDDDDDDDDDD": 1
+    },
+    "files_touched": [
+      "/Users/bo\rb/secret.txt",
+      "/Users/carol\u0000/project/private.ts"
+    ],
+    "final_message_digest": "digest",
+    "final_message_claim_words": [],
+    "notes": [
+      "token ghp_AAAAAAAAAAAA\bBBBBBBBBBBBBBBBB and path /Users/dana\n/project/key.txt were present in record metadata"
+    ]
+  }
+}

@@ -8,7 +8,7 @@ import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, typ
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type RunArtifactOptions, type RuntimeWorkflow } from './artifacts.js';
 import { COCKPIT_EVENT_TYPES, CockpitConfigError, CockpitUsageError, formatCockpitConfig, formatCockpitDispatchSummary, hasCockpitDispatchFailures, loadCockpitConfig, postCockpitEvent, type CockpitEventType, type CockpitPostOptions } from './cockpit.js';
 import { compareBareAttempts, compareProofManifest, renderAttemptComparisonJson, renderAttemptComparisonMarkdown, renderProofComparison, validateProofManifestFile, type ProofRenderFormat } from './compare.js';
-import { CAPTURE_FORMATS, CaptureUsageError, captureRecord, defaultOutPath, isCaptureFormat, writeCaptureRecord, type CaptureFormat } from './capture.js';
+import { CAPTURE_FORMATS, CaptureUsageError, captureRecord, defaultOutPath, isCaptureFormat, renderAmbientTrustReport, sanitizeReportString, verifyAmbientRecordText, writeCaptureRecord, type CaptureFormat } from './capture.js';
 import { collectEvidence } from './evidence.js';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from './evidence-chain.js';
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, analyzeEvolutionLoop, buildEvolutionJudgmentCheckpoint, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionAnalysis, renderEvolutionComparison, renderEvolutionJudgmentCheckpoint, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionAnalysisFormat, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionJudgeAction, type EvolutionStrategy } from './evolution.js';
@@ -57,8 +57,9 @@ Handoff (compile the work record into a resume packet):
   osc handoff [--json] [--plan <slug>] [--max-chars <n>]
   osc resume [--json] [--plan <slug>] [--max-chars <n>]        same command, original name
 
-Record (extract an ambient work record from a finished session transcript):
+Record (extract and inspect ambient work records):
   osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> [--out <path>] [--detect]
+  osc capture verify <record> [--json]
   osc capture setup <claude-code|codex|all> [--write] [--json]
 
 Review and gate (judgment over recorded attempts):
@@ -108,6 +109,7 @@ Stable core protocol:
   osc evidence new <slug>
   osc evidence collect <slug> [--ci] [--dry-run] [--verbose]
   osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> [--out <path>] [--detect] [--session-id <id>] [--repo <root>] [--hook-safe]
+  osc capture verify <record> [--json]
   osc capture setup <claude-code|codex|all> [--write] [--dry-run] [--json]
   osc close <plan-slug> [--message <text>]
   osc trace <plan-slug> [--json] [--include-unverified]
@@ -963,11 +965,14 @@ function benchCommand(args: string[]): void {
 function captureHelp(): string {
   return [
     `Usage: osc capture --from <${CAPTURE_FORMATS.join('|')}> --transcript <path> [--out <path>] [--detect] [--session-id <id>] [--repo <root>] [--json] [--hook-safe]`,
+    '       osc capture verify <record> [--json]',
     `       osc capture setup <${CAPTURE_SETUP_TARGETS.join('|')}> [--write] [--dry-run] [--json] [--claude-settings <path>] [--codex-config <path>]`,
     '',
     'Extract an osc.ambient-work-record.v1 record from a finished agent-session transcript:',
     'assistant turns, token usage, tool-call census, files touched, session span, and a',
     'redacted final-message digest. Read-only on the transcript; writes one record file.',
+    '',
+    'Verify an existing ambient record and print a sanitized trust report without raw transcript content.',
     '',
     'Setup ambient capture hooks without recording private config values:',
     '  setup claude-code   plan/install .claude/settings.local.json SessionEnd hook',
@@ -979,9 +984,22 @@ function captureHelp(): string {
     '  --detect            sniff the format from the first parseable lines (exit 2 on ambiguity)',
     '  --out <path>        record output path (default: .osc/state/ambient/<session-id>.json in an .osc repo)',
     '  --hook-safe         never exit non-zero on bad/missing input (for SessionEnd-style hook wrappers)',
+    '  --json              with verify/setup, emit JSON output',
     '  --write             install setup changes; default setup mode is dry-run',
     '',
     'capture observes facts; it does not approve work, certify correctness, or spawn a runtime.',
+  ].join('\n');
+}
+
+function captureVerifyHelp(): string {
+  return [
+    'Usage: osc capture verify <record> [--json]',
+    '',
+    'Validate an osc.ambient-work-record.v1 file and print a sanitized trust report:',
+    'schema/source/runtime validity, observed transcript facts when available, token',
+    'availability, missing-fidelity warnings, and the no-approval/no-correctness/no-retry boundary.',
+    '',
+    'Malformed JSON, wrong schema, missing runtime, or malformed observed containers exit 2.',
   ].join('\n');
 }
 
@@ -1072,6 +1090,7 @@ function validateCaptureOptions(args: string[]): string | null {
 // All errors are caught here; nothing bubbles to main()'s catch (which would exit 1).
 function captureCommand(args: string[]): void {
   if (isHelpArg(args[0])) { console.log(captureHelp()); return; }
+  if (args[0] === 'verify') { captureVerifyCommand(args.slice(1)); return; }
   if (args[0] === 'setup') { captureSetupCommand(args.slice(1)); return; }
   const hookSafe = has(args, '--hook-safe');
   const fail = (message: string): void => {
@@ -1115,6 +1134,28 @@ function captureCommand(args: string[]): void {
     // Any other failure (e.g. an unsafe output path) is still hook-safe under --hook-safe;
     // otherwise surface it as a usage error rather than letting it become an exit-1 crash.
     fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+function captureVerifyCommand(args: string[]): void {
+  if (isHelpArg(args[0])) { console.log(captureVerifyHelp()); return; }
+  validateOptions(args, [], ['--json'], 'capture verify');
+  const positions = positional(args, []);
+  if (positions.length === 0) die('Missing required argument: record', 2);
+  if (positions.length > 1) die(`Unexpected argument for capture verify: ${sanitizeReportString(positions[1])}`, 2);
+  const recordPath = positions[0];
+  const label = sanitizeReportString(recordPath);
+  try {
+    const resolved = resolve(recordPath);
+    if (!existsSync(resolved)) die(`Ambient record not found: ${label}`, 2);
+    const raw = readFileSync(resolved, 'utf8');
+    const report = verifyAmbientRecordText(raw, label);
+    if (has(args, '--json')) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderAmbientTrustReport(report));
+  } catch (error) {
+    if (error instanceof CaptureUsageError) die(error.message, 2);
+    const reason = error instanceof Error ? error.message : String(error);
+    die(`Could not verify ambient record ${label}: ${sanitizeReportString(reason, 260)}`, 2);
   }
 }
 
