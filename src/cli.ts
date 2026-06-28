@@ -54,8 +54,8 @@ Start:
   osc init --tier <min|standard|max> --target <dir>
 
 Handoff (compile the work record into a resume packet):
-  osc handoff [--json] [--plan <slug>] [--max-chars <n>]
-  osc resume [--json] [--plan <slug>] [--max-chars <n>]        same command, original name
+  osc handoff [--json] [--plan <slug>] [--ambient-session <id>] [--max-chars <n>]
+  osc resume [--json] [--plan <slug>] [--ambient-session <id>] [--max-chars <n>]        same command, original name
 
 Record (extract and inspect ambient work records):
   osc capture --from <claude-code|codex|jsonl-generic> --transcript <path> [--out <path>] [--detect]
@@ -94,11 +94,11 @@ First-read demo:
   osc compare <attempt-a-dir> <attempt-b-dir> [--json] [--output <path>]
 
 Stable core protocol:
-  osc handoff [--json] [--plan <slug>] [--max-chars <n>]      alias of osc resume
+  osc handoff [--json] [--plan <slug>] [--ambient-session <id>] [--max-chars <n>]      alias of osc resume
   osc review <loop-dir> [--compact] [--format <terminal|markdown|json>]      alias of osc evolve analyze
   osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>]      same command, original name
   osc gate <loop-dir> [--judge-action <action> | --judge-endpoint <url> --judge-model <name>]      alias of osc evolve checkpoint
-  osc resume [--json] [--plan <slug>] [--max-chars <n>]
+  osc resume [--json] [--plan <slug>] [--ambient-session <id>] [--max-chars <n>]
   osc status [--json]
   osc plan <plan-path>
   osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]
@@ -750,9 +750,9 @@ function schemasCommand(args: string[]): void {
 }
 
 function resumeCommand(args: string[], commandName = 'resume'): void {
-  if (isHelpArg(args[0])) { const aliasLine = commandName === 'handoff' ? '\n\n`osc resume` is the original alias for the same read-only packet.' : '\n\n`osc handoff` is the product-named front door for the same read-only packet.'; console.log(`Usage: osc ${commandName} [--json] [--plan <slug>] [--max-chars <n>]\n\nCompiles a compact, read-only handoff/resume packet from repo truth: mission digest, active plan with acceptance criteria, latest run state, repair hypotheses, accepted lessons, and the next bounded action. A fresh agent or session continues from this packet instead of chat history.${aliasLine}`); return; }
-  validateOptions(args, ['--plan', '--max-chars'], ['--json'], commandName);
-  const extra = positional(args, ['--plan', '--max-chars']);
+  if (isHelpArg(args[0])) { const aliasLine = commandName === 'handoff' ? '\n\n`osc resume` is the original alias for the same read-only packet.' : '\n\n`osc handoff` is the product-named front door for the same read-only packet.'; console.log(`Usage: osc ${commandName} [--json] [--plan <slug>] [--ambient-session <id>] [--max-chars <n>]\n\nCompiles a compact, read-only handoff/resume packet from repo truth: mission digest, active plan with acceptance criteria, latest run state, repair hypotheses, accepted lessons, compact ambient capture summaries when present, and the next bounded action. A fresh agent or session continues from this packet instead of chat history.${aliasLine}`); return; }
+  validateOptions(args, ['--plan', '--ambient-session', '--max-chars'], ['--json'], commandName);
+  const extra = positional(args, ['--plan', '--ambient-session', '--max-chars']);
   if (extra.length) die(`Unknown argument for ${commandName}: ${extra[0]}`, 2);
   const maxCharsRaw = value(args, '--max-chars');
   let maxChars: number | undefined;
@@ -764,7 +764,7 @@ function resumeCommand(args: string[], commandName = 'resume'): void {
   }
   try {
     const root = findScaffoldRoot(process.cwd()) ?? process.cwd();
-    const result = compileResume(root, { planSlug: value(args, '--plan'), maxChars });
+    const result = compileResume(root, { planSlug: value(args, '--plan'), ambientSession: value(args, '--ambient-session'), maxChars });
     if (has(args, '--json')) console.log(JSON.stringify(result.summary, null, 2));
     else process.stdout.write(result.packet);
   } catch (error) {

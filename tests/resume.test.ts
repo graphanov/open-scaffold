@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { compileResume } from '../src/resume.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const fixtureRoot = join(repoRoot, 'examples', 'resume-demo');
+const ambientRecordFixtures = join(repoRoot, 'tests', 'fixtures', 'capture', 'records');
 
 function tempRepo(): string {
   return mkdtempSync(join(tmpdir(), 'osc-resume-'));
@@ -67,6 +68,14 @@ function writePlan(root: string, slug: string, body?: string): void {
   );
 }
 
+function writeAmbientRecord(root: string, name: string, fixture: string, mtime: Date): void {
+  const dir = join(root, '.osc', 'state', 'ambient');
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, name);
+  writeFileSync(path, readFileSync(join(ambientRecordFixtures, fixture), 'utf8'), 'utf8');
+  utimesSync(path, mtime, mtime);
+}
+
 describe('osc resume packet compiler', () => {
   it('reproduces the committed resume-demo expected summary', () => {
     const expected = JSON.parse(readFileSync(join(fixtureRoot, 'expected-resume-summary.json'), 'utf8'));
@@ -99,6 +108,127 @@ describe('osc resume packet compiler', () => {
 
     expect(packet.length).toBeLessThanOrEqual(600);
     expect(packet).toContain('# Resume Packet');
+  });
+
+  it('includes latest compact ambient capture summaries by default', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-ambient');
+    writeAmbientRecord(root, 'older.json', 'valid-claude-code.json', new Date('2026-06-13T10:00:00.000Z'));
+    writeAmbientRecord(root, 'newer.json', 'valid-codex.json', new Date('2026-06-13T11:00:00.000Z'));
+
+    const { summary, packet } = compileResume(root);
+    const summaryJson = JSON.stringify(summary);
+
+    expect(summary.ambient_capture.status).toBe('included');
+    expect(summary.ambient_capture.records.map((record) => record.session_id)).toEqual(['codex-session-1', 'claude-session-1']);
+    expect(packet).toContain('## Ambient capture');
+    expect(packet).toContain('codex-session-1');
+    expect(packet).toContain('mcp:open_scaffold.get_handoff=1');
+    expect(packet).toContain('final_digest=8f61ad5cfa0c471c8cbf810ea285cb1e5f9c2c5e5e5e4f58a3229667703e1587');
+    expect(packet).toContain('ambient capture is observed transcript evidence only');
+    expect(summaryJson).not.toContain('codex cache-creation split unavailable');
+    expect(packet).not.toContain('codex cache-creation split unavailable');
+  });
+
+  it('selects an explicit ambient session by safe filename without echoing missing selectors', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-ambient-select');
+    writeAmbientRecord(root, 'older.json', 'valid-claude-code.json', new Date('2026-06-13T10:00:00.000Z'));
+    writeAmbientRecord(root, 'target-session.json', 'valid-codex.json', new Date('2026-06-13T11:00:00.000Z'));
+
+    const selected = compileResume(root, { ambientSession: 'target-session' });
+    expect(selected.summary.ambient_capture.records.map((record) => record.session_id)).toEqual(['codex-session-1']);
+    expect(selected.packet).toContain('codex-session-1');
+    expect(selected.packet).not.toContain('claude-session-1');
+
+    const missing = compileResume(root, { ambientSession: '../evil-sk-aaaaaaaaaaaaaaaaaaaaaaaa' });
+    const missingJson = JSON.stringify(missing.summary);
+    expect(missing.summary.ambient_capture.status).toBe('requested-unavailable');
+    expect(missing.packet).toContain('Requested ambient session unavailable.');
+    expect(missing.packet).not.toContain('../evil');
+    expect(missingJson).not.toContain('../evil');
+    expect(missingJson).not.toContain('sk-aaaaaaaa');
+  });
+
+  it('keeps the no-record case nonblocking and quiet in the packet', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-no-ambient');
+
+    const { summary, packet } = compileResume(root);
+
+    expect(summary.ambient_capture).toMatchObject({ status: 'none', records: [] });
+    expect(packet).not.toContain('## Ambient capture');
+  });
+
+  it('rejects symlinked ambient directories and record files before reading', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-symlink-ambient');
+    const outside = tempRepo();
+    mkdirSync(join(outside, 'ambient'), { recursive: true });
+    writeFileSync(join(outside, 'ambient', 'leak.json'), readFileSync(join(ambientRecordFixtures, 'redaction-sensitive.json'), 'utf8'), 'utf8');
+    mkdirSync(join(root, '.osc', 'state'), { recursive: true });
+
+    let symlinkCreated = false;
+    try {
+      symlinkSync(join(outside, 'ambient'), join(root, '.osc', 'state', 'ambient'), 'dir');
+      symlinkCreated = true;
+    } catch {
+      // Some platforms disable directory symlink creation.
+    }
+
+    if (symlinkCreated) {
+      const { summary, packet } = compileResume(root);
+      const summaryJson = JSON.stringify(summary);
+      expect(summary.ambient_capture.status).toBe('none');
+      expect(summaryJson).not.toContain('APPROVED');
+      expect(packet).not.toContain('APPROVED');
+    }
+
+    const rootWithFileSymlink = tempRepo();
+    writeMission(rootWithFileSymlink);
+    writePlan(rootWithFileSymlink, '001-symlink-record');
+    mkdirSync(join(rootWithFileSymlink, '.osc', 'state', 'ambient'), { recursive: true });
+    let fileSymlinkCreated = false;
+    try {
+      symlinkSync(join(outside, 'ambient', 'leak.json'), join(rootWithFileSymlink, '.osc', 'state', 'ambient', 'leak.json'));
+      fileSymlinkCreated = true;
+    } catch {
+      // Some platforms disable file symlink creation.
+    }
+    if (fileSymlinkCreated) {
+      const { summary, packet } = compileResume(rootWithFileSymlink);
+      expect(summary.ambient_capture.status).toBe('none');
+      expect(JSON.stringify(summary)).not.toContain('APPROVED');
+      expect(packet).not.toContain('APPROVED');
+    }
+  });
+
+  it('does not leak hostile ambient prose through JSON, packet, or 600-char fallback', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-hostile-ambient');
+    writeAmbientRecord(root, 'hostile.json', 'redaction-sensitive.json', new Date('2026-06-13T14:00:00.000Z'));
+
+    const { summary, packet } = compileResume(root, { maxChars: 600 });
+    const outputs = [JSON.stringify(summary), packet];
+
+    expect(packet.length).toBeLessThanOrEqual(600);
+    expect(summary.ambient_capture.status).toBe('included');
+    expect(summary.ambient_capture.records[0].source).toBe('unrecognized-source');
+    for (const output of outputs) {
+      expect(output).not.toContain('/Users/');
+      expect(output).not.toContain('sk-proj-');
+      expect(output).not.toContain('ghp_');
+      expect(output).not.toContain('APPROVED');
+      expect(output).not.toContain('correctness certified');
+      expect(output).not.toContain('retry authorized');
+      expect(output).not.toContain('\u001b');
+      expect(output).not.toContain('\u0000');
+    }
   });
 
   it('rejects out-of-range budgets', () => {

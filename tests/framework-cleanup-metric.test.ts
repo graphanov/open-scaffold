@@ -37,7 +37,8 @@ const cleanupBaselineLoc = 20_890;
 // 234: ambient capture trust-report verifier adds fail-closed record validation, sanitized report rendering, and CLI routing without a new maintained source file (+318 LOC).
 // 233: ambient capture setup helper for Claude Code/Codex config planning, idempotent writes, and symlink/TOML/setup-all safety (+520 LOC, +1 file).
 // 233 Codex review fix: default Claude gitignore guard, root/glob/basename negation handling, TOML notify-table/array-row handling, and quoted Codex notify conflict detection (+138 LOC).
-const cleanupTargetLoc = 16_170;
+// 235: ambient capture handoff/resume consumption adds normalized untrusted-record summaries, CLI/MCP selection, and budget-aware rendering (+320 LOC).
+const cleanupTargetLoc = 16_490;
 const cleanupTargetFiles = 41;
 
 interface MaintainedSourceFile {
@@ -80,7 +81,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(16_170);
+    expect(cleanupTargetLoc).toBe(16_490);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

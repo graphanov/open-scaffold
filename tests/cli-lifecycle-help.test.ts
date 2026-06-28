@@ -29,7 +29,7 @@ const topLevelHelpCommands = [
   'osc init --tier <min|standard|max> --target <dir> [--force]',
   'osc init --from-existing --tier min --target <dir> [--force]',
   'osc init --min|--standard|--max --target <dir> [--force]',
-  'osc resume [--json] [--plan <slug>] [--max-chars <n>]',
+  'osc resume [--json] [--plan <slug>] [--ambient-session <id>] [--max-chars <n>]',
   'osc status [--json]',
   'osc plan <plan-path>',
   'osc plan new <slug> --stage <active|backlog|blocked> [--from-template <name>]',
@@ -92,8 +92,8 @@ const coreHelpSections = [
 const coreHelpCommands = [
   'osc first-run',
   'osc init --tier <min|standard|max> --target <dir>',
-  'osc handoff [--json] [--plan <slug>] [--max-chars <n>]',
-  'osc resume [--json] [--plan <slug>] [--max-chars <n>]',
+  'osc handoff [--json] [--plan <slug>] [--ambient-session <id>] [--max-chars <n>]',
+  'osc resume [--json] [--plan <slug>] [--ambient-session <id>] [--max-chars <n>]',
   'osc review <loop-dir> [--compact] [--format <terminal|markdown|json>]',
   'osc analyze <loop-dir> [--compact] [--format <terminal|markdown|json>]',
   'osc gate <loop-dir> [--judge-action <continue|stop_impossible|stop_blocked>] [--format <terminal|markdown|json>]',
@@ -114,13 +114,13 @@ const cases: HelpCase[] = [
   {
     name: 'resume',
     args: ['resume', '--help'],
-    expected: 'Usage: osc resume [--json] [--plan <slug>] [--max-chars <n>]',
+    expected: 'Usage: osc resume [--json] [--plan <slug>] [--ambient-session <id>] [--max-chars <n>]',
     forbidden: 'Unknown option',
   },
   {
     name: 'handoff alias',
     args: ['handoff', '--help'],
-    expected: 'Usage: osc handoff [--json] [--plan <slug>] [--max-chars <n>]',
+    expected: 'Usage: osc handoff [--json] [--plan <slug>] [--ambient-session <id>] [--max-chars <n>]',
     forbidden: 'Usage: osc resume',
   },
   {

@@ -191,9 +191,9 @@ describe('osc capture CLI surface', () => {
     expect(result.status).toBe(0);
     expect(result.stderr).toBe('');
     expect(result.stdout).toContain('Ambient record trust report');
-    expect(result.stdout).toContain('Run/session id: claude-session-1');
+    expect(result.stdout).toContain('Session id: claude-session-1');
     expect(result.stdout).toContain('Tool-call census: Edit=1, Read=1');
-    expect(result.stdout).toContain('not approval; not correctness certification; not retry authorization');
+    expect(result.stdout).toContain('not approval, correctness certification, retry authorization, execution authority, or spawn authority');
     expect(result.stdout).not.toContain('APPROVED BY RECORD TEXT');
   });
 
@@ -203,11 +203,12 @@ describe('osc capture CLI surface', () => {
 
     expect(result.status).toBe(0);
     const payload = JSON.parse(result.stdout);
-    expect(payload.runId).toBe('codex-session-1');
-    expect(payload.transcriptObserved.usage.total_tokens).toBe(5750);
+    expect(payload.session_id).toBe('codex-session-1');
+    expect(payload.transcript_observed.usage.total_tokens).toBe(5750);
     expect(payload.boundary.authority).toContain('not approval');
     expect(payload.observed).toBeUndefined();
     expect(payload.boundary.note).toBeUndefined();
+    expect(JSON.stringify(payload)).not.toContain('codex cache-creation split unavailable');
   });
 
   it('verifies postflight records without observed facts as unavailable transcript fidelity', () => {

@@ -66,7 +66,7 @@ Once connected, ask your agent to call these read tools before it reads source
 files:
 
 - `get_status` — mission state, plan counts, and local scaffold validation.
-- `get_handoff` — the current resume packet compiled from repo truth.
+- `get_handoff` — the current resume packet compiled from repo truth, including compact ambient capture summaries when records exist.
 - `list_plans` — active/backlog/done/blocked plan inventory.
 - `list_evidence`, then `get_evidence` — evidence inventory, then one evidence
   note by path, file name, or slug. `get_evidence` needs an existing evidence
@@ -90,6 +90,10 @@ Call `get_handoff`:
 printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_handoff","arguments":{}}}' \
   | npx -y -p open-scaffold@latest osc-mcp --repo /absolute/path/to/repo
 ```
+
+Pass `{"ambient_session":"<id>"}` in `arguments` to select one captured ambient record by
+safe session filename. Missing records are nonblocking and do not grant approval,
+correctness certification, retry authorization, execution authority, or spawn authority.
 
 Both responses should be JSON-RPC `result` envelopes with `structuredContent`.
 
@@ -147,7 +151,7 @@ Read tools work without extra flags:
 
 The product front door is exposed read-only (plan 167):
 
-- `get_handoff` — compile the handoff/resume packet from repo truth; equivalent to `osc handoff`.
+- `get_handoff` — compile the handoff/resume packet from repo truth; equivalent to `osc handoff`, with optional `ambient_session` for one compact ambient capture summary.
 - `analyze_loop` — analyze a recorded evolution loop: plateau state, per-criterion deltas, recommendation; equivalent to `osc review` / `osc analyze`.
 - `gate_loop` — compute the judgment checkpoint and retry authorization for a loop, optionally folding in an independent judge ruling; equivalent to `osc gate`. The gate rules on the record but cannot modify it, so a cheap or locally-hosted judge model needs no write access.
 

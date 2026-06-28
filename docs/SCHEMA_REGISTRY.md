@@ -22,6 +22,7 @@ This page explains the policy around that registry.
 Use `osc schemas list --json` for the machine-readable list. Representative schemas include:
 
 - `open-scaffold.run.v1` — run packet under `.osc/runs/<run_id>/run.json`.
+- `open-scaffold.resume.v1` — read-only resume summary with optional additive `ambient_capture` summaries.
 - `open-scaffold.dispatch-receipt.v1` — adapter receipt under `.osc/runs/<run_id>/dispatch-receipt.json`.
 - `open-scaffold.pr_check.v1` — structural PR work-record check.
 - `open-scaffold.trace.v1` — local work-record replay.

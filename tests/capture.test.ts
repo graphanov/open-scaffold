@@ -209,25 +209,27 @@ describe('ambient record verifier trust report', () => {
 
     expect(report.schema).toBe('osc.ambient-work-record.v1');
     expect(report.source).toBe('transcript-extraction');
-    expect(report.runId).toBe('claude-session-1');
+    expect(report.session_id).toBe('claude-session-1');
     expect(report.runtime.adapter).toBe('claude-code-transcript');
-    expect(report.transcriptObserved.available).toBe(true);
-    expect(report.transcriptObserved.assistantTurns).toBe(2);
-    expect(report.transcriptObserved.userEvents).toBe(1);
-    expect(report.transcriptObserved.toolCalls).toEqual([{ name: 'Edit', count: 1 }, { name: 'Read', count: 1 }]);
+    expect(report.transcript_observed.available).toBe(true);
+    expect(report.transcript_observed.assistant_turns).toBe(2);
+    expect(report.transcript_observed.user_events).toBe(1);
+    expect(report.transcript_observed.tool_census).toEqual([{ name: 'Edit', count: 1 }, { name: 'Read', count: 1 }]);
+    expect(report.transcript_observed.final_message_digest).toBe('6ca13d52ca70c883e0f0bb101e425a89e8624de51db2d2392593af6a84118090');
     expect(rendered).toContain('transcript-observed facts are available');
-    expect(rendered).toContain('not approval; not correctness certification; not retry authorization');
+    expect(rendered).toContain('not approval, correctness certification, retry authorization, execution authority, or spawn authority');
     expect(rendered).not.toContain('APPROVED BY RECORD TEXT');
   });
 
   it('reports a valid Codex transcript record and token availability in JSON-safe shape', () => {
     const report = reportFixture('valid-codex.json');
 
-    expect(report.runtime.tokenTotal).toBe(5750);
-    expect(report.runtime.tokenAvailability).toBe('available');
-    expect(report.transcriptObserved.usage.total_tokens).toBe(5750);
-    expect(report.transcriptObserved.notes).toEqual(['codex cache-creation split unavailable.']);
+    expect(report.runtime.token_total).toBe(5750);
+    expect(report.runtime.token_availability).toBe('available');
+    expect(report.transcript_observed.usage.total_tokens).toBe(5750);
+    expect(report.transcript_observed.fidelity_notes).toEqual(['record-authored-notes-suppressed=1']);
     expect(JSON.stringify(report)).not.toContain('boundary.note');
+    expect(JSON.stringify(report)).not.toContain('codex cache-creation split unavailable');
   });
 
   it('accepts ambient postflight records without observed facts as a fidelity warning', () => {
@@ -235,18 +237,18 @@ describe('ambient record verifier trust report', () => {
     const rendered = renderAmbientTrustReport(report);
 
     expect(report.source).toBe('ambient-postflight');
-    expect(report.transcriptObserved.available).toBe(false);
+    expect(report.transcript_observed.available).toBe(false);
     expect(report.boundary.source).toContain('postflight runtime receipt only');
     expect(rendered).toContain('Transcript-observed facts: unavailable');
-    expect(rendered).toContain('not approval; not correctness certification; not retry authorization');
+    expect(rendered).toContain('not approval, correctness certification, retry authorization, execution authority, or spawn authority');
   });
 
   it('treats missing optional fidelity as unavailable instead of inventing values', () => {
     const report = reportFixture('missing-optional-fidelity.json');
 
-    expect(report.transcriptObserved.sessionSpan.available).toBe(false);
-    expect(report.transcriptObserved.usage.input_tokens).toBeNull();
-    expect(report.transcriptObserved.tokenAvailability).toBe('unavailable');
+    expect(report.transcript_observed.session_span.available).toBe(false);
+    expect(report.transcript_observed.usage.input_tokens).toBeNull();
+    expect(report.transcript_observed.token_availability).toBe('unavailable');
     expect(report.warnings.some((warning) => warning.includes('observed token usage unavailable'))).toBe(true);
   });
 
@@ -296,9 +298,23 @@ describe('ambient record verifier trust report', () => {
       expect(output).not.toContain('\u0000');
     }
     for (const output of [serialized, pathLabel]) expect(output).not.toContain('\n');
-    expect(serialized).toContain('/[local-path-redacted]');
-    expect(serialized).toContain('sk-[redacted]');
-    expect(serialized).toContain('gh*_[redacted]');
+    expect(serialized).not.toContain('/[local-path-redacted]');
+    expect(serialized).not.toContain('sk-[redacted]');
+    expect(serialized).not.toContain('gh*_[redacted]');
+    expect(serialized).not.toContain('APPROVED');
+    expect(serialized).not.toContain('correctness certified');
+    expect(serialized).not.toContain('retry authorized');
+    expect(report.session_id).toMatch(/^unsafe-session-[a-f0-9]{12}$/);
+    expect(report.source).toBe('unrecognized-source');
+    expect(report.state).toBe('unrecognized-state');
+    expect(report.runtime.adapter).toBe('unrecognized-adapter');
+    expect(report.runtime.status).toBe('unrecognized-status');
+    expect(report.runtime.failure_code).toBe('failure-recorded');
+    expect(report.runtime.marker_state).toBe('unrecognized-marker-state');
+    expect(report.transcript_observed.tool_census).toEqual([]);
+    expect(report.transcript_observed.files_touched).toMatchObject({ count: 2, redacted_local_path_count: 2 });
+    expect(report.transcript_observed.final_message_digest).toBeNull();
+    expect(report.transcript_observed.fidelity_notes).toContain('tool-names-suppressed');
   });
 });
 
