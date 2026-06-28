@@ -766,8 +766,8 @@ export function buildAmbientTrustReport(value: unknown, label = 'ambient record'
   const observedPresent = Object.prototype.hasOwnProperty.call(record, 'observed');
   const observed = asRecord(observedRaw);
   if (observedPresent && !observed) failAmbientRecord('observed must be an object when present');
-  if (rawSource === 'transcript-extraction' && !observed) failAmbientRecord('source transcript-extraction requires observed object');
-  if (rawSource === 'transcript-extraction' && observed && !['assistant_turns', 'user_events', 'usage', 'tool_calls', 'files_touched', 'notes'].every((key) => Object.prototype.hasOwnProperty.call(observed, key))) failAmbientRecord('source transcript-extraction requires complete observed transcript facts');
+  if (source === 'transcript-extraction' && !observed) failAmbientRecord('source transcript-extraction requires observed object');
+  if (source === 'transcript-extraction' && observed && !['assistant_turns', 'user_events', 'usage', 'tool_calls', 'files_touched', 'notes'].every((key) => Object.prototype.hasOwnProperty.call(observed, key))) failAmbientRecord('source transcript-extraction requires complete observed transcript facts');
 
   const observedUsage = observed ? validateUsage(observed.usage, warnings) : validateUsage(undefined, warnings);
   const tokenAvailability = Object.values(observedUsage).some((item) => typeof item === 'number') ? 'available' : 'unavailable';
