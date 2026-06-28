@@ -2,7 +2,7 @@
 
 This page is the single home for Open Scaffold's maturity boundary: what is stable, what is experimental, what is future, and what the project does not claim. Other surfaces state their promise once and link here.
 
-The short version: Open Scaffold is on a pre-1.0 line (`v0.33.x`). The stable core is the work loop and its record — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus the handoff/review/gate helpers (`osc first-run`, `osc handoff`, `osc review`, `osc gate`, `osc pr check`, `osc compare`, `osc trace`). Core runtime launch, root adapter dispatch, and the old harness command grammar are not current-package promises.
+The short version: Open Scaffold is on a pre-1.0 line (`v0.34.x`). The stable core is the work loop and its record — `MISSION.md` → plan → run packet or amendment → evidence → verification → close — plus the handoff/review/gate helpers (`osc first-run`, `osc handoff`, `osc review`, `osc gate`, `osc pr check`, `osc compare`, `osc trace`). Core runtime launch, root adapter dispatch, and the old harness command grammar are not current-package promises.
 
 ## Honest limits
 
@@ -13,11 +13,11 @@ Everything Open Scaffold does not claim, in one place:
 - **The benchmark program is pilot-grade and partly self-run.** One worker model, n=1 cells, owner-built instrument (preregistration, hidden inputs, blind double-implementation, and kill rules as mitigations); replication with humans and larger n is open work. The older bounded `examples/proof/` fixture remains a separate, narrower surface.
 - **It is not a compliance certification, sandbox, or security guarantee.** It produces structural evidence a process can build on; it does not replace the process.
 - **Humans own merge, publish, release, and deployment.** Nothing in Open Scaffold self-approves.
-- **Historical `v1.0.x` packages exist** as immutable publication history; the forward line is `v0.33.x` and the next 1.0 will be cut when the contract has earned it.
+- **Historical `v1.0.x` packages exist** as immutable publication history; the forward line is `v0.34.x` and the next 1.0 will be cut when the contract has earned it.
 
 ## Release status
 
-- Current cadence: pre-1.0 hardening on the `v0.33.x` line.
+- Current cadence: pre-1.0 hardening on the `v0.34.x` line.
 - Historical note: `v1.0.x` exists as a previously published launch line (most recent tag: `v1.0.5`) and remains immutable package/release history.
 - Current repository package version: check `package.json`.
 - Live npm package truth: check `npm view open-scaffold version dist-tags --json`.
@@ -112,7 +112,7 @@ Future work can explore those areas only through explicit plans, evidence, safet
 
 ## Versioning policy
 
-Open Scaffold uses npm package versions as public distribution coordinates. The current `v0.33.x` line is intentionally pre-1.0: it communicates that the core work-record pattern is usable and the framework cleanup has narrowed/reduced the package surface, but the product is still earning its long-term stable contract.
+Open Scaffold uses npm package versions as public distribution coordinates. The current `v0.34.x` line is intentionally pre-1.0: it communicates that the core work-record pattern is usable and the framework cleanup has narrowed/reduced the package surface, but the product is still earning its long-term stable contract.
 
 The previously published `v1.0.x` packages remain immutable historical artifacts. They should be treated as an over-eager launch line, not as a reason to force every future change through mature-1.0 pressure. A future real 1.0 should be cut only after the adoption path, public package surfaces, runtime boundaries, and evidence/tracing primitives feel durable enough to sustain that promise.
 
