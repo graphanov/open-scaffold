@@ -3,7 +3,7 @@ import { join, relative } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { findScaffoldRoot } from './scaffold.js';
-import { initializeScaffold } from './init.js';
+import { initializeScaffold, ScaffoldConflictError } from './init.js';
 import { validatePlanFile } from './plan-validate.js';
 
 export interface FirstRunOptions {
@@ -31,10 +31,36 @@ function isSafeSlug(value: string): boolean {
 function requireOrCreateRoot(start: string): string {
   const existing = findScaffoldRoot(start);
   if (existing) return existing;
-  initializeScaffold({ tier: 'min', target: start, fromExisting: true });
+  try {
+    initializeScaffold({ tier: 'min', target: start, fromExisting: true });
+  } catch (error) {
+    if (error instanceof ScaffoldConflictError) {
+      throw new Error(formatFirstRunConflictMessage(error));
+    }
+    throw error;
+  }
   const created = findScaffoldRoot(start);
   if (!created) throw new Error(`No Open Scaffold root found from ${start}. Run \`osc init\` first.`);
   return created;
+}
+
+function formatFirstRunConflictMessage(error: ScaffoldConflictError): string {
+  return [
+    'Open Scaffold first-run stopped before writing files.',
+    '',
+    'first-run creates starter guidance and .osc work-record files in the current target directory.',
+    `Target directory: ${error.target}`,
+    'Conflicting files:',
+    ...error.conflicts.map((file) => `- ${file}`),
+    '',
+    'For a new project, create and enter a fresh folder, then run first-run there:',
+    'mkdir -p ./my-project',
+    'cd ./my-project',
+    'npx open-scaffold@latest first-run',
+    '',
+    'For an existing project, preserve, move, or rename the listed conflicting files first, then initialize brownfield scaffolding:',
+    `npx open-scaffold@latest init --from-existing --tier min --target ${error.target}`,
+  ].join('\n');
 }
 
 function missionIsUnset(text: string): boolean {

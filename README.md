@@ -44,10 +44,12 @@ Audit every receipt, zero spend: [`REPRODUCE.md`](REPRODUCE.md).
 ## Start in 60 seconds
 
 ```bash
+mkdir -p ./my-project
+cd ./my-project
 npx open-scaffold@latest first-run
 ```
 
-Three questions produce `MISSION.md`, an active plan with acceptance criteria, and an evidence skeleton. Work however you already work; the record accumulates as files:
+Run `first-run` inside the project folder where Open Scaffold should write `AGENTS.md`, `MISSION.md`, and `.osc/`. Three questions produce `MISSION.md`, an active plan with acceptance criteria, and an evidence skeleton. Work however you already work; the record accumulates as files:
 
 ```bash
 osc verify

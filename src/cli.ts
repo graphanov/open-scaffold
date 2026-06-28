@@ -394,6 +394,7 @@ function initCommand(args: string[]): void {
 
 async function firstRunCommand(args: string[]): Promise<void> {
   if (isHelpArg(args[0])) { console.log('Usage: osc first-run [--non-interactive --slug <slug> --mission <text> --goal <text>]'); return; }
+  validateOptions(args, ['--slug', '--mission', '--goal'], ['--non-interactive'], 'first-run');
   const options = has(args, '--non-interactive')
     ? { slug: requireValue(args, '--slug'), mission: requireValue(args, '--mission'), goal: requireValue(args, '--goal') }
     : await askInteractiveFirstRun();

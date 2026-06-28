@@ -85,6 +85,21 @@ export interface InitializeScaffoldResult {
   summary: string;
 }
 
+export class ScaffoldConflictError extends Error {
+  readonly target: string;
+  readonly conflicts: string[];
+  readonly fromExisting: boolean;
+
+  constructor(target: string, conflicts: readonly string[], fromExisting: boolean) {
+    const noun = fromExisting ? 'existing scaffold files' : 'existing files';
+    super(`Refusing to overwrite ${noun}: ${conflicts.join(', ')}. Re-run with --force only if you intend to replace them.`);
+    this.name = 'ScaffoldConflictError';
+    this.target = target;
+    this.conflicts = [...conflicts];
+    this.fromExisting = fromExisting;
+  }
+}
+
 function packageRoot(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), '..');
 }
@@ -729,8 +744,7 @@ export function initializeScaffold(options: InitializeScaffoldOptions): Initiali
   const existing = scaffoldConflicts(target, files, fromExisting);
 
   if (existing.length > 0 && !options.force) {
-    const noun = fromExisting ? 'existing scaffold files' : 'existing files';
-    throw new Error(`Refusing to overwrite ${noun}: ${existing.join(', ')}. Re-run with --force only if you intend to replace them.`);
+    throw new ScaffoldConflictError(target, existing, fromExisting);
   }
 
   for (const file of files) {

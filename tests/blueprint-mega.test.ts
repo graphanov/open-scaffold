@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -110,6 +110,44 @@ describe('blueprint first-run and PR check surfaces', () => {
       expect(existsSync(join(root, '.osc/plans/active/first-work-record.md'))).toBe(true);
       const validation = runOsc(root, ['plan', 'validate', 'first-work-record', '--strict']);
       expect(validation.status, validation.stdout + validation.stderr).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('explains first-run scaffold file conflicts with safe recovery commands', () => {
+    const root = mkdtempSync(join(tmpdir(), 'osc-first-run-conflict-'));
+    try {
+      writeFileSync(join(root, 'AGENTS.md'), '# Existing agent guidance\n');
+      const target = realpathSync(root);
+
+      const result = runOsc(root, ['first-run', '--non-interactive', '--slug', 'first-work-record', '--mission', 'Build a tiny service safely.', '--goal', 'Add the first reviewed change.']);
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain('Open Scaffold first-run stopped before writing files.');
+      expect(result.stderr).toContain('starter guidance and .osc work-record files');
+      expect(result.stderr).toContain(`Target directory: ${target}`);
+      expect(result.stderr).toContain('AGENTS.md');
+      expect(result.stderr).toContain('mkdir -p ./my-project');
+      expect(result.stderr).toContain('cd ./my-project');
+      expect(result.stderr).toContain('npx open-scaffold@latest first-run');
+      expect(result.stderr).toContain('preserve, move, or rename the listed conflicting files first');
+      expect(result.stderr).toContain(`npx open-scaffold@latest init --from-existing --tier min --target ${target}`);
+      expect(result.stderr).not.toContain('--force');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects unsupported first-run force usage before prompting', () => {
+    const root = mkdtempSync(join(tmpdir(), 'osc-first-run-force-'));
+    try {
+      const result = runOsc(root, ['first-run', '--force']);
+
+      expect(result.status).toBe(2);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain('Unknown option for first-run: --force');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -15,6 +15,17 @@ describe('first-run documentation truth', () => {
     expect(read('LLM_QUICKSTART.md')).toContain('npx open-scaffold@latest first-run');
   });
 
+  it('tells first-time users to run first-run from the target project folder', () => {
+    const readme = read('README.md');
+
+    expect(readme).toContain('mkdir -p ./my-project');
+    expect(readme).toContain('cd ./my-project');
+    expect(readme).toContain('inside the project folder');
+    expect(readme).toContain('AGENTS.md');
+    expect(readme).toContain('MISSION.md');
+    expect(readme).toContain('.osc/');
+  });
+
   it('keeps a source-checkout fallback path for users who do not want npx', () => {
     const minimum = read('docs/START_HERE.md');
 
