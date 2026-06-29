@@ -38,7 +38,8 @@ const cleanupBaselineLoc = 20_890;
 // 233: ambient capture setup helper for Claude Code/Codex config planning, idempotent writes, and symlink/TOML/setup-all safety (+520 LOC, +1 file).
 // 233 Codex review fix: default Claude gitignore guard, root/glob/basename negation handling, TOML notify-table/array-row handling, and quoted Codex notify conflict detection (+138 LOC).
 // 235: ambient capture handoff/resume consumption adds normalized untrusted-record summaries, CLI/MCP selection, and budget-aware rendering (+320 LOC).
-const cleanupTargetLoc = 16_490;
+// 241: first-run conflict metadata and beginner-safe recovery guidance (+45 LOC).
+const cleanupTargetLoc = 16_535;
 const cleanupTargetFiles = 41;
 
 interface MaintainedSourceFile {
@@ -81,7 +82,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(16_490);
+    expect(cleanupTargetLoc).toBe(16_535);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);
