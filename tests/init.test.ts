@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { initializeScaffold, tierFiles } from '../src/init.js';
+import { initializeScaffold, previewScaffoldInitialization, tierFiles } from '../src/init.js';
 
 function tempTarget() {
   return mkdtempSync(join(tmpdir(), 'osc-init-'));
@@ -170,6 +170,24 @@ describe('tiered scaffold initialization', () => {
     expect(readFileSync(join(target, 'MISSION.md'), 'utf8')).toContain('<!-- mission:unset -->');
     expect(readFileSync(join(target, 'package.json'), 'utf8')).toBe(packageJson);
     expect(readFileSync(join(target, 'src/index.js'), 'utf8')).toBe(source);
+  });
+
+  it('previews brownfield scaffold context and conflicts without writing files', () => {
+    const target = tempTarget();
+    writeFileSync(join(target, 'package.json'), '{"name":"preview-node"}\n');
+    writeFileSync(join(target, 'AGENTS.md'), '# Existing guidance\n');
+
+    const preview = previewScaffoldInitialization({ tier: 'min', target, fromExisting: true });
+
+    expect(preview.target).toBe(target);
+    expect(preview.fromExisting).toBe(true);
+    expect(preview.project?.label).toBe('Node.js project');
+    expect(preview.project?.marker).toBe('package.json');
+    expect(preview.filesToCreate).toContain('AGENTS.md');
+    expect(preview.filesToCreate).toContain('CLAUDE.md');
+    expect(preview.conflicts).toEqual(['AGENTS.md']);
+    expect(existsSync(join(target, 'MISSION.md'))).toBe(false);
+    expect(existsSync(join(target, '.osc'))).toBe(false);
   });
 
   it('refuses brownfield scaffold conflicts without force and lists scaffold-owned conflicts', () => {

@@ -72,7 +72,7 @@ export interface InitializeScaffoldOptions {
   fromExisting?: boolean;
 }
 
-interface ExistingProjectDetection {
+export interface ExistingProjectDetection {
   label: string;
   marker: string | null;
   packageManager?: string;
@@ -83,6 +83,16 @@ export interface InitializeScaffoldResult {
   target: string;
   filesCreated: string[];
   summary: string;
+}
+
+export interface ScaffoldInitializationPreview {
+  tier: ScaffoldTier;
+  target: string;
+  fromExisting: boolean;
+  filesToCreate: string[];
+  conflicts: string[];
+  protectedExistingProjectFiles: string[];
+  project?: ExistingProjectDetection;
 }
 
 export class ScaffoldConflictError extends Error {
@@ -211,6 +221,12 @@ function scaffoldConflicts(target: string, files: readonly string[], fromExistin
   }
   if (oscExists) conflicts.push('.osc');
   return conflicts;
+}
+
+function protectedBrownfieldFiles(target: string, fromExisting: boolean, force?: boolean): string[] {
+  return fromExisting && force
+    ? ['verify.sh', 'close.sh', 'bootstrap.sh'].filter((file) => existsSync(join(target, file)))
+    : [];
 }
 
 function downstreamReadmeTemplate(): string {
@@ -719,49 +735,39 @@ function rejectSymlinkedDestination(target: string, destination: string): void {
 }
 
 export function initializeScaffold(options: InitializeScaffoldOptions): InitializeScaffoldResult {
-  ensureKnownTier(options.tier);
-  if (options.fromExisting && options.tier !== 'min') {
-    throw new Error('Brownfield init currently supports --tier min only. Use greenfield init for standard/max docs, or add advanced docs manually after preserving existing project files.');
+  const preview = previewScaffoldInitialization(options);
+  const { tier, target, fromExisting, project } = preview;
+
+  if (preview.protectedExistingProjectFiles.length > 0) {
+    throw new Error(`Refusing to overwrite existing project files in brownfield mode: ${preview.protectedExistingProjectFiles.join(', ')}. Rename or move them before re-running with --force.`);
   }
-  const target = normalizeKnownSystemAlias(options.target);
-  const fromExisting = Boolean(options.fromExisting);
-  const protectedExistingProjectFiles = fromExisting && options.force
-    ? ['verify.sh', 'close.sh', 'bootstrap.sh'].filter((file) => existsSync(join(target, file)))
-    : [];
-  if (protectedExistingProjectFiles.length > 0) {
-    throw new Error(`Refusing to overwrite existing project files in brownfield mode: ${protectedExistingProjectFiles.join(', ')}. Rename or move them before re-running with --force.`);
-  }
-  const project = fromExisting ? detectExistingProject(target) : undefined;
-  const files = filesForInitialization(options.tier, fromExisting);
 
   rejectSymlinkedExistingPath(target);
   mkdirSync(target, { recursive: true });
 
-  for (const file of files) {
+  for (const file of preview.filesToCreate) {
     rejectSymlinkedDestination(target, join(target, file));
   }
 
-  const existing = scaffoldConflicts(target, files, fromExisting);
-
-  if (existing.length > 0 && !options.force) {
-    throw new ScaffoldConflictError(target, existing, fromExisting);
+  if (preview.conflicts.length > 0 && !options.force) {
+    throw new ScaffoldConflictError(target, preview.conflicts, fromExisting);
   }
 
-  for (const file of files) {
+  for (const file of preview.filesToCreate) {
     const destination = join(target, file);
     mkdirSync(dirname(destination), { recursive: true });
 
-    const generatedTemplate = downstreamTemplateFor(file, options.tier);
+    const generatedTemplate = downstreamTemplateFor(file, tier);
     const source = sourcePathFor(file);
     if (generatedTemplate !== null) {
       writeFileSync(destination, generatedTemplate);
     } else if (source === null) {
       writeFileSync(destination, file === 'MISSION.md' ? missionTemplate(project) : '');
-    } else if (file === '.osc/RULES.md' && options.tier === 'min') {
+    } else if (file === '.osc/RULES.md' && tier === 'min') {
       writeFileSync(destination, minRulesTemplate());
-    } else if (file === '.osc/plans/README.md' && options.tier === 'min') {
+    } else if (file === '.osc/plans/README.md' && tier === 'min') {
       writeFileSync(destination, minPlansReadmeTemplate());
-    } else if (file === '.osc/plans/handoff-template.md' && options.tier === 'min') {
+    } else if (file === '.osc/plans/handoff-template.md' && tier === 'min') {
       writeFileSync(destination, minHandoffTemplate());
     } else {
       assertTemplateExists(file, source);
@@ -772,10 +778,32 @@ export function initializeScaffold(options: InitializeScaffoldOptions): Initiali
   }
 
   return {
+    tier,
+    target,
+    filesCreated: preview.filesToCreate,
+    summary: formatSummary(tier, target, preview.filesToCreate, project),
+  };
+}
+
+export function previewScaffoldInitialization(options: InitializeScaffoldOptions): ScaffoldInitializationPreview {
+  ensureKnownTier(options.tier);
+  if (options.fromExisting && options.tier !== 'min') {
+    throw new Error('Brownfield init currently supports --tier min only. Use greenfield init for standard/max docs, or add advanced docs manually after preserving existing project files.');
+  }
+  const target = normalizeKnownSystemAlias(options.target);
+  const fromExisting = Boolean(options.fromExisting);
+  const project = fromExisting ? detectExistingProject(target) : undefined;
+  const files = filesForInitialization(options.tier, fromExisting);
+  const conflicts = scaffoldConflicts(target, files, fromExisting);
+
+  return {
     tier: options.tier,
     target,
-    filesCreated: files,
-    summary: formatSummary(options.tier, target, files, project),
+    fromExisting,
+    filesToCreate: files,
+    conflicts,
+    protectedExistingProjectFiles: protectedBrownfieldFiles(target, fromExisting, options.force),
+    project,
   };
 }
 

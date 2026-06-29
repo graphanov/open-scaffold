@@ -14,7 +14,7 @@ import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain }
 import { EVOLUTION_DECISIONS, EVOLUTION_STRATEGIES, analyzeEvolutionLoop, buildEvolutionJudgmentCheckpoint, compareEvolutionLoop, recordEvolutionAttempt, renderEvolutionAnalysis, renderEvolutionComparison, renderEvolutionJudgmentCheckpoint, validateEvolutionLoopDir, writeEvolutionLoop, type EvolutionAnalysisFormat, type EvolutionCompareFormat, type EvolutionDecision, type EvolutionJudgeAction, type EvolutionStrategy } from './evolution.js';
 import { measureEvolutionAnalysisEfficiency, renderEvolutionEfficiencyReport } from './evolution-efficiency.js';
 import { analyzeFeedback, recordFeedback } from './feedback.js';
-import { askInteractiveFirstRun, formatFirstRunResult, runFirstRun } from './first-run.js';
+import { askInteractiveFirstRun, formatFirstRunIntro, formatFirstRunPrewrite, formatFirstRunResult, previewFirstRun, previewFirstRunTarget, resolveFirstRunRenderMode, runFirstRun, type FirstRunTargetPreview } from './first-run.js';
 import { runBenchSuite, runHandoffLab } from './bench.js';
 import { CAPTURE_SETUP_TARGETS, isCaptureSetupTarget, renderCaptureSetupText, runCaptureSetup, type CaptureSetupTarget } from './capture-setup.js';
 import { initializeScaffold, scaffoldTiers, type ScaffoldTier } from './init.js';
@@ -395,10 +395,19 @@ function initCommand(args: string[]): void {
 async function firstRunCommand(args: string[]): Promise<void> {
   if (isHelpArg(args[0])) { console.log('Usage: osc first-run [--non-interactive --slug <slug> --mission <text> --goal <text>]'); return; }
   validateOptions(args, ['--slug', '--mission', '--goal'], ['--non-interactive'], 'first-run');
-  const options = has(args, '--non-interactive')
-    ? { slug: requireValue(args, '--slug'), mission: requireValue(args, '--mission'), goal: requireValue(args, '--goal') }
-    : await askInteractiveFirstRun();
-  process.stdout.write(formatFirstRunResult(runFirstRun(options, process.cwd())));
+  const nonInteractive = has(args, '--non-interactive');
+  const mode = resolveFirstRunRenderMode({ nonInteractive });
+  let targetPreview: FirstRunTargetPreview | undefined;
+  const options = nonInteractive
+    ? { slug: requireValue(args, '--slug'), mission: requireValue(args, '--mission'), goal: requireValue(args, '--goal'), nonInteractive: true }
+    : await (async () => {
+      targetPreview = previewFirstRunTarget(process.cwd());
+      process.stdout.write(formatFirstRunIntro(mode));
+      return askInteractiveFirstRun(targetPreview, mode);
+    })();
+  const preview = previewFirstRun(options, process.cwd(), targetPreview);
+  process.stdout.write(formatFirstRunPrewrite(preview, mode));
+  process.stdout.write(formatFirstRunResult(runFirstRun(options, process.cwd()), mode));
 }
 
 function statusCommand(args: string[]): void {
