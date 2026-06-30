@@ -173,13 +173,13 @@ describe('tiered scaffold initialization', () => {
   });
 
   it('previews brownfield scaffold context and conflicts without writing files', () => {
-    const target = tempTarget();
+    const target = realpathSync(tempTarget());
     writeFileSync(join(target, 'package.json'), '{"name":"preview-node"}\n');
     writeFileSync(join(target, 'AGENTS.md'), '# Existing guidance\n');
 
     const preview = previewScaffoldInitialization({ tier: 'min', target, fromExisting: true });
 
-    expect(preview.target).toBe(realpathSync(target));
+    expect(preview.target).toBe(target);
     expect(preview.fromExisting).toBe(true);
     expect(preview.project?.label).toBe('Node.js project');
     expect(preview.project?.marker).toBe('package.json');
