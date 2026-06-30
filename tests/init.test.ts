@@ -179,7 +179,7 @@ describe('tiered scaffold initialization', () => {
 
     const preview = previewScaffoldInitialization({ tier: 'min', target, fromExisting: true });
 
-    expect(preview.target).toBe(target);
+    expect(preview.target).toBe(realpathSync(target));
     expect(preview.fromExisting).toBe(true);
     expect(preview.project?.label).toBe('Node.js project');
     expect(preview.project?.marker).toBe('package.json');
