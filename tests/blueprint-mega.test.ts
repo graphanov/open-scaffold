@@ -79,6 +79,10 @@ describe('blueprint first-run and PR check surfaces', () => {
     try {
       const result = runOsc(root, ['first-run', '--non-interactive', '--slug', 'first-work-record', '--mission', 'Build a tiny service safely.', '--goal', 'Add the first reviewed change.']);
       expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Open Scaffold first-run preview');
+      expect(result.stdout).toContain('Before writing, first-run plans these local files:');
+      expect(result.stdout).toContain('.osc/plans/active/first-work-record.md');
+      expect(result.stdout).toContain('Proof boundary: planned writes do not mean agents ran, tests passed, deployment happened, or production readiness was proven.');
       expect(result.stdout).toContain('Open Scaffold first-run complete');
       expect(result.stdout).toContain('osc trace first-work-record');
       expect(result.stdout).toContain('osc verify --evidence-chain --plan first-work-record --strict');
@@ -100,12 +104,41 @@ describe('blueprint first-run and PR check surfaces', () => {
     }
   });
 
+  it('onboards an empty folder with a clear planned-writes preview', () => {
+    const root = mkdtempSync(join(tmpdir(), 'osc-first-run-empty-'));
+    try {
+      const result = runOsc(root, ['first-run', '--non-interactive', '--slug', 'first-work-record', '--mission', 'Build a tiny service safely.', '--goal', 'Add the first reviewed change.']);
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Open Scaffold root: will initialize the minimum local scaffold here.');
+      expect(result.stdout).toContain('No existing project marker detected; treating this as a new or generic local project.');
+      expect(result.stdout).toContain('AGENTS.md and CLAUDE.md: local agent guidance');
+      expect(result.stdout).toContain('.osc/: work-record directories, templates, rules, and release-note area');
+      expect(result.stdout).toContain('.osc/plans/active/first-work-record.md');
+      expect(result.stdout).toContain('Open Scaffold first-run complete');
+      expect(existsSync(join(root, 'AGENTS.md'))).toBe(true);
+      expect(existsSync(join(root, 'CLAUDE.md'))).toBe(true);
+      expect(existsSync(join(root, 'MISSION.md'))).toBe(true);
+      expect(existsSync(join(root, '.osc/plans/active/first-work-record.md'))).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('creates one valid first work-record path in an existing non-scaffold repo', () => {
     const root = mkdtempSync(join(tmpdir(), 'osc-first-run-existing-'));
     try {
       writeFileSync(join(root, 'package.json'), '{"scripts":{"test":"node --version"}}\n');
+      mkdirSync(join(root, 'src'));
+      writeFileSync(join(root, 'src/index.js'), 'console.log("keep me")\n');
       const result = runOsc(root, ['first-run', '--non-interactive', '--slug', 'first-work-record', '--mission', 'Build a tiny service safely.', '--goal', 'Add the first reviewed change.']);
       expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Open Scaffold root: will initialize the minimum local scaffold here.');
+      expect(result.stdout).toContain('Detected existing Node.js project via package.json.');
+      expect(result.stdout).toContain('Existing non-scaffold project files are preserved.');
+      expect(result.stdout).toContain('AGENTS.md and CLAUDE.md: local agent guidance');
+      expect(readFileSync(join(root, 'package.json'), 'utf8')).toBe('{"scripts":{"test":"node --version"}}\n');
+      expect(readFileSync(join(root, 'src/index.js'), 'utf8')).toBe('console.log("keep me")\n');
       expect(existsSync(join(root, '.osc/RULES.md'))).toBe(true);
       expect(existsSync(join(root, '.osc/plans/active/first-work-record.md'))).toBe(true);
       const validation = runOsc(root, ['plan', 'validate', 'first-work-record', '--strict']);
@@ -132,6 +165,7 @@ describe('blueprint first-run and PR check surfaces', () => {
       expect(result.stderr).toContain('starter guidance and .osc work-record files');
       expect(result.stderr).toContain(`Target directory: ${target}`);
       expect(result.stderr).toContain('AGENTS.md');
+      expect(result.stderr).toContain('No mission, active plan, or evidence skeleton was created.');
       expect(result.stderr).toContain('mkdir -p ./my-project');
       expect(result.stderr).toContain('cd ./my-project');
       expect(result.stderr).toContain('npx open-scaffold@latest first-run');
@@ -139,6 +173,9 @@ describe('blueprint first-run and PR check surfaces', () => {
       expect(result.stderr).toContain(`npx open-scaffold@latest init --from-existing --tier min --target ${quotedTarget}`);
       expect(result.stderr).toContain(`After brownfield scaffolding is initialized, rerun first-run in that target to create the mission, active plan, and evidence skeleton:\ncd ${quotedTarget}`);
       expect(result.stderr).not.toContain('--force');
+      expect(existsSync(join(root, 'MISSION.md'))).toBe(false);
+      expect(existsSync(join(root, '.osc/plans/active/first-work-record.md'))).toBe(false);
+      expect(existsSync(join(root, '.osc/releases'))).toBe(false);
 
       renameSync(join(root, 'AGENTS.md'), join(root, 'AGENTS.existing.md'));
       const init = runOsc(root, ['init', '--from-existing', '--tier', 'min', '--target', root]);
@@ -174,10 +211,27 @@ describe('blueprint first-run and PR check surfaces', () => {
         env: { ...process.env },
       });
       expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Open Scaffold first-run preview');
       expect(result.stdout).toContain('Open Scaffold first-run complete');
       expect(existsSync(join(root, '.osc/plans/active/interactive-work.md'))).toBe(true);
       const validation = runOsc(root, ['plan', 'validate', 'interactive-work', '--strict']);
       expect(validation.status, validation.stdout + validation.stderr).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps CI and NO_COLOR first-run output plain and deterministic', () => {
+    const root = mkdtempSync(join(tmpdir(), 'osc-first-run-ci-'));
+    try {
+      const result = runOsc(root, ['first-run', '--non-interactive', '--slug', 'first-work-record', '--mission', 'Build safely.', '--goal', 'Create the first reviewed slice.'], { CI: '1', NO_COLOR: '1' });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain('Open Scaffold first-run preview');
+      expect(result.stdout).not.toContain('First-run onboarding');
+      expect(result.stdout).not.toMatch(/\x1b\[/);
+      expect(result.stdout).not.toContain('[1/4]');
+      expect(result.stdout).toContain('Open Scaffold first-run complete');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
