@@ -173,7 +173,7 @@ describe('tiered scaffold initialization', () => {
   });
 
   it('previews brownfield scaffold context and conflicts without writing files', () => {
-    const target = tempTarget();
+    const target = realpathSync(tempTarget());
     writeFileSync(join(target, 'package.json'), '{"name":"preview-node"}\n');
     writeFileSync(join(target, 'AGENTS.md'), '# Existing guidance\n');
 
