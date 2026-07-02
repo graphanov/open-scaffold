@@ -4,9 +4,31 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
+## v0.35.0 — First-run setup release candidate
+
+Status: release-sync candidate prepared for `open-scaffold@0.35.0`; not yet published to npm, not yet tagged, and no GitHub Release `v0.35.0` exists until owner-gated follow-through after review/merge. The release-prep PR does not authorize merge, publish, tag creation, GitHub Release creation, workflow dispatch, settings changes, or secret changes.
+
+Highlights:
+
+- Prepares the post-`0.34.0` mainline work for the public npm package surface, cut from current `origin/main`.
+- Improves first-run conflict recovery guidance so brownfield setup failures give operators clearer repair paths instead of silent ambiguity.
+- Polishes first-run onboarding preview behavior for existing repositories before any scaffold writes are made.
+- Carries the `@types/node` development-dependency refresh into the release candidate without changing runtime authority.
+- Includes the macOS brownfield preview target test repair from PR #247 in the release delta.
+- Keeps Open Scaffold core repo-native and authority-limited: it records and verifies work artifacts, but does not grant runtime, merge, publish, release, tag, workflow-dispatch, or settings authority by itself.
+
+Evidence:
+
+- Issue: https://github.com/graphanov/open-scaffold/issues/246
+- Source PRs: https://github.com/graphanov/open-scaffold/pull/242, https://github.com/graphanov/open-scaffold/pull/243, https://github.com/graphanov/open-scaffold/pull/245, and https://github.com/graphanov/open-scaffold/pull/247
+- Release-sync plan: `.osc/plans/active/176-prepare-open-scaffold-0350-release-sync.md`
+- Release-sync evidence note: `.osc/releases/2026-07-02-176-prepare-open-scaffold-0350-release-sync.md`
+- Draft PR: https://github.com/graphanov/open-scaffold/pull/248
+- Previous package line: `open-scaffold@0.34.0`
+
 ## v0.34.0 — Ambient capture trust and setup package sync
 
-Status: release-sync candidate prepared for `open-scaffold@0.34.0`; not yet published to npm, not yet tagged, and no GitHub Release `v0.34.0` exists until owner-gated follow-through after review/merge. npm `latest` remains `0.33.0` before that owner action.
+Status: published to npm as `open-scaffold@0.34.0`; GitHub Release `0.34.0` exists after owner-approved trusted publishing and release follow-through.
 
 Highlights:
 
