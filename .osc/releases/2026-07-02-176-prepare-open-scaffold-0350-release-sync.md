@@ -15,7 +15,7 @@ Prepared the `open-scaffold@0.35.0` release-sync candidate for the first-run set
   - #245 - https://github.com/graphanov/open-scaffold/pull/245
   - #247 - https://github.com/graphanov/open-scaffold/pull/247
 - Previous package line: `open-scaffold@0.34.0`.
-- Branch / PR: branch `forge/issue-246-prepare-open-scaffold-npm-github-release`; draft PR pending at initial preparation time and must be recorded here after branch publication.
+- Branch / PR: branch `forge/issue-246-prepare-open-scaffold-npm-github-release`; draft PR https://github.com/graphanov/open-scaffold/pull/248.
 
 ## Verification
 
@@ -47,6 +47,5 @@ Owner-gated follow-through remains out of scope for this prep PR: merge, npm pub
 
 ## Follow-up
 
-- Publish the branch and open/update the draft PR with `Closes #246`.
-- After the draft PR exists, update this note and `docs/CHANGELOG.md` with the PR URL, rerun lightweight verification (`git diff --check`, plan validation, version alignment), and push the follow-up commit.
+- Keep PR #248 in draft/review until reviewer/Codex feedback is clean.
 - After merge and owner gate: perform trusted publishing for `expected-version=0.35.0`, verify npm and GitHub Release availability, and record post-publish proof in a separate owner-gated follow-through record.

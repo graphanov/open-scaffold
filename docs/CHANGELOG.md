@@ -23,7 +23,7 @@ Evidence:
 - Source PRs: https://github.com/graphanov/open-scaffold/pull/242, https://github.com/graphanov/open-scaffold/pull/243, https://github.com/graphanov/open-scaffold/pull/245, and https://github.com/graphanov/open-scaffold/pull/247
 - Release-sync plan: `.osc/plans/active/176-prepare-open-scaffold-0350-release-sync.md`
 - Release-sync evidence note: `.osc/releases/2026-07-02-176-prepare-open-scaffold-0350-release-sync.md`
-- Draft PR: pending until this release-prep branch is published for review.
+- Draft PR: https://github.com/graphanov/open-scaffold/pull/248
 - Previous package line: `open-scaffold@0.34.0`
 
 ## v0.34.0 — Ambient capture trust and setup package sync
