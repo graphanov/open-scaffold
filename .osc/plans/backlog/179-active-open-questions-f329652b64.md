@@ -1,6 +1,6 @@
 # Plan: .osc portfolio gap active-open-questions-f329652b64
 
-<!-- john-lomein-osc-gap: active-open-questions-f329652b64 -->
+<!-- osc-portfolio-gap: active-open-questions-f329652b64 -->
 
 ## Status
 
@@ -8,7 +8,7 @@ backlog
 
 ## Context
 
-john-lomein's `.osc` portfolio steward detected a `active_open_questions` gap.
+The `.osc` portfolio steward detected an `active_open_questions` gap.
 
 Active plan `.osc/plans/active/175-ambient-capture-trust-package-sync.md` still has unresolved open questions that can block roadmap/backlog alignment.
 
