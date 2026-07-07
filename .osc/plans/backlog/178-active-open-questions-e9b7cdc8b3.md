@@ -8,22 +8,23 @@ backlog
 
 ## Context
 
-The `.osc` portfolio steward detected an `active_open_questions` gap.
+The `.osc` portfolio steward detected an `active_open_questions` gap against the parent active plan text.
 
-Active plan `.osc/plans/active/163-proof-harness-v2.md` still has unresolved open questions that can block roadmap/backlog alignment.
+Current source truth is narrower than the parent plan's original open-question list: amendment 1 already adds the minimal-checklist control arm, chooses the Claude-first execution lane, and defers the judge-model choice to preregistration review. This follow-up should reconcile that parent-plan/amendment drift or reject the steward finding as a stale-text false positive, not reopen all original questions as unresolved work.
 
 Source evidence:
 
-- Active plan: `.osc/plans/active/163-proof-harness-v2.md`
-- Open question: Judge model choice and whether two judge models are needed for agreement checks.
-- Open question: Whether the naked arm gets a minimal-checklist variant as a second control (the June 3 reset doc suggests it should).
-- Open question: Which adapter(s) constitute the proof arms first: codex only, or codex plus claude.
+- Parent active plan: `.osc/plans/active/163-proof-harness-v2.md`
+- Amendment source truth: `.osc/plans/active/163-proof-harness-v2-amendment-1.md`
+- Resolved by amendment: minimal-checklist control arm is in; execution lane is Claude-first.
+- Deferred by amendment: Codex/OMX lane is not the first proof arm; judge-model choice is a preregistration-review decision before any scored run.
+- Narrowed gap: reconcile the parent plan's stale `## Open questions` text with amendment 1, or record that the steward gap is a false positive against current source truth.
 
 GitHub intake: #252
 
 ## Goal
 
-Resolve the detected roadmap/backlog/active-plan gap with a small, source-grounded follow-up that keeps the public roadmap and `.osc` work record coherent.
+Resolve the narrowed parent-plan/amendment drift with a small, source-grounded follow-up that keeps the public roadmap and `.osc` work record coherent.
 
 ## Constraints / Out of scope
 
