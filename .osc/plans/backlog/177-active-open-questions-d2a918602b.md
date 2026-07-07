@@ -1,6 +1,6 @@
 # Plan: .osc portfolio gap active-open-questions-d2a918602b
 
-<!-- john-lomein-osc-gap: active-open-questions-d2a918602b -->
+<!-- osc-portfolio-gap: active-open-questions-d2a918602b -->
 
 ## Status
 
@@ -8,7 +8,7 @@ backlog
 
 ## Context
 
-john-lomein's `.osc` portfolio steward detected a `active_open_questions` gap.
+The `.osc` portfolio steward detected an `active_open_questions` gap.
 
 Active plan `.osc/plans/active/176-prepare-open-scaffold-0350-release-sync.md` was flagged for active open-question follow-up, but its recorded open-question entry states that release-prep has no unresolved open question beyond owner-gated publish/release follow-through. This backlog item should therefore verify whether the steward finding is a false positive or whether a different roadmap/backlog clarification is needed.
 
