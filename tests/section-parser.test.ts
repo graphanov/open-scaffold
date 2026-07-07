@@ -255,7 +255,8 @@ This sample must not count as the real section.
     // 174 release closeout: added evidence-battery package-sync plan to done.
     // 175 release prep: added ambient capture trust package-sync plan.
     // 176 release prep: added 0.35.0 package release-sync plan.
-    expect(hash(planIssueSnapshot)).toBe('d8d8777986758ddf5d505cfd732dcfbe62ef93b326358c375b3e551ac7bb5c9c');
+    // 178 portfolio follow-up: added active-open-questions-e9b7cdc8b3 backlog gap plan.
+    expect(hash(planIssueSnapshot)).toBe('3affef87e5b44e36c1c14a212ce5ba8078cfe86d88beaa8f81a67fbbec3f803b');
     expect(scaffold.failures).toEqual([]);
     // 168: evidence note 2026-06-12-168-dollar-verb-retirement.md added to .osc/releases.
     // 170 review hardening: evidence note refreshed with PR URL, final test count, and Codex-reported total_tokens.
