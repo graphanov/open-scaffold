@@ -12,9 +12,9 @@ The core promise:
 
 ## Current priorities — 2026-10-06
 
-1. **Reliable adoption and maintenance:** plan `180-repository-revival` repairs instruction contradictions, self-contained onboarding, task-specific handoff, dependency advisories, and duplicate maintenance records. Contributor issues #281 and #282 are the immediate public input.
+1. **Reliable adoption and maintenance:** plan `180-repository-revival` is integrated through [PR #283](https://github.com/graphanov/open-scaffold/pull/283): coherent instructions, self-contained onboarding, task-specific handoff, compatible dependency updates, and duplicate maintenance record cleanup. Contributor issues #281 and #282 are closed with the maintenance fixes.
 2. **Orchestrator report transfer:** backlog plan `181-orchestrator-report-handoff-pilot` tests one coordinator combining three independent workers' task-bound reports, then handing the result to a fresh reader. Measure recovered facts, unsupported completion claims, synthesis omissions, and context cost against plain messages. Hundred-agent scale remains untested.
-3. **Publication follow-through:** plan `182-0350-publication-follow-through` keeps the prepared 0.35.0 package separate from the live 0.34.0 release. Merge and publication each require their own owner decision and evidence.
+3. **Publication follow-through:** owner-approved `open-scaffold@0.35.0` is published to [npm](https://www.npmjs.com/package/open-scaffold/v/0.35.0) with `latest` pointing to it. [Trusted publishing](https://github.com/graphanov/open-scaffold/actions/runs/37537279815) and [GitHub Release `v0.35.0`](https://github.com/graphanov/open-scaffold/releases/tag/v0.35.0) use the same approved source commit. Plan `182-0350-publication-follow-through` records the [publication and fresh-install evidence](.osc/releases/2026-10-06-182-0350-publication-follow-through.md); later source changes require their own reviewed release.
 
 Open Scaffold owns the report/work-record contract and recovery; an external orchestrator owns execution, routing, and promotion of shared state. John Lomein's Guide, Forge, Overwatch, Maintainer, and Learning Steward profiles are one possible integration. Qualify a pinned bounded workflow before enabling broader autonomous maintenance.
 
@@ -50,7 +50,7 @@ Not every small task needs every link, but meaningful work should make the chain
 
 ## Historical baseline milestones
 
-The early milestones below preserve the project-history shape that was once called v1. The current public package line is `v0.34.x` pre-1.0; these entries are proof of dogfood history, not a fresh npm/GitHub Release authorization.
+The early milestones below preserve the project-history shape that was once called v1. The current public package line is `v0.35.x` pre-1.0; these entries are proof of dogfood history, not a fresh npm/GitHub Release authorization.
 
 ## Milestone 0 — Product contract and dogfood baseline
 
@@ -407,7 +407,7 @@ Acceptance criteria:
 
 ### Milestone 18 — historical v1.0.0 stability launch
 
-Status: completed as a historical launch line through `.osc/plans/done/069-v1-launch.md`, `.osc/releases/2026-05-25-v1-launch.md`, PR #113, and later package/release follow-through. As of the `123-evidence-chain-package-release-sync` closeout, the forward-moving channel was intentionally corrected back to pre-1.0 hardening; after the ambient capture trust package sync, that current hardening line is `v0.34.x` until the public product surface earns a mature 1.0 contract.
+Status: completed as a historical launch line through `.osc/plans/done/069-v1-launch.md`, `.osc/releases/2026-05-25-v1-launch.md`, PR #113, and later package/release follow-through. As of the `123-evidence-chain-package-release-sync` closeout, the forward-moving channel was intentionally corrected back to pre-1.0 hardening; after the reliable setup and task-handoff release, that current hardening line is `v0.35.x` until the public product surface earns a mature 1.0 contract.
 
 Goal: make the adoption contract explicit before the first major-release experiment.
 

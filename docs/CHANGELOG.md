@@ -4,23 +4,24 @@ This is a curated human-readable changelog. It compresses the detailed `MISSION.
 
 For live package truth, check npm. For live release truth, check GitHub Releases. Repository evidence notes describe what was prepared and, when applicable, the publication proof after trusted publishing/GitHub Release follow-through.
 
-## v0.35.0 — First-run setup release candidate
+## v0.35.0 — Reliable setup and task handoffs
 
-Status: release-sync candidate prepared for `open-scaffold@0.35.0`; not yet published to npm, not yet tagged, and no GitHub Release `v0.35.0` exists until owner-gated follow-through after review/merge. The release-prep PR does not authorize merge, publish, tag creation, GitHub Release creation, workflow dispatch, settings changes, or secret changes.
+Status: published to [npm as `open-scaffold@0.35.0`](https://www.npmjs.com/package/open-scaffold/v/0.35.0), with `latest` pointing to `0.35.0`, after owner-approved merge of [PR #283](https://github.com/graphanov/open-scaffold/pull/283). [Trusted publishing](https://github.com/graphanov/open-scaffold/actions/runs/37537279815) and [GitHub Release `v0.35.0`](https://github.com/graphanov/open-scaffold/releases/tag/v0.35.0) use the approved merged commit `678d6cf36b6876889b43adbbc50af34fe142fa7a`. [Publication evidence](../.osc/releases/2026-10-06-182-0350-publication-follow-through.md) records the package provenance and fresh npm-only first-session-to-session smoke.
 
 Highlights:
 
 - October maintenance adds task-bound handoff selection, consistent record-authoring instructions, self-contained first-run guidance, and an npm-only two-session newcomer regression.
 - Repeated first-run setup preserves an existing plan's lifecycle instead of recreating a closed plan as active.
+- Closure synchronizes the plan's Status with its done folder, preserves other text, and avoids duplicate mission stamps on retry. Historical Status mismatches are repaired without rewriting intent or evidence.
 - Compatible development dependencies and CI action references are refreshed; Vitest 4 remains supported to preserve the declared Node 20 runtime contract.
 - Stale-plan monitoring maintains one owned reminder and stays quiet while the stale work is unchanged.
 - Historical preparation and portfolio intake are reconciled; the next experimental direction is the small orchestrator/report-handoff pilot in plan 181, without a claim of hundred-agent scalability.
-- Maintenance evidence: `.osc/releases/2026-10-06-180-repository-revival.md`; publication remains the separate owner-gated plan 182.
+- Maintenance and publication proof remain separate records in plans 180 and 182; both are verified after their respective owner-approved follow-through.
 
-- Prepares the post-`0.34.0` mainline work for the public npm package surface, cut from current `origin/main`.
+- Publishes the post-`0.34.0` mainline work through the public npm package surface from the approved merged commit.
 - Improves first-run conflict recovery guidance so brownfield setup failures give operators clearer repair paths instead of silent ambiguity.
 - Polishes first-run onboarding preview behavior for existing repositories before any scaffold writes are made.
-- Carries the `@types/node` development-dependency refresh into the release candidate without changing runtime authority.
+- Carries the `@types/node` development-dependency refresh into the package without changing runtime authority.
 - Includes the macOS brownfield preview target test repair from PR #247 in the release delta.
 - Keeps Open Scaffold core repo-native and authority-limited: it records and verifies work artifacts, but does not grant runtime, merge, publish, release, tag, workflow-dispatch, or settings authority by itself.
 
@@ -30,7 +31,13 @@ Evidence:
 - Source PRs: https://github.com/graphanov/open-scaffold/pull/242, https://github.com/graphanov/open-scaffold/pull/243, https://github.com/graphanov/open-scaffold/pull/245, and https://github.com/graphanov/open-scaffold/pull/247
 - Release-sync plan: `.osc/plans/done/176-prepare-open-scaffold-0350-release-sync.md`
 - Release-sync evidence note: `.osc/releases/2026-07-02-176-prepare-open-scaffold-0350-release-sync.md`
-- Draft PR: https://github.com/graphanov/open-scaffold/pull/248
+- Release-preparation PR: https://github.com/graphanov/open-scaffold/pull/248 (merged).
+- Maintenance PR: https://github.com/graphanov/open-scaffold/pull/283 (merged).
+- Maintenance evidence: [plan 180](../.osc/releases/2026-10-06-180-repository-revival.md).
+- Publication plan / evidence: [182-0350-publication-follow-through](../.osc/releases/2026-10-06-182-0350-publication-follow-through.md).
+- Trusted publishing run: https://github.com/graphanov/open-scaffold/actions/runs/37537279815
+- GitHub Release: https://github.com/graphanov/open-scaffold/releases/tag/v0.35.0
+- npm: https://www.npmjs.com/package/open-scaffold/v/0.35.0
 - Previous package line: `open-scaffold@0.34.0`
 
 ## v0.34.0 — Ambient capture trust and setup package sync
