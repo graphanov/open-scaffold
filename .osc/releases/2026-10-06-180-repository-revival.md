@@ -28,6 +28,8 @@ Prepared the owner-requested public maintenance update: coherent source/generate
 - First GitHub CI result — package CI, structural PR check, and evidence validation passed; changed-plan validation caught active Status text in newly closed preparation records. This was a real close-helper invariant defect, not waived.
 - Closure repair — CLI and shell now keep the genuine Status aligned with done while preserving all other text and avoiding duplicate mission stamps on retry. The packed newcomer regression immediately runs strict plan validation after real closure. Fifty-one older done-folder Status mismatches were repaired through the same idempotent core helper; all non-Status sections and mission history were mechanically compared and preserved. The two newly reconciled prep plans are also strict-valid. The entire parent-plan corpus now has zero validation errors, asserted before its pinned hash comparison.
 - Final integrated verification after closure repair — PASS: both builds, 56 test files / 710 tests, and strict structural verification with 9 pass / 0 fail / 19 preserved-history warnings. All parent-plan validation errors are zero. The final package regression covers the corrected closure through the actual installed CLI and the supported shell path has its own preservation/collision tests.
+- GitHub verification at code commit `355f342` — PASS: package CI, changed-plan validation, evidence validation, and structural PR check. Optional comment mirrors were skipped; no external review comments were posted.
+- GitHub cleanup — closed superseded PRs #251/#253/#255/#259/#261/#263/#265/#267/#269/#276 while preserving branches and history. Closed duplicate/false-positive/deferred issues #250/#252/#254/#260/#262/#273/#274/#275/#277/#278/#279. Only PR #283 remains open. Genuine issues #258/#280/#281/#282 remain linked to that PR for merge-time closure. Issue #280 now has the exact owned marker and evergreen title; its original reported mainline facts remain visible until integration.
 
 ## Outcome
 
@@ -42,7 +44,7 @@ Dependency PRs #265, #267, #269, and #276 are covered by the tested newer depend
 
 ## Follow-up
 
-- Publish the verified maintenance PR and reconcile the duplicate/superseded GitHub records with the retained intent linked above.
+- The verified maintenance PR is published and duplicate/superseded GitHub records are reconciled. The implementation criteria are complete; owner merge and publication review remain the next action.
 - Owner reviews the finished maintenance PR before merge. Plan 182 separately records live npm/GitHub publication gates.
 - Plan 181 runs the next small orchestrator report-transfer pilot after the maintenance baseline is integrated; qualify a pinned John Lomein workflow before using it as an executor.
 - Before relying on ambient usage for pilot cost claims, reproduce and address the earlier static observation that missing Claude usage fields can normalize to zero; this maintenance slice does not claim that separate fidelity issue is fixed.

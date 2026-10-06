@@ -48,9 +48,9 @@ Dependency action-ref changes and stale-reminder logic share one workflow and mu
 - [x] A clean npm-only user can initialize, record progress, and obtain the same task's next-session handoff without a previously installed global CLI. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
 - [x] Selecting plan A cannot inherit plan B's run, blocker, repair instruction, or completion state; regression fixtures cover concurrent independent work. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
 - [x] Dependencies and action references are reviewed and updated within the supported contract; the final audit has no unresolved applicable advisory without an explicit reason. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
-- [ ] Existing portfolio drafts and stale reminders have a documented disposition, superseded duplicates are reconciled, and reminder automation no longer opens a new issue every week for unchanged state.
+- [x] Existing portfolio drafts and stale reminders have a documented disposition, superseded duplicates are reconciled, and reminder automation no longer opens a new issue every week for unchanged state. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
 - [x] Plan 181 records the owner-directed orchestrator/report-transfer frontier and a bounded pilot with measurable outcomes. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
-- [ ] Build, tests, strict structural verification, package smoke, and independent final review pass; the maintenance PR links this plan and its evidence with release authority explicit.
+- [x] Build, tests, strict structural verification, package smoke, and independent final review pass; the maintenance PR links this plan and its evidence with release authority explicit. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
 
 ## Verification steps
 
