@@ -461,6 +461,29 @@ function updatePlanStatus(markdown: string, stage: PlanCreationStage): string {
   return markdown.endsWith('\n') && !updated.endsWith('\n') ? `${updated}\n` : updated;
 }
 
+function closedPlanStatus(markdown: string): string {
+  const sections = parseMarkdownSections(markdown);
+  const statuses = sections.filter((section) => section.heading === 'Status');
+  // Older scaffolds omitted Status; closing must remain compatible with them.
+  if (statuses.length === 0) return markdown;
+  if (statuses.length !== 1) throw new Error('Plan has duplicate ## Status sections. Refusing to close ambiguous status.');
+
+  const statusIndex = sections.indexOf(statuses[0]);
+  const lines = markdown.split(/(?<=\n)/);
+  const bodyStart = statuses[0].line;
+  const bodyEnd = sections[statusIndex + 1]?.line ? sections[statusIndex + 1].line - 1 : lines.length;
+  for (let index = bodyStart; index < bodyEnd; index += 1) {
+    if (!lines[index].trim()) continue;
+    const stage = lines[index].match(/^([ \t]*)(active|backlog|blocked|done)(?=$|[\s:—–-])/i);
+    if (!stage) throw new Error('Plan has an invalid ## Status. Refusing to close without a lifecycle stage.');
+    // Preserve status notes, example fences, and original line endings.
+    if (stage[2].toLowerCase() === 'done') return markdown;
+    lines[index] = `${stage[1]}done${lines[index].slice(stage[0].length)}`;
+    return lines.join('');
+  }
+  throw new Error('Plan has an empty ## Status. Refusing to close without a lifecycle stage.');
+}
+
 export function movePlan(slug: string, toStage: PlanCreationStage, start = process.cwd()): MovedPlanResult {
   if (!PLAN_CREATION_STAGES.includes(toStage)) {
     throw new Error(`Invalid plan stage: ${toStage}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
@@ -544,7 +567,10 @@ export function closePlan(slug: string, start = process.cwd(), message = '', dat
   if (!parent) {
     throw new Error(`Plan not found: ${safeSlug}.md in .osc/plans/{active,backlog,blocked}.`);
   }
+  const originalParentText = readText(parent.path);
+  const updatedParentText = closedPlanStatus(originalParentText);
   if (parent.stage === 'done') {
+    if (updatedParentText !== originalParentText) writeFileSync(parent.path, updatedParentText, 'utf8');
     return { root, slug: safeSlug, fromStage: 'done', movedFiles: [], changelogStamped: false, alreadyDone: true };
   }
 
@@ -565,6 +591,7 @@ export function closePlan(slug: string, start = process.cwd(), message = '', dat
   for (const file of filesToMove) {
     renameSync(join(parent.dir, file), join(doneDir, file));
   }
+  if (updatedParentText !== originalParentText) writeFileSync(join(doneDir, `${safeSlug}.md`), updatedParentText, 'utf8');
   const dateText = formatLocalDate(date);
   const changelogLine = message.trim()
     ? `${dateText}: closed ${safeSlug} — ${message.trim()}`

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, renameSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { compileResume } from '../src/resume.js';
+import { createRunArtifacts, type RunArtifacts } from '../src/artifacts.js';
+import { parsePlanFile } from '../src/scaffold.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const fixtureRoot = join(repoRoot, 'examples', 'resume-demo');
@@ -76,6 +78,40 @@ function writeAmbientRecord(root: string, name: string, fixture: string, mtime: 
   utimesSync(path, mtime, mtime);
 }
 
+function writeRunStatus(run: Pick<RunArtifacts, 'runDir' | 'runId'>, state: string, updatedAt: string, gateId?: string): void {
+  writeFileSync(join(run.runDir, 'status.json'), JSON.stringify({
+    schema: 'osc.harness-status.v1',
+    runId: run.runId,
+    command: 'work',
+    state,
+    updatedAt,
+    pendingHumanGates: gateId ? [{ id: gateId, required: true, status: 'pending' }] : [],
+  }), 'utf8');
+}
+
+function createRecordedRun(root: string, slug: string): RunArtifacts {
+  return createRunArtifacts(root, parsePlanFile(join(root, '.osc', 'plans', 'active', `${slug}.md`)), 'run', {
+    taskId: `task:${slug}`,
+  });
+}
+
+function writeRunFeedback(run: RunArtifacts, hypothesis: string): void {
+  writeFileSync(join(run.runDir, 'feedback.jsonl'), `${JSON.stringify({
+    schema: 'osc.feedback.v1',
+    id: 'feedback-1',
+    runId: run.runId,
+    recordedAt: '2026-06-10T11:01:00.000Z',
+    source: 'runtime',
+    verdict: 'retry',
+    scope: 'runtime',
+    whatHappened: 'Attempt failed.',
+    whyItMatters: 'The task remains open.',
+    repairHypothesis: hypothesis,
+    evidencePaths: [],
+    nextAction: 'retry',
+  })}\n`, 'utf8');
+}
+
 describe('osc resume packet compiler', () => {
   it('reproduces the committed resume-demo expected summary', () => {
     const expected = JSON.parse(readFileSync(join(fixtureRoot, 'expected-resume-summary.json'), 'utf8'));
@@ -101,6 +137,53 @@ describe('osc resume packet compiler', () => {
     expect(packet).toContain('1. Greeting history is written to the releases folder');
     expect(packet).toContain('osc plan validate demo-add-greeting --strict');
     expect(packet).toContain('Amendments (read in order after the plan): demo-add-greeting-amendment-1');
+  });
+
+  it.each(['npx open-scaffold@0.35.0', 'npm run osc --'])('keeps generated next commands runnable through %s while preserving project verification', (commandPrefix) => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-next-session');
+    const run = createRecordedRun(root, '001-next-session');
+    writeRunStatus(run, 'running', '2026-06-10T10:00:00.000Z');
+
+    const active = compileResume(root, { commandPrefix });
+    expect(active.summary.next_commands).toEqual([
+      `${commandPrefix} plan validate 001-next-session --strict`,
+      'Run npm test and confirm exit 0.',
+    ]);
+    expect(active.packet).toContain(`${commandPrefix} plan validate 001-next-session --strict`);
+
+    writeRunStatus(run, 'waiting_on_human', '2026-06-10T11:00:00.000Z', 'next-session-gate');
+    expect(compileResume(root, { commandPrefix }).summary.next_commands).toEqual([
+      `${commandPrefix} trace 001-next-session`,
+      `${commandPrefix} evidence new 001-next-session`,
+    ]);
+
+    writeRunStatus(run, 'blocked', '2026-06-10T12:00:00.000Z');
+    expect(compileResume(root, { commandPrefix }).summary.next_commands).toEqual([
+      `${commandPrefix} trace 001-next-session`,
+      `${commandPrefix} run .osc/plans/active/001-next-session.md --dry-run`,
+    ]);
+
+    writeRunStatus(run, 'running', '2026-06-10T13:00:00.000Z');
+    const planPath = join(root, '.osc', 'plans', 'active', '001-next-session.md');
+    writeFileSync(planPath, readFileSync(planPath, 'utf8').replace('- [ ] Second criterion open.', '- [x] Second criterion open.'), 'utf8');
+    expect(compileResume(root, { commandPrefix }).summary.next_commands).toEqual([
+      `${commandPrefix} evidence new 001-next-session`,
+      `${commandPrefix} verify`,
+      `${commandPrefix} close 001-next-session --message "<what shipped>"`,
+    ]);
+  });
+
+  it('keeps a caller\'s reviewed package invocation for bootstrap and mission guidance', () => {
+    const root = tempRepo();
+    const commandPrefix = 'npx open-scaffold@0.35.0';
+    expect(compileResume(root, { commandPrefix }).summary.next_commands).toEqual([`${commandPrefix} first-run`]);
+    writeMission(root, false);
+    writePlan(root, '001-needs-mission');
+    const { summary, packet } = compileResume(root, { commandPrefix });
+    expect(summary.next_bounded_action).toContain(`${commandPrefix} first-run`);
+    expect(packet).not.toContain('open-scaffold@latest');
   });
 
   it('stays within the character budget and degrades gracefully', () => {
@@ -751,6 +834,198 @@ describe('osc resume packet compiler', () => {
     expect(packet).toContain('Record the answer for gate missing-required-context in evidence or the external coordinator');
   });
 
+  it.each(['blocked', 'waiting_on_human', 'completed'])('does not route plan A through a newer %s run for plan B', (state) => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '002-task-a');
+    writePlan(root, '001-task-b');
+    const runA = createRecordedRun(root, '002-task-a');
+    const runB = createRecordedRun(root, '001-task-b');
+    writeRunStatus(runA, 'running', '2026-06-10T10:00:00.000Z');
+    writeRunStatus(runB, state, '2026-06-10T11:00:00.000Z', state === 'waiting_on_human' ? 'task-b-approval' : undefined);
+    writeRunFeedback(runB, 'Repair task B, not task A.');
+
+    for (const options of [{ planSlug: '002-task-a' }, {}]) {
+      const { summary, packet } = compileResume(root, options);
+      expect(summary.active_plan?.slug).toBe('002-task-a');
+      expect(summary.latest_run).toMatchObject({ run_id: runA.runId, state: 'running', pending_gates: 0 });
+      expect(summary.repair_hypothesis).toBeNull();
+      expect(summary.next_bounded_action).toBe('Second criterion open.');
+      expect(packet).not.toContain(runB.runId);
+      expect(packet).not.toContain('task-b-approval');
+      expect(packet).not.toContain('Repair task B');
+      expect(summary.next_commands).toContain('osc plan validate 002-task-a --strict');
+    }
+  });
+
+  it('keeps each task\'s repair hypothesis and gate attached to its genuine run packet', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-repair-a');
+    writePlan(root, '002-gated-b');
+    const olderA = createRecordedRun(root, '001-repair-a');
+    const runA = createRecordedRun(root, '001-repair-a');
+    const runB = createRecordedRun(root, '002-gated-b');
+    writeRunStatus(olderA, 'completed', '2026-06-10T09:00:00.000Z');
+    writeRunStatus(runA, 'blocked', '2026-06-10T10:00:00.000Z');
+    writeRunFeedback(runA, 'Restore task A\'s missing fixture before retrying.');
+    writeRunStatus(runB, 'waiting_on_human', '2026-06-10T11:00:00.000Z', 'approve-task-b');
+
+    const taskA = compileResume(root, { planSlug: '001-repair-a' });
+    expect(taskA.summary.latest_run?.run_id).toBe(runA.runId);
+    expect(taskA.summary.repair_hypothesis).toBe('Restore task A\'s missing fixture before retrying.');
+    expect(taskA.summary.next_bounded_action).toContain('Restore task A');
+    expect(taskA.summary.next_commands).toEqual([
+      'osc trace 001-repair-a',
+      'osc run .osc/plans/active/001-repair-a.md --dry-run',
+    ]);
+    expect(taskA.packet).not.toContain('approve-task-b');
+
+    const taskB = compileResume(root, { planSlug: '002-gated-b' });
+    expect(taskB.summary.latest_run?.run_id).toBe(runB.runId);
+    expect(taskB.summary.repair_hypothesis).toBeNull();
+    expect(taskB.summary.next_bounded_action).toContain('approve-task-b');
+    expect(taskB.summary.next_commands).toEqual(['osc trace 002-gated-b', 'osc evidence new 002-gated-b']);
+    expect(taskB.packet).not.toContain('Restore task A');
+  });
+
+  it('uses plan criteria when only another plan has run state, even with a newer legacy status', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '002-without-run');
+    writePlan(root, '001-unrelated');
+    const unrelated = createRecordedRun(root, '001-unrelated');
+    writeRunStatus(unrelated, 'blocked', '2026-06-10T10:00:00.000Z');
+    const legacyDir = join(root, '.osc', 'runs', 'legacy-unbound');
+    mkdirSync(legacyDir, { recursive: true });
+    writeRunStatus({ runDir: legacyDir, runId: 'legacy-unbound' }, 'waiting_on_human', '2026-06-10T11:00:00.000Z', 'unbound-gate');
+
+    for (const options of [{ planSlug: '002-without-run' }, {}]) {
+      const { summary, packet } = compileResume(root, options);
+      expect(summary.latest_run).toBeNull();
+      expect(summary.next_bounded_action).toBe('Second criterion open.');
+      expect(packet).not.toContain(unrelated.runId);
+      expect(packet).not.toContain('unbound-gate');
+    }
+
+    mkdirSync(join(root, '.osc', 'plans', 'done'), { recursive: true });
+    renameSync(join(root, '.osc', 'plans', 'active', '001-unrelated.md'), join(root, '.osc', 'plans', 'done', '001-unrelated.md'));
+    expect(compileResume(root).summary.latest_run).toBeNull();
+  });
+
+  it('keeps legacy status-only runs only for an implicit single-plan handoff', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-legacy');
+    const runDir = join(root, '.osc', 'runs', 'legacy-run');
+    mkdirSync(runDir, { recursive: true });
+    writeRunStatus({ runDir, runId: 'legacy-run' }, 'waiting_on_human', '2026-06-10T10:00:00.000Z', 'legacy-gate');
+
+    expect(compileResume(root).summary.next_bounded_action).toContain('legacy-gate');
+    expect(compileResume(root, { planSlug: '001-legacy' }).summary.latest_run).toBeNull();
+    writePlan(root, '002-another-task');
+    expect(compileResume(root).summary.latest_run).toBeNull();
+  });
+
+  it('does not revive a finished plan through leftover run state when no plan is active', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-finished');
+    const run = createRecordedRun(root, '001-finished');
+    writeRunStatus(run, 'blocked', '2026-06-10T10:00:00.000Z');
+    writeRunFeedback(run, 'Retry the finished task.');
+    mkdirSync(join(root, '.osc', 'plans', 'done'), { recursive: true });
+    renameSync(join(root, '.osc', 'plans', 'active', '001-finished.md'), join(root, '.osc', 'plans', 'done', '001-finished.md'));
+
+    const { summary } = compileResume(root);
+    expect(summary.active_plan).toBeNull();
+    expect(summary.latest_run).toBeNull();
+    expect(summary.repair_hypothesis).toBeNull();
+    expect(summary.next_bounded_action).toBe('No active plan. Create the next bounded slice.');
+  });
+
+  it.each(['plan-path', 'status-run', 'packet-run', 'task-id', 'malformed-packet'])('rejects a %s conflict without falling back to unbound status', (conflict) => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-bound');
+    const run = createRecordedRun(root, '001-bound');
+    writeRunStatus(run, 'blocked', '2026-06-10T10:00:00.000Z');
+    writeRunFeedback(run, 'This conflicting record must not authorize a retry.');
+    const packet = JSON.parse(readFileSync(run.manifestPath, 'utf8'));
+    const statusPath = join(run.runDir, 'status.json');
+    const status = JSON.parse(readFileSync(statusPath, 'utf8'));
+    if (conflict === 'plan-path') packet.plan.path = '.osc/plans/active/002-other.md';
+    if (conflict === 'packet-run') packet.runId = 'another-run';
+    if (conflict === 'status-run') status.runId = 'another-run';
+    if (conflict === 'task-id') status.taskId = 'another-task';
+    writeFileSync(run.manifestPath, conflict === 'malformed-packet' ? '{' : JSON.stringify(packet), 'utf8');
+    writeFileSync(statusPath, JSON.stringify(status), 'utf8');
+
+    for (const options of [{ planSlug: '001-bound' }, {}]) {
+      const { summary, packet: handoff } = compileResume(root, options);
+      expect(summary.latest_run).toBeNull();
+      expect(summary.repair_hypothesis).toBeNull();
+      expect(summary.next_bounded_action).toBe('Second criterion open.');
+      expect(handoff).not.toContain('This conflicting record');
+    }
+  });
+
+  it('accepts a plan packet made before a stage move and a path-only plan identity', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-promoted');
+    const run = createRecordedRun(root, '001-promoted');
+    writeRunStatus(run, 'running', '2026-06-10T10:00:00.000Z');
+    const packet = JSON.parse(readFileSync(run.manifestPath, 'utf8'));
+    delete packet.plan.slug;
+    packet.plan.path = '.osc/plans/backlog/001-promoted.md';
+    writeFileSync(run.manifestPath, JSON.stringify(packet), 'utf8');
+
+    expect(compileResume(root, { planSlug: '001-promoted' }).summary.latest_run?.run_id).toBe(run.runId);
+  });
+
+  it('does not read another task\'s feedback when both local files claim its run ID', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-task-a');
+    writePlan(root, '002-task-b');
+    const runA = createRecordedRun(root, '001-task-a');
+    const runB = createRecordedRun(root, '002-task-b');
+    writeRunStatus(runA, 'blocked', '2026-06-10T11:00:00.000Z');
+    writeRunFeedback(runB, 'Task B\'s private repair instruction.');
+    const packet = JSON.parse(readFileSync(runA.manifestPath, 'utf8'));
+    packet.runId = runB.runId;
+    writeFileSync(runA.manifestPath, JSON.stringify(packet), 'utf8');
+    const statusPath = join(runA.runDir, 'status.json');
+    const status = JSON.parse(readFileSync(statusPath, 'utf8'));
+    status.runId = runB.runId;
+    writeFileSync(statusPath, JSON.stringify(status), 'utf8');
+
+    const { summary, packet: handoff } = compileResume(root, { planSlug: '001-task-a' });
+    expect(summary.latest_run).toBeNull();
+    expect(summary.repair_hypothesis).toBeNull();
+    expect(summary.next_bounded_action).toBe('Second criterion open.');
+    expect(handoff).not.toContain('Task B\'s private repair');
+  });
+
+  it('rejects a symlinked run packet before using its otherwise local status', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-packet-symlink');
+    const runDir = join(root, '.osc', 'runs', 'symlink-packet-run');
+    mkdirSync(runDir, { recursive: true });
+    writeRunStatus({ runDir, runId: 'symlink-packet-run' }, 'waiting_on_human', '2026-06-10T10:00:00.000Z', 'outside-packet-gate');
+    const outside = join(tempRepo(), 'run.json');
+    writeFileSync(outside, JSON.stringify({ runId: 'symlink-packet-run', plan: { slug: '001-packet-symlink' } }), 'utf8');
+    symlinkSync(outside, join(runDir, 'run.json'));
+
+    for (const options of [{ planSlug: '001-packet-symlink' }, {}]) {
+      const { summary, packet } = compileResume(root, options);
+      expect(summary.latest_run).toBeNull();
+      expect(packet).not.toContain('outside-packet-gate');
+    }
+  });
+
 
   it('ignores symlinked run status files instead of reading outside the repo', () => {
     const root = tempRepo();
@@ -841,11 +1116,12 @@ describe('osc resume packet compiler', () => {
     const root = tempRepo();
     writeMission(root);
     writePlan(root, '001-sensitive-run');
-    const runDir = join(root, '.osc', 'runs', 'harness-work-sensitive');
+    const runId = 'harness-work-sk-abcdefghijklmnopqrstuvwxyz012345';
+    const runDir = join(root, '.osc', 'runs', runId);
     mkdirSync(runDir, { recursive: true });
     writeFileSync(join(runDir, 'status.json'), JSON.stringify({
       schema: 'osc.harness-status.v1',
-      runId: 'harness-work-sk-abcdefghijklmnopqrstuvwxyz012345-/Users/someone/secrets',
+      runId,
       command: 'work',
       state: 'waiting_on_human',
       updatedAt: '2026-06-10T10:00:00.000Z',

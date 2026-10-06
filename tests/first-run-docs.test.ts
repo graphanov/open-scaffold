@@ -81,8 +81,8 @@ describe('first-run documentation truth', () => {
       expect(text, path).toContain('osc evidence new');
       expect(text, path).toContain('osc amend');
       expect(text, path).toContain('osc close');
-      expect(text, path).toContain('npx open-scaffold amend');
-      expect(text, path).toContain('npx open-scaffold close');
+      expect(text, path).toMatch(/npx open-scaffold(?:@latest)? amend/);
+      expect(text, path).toMatch(/npx open-scaffold(?:@latest)? close/);
     }
     expect(read('docs/START_HERE.md')).toContain('copy `.osc/plans/handoff-template.md`');
     expect(read('docs/START_HERE.md')).toContain('./close.sh');

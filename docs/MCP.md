@@ -10,6 +10,8 @@ The server is local-first and optional:
 - write tools are visible but blocked unless the server starts with `--allow-write`;
 - no agent spawning, runtime launching, deployment, publication, or approval automation.
 
+The packaged commands below need Node.js and npm; see [`START_HERE.md`](START_HERE.md) for installation. `npx` may fetch the npm package, while the running server reads local repo files and requires no remote documents or GitHub integration.
+
 ## Solo coding-agent quickstart
 
 Use this path when you are already inside an MCP-capable coding agent such as
@@ -66,7 +68,7 @@ Once connected, ask your agent to call these read tools before it reads source
 files:
 
 - `get_status` — mission state, plan counts, and local scaffold validation.
-- `get_handoff` — the current resume packet compiled from repo truth, including compact ambient capture summaries when records exist.
+- `get_handoff` — the current resume packet compiled from repo truth. Pass `{"plan":"<active-plan-slug>"}` to pin a task when several workers are active. Compact ambient summaries, when present, remain repo-wide observed transcript evidence rather than task ownership.
 - `list_plans` — active/backlog/done/blocked plan inventory.
 - `list_evidence`, then `get_evidence` — evidence inventory, then one evidence
   note by path, file name, or slug. `get_evidence` needs an existing evidence
@@ -94,6 +96,8 @@ printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"g
 Pass `{"ambient_session":"<id>"}` in `arguments` to select one captured ambient record by
 safe session filename. Missing records are nonblocking and do not grant approval,
 correctness certification, retry authorization, execution authority, or spawn authority.
+
+For a task-specific handoff, pass `{"plan":"<active-plan-slug>"}` instead of `{}` in the call's `arguments`. The selected plan uses its latest coherently bound run. Explicit selection or multiple active plans exclude unbound runs; a default single-active-plan handoff may include a legacy unbound run. You can combine the `plan` and `ambient_session` selectors, but an ambient transcript still does not establish task ownership.
 
 Both responses should be JSON-RPC `result` envelopes with `structuredContent`.
 
@@ -151,7 +155,7 @@ Read tools work without extra flags:
 
 The product front door is exposed read-only (plan 167):
 
-- `get_handoff` — compile the handoff/resume packet from repo truth; equivalent to `osc handoff`, with optional `ambient_session` for one compact ambient capture summary.
+- `get_handoff` — compile the handoff/resume packet from repo truth; equivalent to `osc handoff`, with optional `plan` to select an active plan, `ambient_session` for one compact ambient capture summary, and `max_chars` for the packet budget.
 - `analyze_loop` — analyze a recorded evolution loop: plateau state, per-criterion deltas, recommendation; equivalent to `osc review` / `osc analyze`.
 - `gate_loop` — compute the judgment checkpoint and retry authorization for a loop, optionally folding in an independent judge ruling; equivalent to `osc gate`. The gate rules on the record but cannot modify it, so a cheap or locally-hosted judge model needs no write access.
 
@@ -173,6 +177,8 @@ Only enable writes for a trusted local client and a repository where the operato
 ```bash
 npx open-scaffold@latest mcp serve --repo /absolute/path/to/repo --allow-write
 ```
+
+Write tools use the same lifecycle helpers as the CLI. Fill newly generated TODO sections before the first commit. Preserve committed plan goal, scope, and criterion wording through amendments; factual checklist completion and reserved ` | Evidence: <reference-only-list>` suffixes may be updated without changing intent. Lifecycle helpers may update Status/stage bookkeeping. For manual operation outside MCP, use CLI first, a supported shell helper if unavailable, and schema-preserving manual fallback only when neither is available for that operation.
 
 ## Resources
 
@@ -315,7 +321,7 @@ mcp_servers:
 ## Boundary notes
 
 - MCP exposes local scaffold state; it does not make MCP the source of truth.
-- Git-tracked Open Scaffold files, GitHub issues/PRs, evidence notes, and operator approvals remain the durable record.
+- Git-tracked Open Scaffold files, evidence notes, and recorded review/approval decisions remain the durable record. GitHub issues/PRs or another tracker are optional bindings; the local MCP server does not require a GitHub account or remote-document reading.
 - `--allow-write` only enables scaffold file helpers. It still does not authorize runtime spawning, shell execution, commits, pushes, PRs, merges, publication, release mutation, deployment, secret reads, or credential changes.
 
 ## Readiness posture
@@ -332,6 +338,6 @@ The 2026-05-29 MCP posture ADR keeps the surface read-oriented while Open Scaffo
 - a stability/deprecation policy for tool names, resource URIs, input schemas, and output fields;
 - an explicit decision on whether the zero-dependency JSON-RPC loop remains sufficient or whether adopting `@modelcontextprotocol/sdk` is worth the dependency tradeoff.
 
-Any future write-capable MCP surface must inherit the `osc work` controller gate model rather than bypass it: no adapter dispatch, verification command execution, runtime spawning, network/credential access, commit, push, PR, merge, publish, release, deploy, or external-production side effect without an explicit human approval gate.
+Any future write-capable MCP surface must preserve explicit operator approval for external side effects rather than bypass it: no runtime spawning, network/credential access, commit, push, PR, merge, publish, release, deploy, or external-production side effect through MCP without authorization. The retired `osc work` controller is historical design context, not a prerequisite for using the maintained read tools.
 
 See [`docs/decisions/2026-05-29-mcp-integration-surface-posture.md`](decisions/2026-05-29-mcp-integration-surface-posture.md).

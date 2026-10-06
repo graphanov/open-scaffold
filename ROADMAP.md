@@ -10,6 +10,16 @@ The core promise:
 
 > A fresh session, smaller model, teammate, or reviewer can enter a repository, understand what mattered, pick up bounded work, check claims against evidence, and hand the project back without relying on vanished chat context.
 
+## Current priorities — 2026-10-06
+
+1. **Reliable adoption and maintenance:** plan `180-repository-revival` repairs instruction contradictions, self-contained onboarding, task-specific handoff, dependency advisories, and duplicate maintenance records. Contributor issues #281 and #282 are the immediate public input.
+2. **Orchestrator report transfer:** backlog plan `181-orchestrator-report-handoff-pilot` tests one coordinator combining three independent workers' task-bound reports, then handing the result to a fresh reader. Measure recovered facts, unsupported completion claims, synthesis omissions, and context cost against plain messages. Hundred-agent scale remains untested.
+3. **Publication follow-through:** plan `182-0350-publication-follow-through` keeps the prepared 0.35.0 package separate from the live 0.34.0 release. Merge and publication each require their own owner decision and evidence.
+
+Open Scaffold owns the report/work-record contract and recovery; an external orchestrator owns execution, routing, and promotion of shared state. John Lomein's Guide, Forge, Overwatch, Maintainer, and Learning Steward profiles are one possible integration. Qualify a pinned bounded workflow before enabling broader autonomous maintenance.
+
+Benchmark expansion in plan 163 is parked while these priorities are pursued. Distribution work remains in plan 164; its folded subplans 110, 111, 115, and 116 are retained as parked historical records. Portfolio intake #250 and #254 treated non-blocking release-prep notes as work; #252 is reconciled by the new 163 amendment; #258 is addressed by the folded-plan disposition. Intake #260 and #262 do not promote the explicitly deferred parking-lot dashboard/cockpit ideas below. Those ideas require a fresh product decision before scheduling.
+
 ## System ontology
 
 - **Open Scaffold core** owns the repo protocol and documentation discipline.

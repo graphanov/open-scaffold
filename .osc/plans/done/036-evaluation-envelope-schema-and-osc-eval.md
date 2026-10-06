@@ -2,7 +2,7 @@
 
 ## Status
 
-backlog — follow-up implementation candidate after PR #39's architecture-direction rescope. Do not start until the architecture direction is reviewed and approved.
+done — follow-up implementation candidate after PR #39's architecture-direction rescope. Do not start until the architecture direction is reviewed and approved.
 
 ## Context
 

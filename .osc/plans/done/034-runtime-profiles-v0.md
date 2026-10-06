@@ -2,7 +2,7 @@
 
 ## Status
 
-active — approved by owner after Claude Code read-only architecture consultation in `.osc/runs/20260515T223354-runtime-registry-claude-consult/`.
+done — approved by owner after Claude Code read-only architecture consultation in `.osc/runs/20260515T223354-runtime-registry-claude-consult/`.
 
 ## Context
 

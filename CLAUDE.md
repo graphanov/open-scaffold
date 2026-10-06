@@ -11,9 +11,9 @@ Open Scaffold core owns the repo-native work record, handoff packets, review/gat
 ## Open Scaffold protocol
 
 1. Before any work, run `osc handoff` (source checkout alias: `npm run osc -- resume`) and follow the packet: it states the goal, acceptance criteria, and next bounded action.
-2. The CLI writes the files — never hand-write plans, amendments, evidence skeletons, or close records.
+2. Prefer CLI helpers for record structure, then supported shell helpers. Manual fallback is permitted only when neither is available: follow `.osc/plans/README.md`, preserve schemas and changelog linkage, and validate before continuing. Fill generated TODOs before committing.
 3. New work: `osc plan new <slug> --stage active`; clarify fuzzy intent in the operator surface or an external runtime, then promote the result into the plan.
-4. Scope change: `osc amend <slug> --message "what changed"`. Committed plans are immutable.
+4. Scope change: `osc amend <slug> --message "what changed"`. Committed intent is immutable: goal, scope, and acceptance-criterion wording change only through amendments. Factual checkbox completion, the reserved ` | Evidence: <reference-only-list>` suffix on criteria, and valid `## Status` stage values may record progress without rewriting requirements.
 5. Bounded execution: use the plan or `osc run <plan-path>` package with the external worker/runtime/coordinator; Open Scaffold core does not spawn the worker.
 6. Review/gate recorded attempts with `osc review` (or synonym `osc analyze`) and `osc gate`; the worker does not self-authorize retries.
 7. Evidence before done: `osc evidence new <slug>`, then `osc verify` and `./verify.sh --strict`.
@@ -29,7 +29,7 @@ On exit 0 of the compliance gate, proceed silently. On exit 1, hard-block on the
 
 - `MISSION.md` — goals, non-goals, and a changelog of every scope pivot. `ROADMAP.md` — milestones and the self-dogfood chain.
 - `.osc/plans/` — immutable plans in stage folders (`active/`, `backlog/`, `done/`, `blocked/`; the folder IS the status). Schema lives in `.osc/plans/handoff-template.md`, movement rules in `.osc/plans/WORKFLOW.md`, quick rules in `.osc/RULES.md` — re-read before structural changes.
-- Amendment flow (the "I got smarter" case): ask the user what changed and why, summarize it back in their voice, run `osc amend <slug> --message "..."`, fill the generated `TODO:` sections, show the diff before staging. Never edit the parent plan; never hand-stamp MISSION.md's changelog.
+- Amendment flow (the "I got smarter" case): clarify what changed and why, run `osc amend <slug> --message "..."`, fill the generated `TODO:` sections before committing, and review the diff. Preserve parent intent. CLI bookkeeping is preferred; supported shell and documented manual fallbacks follow the policy above.
 - `.osc-dev/` (gitignored, owner-only) holds full ADRs and internal plans. Read `.osc-dev/decisions/` before proposing architectural changes — re-deriving a rejected decision wastes a session. Search tools skip gitignored paths by default; include `.osc-dev/` explicitly.
 - Plans with an `## Execution strategy` section advertise parallel groups: propose external-runtime delegation or separate sessions, warn when parallel tasks share files, and bind execution to a plan/run package instead of treating the chat thread as canonical state.
 - Verification floor: `./verify.sh --strict`, `npm run build`, `npm test`. Public PRs cite the plan, evidence note, verification commands, and owner gates. Humans own merge, publish, and release.

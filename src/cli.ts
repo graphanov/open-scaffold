@@ -774,7 +774,12 @@ function resumeCommand(args: string[], commandName = 'resume'): void {
   }
   try {
     const root = findScaffoldRoot(process.cwd()) ?? process.cwd();
-    const result = compileResume(root, { planSlug: value(args, '--plan'), ambientSession: value(args, '--ambient-session'), maxChars });
+    const commandPrefix = process.env.npm_command === 'exec'
+      ? `npx open-scaffold@${rootPackageVersion()}`
+      : ['run', 'run-script'].includes(process.env.npm_command ?? '') && process.env.npm_lifecycle_event === 'osc'
+        ? 'npm run osc --'
+        : undefined;
+    const result = compileResume(root, { planSlug: value(args, '--plan'), ambientSession: value(args, '--ambient-session'), maxChars, commandPrefix });
     if (has(args, '--json')) console.log(JSON.stringify(result.summary, null, 2));
     else process.stdout.write(result.packet);
   } catch (error) {

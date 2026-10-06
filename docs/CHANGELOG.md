@@ -10,6 +10,13 @@ Status: release-sync candidate prepared for `open-scaffold@0.35.0`; not yet publ
 
 Highlights:
 
+- October maintenance adds task-bound handoff selection, consistent record-authoring instructions, self-contained first-run guidance, and an npm-only two-session newcomer regression.
+- Repeated first-run setup preserves an existing plan's lifecycle instead of recreating a closed plan as active.
+- Compatible development dependencies and CI action references are refreshed; Vitest 4 remains supported to preserve the declared Node 20 runtime contract.
+- Stale-plan monitoring maintains one owned reminder and stays quiet while the stale work is unchanged.
+- Historical preparation and portfolio intake are reconciled; the next experimental direction is the small orchestrator/report-handoff pilot in plan 181, without a claim of hundred-agent scalability.
+- Maintenance evidence: `.osc/releases/2026-10-06-180-repository-revival.md`; publication remains the separate owner-gated plan 182.
+
 - Prepares the post-`0.34.0` mainline work for the public npm package surface, cut from current `origin/main`.
 - Improves first-run conflict recovery guidance so brownfield setup failures give operators clearer repair paths instead of silent ambiguity.
 - Polishes first-run onboarding preview behavior for existing repositories before any scaffold writes are made.
@@ -21,7 +28,7 @@ Evidence:
 
 - Issue: https://github.com/graphanov/open-scaffold/issues/246
 - Source PRs: https://github.com/graphanov/open-scaffold/pull/242, https://github.com/graphanov/open-scaffold/pull/243, https://github.com/graphanov/open-scaffold/pull/245, and https://github.com/graphanov/open-scaffold/pull/247
-- Release-sync plan: `.osc/plans/active/176-prepare-open-scaffold-0350-release-sync.md`
+- Release-sync plan: `.osc/plans/done/176-prepare-open-scaffold-0350-release-sync.md`
 - Release-sync evidence note: `.osc/releases/2026-07-02-176-prepare-open-scaffold-0350-release-sync.md`
 - Draft PR: https://github.com/graphanov/open-scaffold/pull/248
 - Previous package line: `open-scaffold@0.34.0`
@@ -45,7 +52,7 @@ Evidence:
 
 - Issue: https://github.com/graphanov/open-scaffold/issues/239
 - Source PRs: https://github.com/graphanov/open-scaffold/pull/229, https://github.com/graphanov/open-scaffold/pull/230, https://github.com/graphanov/open-scaffold/pull/232, https://github.com/graphanov/open-scaffold/pull/236, https://github.com/graphanov/open-scaffold/pull/237, and https://github.com/graphanov/open-scaffold/pull/238
-- Release-sync plan: `.osc/plans/active/175-ambient-capture-trust-package-sync.md`
+- Release-sync plan: `.osc/plans/done/175-ambient-capture-trust-package-sync.md`
 - Release-sync evidence note: `.osc/releases/2026-06-28-175-ambient-capture-trust-package-sync.md`
 - Previous release: https://github.com/graphanov/open-scaffold/releases/tag/v0.33.0
 - npm current latest before owner publishing: https://www.npmjs.com/package/open-scaffold/v/0.33.0
