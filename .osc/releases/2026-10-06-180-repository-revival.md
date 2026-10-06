@@ -7,7 +7,7 @@ Prepared the owner-requested public maintenance update: coherent source/generate
 ## Traceability
 
 - Roadmap / issue / task: owner maintenance direction on 2026-10-06; contributor issues #281 and #282; portfolio intake #250, #252, #254, #258, #260, #262.
-- Plan: `.osc/plans/active/180-repository-revival.md` until the implementation and review checks are complete, then `.osc/plans/done/180-repository-revival.md`.
+- Plan: `.osc/plans/done/180-repository-revival.md` after owner-approved merge and closeout.
 - Run ID / run packet: N/A; parallel implementation groups share this bounded maintenance plan and return reviewed diffs to one coordinator.
 - Branch / PR: branch `codex/revive-open-scaffold`; maintenance PR https://github.com/graphanov/open-scaffold/pull/283.
 
@@ -33,10 +33,10 @@ Prepared the owner-requested public maintenance update: coherent source/generate
 
 ## Outcome
 
-Implementation is verified and independently reviewed for one maintenance PR. Source changes are not yet merged or published. No John workflow/service, live model run, package publication, tag/release creation, or repository-settings mutation has been performed.
+Implementation was verified and independently reviewed before publication of the maintenance PR. The owner subsequently approved and merged PR #283 at `678d6cf36b6876889b43adbbc50af34fe142fa7a`; the approved tree matched exactly and all four linked issues closed. Package publication and release follow-through are recorded separately in plan 182. No John workflow/service or live model run was started by this maintenance slice.
 
-- approval.status: weak_approved
-- approval.rationale: Implementation and process checks pass with independent code review; human merge and publication approval remain separate owner gates. The historical-content warnings are acknowledged, not represented as clean immutable history.
+- approval.status: approved
+- approval.rationale: The owner explicitly approved merge and subsequent 0.35.0 publication after the tested PR was reviewable. The historical-content warnings remain acknowledged, not represented as clean immutable history.
 
 Portfolio disposition: #251/#250 and #255/#254 were false-positive intake of non-blocking release-prep notes. #253/#252 is covered by plan 163's amendment and parked benchmark status. #259/#258 is covered by amendments parking duplicate subplans 110/111/115/116 under plan 164's retained distribution scope. #261/#260 and #263/#262 remain explicit dashboard/cockpit parking-lot deferrals, not newly approved work. The six old planning-only draft PRs are superseded by this coherent reconciliation.
 
@@ -44,7 +44,6 @@ Dependency PRs #265, #267, #269, and #276 are covered by the tested newer depend
 
 ## Follow-up
 
-- The verified maintenance PR is published and duplicate/superseded GitHub records are reconciled. The implementation criteria are complete; owner merge and publication review remain the next action.
-- Owner reviews the finished maintenance PR before merge. Plan 182 separately records live npm/GitHub publication gates.
+- The maintenance PR is merged, duplicate/superseded records are reconciled, and plan 180 is closed. Plan 182 owns the already-approved npm/GitHub publication and its observed evidence.
 - Plan 181 runs the next small orchestrator report-transfer pilot after the maintenance baseline is integrated; qualify a pinned John Lomein workflow before using it as an executor.
 - Before relying on ambient usage for pilot cost claims, reproduce and address the earlier static observation that missing Claude usage fields can normalize to zero; this maintenance slice does not claim that separate fidelity issue is fixed.

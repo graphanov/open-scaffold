@@ -2,7 +2,7 @@
 
 ## Status
 
-backlog
+done
 
 ## Context
 
@@ -27,11 +27,11 @@ After explicit owner approval, publish the reviewed 0.35.0 candidate and record 
 
 ## Acceptance criteria
 
-- [ ] Owner approval names the exact candidate commit and publication/release scope.
-- [ ] All required checks are green for that candidate, including the newcomer package lifecycle smoke.
-- [ ] npm serves 0.35.0 and latest points to it; a clean install can initialize and resume the first work record.
-- [ ] A GitHub Release names the matching tag/commit and links the maintenance and preparation evidence.
-- [ ] Documentation distinguishes actual published state from later source preparation.
+- [x] Owner approval names the exact candidate commit and publication/release scope. | Evidence: `.osc/releases/2026-10-06-182-0350-publication-follow-through.md`
+- [x] All required checks are green for that candidate, including the newcomer package lifecycle smoke. | Evidence: `.osc/releases/2026-10-06-182-0350-publication-follow-through.md`
+- [x] npm serves 0.35.0 and latest points to it; a clean install can initialize and resume the first work record. | Evidence: `.osc/releases/2026-10-06-182-0350-publication-follow-through.md`
+- [x] A GitHub Release names the matching tag/commit and links the maintenance and preparation evidence. | Evidence: `.osc/releases/2026-10-06-182-0350-publication-follow-through.md`
+- [x] Documentation distinguishes actual published state from later source preparation. | Evidence: `.osc/releases/2026-10-06-182-0350-publication-follow-through.md`
 
 ## Verification steps
 
