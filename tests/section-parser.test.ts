@@ -255,7 +255,8 @@ This sample must not count as the real section.
     // 174 release closeout: added evidence-battery package-sync plan to done.
     // 175 release prep: added ambient capture trust package-sync plan.
     // 176 release prep: added 0.35.0 package release-sync plan.
-    expect(hash(planIssueSnapshot)).toBe('d8d8777986758ddf5d505cfd732dcfbe62ef93b326358c375b3e551ac7bb5c9c');
+    // 180 revival: add plans 180/181/182, reconcile prep plans 175/176, and park superseded/deferred records without claiming their original work complete.
+    expect(hash(planIssueSnapshot)).toBe('71ebe2ab37ea8b78334efa8337e1862a15779452af4cdb2cc075f755cf8f15fd');
     expect(scaffold.failures).toEqual([]);
     // 168: evidence note 2026-06-12-168-dollar-verb-retirement.md added to .osc/releases.
     // 170 review hardening: evidence note refreshed with PR URL, final test count, and Codex-reported total_tokens.
@@ -268,7 +269,8 @@ This sample must not count as the real section.
     // 174 release closeout: added evidence-battery package-sync release note; release-warning set unchanged.
     // 175 release prep: added ambient capture trust package-sync evidence note; release-warning set unchanged.
     // 176 release prep: added 0.35.0 package release-sync evidence note; release-warning set unchanged.
-    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('b128def2c0bcd7b058aaff539af32125ac75282240355ada57895940385389df');
+    // 180 reconciliation adds three dated evidence notes; no new release warning is introduced.
+    expect(hash({ failures: scaffold.failures, releases: releaseOutcomeSnapshot })).toBe('5b7898547b74052e1d0e9ba48de50d627cc7319f43687625bf8d33ef4ead5d64');
     expect(realPlanFiles().every((path) => statSync(path).isFile())).toBe(true);
   });
 });

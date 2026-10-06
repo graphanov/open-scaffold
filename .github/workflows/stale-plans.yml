@@ -15,9 +15,14 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: stale-active-plans-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   stale-plans:
-    name: Open issue for stale active plans
+    name: Maintain stale active-plan reminder
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository with public fallback
@@ -59,7 +64,7 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 22.12.0
           cache: npm
@@ -89,6 +94,8 @@ jobs:
           import subprocess
 
           threshold = int(os.environ.get('STALE_DAYS', '30'))
+          if threshold < 0:
+              raise SystemExit('STALE_DAYS must be a non-negative integer.')
           now = dt.datetime.now(dt.timezone.utc)
           active_dir = pathlib.Path('.osc/plans/active')
           stale = []
@@ -120,46 +127,92 @@ jobs:
                   })
 
           pathlib.Path('stale-plans.json').write_text(json.dumps(stale, indent=2) + '\n')
-          if stale:
-              rows = '\n'.join(
-                  f"- `{item['path']}` — last modified {item['last_modified']} ({item['age_days']} days old)"
-                  for item in stale
-              )
-              body = '\n'.join([
-                  'Stale active plans were detected by the weekly Open Scaffold CI check.',
-                  '',
-                  f'Threshold: active plan older than {threshold} days since last git modification.',
-                  '',
-                  rows,
-                  '',
-                  'Suggested action: review each plan and either continue it, move it to `blocked/`, or close it to `done/` with evidence.',
-                  '',
-              ])
-              pathlib.Path('stale-issue.md').write_text(body)
+          rows = '\n'.join(
+              f"- `{item['path']}` — last modified {item['last_modified']}"
+              for item in stale
+          )
+          # Exclude the check date and increasing ages: unchanged plans must not
+          # produce another weekly notification merely because time passed.
+          body = '\n'.join([
+              '<!-- open-scaffold:stale-active-plans:v1 -->',
+              '',
+              'Stale active plans were detected by the Open Scaffold CI check.' if stale
+              else 'No stale active plans remain in the latest Open Scaffold CI check.',
+              '',
+              f'Threshold: active plan older than {threshold} days since last git modification, including amendments.',
+              '',
+              rows if stale else 'This reminder will reopen if active plans become stale again.',
+              '',
+              'Suggested action: review each plan and either continue it, move it to `blocked/`, or close it to `done/` with evidence.' if stale
+              else 'Plans moved to another stage remain in the work record; this check does not mark their work complete.',
+              '',
+          ])
+          pathlib.Path('stale-issue.md').write_text(body)
           PY
 
           count="$(python3 -c 'import json; print(len(json.load(open("stale-plans.json"))))')"
           echo "count=$count" >> "$GITHUB_OUTPUT"
-          week="$(date -u +%F)"
-          echo "week=$week" >> "$GITHUB_OUTPUT"
           if [[ "$count" == "0" ]]; then
             echo "No stale active plans found."
           else
             cat stale-plans.json
           fi
 
-      - name: Open or reuse stale-plan issue
-        if: steps.stale.outputs.count != '0'
+      - name: Synchronize the owned stale-plan reminder
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TITLE: Stale active plans — week of ${{ steps.stale.outputs.week }}
         run: |
           set -euo pipefail
-          existing="$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')"
-          if [[ -n "$existing" ]]; then
-            echo "Stale-plan issue already exists: #$existing"
-            gh issue comment "$existing" --body-file stale-issue.md
-          else
-            gh issue create --title "$TITLE" --body-file stale-issue.md
-          fi
+          python3 <<'PY'
+          import json
+          import os
+          import pathlib
+          import subprocess
+
+          repository = os.environ['GITHUB_REPOSITORY']
+          marker = '<!-- open-scaffold:stale-active-plans:v1 -->'
+          title = 'Stale active plans'
+          body = pathlib.Path('stale-issue.md').read_text()
+          stale = json.loads(pathlib.Path('stale-plans.json').read_text())
+
+          def gh(*args):
+              return subprocess.run(['gh', *args], check=True, capture_output=True, text=True).stdout
+
+          # Read the repository API directly: search indexing can lag behind a
+          # newly created issue, and a title match must never claim a human issue.
+          pages = json.loads(gh(
+              'api', '--paginate', '--slurp', f'repos/{repository}/issues',
+              '--method', 'GET', '-f', 'state=all', '-f', 'per_page=100',
+          ))
+          owned = [
+              issue for page in pages for issue in page
+              if 'pull_request' not in issue
+              and (issue.get('body') or '').splitlines()[:1] == [marker]
+              and issue.get('user', {}).get('type') == 'Bot'
+              and issue.get('user', {}).get('login') == 'github-actions[bot]'
+          ]
+          if len(owned) > 1:
+              raise SystemExit('Multiple marker-owned stale-plan reminders exist; reconcile them before continuing.')
+          if not owned:
+              if stale:
+                  print(gh('issue', 'create', '--repo', repository, '--title', title, '--body-file', 'stale-issue.md').strip())
+              else:
+                  print('No stale plans and no owned reminder to update.')
+              raise SystemExit(0)
+
+          issue = owned[0]
+          number = str(issue['number'])
+          changed = issue['body'].rstrip() != body.rstrip()
+          if changed or issue['title'] != title:
+              gh('issue', 'edit', number, '--repo', repository, '--title', title, '--body-file', 'stale-issue.md')
+          if stale:
+              if issue['state'] == 'closed':
+                  gh('issue', 'reopen', number, '--repo', repository)
+              if changed:
+                  gh('issue', 'comment', number, '--repo', repository, '--body-file', 'stale-issue.md')
+          elif issue['state'] == 'open':
+              gh('issue', 'comment', number, '--repo', repository, '--body-file', 'stale-issue.md')
+              gh('issue', 'close', number, '--repo', repository, '--reason', 'completed')
+          print(f'Synchronized stale-plan reminder #{number}; unchanged state produces no new comment.')
+          PY

@@ -33,17 +33,23 @@ Prepare a verified, reviewable repository maintenance update that makes newcomer
 
 ## Execution strategy
 
-Independent agents own handoff code/tests, onboarding generation/docs/tests, dependency manifests/action references, and stale-reminder workflow/PR triage. The coordinator alone owns plan lifecycle, mission/roadmap/changelog, evidence, commits, GitHub cleanup, and final integration. Dependency action-ref changes and stale-reminder logic share one workflow and must be coordinated before integration. Run the full required suite once after the groups converge, with repeat checks only for subsequent changes or failures.
+### Parallel groups
+
+Independent agents own handoff code/tests, onboarding generation/docs/tests, dependency manifests/action references, and stale-reminder workflow/PR triage. The coordinator alone owns plan lifecycle, mission/roadmap/changelog, evidence, commits, GitHub cleanup, and final integration.
+
+### Dependencies
+
+Dependency action-ref changes and stale-reminder logic share one workflow and must be coordinated before integration. Run the full required suite once after the groups converge, with repeat checks only for subsequent changes or failures.
 
 ## Acceptance criteria
 
-- [ ] Source and generated onboarding agree on CLI, supported shell, and explicit validated manual fallback; committed intent remains immutable.
-- [ ] First-run generated guidance does not require reading mutable remote instructions; generic project workflow does not require GitHub.
-- [ ] A clean npm-only user can initialize, record progress, and obtain the same task's next-session handoff without a previously installed global CLI.
-- [ ] Selecting plan A cannot inherit plan B's run, blocker, repair instruction, or completion state; regression fixtures cover concurrent independent work.
-- [ ] Dependencies and action references are reviewed and updated within the supported contract; the final audit has no unresolved applicable advisory without an explicit reason.
+- [x] Source and generated onboarding agree on CLI, supported shell, and explicit validated manual fallback; committed intent remains immutable. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
+- [x] First-run generated guidance does not require reading mutable remote instructions; generic project workflow does not require GitHub. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
+- [x] A clean npm-only user can initialize, record progress, and obtain the same task's next-session handoff without a previously installed global CLI. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
+- [x] Selecting plan A cannot inherit plan B's run, blocker, repair instruction, or completion state; regression fixtures cover concurrent independent work. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
+- [x] Dependencies and action references are reviewed and updated within the supported contract; the final audit has no unresolved applicable advisory without an explicit reason. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
 - [ ] Existing portfolio drafts and stale reminders have a documented disposition, superseded duplicates are reconciled, and reminder automation no longer opens a new issue every week for unchanged state.
-- [ ] Plan 181 records the owner-directed orchestrator/report-transfer frontier and a bounded pilot with measurable outcomes.
+- [x] Plan 181 records the owner-directed orchestrator/report-transfer frontier and a bounded pilot with measurable outcomes. | Evidence: `.osc/releases/2026-10-06-180-repository-revival.md`
 - [ ] Build, tests, strict structural verification, package smoke, and independent final review pass; the maintenance PR links this plan and its evidence with release authority explicit.
 
 ## Verification steps
@@ -56,4 +62,4 @@ Independent agents own handoff code/tests, onboarding generation/docs/tests, dep
 
 ## Open questions
 
-- None for implementation. Owner approval is required for merging the finished PR and for any later package publication/release; neither is implied by a successful test suite.
+- BLOCKING: None for implementation. Owner approval is required for merging the finished PR and for any later package publication/release; neither is implied by a successful test suite.

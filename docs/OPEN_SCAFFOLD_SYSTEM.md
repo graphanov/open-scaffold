@@ -27,7 +27,7 @@ Open Scaffold core owns the portable project substrate:
 
 - `MISSION.md` — product/project intent, goals, non-goals, changelog.
 - `ROADMAP.md` — directional backlog and milestone story.
-- `.osc/plans/` — immutable plans, amendments, stage-folder status.
+- `.osc/plans/` — plans with immutable committed intent, factual checklist/evidence annotations, amendments, and stage-folder status.
 - `.osc/specs/` — durable specs and context packs.
 - `.osc/runs/` — generated `run.json` work packages (run packets), prompt bundles, execution evidence.
 - `docs/` — decisions, workflow standards, examples, operator guidance.
@@ -41,7 +41,7 @@ Open Scaffold core owns the portable project substrate:
 - `osc trace` — read-only local work-record replay for one plan.
 - `.github/` templates — issue and PR traceability for GitHub-centered workflows.
 
-Core does **not** spawn agents. It defines the contract that agents and tools can use. The MCP server is an interface over local repo truth, not a planner, task database, execution controller, or runtime launcher. Per the 2026-05-29 MCP posture ADR, future write-capable MCP work must inherit the `osc work` controller/human-gate model rather than bypass it.
+Core does **not** spawn agents. It defines the contract that agents and tools can use. The MCP server is an interface over local repo truth, not a planner, task database, execution controller, or runtime launcher. Future write-capable MCP work must preserve explicit owner approval for external side effects; the retired `osc work` surface is historical context, not a required controller.
 
 ### 2. Coordinators, orchestrators, and agents
 
@@ -145,9 +145,9 @@ A status/approval surface can run in several modes:
 
 Operator surfaces are **not canonical truth**. They should link back to roadmap items, task IDs, `run.json` work packages (run packets), evidence, issues, branches, and PRs. The historical operator-event vocabulary lives in [`docs/HARNESS_ARCHITECTURE.md`](HARNESS_ARCHITECTURE.md).
 
-### 7. GitHub/public versioning layer
+### 7. Repository review and versioning layer
 
-GitHub owns public/versioned implementation state:
+The project repository, its review process, and its chosen hosting service hold versioned implementation state. GitHub is an optional example that can host:
 
 - issues
 - branches
@@ -156,7 +156,7 @@ GitHub owns public/versioned implementation state:
 - CI results
 - releases
 
-A mature Open Scaffold workflow should make GitHub artifacts traceable to roadmap items, task IDs, run IDs, plans, evidence, and verification gates. See [`docs/GITHUB_WORKFLOW.md`](GITHUB_WORKFLOW.md).
+A mature Open Scaffold workflow should make review and publication artifacts traceable to roadmap items, task IDs, run IDs, plans, evidence, and verification gates. Local git history and review are sufficient for projects without a remote tracker. If the project uses GitHub, [`docs/GITHUB_WORKFLOW.md`](GITHUB_WORKFLOW.md) describes that optional integration; Open Scaffold does not require a GitHub account or remote-document reading.
 
 ## Correct boundary statements
 
@@ -177,7 +177,7 @@ Runtime-specific packages such as `packages/runtime-omx/` stay separate from cor
 clawhip-style tooling is routing/status/event transport, not the planner or executor.
 Discord is a status/approval surface, not canonical state.
 A chat thread is a binding on a task/run, not the task/run itself.
-GitHub is public/versioned work truth.
+The project repository is versioned work truth; GitHub is an optional hosting/review surface.
 ```
 
 ## Anti-patterns
@@ -223,6 +223,8 @@ Rules:
 ## Shell scripts and CLI boundary
 
 Shell scripts are the zero-dependency compatibility floor. They make a fresh template clone usable before `npm install`, global CLI setup, Hermes, OMC, OMX, or any agent runtime exists. The richer tested path is the `osc` CLI; over time shell helpers should remain thin wrappers or fallbacks rather than becoming a separate strategic brain.
+
+Use the CLI first for record creation and lifecycle changes. If unavailable, use a supported shell helper; only when neither can perform the operation may a manual fallback preserve the shipped schema, numbering, stage folders, amendment sequence, and changelog links. Fill generated TODOs before the first commit. Keep committed goal, scope, and criterion wording immutable through amendments; factual checklist completion and reserved ` | Evidence: <reference-only-list>` suffixes may change without altering intent. Supported lifecycle helpers may update Status and stage. These rules are local and do not require fetching upstream guidance.
 
 ```text
 bootstrap.sh / verify.sh = day-zero floor

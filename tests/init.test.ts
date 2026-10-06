@@ -21,12 +21,13 @@ describe('tiered scaffold initialization', () => {
     expect(readFileSync(join(target, '.osc/plans/WORKFLOW.md'), 'utf8')).toContain('Plan Workflow');
     expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('Amendments');
     expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).not.toContain('amend.sh');
-    expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('lightweight fallback');
+    expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('Manual fallback is permitted only when neither');
+    expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('npx open-scaffold amend');
     expect(readFileSync(join(target, '.osc/RULES.md'), 'utf8')).not.toContain('amend.sh');
     expect(readFileSync(join(target, '.osc/RULES.md'), 'utf8')).not.toContain('docs/WORKFLOW.md');
     expect(readFileSync(join(target, '.osc/RULES.md'), 'utf8')).toContain('.osc/plans/WORKFLOW.md');
     expect(readFileSync(join(target, '.osc/plans/handoff-template.md'), 'utf8')).not.toContain('amend.sh');
-    expect(readFileSync(join(target, '.osc/plans/handoff-template.md'), 'utf8')).toContain('upgrade to the standard scaffold tier');
+    expect(readFileSync(join(target, '.osc/plans/handoff-template.md'), 'utf8')).toContain('npx open-scaffold amend');
     expect(readFileSync(join(target, 'verify.sh'), 'utf8')).toContain('open-scaffold compliance checker');
     expect(result.summary).toContain('Generated min Open Scaffold');
     expect(result.summary).toContain('Next: edit MISSION.md');
@@ -57,6 +58,36 @@ describe('tiered scaffold initialization', () => {
     expect(devcontainer).toContain('postCreateCommand');
     expect(devcontainer).toContain("p.name === 'open-scaffold'");
     expect(readFileSync(join(target, 'docs/DEV_CONTAINER.md'), 'utf8')).toContain('Dev Container');
+  });
+
+  it.each([
+    { tier: 'min' as const, fromExisting: false },
+    { tier: 'standard' as const, fromExisting: false },
+    { tier: 'max' as const, fromExisting: false },
+    { tier: 'min' as const, fromExisting: true },
+  ])('keeps generated $tier (brownfield=$fromExisting) authoring and trust guidance coherent', (options) => {
+    const target = tempTarget();
+    const result = initializeScaffold({ ...options, target });
+    const instructionFiles = result.filesCreated.filter((file) => /(?:AGENTS|CLAUDE|README|RULES|WORKFLOW|handoff-template|START_HERE|OPEN_SCAFFOLD_SYSTEM)\.md$/.test(file));
+    for (const file of instructionFiles) {
+      const text = readFileSync(join(target, file), 'utf8');
+      expect(text, file).not.toMatch(/never hand-write plans|Never edit a plan file after creation|upgrade to the standard scaffold tier for the/i);
+      expect(text, file).not.toMatch(/(?:must|required|before treating|read)[^\n]*https:\/\/github\.com\/graphanov\/open-scaffold\/blob\/main\//i);
+    }
+    const rules = readFileSync(join(target, '.osc/RULES.md'), 'utf8');
+    const plans = readFileSync(join(target, '.osc/plans/README.md'), 'utf8');
+    expect(rules).toContain('Committed intent is immutable');
+    expect(plans).toMatch(/[Mm]anual fallback is permitted only when neither/);
+    expect(plans).toContain(' | Evidence: <reference-only-list>');
+    expect(plans).toContain('before committing');
+    if (result.filesCreated.includes('AGENTS.md')) {
+      const agents = readFileSync(join(target, 'AGENTS.md'), 'utf8');
+      const claude = readFileSync(join(target, 'CLAUDE.md'), 'utf8');
+      expect(agents.replace('# AGENTS.md', '# CLAUDE.md')).toBe(claude);
+      expect(agents).toContain('Manual fallback is permitted only when neither');
+      expect(agents).toContain('No remote documentation or GitHub account is required');
+      expect(agents).toContain('npx open-scaffold handoff --plan <slug>');
+    }
   });
 
   it('keeps devcontainer support out of the minimum tier', () => {

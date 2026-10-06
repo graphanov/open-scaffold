@@ -32,12 +32,12 @@ Prepare a draft release-sync PR for `open-scaffold@0.34.0` with package metadata
 
 ## Acceptance criteria
 
-- [ ] `package.json`, `package-lock.json` root, and `package-lock.json` `packages[""]` all read `0.34.0`.
-- [ ] `docs/CHANGELOG.md` contains a top `v0.34.0` candidate/prep entry that links issue #239, source PRs #229, #230, #232, #236, #237, and #238, prior release `v0.33.0`, npm `0.33.0`, and this evidence note.
-- [ ] The release-prep evidence note records observed version alignment, registry/release availability checks, package dry-run output, verification commands, and the no-merge/no-publish/no-release authority boundary.
-- [ ] Open Scaffold plan/evidence records contain no placeholder text and validate after any intentional live-corpus hash update.
-- [ ] A draft PR is opened or updated against `main` from `forge/issue-239-release-open-scaffold-ambient-capture-trust-package`, with `Closes #239` or an explicit keep-open explanation and a public-safe authority boundary.
-- [ ] No forbidden external release action is performed: no merge, real publish, workflow dispatch, tag, GitHub Release, force-push, settings change, secret change, or package version beyond `0.34.0`.
+- [x] `package.json`, `package-lock.json` root, and `package-lock.json` `packages[""]` all read `0.34.0`. | Evidence: `.osc/releases/2026-10-06-175-ambient-capture-trust-package-sync.md`
+- [x] `docs/CHANGELOG.md` contains a top `v0.34.0` candidate/prep entry that links issue #239, source PRs #229, #230, #232, #236, #237, and #238, prior release `v0.33.0`, npm `0.33.0`, and this evidence note. | Evidence: `.osc/releases/2026-10-06-175-ambient-capture-trust-package-sync.md`
+- [x] The release-prep evidence note records observed version alignment, registry/release availability checks, package dry-run output, verification commands, and the no-merge/no-publish/no-release authority boundary. | Evidence: `.osc/releases/2026-10-06-175-ambient-capture-trust-package-sync.md`
+- [x] Open Scaffold plan/evidence records contain no placeholder text and validate after any intentional live-corpus hash update. | Evidence: `.osc/releases/2026-10-06-175-ambient-capture-trust-package-sync.md`
+- [x] A draft PR is opened or updated against `main` from `forge/issue-239-release-open-scaffold-ambient-capture-trust-package`, with `Closes #239` or an explicit keep-open explanation and a public-safe authority boundary. | Evidence: `.osc/releases/2026-10-06-175-ambient-capture-trust-package-sync.md`
+- [x] No forbidden external release action is performed: no merge, real publish, workflow dispatch, tag, GitHub Release, force-push, settings change, secret change, or package version beyond `0.34.0`. | Evidence: `.osc/releases/2026-10-06-175-ambient-capture-trust-package-sync.md`
 
 ## Verification steps
 

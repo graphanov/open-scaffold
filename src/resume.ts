@@ -1,5 +1,5 @@
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { buildAmbientTrustReport, type AmbientTrustReport } from './capture.js';
 import { redactPacketText } from './handoff.js';
 import { loadAcceptedImprovements, readFeedback } from './feedback.js';
@@ -14,6 +14,8 @@ export interface ResumeOptions {
   planSlug?: string;
   maxChars?: number;
   ambientSession?: string;
+  /** Invocation supplied by the caller; programmatic/MCP callers default to osc. */
+  commandPrefix?: string;
 }
 
 export interface ResumeAcceptanceCriterion {
@@ -84,6 +86,7 @@ interface InternalResumeLatestRun extends ResumeLatestRun {
 
 interface RunStatusFile {
   runId?: string;
+  taskId?: string | null;
   command?: string;
   state?: string;
   updatedAt?: string;
@@ -160,21 +163,68 @@ function planAcceptanceCriteria(root: string, plan: PlanSummary): { parsed: Retu
   return { parsed, criteria };
 }
 
-function latestHarnessRun(root: string): InternalResumeLatestRun | null {
+type RunPlanBinding =
+  | { kind: 'missing' }
+  | { kind: 'invalid' }
+  | { kind: 'bound'; slug: string; taskId: unknown };
+
+function runPlanBinding(root: string, runDir: string, runId: string): RunPlanBinding {
+  const path = join(runDir, 'run.json');
+  try {
+    if (!lstatSync(path).isFile()) return { kind: 'invalid' };
+  } catch (error) {
+    return { kind: (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'missing' : 'invalid' };
+  }
+  try {
+    const packet = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
+    if (!packet || typeof packet !== 'object' || Array.isArray(packet)) return { kind: 'invalid' };
+    if (packet.runId !== runId) return { kind: 'invalid' };
+    if (packet.schemaVersion !== undefined && packet.schemaVersion !== 'open-scaffold.run.v1') return { kind: 'invalid' };
+    const plan = packet.plan;
+    let slug: unknown = typeof plan === 'string' ? plan : undefined;
+    if (plan && typeof plan === 'object' && !Array.isArray(plan)) {
+      const identity = plan as Record<string, unknown>;
+      slug = identity.slug;
+      if (identity.path !== undefined) {
+        if (typeof identity.path !== 'string') return { kind: 'invalid' };
+        const localPath = relative(root, resolve(root, identity.path.replace(/\\/g, '/'))).replace(/\\/g, '/');
+        const pathSlug = localPath.match(/^\.osc\/plans\/(?:active|backlog|blocked|done)\/([A-Za-z0-9][A-Za-z0-9._-]*)\.md$/)?.[1];
+        if (!pathSlug || (slug !== undefined && slug !== pathSlug)) return { kind: 'invalid' };
+        slug = pathSlug;
+      }
+    }
+    if (typeof slug !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(slug)) return { kind: 'invalid' };
+    return { kind: 'bound', slug, taskId: packet.taskId };
+  } catch {
+    return { kind: 'invalid' };
+  }
+}
+
+function latestHarnessRun(root: string, plan: PlanSummary | null, allowLegacy: boolean): InternalResumeLatestRun | null {
+  if (!plan) return null;
   if (existsSync(join(root, '.osc')) && !lstatSync(join(root, '.osc')).isDirectory()) return null;
   const dir = join(root, '.osc', 'runs');
   if (!existsSync(dir)) return null;
   try { if (!lstatSync(dir).isDirectory()) return null; } catch { return null; }
   let best: InternalResumeLatestRun | null = null;
+  let legacy: InternalResumeLatestRun | null = null;
+  let hasPacket = false;
   for (const name of readdirSync(dir).sort()) {
     const runDir = join(dir, name);
     try {
       if (!lstatSync(runDir).isDirectory()) continue;
+      const binding = runPlanBinding(root, runDir, name);
+      if (binding.kind !== 'missing') hasPacket = true;
+      if (binding.kind === 'invalid' || (binding.kind === 'bound' && binding.slug !== plan.slug)) continue;
       const statusPath = join(runDir, 'status.json');
       if (!existsSync(statusPath)) continue;
       if (!lstatSync(statusPath).isFile()) continue;
       const parsed = JSON.parse(readFileSync(statusPath, 'utf8')) as RunStatusFile;
-      const rawRunId = typeof parsed.runId === 'string' ? parsed.runId : name;
+      if (parsed.runId !== undefined && parsed.runId !== name) continue;
+      if (binding.kind === 'bound' && parsed.taskId !== undefined && parsed.taskId !== null && parsed.taskId !== binding.taskId) continue;
+      // Use the verified directory identity for feedback as well as display;
+      // status.runId must never redirect a plan's repair lookup to another run.
+      const rawRunId = name;
       const gates = Array.isArray(parsed.pendingHumanGates) ? parsed.pendingHumanGates : [];
       const candidate: InternalResumeLatestRun = {
         raw_run_id: rawRunId,
@@ -185,12 +235,18 @@ function latestHarnessRun(root: string): InternalResumeLatestRun | null {
         pending_gate_ids: gates.map((gate) => redactPacketText(typeof gate?.id === 'string' ? gate.id : 'unknown', 120)).slice(0, 5),
         updated_at: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null,
       };
-      if (!best || (candidate.updated_at ?? '') >= (best.updated_at ?? '')) best = candidate;
+      if (binding.kind === 'bound') {
+        if (!best || (candidate.updated_at ?? '') >= (best.updated_at ?? '')) best = candidate;
+      } else if (!legacy || (candidate.updated_at ?? '') >= (legacy.updated_at ?? '')) {
+        legacy = candidate;
+      }
     } catch {
       continue;
     }
   }
-  return best;
+  // Status-only records predate plan bindings. Preserve the implicit one-plan
+  // case only while there is no packet that makes that inference ambiguous.
+  return best ?? (allowLegacy && !hasPacket ? legacy : null);
 }
 
 function ambientBoundary(): ResumeAmbientCapture['boundary'] {
@@ -299,17 +355,20 @@ function deriveNextAction(input: {
   run: ResumeLatestRun | null;
   repairHypothesis: string | null;
   verificationSteps: string[];
+  commandPrefix: string;
 }): NextAction {
+  const command = input.commandPrefix;
   if (!input.scaffoldPresent) {
+    const bootstrap = command === 'osc' ? 'npx open-scaffold@latest' : command;
     return {
-      action: 'Run npx open-scaffold@latest first-run to create the minimum work record.',
-      commands: ['npx open-scaffold@latest first-run'],
+      action: `Run ${bootstrap} first-run to create the minimum work record.`,
+      commands: [`${bootstrap} first-run`],
     };
   }
   if (!input.missionDefined) {
     return {
-      action: 'Define the mission before any work: run osc first-run (guided) or fill in MISSION.md.',
-      commands: ['osc first-run'],
+      action: `Define the mission before any work: run ${command} first-run (guided) or fill in MISSION.md.`,
+      commands: [`${command} first-run`],
     };
   }
   if (input.run && input.run.pending_gates > 0) {
@@ -317,8 +376,8 @@ function deriveNextAction(input: {
     return {
       action: `Record the answer for gate ${gateId} in evidence or the external coordinator, then continue from repo truth.`,
       commands: [
-        `osc trace ${input.plan?.slug ?? '<plan-slug>'}`,
-        `osc evidence new ${input.plan?.slug ?? '<plan-slug>'}`,
+        `${command} trace ${input.plan?.slug ?? '<plan-slug>'}`,
+        `${command} evidence new ${input.plan?.slug ?? '<plan-slug>'}`,
       ],
     };
   }
@@ -328,8 +387,8 @@ function deriveNextAction(input: {
         ? `Retry run ${input.run.run_id} with the recorded repair hypothesis: ${input.repairHypothesis}`
         : `Inspect why run ${input.run.run_id} is ${input.run.state}, record feedback with a repair hypothesis, then retry.`,
       commands: [
-        `osc trace ${input.plan?.slug ?? '<plan-slug>'}`,
-        `osc run .osc/plans/active/${input.plan?.slug ?? '<plan-slug>'}.md --dry-run`,
+        `${command} trace ${input.plan?.slug ?? '<plan-slug>'}`,
+        `${command} run .osc/plans/active/${input.plan?.slug ?? '<plan-slug>'}.md --dry-run`,
       ],
     };
   }
@@ -339,7 +398,7 @@ function deriveNextAction(input: {
       return {
         action: unchecked[0].text,
         commands: [
-          `osc plan validate ${input.plan.slug} --strict`,
+          `${command} plan validate ${input.plan.slug} --strict`,
           ...input.verificationSteps.slice(0, 2),
         ].filter(Boolean),
       };
@@ -347,21 +406,21 @@ function deriveNextAction(input: {
     return {
       action: `All acceptance criteria are checked for ${input.plan.slug}: record and fill evidence, verify it, and close the slice.`,
       commands: [
-        `osc evidence new ${input.plan.slug}`,
-        'osc verify',
-        `osc close ${input.plan.slug} --message "<what shipped>"`,
+        `${command} evidence new ${input.plan.slug}`,
+        `${command} verify`,
+        `${command} close ${input.plan.slug} --message "<what shipped>"`,
       ],
     };
   }
   if (input.backlogCount > 0) {
     return {
       action: `No active plan. Promote one of the ${input.backlogCount} backlog plan(s) or create a new one.`,
-      commands: ['osc plan move <slug> --to active', 'osc plan new <slug> --stage active'],
+      commands: [`${command} plan move <slug> --to active`, `${command} plan new <slug> --stage active`],
     };
   }
   return {
     action: 'No active plan. Create the next bounded slice.',
-    commands: ['osc plan new <slug> --stage active'],
+    commands: [`${command} plan new <slug> --stage active`],
   };
 }
 
@@ -517,7 +576,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
     };
   }
 
-  const run = latestHarnessRun(root);
+  const run = latestHarnessRun(root, picked, !options.planSlug && (scaffold.plans.active?.length ?? 0) === 1);
   const repairHypothesis = latestRepairHypothesis(root, run);
   const publicRun: ResumeLatestRun | null = run
     ? {
@@ -540,6 +599,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
     run,
     repairHypothesis,
     verificationSteps,
+    commandPrefix: options.commandPrefix ?? 'osc',
   });
 
   const summary: ResumeSummary = {

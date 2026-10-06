@@ -131,6 +131,79 @@ has_exact_markdown_heading() {
   ' "$file"
 }
 
+# Committed intent excludes narrowly defined lifecycle/progress bookkeeping.
+# Ignore unfenced blank-only formatting; keep fenced examples and AC wording.
+normalize_plan_intent() {
+  awk '
+    function fence_run(line,    marker, n) {
+      marker = substr(line, 1, 1)
+      if (marker != "`" && marker != "~") return 0
+      for (n = 1; substr(line, n, 1) == marker; n += 1) {}
+      return n - 1
+    }
+    function reference_list(text,    refs, count, i, ref) {
+      count = split(text, refs, /,[ \t]*/)
+      if (!count) return 0
+      for (i = 1; i <= count; i += 1) {
+        ref = refs[i]
+        sub(/^[ \t]+/, "", ref)
+        sub(/[ \t]+$/, "", ref)
+        if (length(ref) >= 2 && substr(ref, 1, 1) == "`" && substr(ref, length(ref), 1) == "`") ref = substr(ref, 2, length(ref) - 2)
+        if (ref !~ /^([A-Za-z0-9_.-]+\/)+[A-Za-z0-9_.-]+$/ && ref !~ /^[A-Za-z0-9_.-]+\.(md|txt|json|yaml|yml|ts|tsx|js|mjs|cjs|sh|html|css)$/ && ref !~ /^https?:\/\/[^ \t,`|]+$/ && ref !~ /^(PR|Pull Request)[ \t]+#[0-9]+$/ && ref !~ /^#[0-9]+$/) return 0
+      }
+      return 1
+    }
+    function without_progress_suffix(line,    marker, inline_ticks, i, run) {
+      marker = " | Evidence: "
+      inline_ticks = 0
+      for (i = 1; i <= length(line); i += 1) {
+        if (substr(line, i, 1) == "`") {
+          for (run = 1; substr(line, i + run, 1) == "`"; run += 1) {}
+          if (!inline_ticks) inline_ticks = run
+          else if (inline_ticks == run) inline_ticks = 0
+          i += run - 1
+        } else if (!inline_ticks && substr(line, i, 1) == "\\") {
+          i += 1
+        } else if (!inline_ticks && substr(line, i, length(marker)) == marker && reference_list(substr(line, i + length(marker)))) {
+          return substr(line, 1, i - 1)
+        }
+      }
+      return line
+    }
+    {
+      line = $0
+      sub(/\r$/, "", line)
+      run = fence_run(line)
+      if (in_fence) {
+        print line
+        if (substr(line, 1, 1) == fence_marker && run >= fence_count && substr(line, run + 1) ~ /^[ \t]*$/) in_fence = 0
+        next
+      }
+      if (run >= 3) {
+        in_fence = 1
+        fence_marker = substr(line, 1, 1)
+        fence_count = run
+        status_seen = 1
+      } else if (line ~ /^##[ \t]+/) {
+        section = line
+        sub(/^##[ \t]+/, "", section)
+        sub(/[ \t]+#+[ \t]*$/, "", section)
+        sub(/^[ \t]+/, "", section)
+        sub(/[ \t]+$/, "", section)
+        gsub(/[ \t]+/, " ", section)
+        status_seen = 0
+      } else if (section == "Status" && !status_seen && line !~ /^[ \t]*$/) {
+        status_seen = 1
+        if (line ~ /^[ \t]*(active|backlog|blocked|done)([ \t]*$|[ \t]+—[ \t]+)/) line = "[stage]"
+      } else if (section == "Acceptance criteria" && line ~ /^[ \t]*[-*][ \t]+\[[ xX]\][ \t]+/) {
+        sub(/\[[ xX]\]/, "[ ]", line)
+        line = without_progress_suffix(line)
+      }
+      if (line !~ /^[ \t]*$/) print line
+    }
+  ' "$@"
+}
+
 # ──────────────────────────────────────────
 # QUICK tier: mission + plan (2 checks)
 # ──────────────────────────────────────────
@@ -276,8 +349,8 @@ if [ "$TIER" = "--strict" ]; then
     pass "CLAUDE.md and AGENTS.md paired view sync (Layered architecture)"
   fi
 
-  # Check 7: Plan immutability — plan files (non-amendment, non-template) not modified after initial commit
-  if command -v git > /dev/null 2>&1 && [ -d "$ROOT/.git" ]; then
+  # Check 7: Plan intent stays immutable; stage, AC checks, and trailing Evidence: may progress.
+  if command -v git > /dev/null 2>&1 && git -C "$ROOT" rev-parse --is-inside-work-tree > /dev/null 2>&1; then
     IMMUTABLE_OK=true
     for dir in "$ROOT/.osc/plans/active" "$ROOT/.osc/plans/backlog" "$ROOT/.osc/plans/blocked" "$ROOT/.osc/plans/done" "$ROOT/.osc/plans"; do
       [ -d "$dir" ] || continue
@@ -290,17 +363,54 @@ if [ "$TIER" = "--strict" ]; then
         case "$basename" in
           *-amendment-*) continue ;;
         esac
-        relpath=$(python3 -c 'import os, sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$f" "$ROOT" 2>/dev/null || printf '%s' "${f#"$ROOT"/}")
-        # Count commits that modified this file's content (renames/moves during close are allowed)
-        commit_count=$(git -C "$ROOT" log --oneline --diff-filter=M --follow -- "$relpath" 2>/dev/null | wc -l | tr -d ' ')
-        if [ "$commit_count" -gt 0 ]; then
-          warn "Plan $basename was modified after initial commit ($commit_count content-modifying commit(s))"
+        relpath=${f#"$ROOT"/}
+        history_path="$relpath"
+        last_commit=$(git -C "$ROOT" log -1 --format=%H -- "$history_path" 2>/dev/null)
+        # An uncommitted stage move still belongs to the same committed slug.
+        if [ -z "$last_commit" ]; then
+          for stage_dir in .osc/plans/active .osc/plans/backlog .osc/plans/blocked .osc/plans/done .osc/plans; do
+            candidate="$stage_dir/$basename"
+            last_commit=$(git -C "$ROOT" log -1 --format=%H -- "$candidate" 2>/dev/null)
+            if [ -n "$last_commit" ]; then history_path="$candidate"; break; fi
+          done
+        fi
+        [ -n "$last_commit" ] || continue
+        current_intent=$(normalize_plan_intent "$f")
+        intent_changed=false
+        # Inspect the index independently: the worktree may have undone a staged intent edit.
+        for index_path in "$relpath" "$history_path"; do
+          if index_intent=$(git -C "$ROOT" show ":./$index_path" 2>/dev/null | normalize_plan_intent); then
+            if [ "$current_intent" != "$index_intent" ]; then intent_changed=true; break; fi
+          fi
+        done
+        # Compare all committed snapshots, including pre-move paths and reverted edits.
+        while IFS="$(printf '\t')" read -r revision snapshot_path; do
+          if ! historical_intent=$(git -C "$ROOT" show "$revision:$snapshot_path" 2>/dev/null | normalize_plan_intent) || [ "$current_intent" != "$historical_intent" ]; then
+            intent_changed=true
+            break
+          fi
+        done < <(
+          # Also inspect same-slug stage history if a move changed too much for Git rename detection.
+          for snapshot_history_path in "$history_path" ".osc/plans/active/$basename" ".osc/plans/backlog/$basename" ".osc/plans/blocked/$basename" ".osc/plans/done/$basename" ".osc/plans/$basename"; do
+            git -c core.quotepath=false -C "$ROOT" log --follow --format='@%H' --name-status -- "$snapshot_history_path" 2>/dev/null
+          done | awk -F '\t' '
+          function snapshot(path,    key) {
+            key = revision SUBSEP path
+            if (!seen[key]++) print revision "\t" path
+          }
+          /^@/ { revision = substr($0, 2) }
+          /^[AM]\t/ { snapshot($2) }
+          /^R[0-9]+\t/ { snapshot($3) }
+          '
+        )
+        if $intent_changed; then
+          warn "Plan $basename intent was modified after initial commit (use an amendment for scope or requirement changes)"
           IMMUTABLE_OK=false
         fi
       done
     done
     if $IMMUTABLE_OK; then
-      pass "Plan immutability intact (no post-commit edits)"
+      pass "Plan immutability intact (committed intent unchanged)"
     fi
   else
     warn "Plan immutability check skipped (not a git repository or git not available)"

@@ -4,7 +4,15 @@ A phase-to-tool reference for AI-assisted work. This file is the operational ref
 
 The stable core is the file protocol and lifecycle helpers. Lab surfaces such as evolution ledgers, cockpit webhooks, and runtime profiles are optional layers around that record; they do not replace the plan/evidence/verification/close chain. Historical helpers removed from the reduced maintained CLI, such as `osc work`, `osc dashboard`, `osc task`, `osc plan wizard`, `osc plan graph`, `osc metrics`, and broad `osc doctor --fix`, are migration references only unless a future plan restores them with fresh evidence.
 
-Named coordinators, harnesses, and status/approval channels (operator surfaces) in this guide are examples. Use the reference-label taxonomy in the upstream Open Scaffold docs to distinguish public examples, private deployment examples, runtime lanes, adapter candidates, and operator surfaces.
+Named coordinators, harnesses, and status/approval channels (operator surfaces) in this guide are optional examples. The repo-local mission, plan, evidence, and verification rules are sufficient to work; fetching upstream documents or using a particular hosting service is not a prerequisite.
+
+Commands below use `osc` for brevity. Install it with `npm install --global open-scaffold@latest`, or replace `osc` with `npx open-scaffold@latest` on each invocation. Running one command through `npx` does not install `osc` on your PATH. From the Open Scaffold source checkout, `npm run osc -- <command>` is another option after installing development dependencies.
+
+## Record-writing policy
+
+Use the CLI first to create plans, amendments, evidence skeletons, and close records. If the CLI is unavailable, use the supported repo-local shell helper for the operation, such as `./amend.sh` or `./close.sh`. Only when neither can perform the operation may you use a manual fallback that preserves the shipped schema, numbering, stage folders, amendment sequence, and changelog links.
+
+Fill generated `TODO:` sections and review the new record before its first commit. After commit, preserve the plan's intent: changes to its goal, scope, or acceptance-criterion wording go into a new amendment. Factual checklist completion and reserved ` | Evidence: <reference-only-list>` suffixes may be updated without changing the criterion's meaning. Record detailed results and newly discovered questions in evidence or an amendment. Supported lifecycle helpers may move the plan and its amendments and update Status/stage bookkeeping; ad hoc committed content rewrites remain prohibited.
 
 ## Development phases
 
@@ -24,7 +32,7 @@ Ask structured questions until the goal, constraints, and acceptance criteria ar
 
 ### 2. Plan (when the task is non-trivial)
 
-Write a plan file in `.osc/plans/active/` using the Status + seven content-heading schema in `.osc/plans/handoff-template.md`. The plan must include acceptance criteria — testable bullets that define success. For risky or multi-file work, get the plan reviewed before executing. See `.osc/plans/WORKFLOW.md` for the stage-folder lifecycle and `.osc/RULES.md` for non-negotiable principles.
+Create a plan in `.osc/plans/active/` with `osc plan new`, using the Status + seven content-heading schema in `.osc/plans/handoff-template.md`. Fill the generated sections before the first commit. The plan must include acceptance criteria — testable bullets that define success. For risky or multi-file work, get the plan reviewed before executing. See `.osc/plans/WORKFLOW.md` for the stage-folder lifecycle and `.osc/RULES.md` for non-negotiable principles.
 
 Use the helper when the repo has the `osc` CLI available:
 
@@ -57,7 +65,7 @@ osc plan move <slug> --to blocked
 osc plan move <slug> --to backlog
 ```
 
-Then fill every TODO before implementation. The helpers create and move structure only; they do not invent acceptance criteria. Shell fallback remains the day-zero floor: copy `.osc/plans/handoff-template.md` into the right stage folder and move files manually when needed.
+Then fill every TODO before the first commit and before implementation. The helpers create and move structure only; they do not invent acceptance criteria. If neither the CLI nor a supported shell helper can create the plan, the manual fallback is to copy `.osc/plans/handoff-template.md` into the right stage folder and fill its schema before committing. If movement also needs a manual fallback, preserve the filename and move amendments with their parent; do not use a move as an opportunity to rewrite committed intent.
 
 > **With OMC harness:** Claude Code/OMC planning flows can use their native planning workflow against an Open Scaffold plan or `run.json` work package (run packet).
 >
@@ -103,25 +111,26 @@ When you need to reconstruct the work record before or after verification, run:
 
 ```bash
 osc trace <plan-slug>
-osc verify --evidence-chain --plan <plan-slug>
 ```
 
-Trace shows the known local chain; evidence-chain verification checks that chain structurally.
+Trace shows the known local chain. After the plan is closed, `osc verify --evidence-chain --plan <plan-slug>` checks that chain structurally; it accepts plans in `done/`, not active plans. Mark verified criteria complete with reserved ` | Evidence: <reference-only-list>` suffixes, record the real close decision and rationale in the evidence note, and make its Plan reference point to the final `done/` path before strict evidence-chain verification.
 
-Run `./verify.sh` for a zero-dependency methodology compliance report (mission defined, plans exist, amendments sequential, changelog coverage). Use `./verify.sh --strict` for full checks including plan schema validation and paired-view drift detection. `osc verify` performs the generic CLI check; adapter repos keep their own namespace-specific verify behavior. Use `osc doctor --check secret-scan` for the reduced maintained secret-scan diagnostic. Historical `osc metrics` and broad `osc doctor --fix` repair flows were removed from the reduced CLI and should be treated as migration references until restored by a future evidence-backed slice. Use `osc evidence new <slug>` to scaffold a `.osc/releases/<date>-<slug>.md` evidence note after verification, then run `osc evidence collect <slug>` to append local verification output, git context, changed files, and explicit skipped-collector notes without overwriting your narrative. Add `--ci` only when you want `gh`-based PR/check collection. Replace any remaining TODOs with human-reviewed outcome text, then use `osc close <slug> --message "<what shipped>"` (or `npx open-scaffold close <slug> --message "<what shipped>"`) to move a verified plan to `done/`. Shell scripts remain the day-zero floor; `osc` is the canonical tested path for richer run/package behavior.
+Run `./verify.sh` for a zero-dependency methodology compliance report (mission defined, plans exist, amendments sequential, changelog coverage). Use `./verify.sh --strict` for full checks including plan schema validation and paired-view drift detection. `osc verify` performs the generic CLI check; adapter repos keep their own namespace-specific verify behavior. Use `osc doctor --check secret-scan` for the reduced maintained secret-scan diagnostic. Historical `osc metrics` and broad `osc doctor --fix` repair flows were removed from the reduced CLI and should be treated as migration references until restored by a future evidence-backed slice. Use `osc evidence new <slug>` to scaffold a `.osc/releases/<date>-<slug>.md` evidence note after verification, then run `osc evidence collect <slug>` to append local verification output, git context, changed files, and explicit skipped-collector notes without overwriting your narrative. Add `--ci` only when you want `gh`-based PR/check collection. Replace any remaining TODOs with human-reviewed outcome text, then use `osc close <slug> --message "<what shipped>"` (or `npx open-scaffold@latest close <slug> --message "<what shipped>"`) to move a verified plan to `done/`. Shell scripts remain the day-zero floor; `osc` is the canonical tested path for richer run/package behavior.
 
 > **With adapters:** OMC/OMX handoffs should still end by running the repo-local `./verify.sh` plus acceptance-criteria checks. Runtime-native verify commands are wrappers around this evidence, not replacements for it.
 
-### 5. Publish/review (when code or public docs change)
+### 5. Publish/review (when code or shared docs change)
 
-Open a traceable GitHub PR for meaningful changes. The PR should link issue/task, plan/spec, `run.json` work package when delegated, verification, evidence, and review gates. Before writing the PR body, `osc trace <plan-slug>` can help gather the plan, run, evidence, release-note, and recognized PR/issue references already present in local files; it does not query GitHub or prove PR/CI state. If the Codex connector is enabled, trigger review by opening the PR for review, marking a draft ready, or commenting `@codex review`. When a configured Discord or Slack cockpit should see the update, use `osc cockpit post --event pr_link --pr <url>` or `osc cockpit post --event completion_report --run-id <id> --plan <slug> --pr <url>` after redaction review. See `docs/GITHUB_WORKFLOW.md`.
+Use the project's repository review process for meaningful changes. A review record should link the issue/task when one exists, plan/spec, `run.json` work package when delegated, verification, evidence, and review decisions. `osc trace <plan-slug>` gathers references already present in local files; it does not query a hosting service or prove CI state. Local review and git history are sufficient when the project has no remote tracker.
+
+GitHub pull requests, connector reviews, and cockpit notifications are optional integrations. If the project uses GitHub, see the repo-local `docs/GITHUB_WORKFLOW.md` when available. Follow the owner's authorization for publication and external messages; installing the scaffold does not authorize posting to GitHub, Discord, or Slack.
 
 ### 6. Capture amendments (when you "get smarter")
 
 New information legitimately changes what you're building? That's fine — but capture it, don't silently drift.
 
-1. Do not edit plan files in place. Do not hand-edit MISSION.md's changelog for amendment bookkeeping.
-2. Run `osc amend <plan-slug> --message "<what changed>"` (or `npx open-scaffold amend <plan-slug> --message "<what changed>"` without a local install). The CLI finds the parent plan in whichever stage subfolder it lives in (`active/`, `backlog/`, `done/`, `blocked/`), autonumbers the next amendment file alongside it, scaffolds the 5-section schema from `.osc/plans/README.md`, and stamps MISSION.md's `## Changelog` section in one shot.
+1. Preserve committed plan intent; write the scope change as an amendment. Use helpers for MISSION.md's amendment bookkeeping, with the schema-preserving manual fallback only when neither CLI nor a supported shell helper is available.
+2. Run `osc amend <plan-slug> --message "<what changed>"` (or `npx open-scaffold@latest amend <plan-slug> --message "<what changed>"` without a local install). The CLI finds the parent plan in whichever stage subfolder it lives in (`active/`, `backlog/`, `done/`, `blocked/`), autonumbers the next amendment file alongside it, scaffolds the 5-section schema from `.osc/plans/README.md`, and stamps MISSION.md's `## Changelog` section in one shot.
 3. Fill in the three `TODO:` sections in the new amendment file: **Learning** (what changed and why), **New direction** (the revised goal or criteria), and **Impact on acceptance criteria** (which AC numbers change, how).
 4. Review the diff, then commit. Agents read the original plan plus all amendments in numeric order.
 
@@ -142,7 +151,7 @@ There is no automatic router between tools. You, the human, decide based on the 
 | Simple, single-file fix | Execute directly | Overhead of planning exceeds the fix itself |
 | Independent parallel tasks | Parallel execution | Fan out across agents for throughput |
 | Stuck or uncertain | Second opinion | A different model's perspective breaks deadlocks |
-| Public/versioned change | GitHub PR loop | CI, Codex review, and human approval gate merges |
+| Shared/versioned change | Project repository review process | Verification, review, and owner approval make publication traceable; GitHub is optional |
 
 > **Runtime split:** Open Scaffold is the runtime-neutral contract. Hermes, Claw/OpenClaw, Claude Code, Codex, Gemini, or custom scripts can act as orchestrators/agents. OMC is a Claude Code harness; OMX is a Codex harness. Status/approval channels such as Discord are operator surfaces — visible status rooms, not canonical state.
 
@@ -181,16 +190,18 @@ Multi-agent development spans sessions. Without discipline, context is lost betw
 
 ### What to produce at the end of each session
 
-- **A completed or updated plan file** — If you finished a task, its plan should have all ACs checked off. If work remains, the plan documents what's done and what's left.
-- **A closed plan** — If all acceptance criteria are met, run `./close.sh <plan-slug>` to move the plan and its amendments to `done/` and stamp the changelog.
-- **Amendments for any scope changes** — Anything you learned that changes the plan goes in an amendment file, not in your head. Run `./amend.sh <plan-slug>` to scaffold it.
-- **A changelog entry in MISSION.md** — One line per pivot so the next session (or agent) knows what shifted and why.
+- **An evidence/progress note and factual checklist updates** — Record what changed, which criteria have verified results, what remains, and the exact next action. Mark a criterion complete only when verified, appending ` | Evidence: <local-path>` while preserving its wording. Fill an uncommitted skeleton before its first commit; use amendments for new intent.
+- **A closed plan when verified** — If all acceptance criteria are met, run `osc close <plan-slug> --message "<what shipped>"` to move the plan and its amendments to `done/` and stamp the changelog. Use `./close.sh` when the CLI is unavailable.
+- **Amendments for scope changes or new blocking questions** — Run `osc amend <plan-slug> --message "<what changed>"`, fill its generated sections, and review before committing. Use `./amend.sh` when available as the shell fallback.
+- **Helper-managed changelog bookkeeping** — Amend and close helpers link each pivot so the next session knows what shifted and why.
 
 ### How to hand off between sessions
 
-1. Before ending: review the latest plan + amendments. Is everything captured, or are decisions only in the conversation?
-2. Write down unfinished work as open questions in the plan file (Section 7).
-3. The next session starts by reading MISSION.md → latest plan → amendments in order. If the slice already has a plan slug, it can also start with `osc trace <plan-slug>` to see the durable local work record without relying on chat memory.
+1. Before ending, review the selected plan and its amendments. Put decisions and unfinished work into evidence/progress notes or a new amendment; fill Section 7 directly only while the plan is still an uncommitted draft.
+2. Review the diff and preserve the record in git as appropriate for the project. Keep the selected plan slug with the handoff; do not rely on whichever active plan happens to sort first.
+3. The next session starts with `osc handoff --plan <plan-slug>` (or `npx open-scaffold@latest handoff --plan <plan-slug>`). Confirm the selected plan, then read its amendments and the latest evidence. Use `osc trace <plan-slug>` for the local chain. The packet is read-only and does not itself grant approval or certify that reported work passed.
+
+The [resume walkthrough](RESUME_WALKTHROUGH.md) gives a concrete example. If a run has no matching task/plan identity, inspect it separately rather than assuming it belongs to the selected plan.
 
 For stage-folder movement rules and lifecycle conventions, see `.osc/plans/WORKFLOW.md`. For non-negotiable principles, see `.osc/RULES.md`.
 

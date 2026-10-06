@@ -84,11 +84,13 @@ describe('blueprint first-run and PR check surfaces', () => {
       expect(result.stdout).toContain('.osc/plans/active/first-work-record.md');
       expect(result.stdout).toContain('Proof boundary: planned writes do not mean agents ran, tests passed, deployment happened, or production readiness was proven.');
       expect(result.stdout).toContain('Open Scaffold first-run complete');
-      expect(result.stdout).toContain('osc trace first-work-record');
-      expect(result.stdout).toContain('osc verify --evidence-chain --plan first-work-record --strict');
+      expect(result.stdout).toContain('npx open-scaffold@latest trace first-work-record');
+      expect(result.stdout).toContain('npx open-scaffold@latest verify --evidence-chain --plan first-work-record --strict');
+      expect(result.stdout).toContain('npx open-scaffold@latest handoff --plan first-work-record');
       expect(result.stdout).toContain('Readiness guidance:');
       expect(result.stdout).toContain('Evidence-chain checks are structural; they do not prove semantic correctness or production readiness.');
-      expect(result.stdout).toContain('https://github.com/graphanov/open-scaffold/blob/main/docs/PROOF_HARNESS.md');
+      expect(result.stdout).toContain('This setup needs no remote documentation');
+      expect(result.stdout).not.toContain('https://github.com/graphanov/open-scaffold/blob/main/');
       expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).not.toContain('mission:unset');
       expect(existsSync(join(root, '.osc/plans/active/first-work-record.md'))).toBe(true);
       const evidenceFiles = readdirSync(join(root, '.osc/releases'));
@@ -96,7 +98,11 @@ describe('blueprint first-run and PR check surfaces', () => {
       const evidenceFile = evidenceFiles.find((file: string) => file.endsWith('-first-work-record.md')) as string;
       const evidence = readFileSync(join(root, '.osc/releases', evidenceFile), 'utf8');
       expect(evidence).toContain('Structural-only first-run skeleton');
-      expect(evidence).toContain('https://github.com/graphanov/open-scaffold/blob/main/docs/PROOF_HARNESS.md');
+      expect(evidence).toContain('Record the commands, results, failing checks, and limitations');
+      expect(evidence).not.toContain('https://github.com/graphanov/open-scaffold/blob/main/');
+      const plan = readFileSync(join(root, '.osc/plans/active/first-work-record.md'), 'utf8');
+      expect(plan).not.toContain('https://github.com/graphanov/open-scaffold/blob/main/');
+      expect(plan).toContain('npx open-scaffold@latest handoff --plan first-work-record');
       const validation = runOsc(root, ['plan', 'validate', 'first-work-record', '--strict']);
       expect(validation.status, validation.stdout + validation.stderr).toBe(0);
     } finally {

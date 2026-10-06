@@ -118,7 +118,7 @@ describe('osc init CLI', () => {
     const agents = readFileSync(join(target, 'AGENTS.md'), 'utf8');
     expect(readme).toContain('TODO: replace this with your project overview.');
     expect(agents).toContain('This repository uses Open Scaffold. It is not the Open Scaffold product repository.');
-    expect(agents).toContain('osc run <plan-path> --dry-run');
+    expect(agents).toContain('npx open-scaffold run <plan-path> --dry-run');
     expect(agents).not.toContain('--retry-of');
     expect(readme).toContain('npx open-scaffold plan new');
     expect(readme).toContain('npx open-scaffold evidence new');

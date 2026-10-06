@@ -52,6 +52,15 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-10-06: Correct the new unpublished plan presentation: label the parallel group and dependency paragraphs, and tag the already-stated owner merge/publication gate as BLOCKING. No goal, scope, acceptance criterion wording, or execution authority changes. — see .osc/plans/active/180-repository-revival-amendment-1.md
+- 2026-10-06: closed 176-prepare-open-scaffold-0350-release-sync — Reconciled merged 0.35.0 preparation PR 248; publication remains incomplete in backlog plan 182.
+- 2026-10-06: closed 175-ambient-capture-trust-package-sync — Reconciled completed 0.34.0 preparation against merged PR 240 and live npm/GitHub publication evidence.
+- 2026-10-06: Superseded as a separate queue item by plan 164-distribution-launch; intent is retained there and the historical record is parked without claiming the original deliverables shipped. — see .osc/plans/backlog/116-launch-readiness-distribution-pack-amendment-1.md
+- 2026-10-06: Superseded as a separate queue item by plan 164-distribution-launch; intent is retained there and the historical record is parked without claiming the original deliverables shipped. — see .osc/plans/backlog/115-downstream-example-proof-amendment-1.md
+- 2026-10-06: Superseded as a separate queue item by plan 164-distribution-launch; intent is retained there and the historical record is parked without claiming the original deliverables shipped. — see .osc/plans/backlog/111-anatomy-of-a-slice-public-proof-amendment-1.md
+- 2026-10-06: Superseded as a separate queue item by plan 164-distribution-launch; intent is retained there and the historical record is parked without claiming the original deliverables shipped. — see .osc/plans/backlog/110-attempt-diff-demo-readme-amendment-1.md
+- 2026-10-06: Folded distribution subplans 110, 111, 115, and 116 remain represented here; prioritize plan 180 newcomer reliability before distribution assets, and use current handoff language rather than retired execution grammar. — see .osc/plans/backlog/164-distribution-launch-amendment-1.md
+- 2026-10-06: Owner reprioritized outside-user reliability, then the bounded orchestrator report/handoff pilot in plan 181; larger benchmark expansion remains deferred without a new claim or spend authorization. — see .osc/plans/active/163-proof-harness-v2-amendment-2.md
 - 2026-06-20: closed 174-evidence-battery-package-sync — Published open-scaffold@0.33.0 to npm latest and created GitHub Release v0.33.0 as Latest; shipped the fail-closed evidence battery from PR #226 to the public package surface.
 - 2026-06-18: closed v1-public-positioning-polish — polished v1 public positioning and release-readiness boundaries
 - 2026-06-18: closed 173-codex-token-efficiency-proof — closed proof-battery hardening with fail-closed evidence battery and source-labeled Codex 2x fixture boundaries

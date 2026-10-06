@@ -31,12 +31,12 @@ Prepare a draft release-sync PR for `open-scaffold@0.35.0` with version metadata
 
 ## Acceptance criteria
 
-- [ ] `package.json`, `package-lock.json` root, and `package-lock.json` `packages[""]` all read `0.35.0`.
-- [ ] `docs/CHANGELOG.md` contains a top `v0.35.0` candidate/prep entry that links issue #246, source PRs #242, #243, #245, and #247, this plan, this evidence note, and the draft PR once opened.
-- [ ] The release-prep evidence note records observed version alignment, npm/GitHub availability check attempts, package dry-run output, verification commands, and the no-merge/no-publish/no-release authority boundary.
-- [ ] Open Scaffold plan/evidence records contain no placeholder text and validate under strict plan validation.
-- [ ] A draft PR is opened or updated against `main` from `forge/issue-246-prepare-open-scaffold-npm-github-release`, with `Closes #246` and a public-safe authority boundary.
-- [ ] No forbidden external release action is performed: no merge, real publish, workflow dispatch, tag, GitHub Release, force-push, settings change, secret change, or package version beyond `0.35.0`.
+- [x] `package.json`, `package-lock.json` root, and `package-lock.json` `packages[""]` all read `0.35.0`. | Evidence: `.osc/releases/2026-10-06-176-prepare-open-scaffold-0350-release-sync.md`
+- [x] `docs/CHANGELOG.md` contains a top `v0.35.0` candidate/prep entry that links issue #246, source PRs #242, #243, #245, and #247, this plan, this evidence note, and the draft PR once opened. | Evidence: `.osc/releases/2026-10-06-176-prepare-open-scaffold-0350-release-sync.md`
+- [x] The release-prep evidence note records observed version alignment, npm/GitHub availability check attempts, package dry-run output, verification commands, and the no-merge/no-publish/no-release authority boundary. | Evidence: `.osc/releases/2026-10-06-176-prepare-open-scaffold-0350-release-sync.md`
+- [x] Open Scaffold plan/evidence records contain no placeholder text and validate under strict plan validation. | Evidence: `.osc/releases/2026-10-06-176-prepare-open-scaffold-0350-release-sync.md`
+- [x] A draft PR is opened or updated against `main` from `forge/issue-246-prepare-open-scaffold-npm-github-release`, with `Closes #246` and a public-safe authority boundary. | Evidence: `.osc/releases/2026-10-06-176-prepare-open-scaffold-0350-release-sync.md`
+- [x] No forbidden external release action is performed: no merge, real publish, workflow dispatch, tag, GitHub Release, force-push, settings change, secret change, or package version beyond `0.35.0`. | Evidence: `.osc/releases/2026-10-06-176-prepare-open-scaffold-0350-release-sync.md`
 
 ## Verification steps
 

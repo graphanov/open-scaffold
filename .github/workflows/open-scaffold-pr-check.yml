@@ -65,7 +65,7 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 22.12.0
           cache: npm
@@ -86,7 +86,7 @@ jobs:
           set -euo pipefail
           plan="${INPUT_PLAN:-${VAR_PLAN:-}}"
           if [[ -z "$plan" ]]; then
-            plan="$(git diff --name-only "${{ github.event.pull_request.base.sha || github.sha }}"...HEAD 2>/dev/null \
+            plan="$(git diff --name-only --diff-filter=ACMRT "${{ github.event.pull_request.base.sha || github.sha }}"...HEAD 2>/dev/null \
               | grep -E '^\.osc/plans/(active|backlog|blocked|done)/[A-Za-z0-9][A-Za-z0-9._-]*\.md$' \
               | grep -v -- '-amendment-' \
               | head -1 \
