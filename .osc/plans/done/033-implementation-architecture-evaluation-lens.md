@@ -2,7 +2,7 @@
 
 ## Status
 
-backlog — captured from the 2026-05-15 implementation-architecture analysis run; queued as the next PR candidate after the currently in-flight branch/PR work completes; not yet activated for execution.
+done — captured from the 2026-05-15 implementation-architecture analysis run; queued as the next PR candidate after the currently in-flight branch/PR work completes; not yet activated for execution.
 
 ## Context
 

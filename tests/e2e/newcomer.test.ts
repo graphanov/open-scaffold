@@ -108,6 +108,12 @@ describe('npm-only newcomer handoff', () => {
         .replace('approval.rationale: First-run skeleton exists, but real work evidence has not been added yet.', 'approval.rationale: Mission, validation, evidence, and second-session handoff checked locally.');
       writeFileSync(evidencePath, review);
       osc(['close', slug, '--message', 'Verified local newcomer record and second-session handoff.']);
+      const closedValidation = execFileSync(npx, [`open-scaffold@${pkg.version}`, 'plan', 'validate', slug, '--strict'], {
+        cwd: project, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+        ...(process.platform === 'win32' ? { shell: true } : {}),
+      });
+      expect(closedValidation).toBe(validation);
+      expect(readFileSync(join(project, `.osc/plans/done/${slug}.md`), 'utf8')).toMatch(/## Status\s+done\b/);
       writeFileSync(evidencePath, readFileSync(evidencePath, 'utf8').replace(`.osc/plans/active/${slug}.md`, `.osc/plans/done/${slug}.md`));
       const chain = JSON.parse(osc(['verify', '--evidence-chain', '--plan', slug, '--strict', '--json']));
       expect(chain).toHaveLength(1);

@@ -9,7 +9,7 @@ Prepared the owner-requested public maintenance update: coherent source/generate
 - Roadmap / issue / task: owner maintenance direction on 2026-10-06; contributor issues #281 and #282; portfolio intake #250, #252, #254, #258, #260, #262.
 - Plan: `.osc/plans/active/180-repository-revival.md` until the implementation and review checks are complete, then `.osc/plans/done/180-repository-revival.md`.
 - Run ID / run packet: N/A; parallel implementation groups share this bounded maintenance plan and return reviewed diffs to one coordinator.
-- Branch / PR: branch `codex/revive-open-scaffold`; maintenance PR publication pending final integration checks.
+- Branch / PR: branch `codex/revive-open-scaffold`; maintenance PR https://github.com/graphanov/open-scaffold/pull/283.
 
 ## Verification
 
@@ -18,13 +18,16 @@ Prepared the owner-requested public maintenance update: coherent source/generate
 - Handoff isolation — 13 failure cases reproduced before the fix; 48 resume and 18 MCP tests pass after coherent plan/run/task binding and feedback identity checks.
 - Dependency refresh — both TypeScript 7 builds and 50 focused tests pass; npm audit reports zero vulnerabilities; no installed dependency is behind its compatible wanted version. Vitest 5 is deferred because it drops Node 20 support.
 - Stale-reminder lifecycle — 12 focused tests pass, including exact bot/marker ownership, quiet unchanged state, resolution, and later reopening.
-- Full integrated `npm run build` and `npm test` — PASS: 55 files / 692 tests on Node 26.6.0 with a clean lockfile install.
+- Initial integrated `npm run build` and `npm test` — PASS: 55 files / 692 tests on Node 26.6.0 with a clean lockfile install. Additional closure regressions and the final updated corpus checks are recorded below after the GitHub lifecycle finding.
 - Packed-package npm-only newcomer lifecycle — PASS: download the packed exact version from an isolated loopback registry, stop that registry, start a fresh process with npm offline, and execute the handoff's actual first suggested command unchanged. Progress, competing tasks, evidence-backed close, and repeated closed-plan setup are covered.
 - `./verify.sh --strict` — PASS: 9 pass / 0 fail / 19 warnings. Eighteen historical records have literal/content differences that the old rename-blind checker missed, including older evidence annotations; the other warning is plan 180's explicitly recorded presentation correction. No stale active-plan warning remains. Historical content is preserved rather than rewritten to silence the guard.
 - `npm run osc -- verify` and `npm audit --json` — PASS; zero structural failures and zero audit vulnerabilities.
 - Independent final review — PASS after fixing all three P2 findings: invocation-aware npm handoff commands, unambiguous reserved evidence annotations, and scaffold-relative index reads for nested Git/linked-worktree staged intent changes.
-- Required source growth — 92 physical TypeScript lines across existing files; the deliberate maintained-source cap is 16,839, still below the 20,890 baseline, with 41 maintained files.
+- Required source growth — 119 physical TypeScript lines across existing files; the deliberate maintained-source cap is 16,866, still below the 20,890 baseline, with 41 maintained files.
 - `npm pack --dry-run --json` — PASS: `open-scaffold@0.35.0`, 228 package files, no owner `content/` draft or dogfood plan/release history in the payload. The real package newcomer regression validates the packed CLI rather than a source-checkout alias.
+- First GitHub CI result — package CI, structural PR check, and evidence validation passed; changed-plan validation caught active Status text in newly closed preparation records. This was a real close-helper invariant defect, not waived.
+- Closure repair — CLI and shell now keep the genuine Status aligned with done while preserving all other text and avoiding duplicate mission stamps on retry. The packed newcomer regression immediately runs strict plan validation after real closure. Fifty-one older done-folder Status mismatches were repaired through the same idempotent core helper; all non-Status sections and mission history were mechanically compared and preserved. The two newly reconciled prep plans are also strict-valid. The entire parent-plan corpus now has zero validation errors, asserted before its pinned hash comparison.
+- Final integrated verification after closure repair — PASS: both builds, 56 test files / 710 tests, and strict structural verification with 9 pass / 0 fail / 19 preserved-history warnings. All parent-plan validation errors are zero. The final package regression covers the corrected closure through the actual installed CLI and the supported shell path has its own preservation/collision tests.
 
 ## Outcome
 

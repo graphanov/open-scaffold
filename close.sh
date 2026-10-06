@@ -12,6 +12,66 @@ PLANS_DIR="$ROOT/.osc/plans"
 DONE_DIR="$PLANS_DIR/done"
 MISSION="$ROOT/MISSION.md"
 TODAY="$(date +%Y-%m-%d)"
+STATUS_TMP=""
+trap 'if [ -n "$STATUS_TMP" ]; then rm -f "$STATUS_TMP"; fi' EXIT
+
+# Update only the genuine Status stage token; fenced examples stay untouched.
+# Exit 2 means unchanged (including legacy plans without a Status section).
+closed_plan_status() {
+  awk '
+    function fence_run(line,    marker, n) {
+      marker = substr(line, 1, 1)
+      if (marker != "`" && marker != "~") return 0
+      for (n = 1; substr(line, n, 1) == marker; n += 1) {}
+      return n - 1
+    }
+    {
+      raw = $0
+      line = raw
+      sub(/\r$/, "", line)
+      run = fence_run(line)
+      if (in_fence) {
+        print raw
+        if (substr(line, 1, 1) == fence_marker && run >= fence_count && substr(line, run + 1) ~ /^[ \t]*$/) in_fence = 0
+        next
+      }
+      if (run >= 3) {
+        if (in_status && !status_seen) invalid = 1
+        in_fence = 1
+        fence_marker = substr(line, 1, 1)
+        fence_count = run
+      } else if (line ~ /^##[ \t]+/) {
+        if (in_status && !status_seen) invalid = 1
+        heading = line
+        sub(/^##[ \t]+/, "", heading)
+        sub(/[ \t]+#+[ \t]*$/, "", heading)
+        sub(/^[ \t]+/, "", heading)
+        sub(/[ \t]+$/, "", heading)
+        gsub(/[ \t]+/, " ", heading)
+        in_status = heading == "Status"
+        if (in_status) { status_count += 1; status_seen = 0 }
+      } else if (in_status && !status_seen && line !~ /^[ \t]*$/) {
+        status_seen = 1
+        value = line
+        sub(/^[ \t]+/, "", value)
+        value = tolower(value)
+        if (value !~ /^(active|backlog|blocked|done)($|[ \t:-]|—|–)/) invalid = 1
+        else if (value !~ /^done($|[ \t:-]|—|–)/) {
+          match(value, /^(active|backlog|blocked)/)
+          token_length = RLENGTH
+          match(line, /^[ \t]*/)
+          raw = substr(raw, 1, RLENGTH) "done" substr(raw, RLENGTH + token_length + 1)
+          changed = 1
+        }
+      }
+      print raw
+    }
+    END {
+      if (invalid || status_count > 1 || (in_status && !status_seen)) exit 1
+      if (!changed) exit 2
+    }
+  ' "$1"
+}
 
 # ──────────────────────────────────────────
 # Argument parsing
@@ -75,7 +135,7 @@ SLUG="$(basename "$SLUG" .md)"
 
 PARENT=""
 PARENT_DIR=""
-for dir in "$PLANS_DIR/active" "$PLANS_DIR/backlog" "$PLANS_DIR/blocked" "$PLANS_DIR"; do
+for dir in "$PLANS_DIR/active" "$PLANS_DIR/backlog" "$PLANS_DIR/blocked" "$PLANS_DIR" "$DONE_DIR"; do
   if [ -f "$dir/$SLUG.md" ]; then
     PARENT="$dir/$SLUG.md"
     PARENT_DIR="$dir"
@@ -88,32 +148,66 @@ if [ -z "$PARENT" ]; then
   exit 1
 fi
 
-# Don't close something already in done/
+# Render and validate before changing any plan or mission file.
+STATUS_TMP=$(mktemp "$PLANS_DIR/.${SLUG}.status.XXXXXX") || exit 1
+cp -p "$PARENT" "$STATUS_TMP" || exit 1
+if closed_plan_status "$PARENT" > "$STATUS_TMP"; then
+  :
+else
+  status_result=$?
+  if [ "$status_result" -eq 2 ]; then
+    cp -p "$PARENT" "$STATUS_TMP" || exit 1
+  else
+    printf 'Error: plan %s.md has an empty, invalid, or duplicate ## Status section.\n' "$SLUG" >&2
+    exit 1
+  fi
+fi
+
+# Repeated close may repair old stage metadata without stamping the mission again.
 if [ "$PARENT_DIR" = "$DONE_DIR" ]; then
+  if ! cmp -s "$PARENT" "$STATUS_TMP"; then
+    mv "$STATUS_TMP" "$PARENT" || exit 1
+    STATUS_TMP=""
+  fi
+  if [ "$STAGE" = true ] && command -v git > /dev/null 2>&1 && git -C "$ROOT" rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    git -C "$ROOT" add "$PARENT" || exit 1
+  fi
   printf 'Plan %s.md is already in done/.\n' "$SLUG"
   exit 0
 fi
+
+if [ ! -f "$MISSION" ] || grep -Eq 'mission:unset|TODO: define mission' "$MISSION"; then
+  printf 'Error: MISSION.md must exist and define the mission before closing a plan.\n' >&2
+  exit 1
+fi
+
+MOVED_FILES=("$SLUG.md")
+for f in "$PARENT_DIR/$SLUG"-amendment-*.md; do
+  [ -f "$f" ] || continue
+  MOVED_FILES+=("$(basename "$f")")
+done
+for f in "${MOVED_FILES[@]}"; do
+  if [ -e "$DONE_DIR/$f" ] || [ -L "$DONE_DIR/$f" ]; then
+    printf 'Error: refusing to overwrite existing done plan file: %s\n' "$f" >&2
+    exit 1
+  fi
+done
 
 # ──────────────────────────────────────────
 # Ensure done/ exists
 # ──────────────────────────────────────────
 
-mkdir -p "$DONE_DIR"
+mkdir -p "$DONE_DIR" || exit 1
 
 # ──────────────────────────────────────────
 # Move plan and all its amendments to done/
 # ──────────────────────────────────────────
 
-MOVED_FILES=()
-
-mv "$PARENT" "$DONE_DIR/"
-MOVED_FILES+=("$SLUG.md")
-
-for f in "$PARENT_DIR/$SLUG"-amendment-*.md; do
-  [ -f "$f" ] || continue
-  mv "$f" "$DONE_DIR/"
-  MOVED_FILES+=("$(basename "$f")")
+for f in "${MOVED_FILES[@]}"; do
+  mv "$PARENT_DIR/$f" "$DONE_DIR/" || exit 1
 done
+mv "$STATUS_TMP" "$DONE_DIR/$SLUG.md" || exit 1
+STATUS_TMP=""
 
 # ──────────────────────────────────────────
 # Stamp MISSION.md changelog

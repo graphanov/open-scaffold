@@ -194,7 +194,7 @@ normalize_plan_intent() {
         status_seen = 0
       } else if (section == "Status" && !status_seen && line !~ /^[ \t]*$/) {
         status_seen = 1
-        if (line ~ /^[ \t]*(active|backlog|blocked|done)([ \t]*$|[ \t]+—[ \t]+)/) line = "[stage]"
+        if (tolower(line) ~ /^[ \t]*(active|backlog|blocked|done)($|[ \t:-]|—|–)/) line = "[stage]"
       } else if (section == "Acceptance criteria" && line ~ /^[ \t]*[-*][ \t]+\[[ xX]\][ \t]+/) {
         sub(/\[[ xX]\]/, "[ ]", line)
         line = without_progress_suffix(line)

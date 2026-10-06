@@ -2,7 +2,7 @@
 
 ## Status
 
-active — docs simplification and runtime hypothesis reconciliation after runtime profiles v0 shipped.
+done — docs simplification and runtime hypothesis reconciliation after runtime profiles v0 shipped.
 
 ## Context
 

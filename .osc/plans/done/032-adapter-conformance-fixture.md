@@ -2,7 +2,7 @@
 
 ## Status
 
-backlog — recommended next implementation track after the 2026-05-15 runtime-selection and agentic-orchestration sparring syntheses. Promote to active only after the current capture PR is merged and the repo is back on clean `main`.
+done — recommended next implementation track after the 2026-05-15 runtime-selection and agentic-orchestration sparring syntheses. Promote to active only after the current capture PR is merged and the repo is back on clean `main`.
 
 ## Context
 

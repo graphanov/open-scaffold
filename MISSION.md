@@ -52,6 +52,7 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-10-06: GitHub CI exposed close helpers moving plans to done without updating their internal Status. Fix CLI and shell closure, validate the newcomer after close, and repair the 51 pre-existing done-folder Status mismatches through idempotent closure without rewriting goal, criteria, evidence, or mission history. — see .osc/plans/active/180-repository-revival-amendment-2.md
 - 2026-10-06: Correct the new unpublished plan presentation: label the parallel group and dependency paragraphs, and tag the already-stated owner merge/publication gate as BLOCKING. No goal, scope, acceptance criterion wording, or execution authority changes. — see .osc/plans/active/180-repository-revival-amendment-1.md
 - 2026-10-06: closed 176-prepare-open-scaffold-0350-release-sync — Reconciled merged 0.35.0 preparation PR 248; publication remains incomplete in backlog plan 182.
 - 2026-10-06: closed 175-ambient-capture-trust-package-sync — Reconciled completed 0.34.0 preparation against merged PR 240 and live npm/GitHub publication evidence.

@@ -120,6 +120,16 @@ describe('shell verifier committed plan intent', () => {
     }, legacyBody, legacyPath);
   });
 
+  it('allows validator-compatible case-insensitive Status tokens with preserved metadata', () => {
+    const originalPlan = plan.replace('\nactive\n', '\nACTIVE: factual lifecycle metadata\n');
+    withRepo((root) => {
+      git(root, 'mv', activePath, donePath);
+      writeFileSync(join(root, donePath), originalPlan.replace('ACTIVE: factual lifecycle metadata', 'done: factual lifecycle metadata'));
+      commit(root);
+      expect(verify(root)).toContain('Plan immutability intact');
+    }, originalPlan);
+  });
+
   it('checks uncommitted stage moves against the original committed slug', () => {
     withRepo((root) => {
       git(root, 'mv', activePath, donePath);
