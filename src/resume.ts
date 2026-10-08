@@ -347,6 +347,10 @@ interface NextAction {
   commands: string[];
 }
 
+function nextAction(action: string, ...commands: string[]): NextAction {
+  return { action, commands };
+}
+
 function deriveNextAction(input: {
   scaffoldPresent: boolean;
   missionDefined: boolean;
@@ -360,68 +364,53 @@ function deriveNextAction(input: {
   const command = input.commandPrefix;
   if (!input.scaffoldPresent) {
     const bootstrap = command === 'osc' ? 'npx open-scaffold@latest' : command;
-    return {
-      action: `Run ${bootstrap} first-run to create the minimum work record.`,
-      commands: [`${bootstrap} first-run`],
-    };
+    return nextAction(`Run ${bootstrap} first-run to create the minimum work record.`, `${bootstrap} first-run`);
   }
   if (!input.missionDefined) {
-    return {
-      action: `Define the mission before any work: run ${command} first-run (guided) or fill in MISSION.md.`,
-      commands: [`${command} first-run`],
-    };
+    return nextAction(
+      `Define the mission before any work: run ${command} first-run (guided) or fill in MISSION.md.`,
+      `${command} first-run`,
+    );
   }
   if (input.run && input.run.pending_gates > 0) {
     const gateId = input.run.pending_gate_ids[0] ?? '<gate-id>';
-    return {
-      action: `Record the answer for gate ${gateId} in evidence or the external coordinator, then continue from repo truth.`,
-      commands: [
-        `${command} trace ${input.plan?.slug ?? '<plan-slug>'}`,
-        `${command} evidence new ${input.plan?.slug ?? '<plan-slug>'}`,
-      ],
-    };
+    return nextAction(
+      `Record the answer for gate ${gateId} in evidence or the external coordinator, then continue from repo truth.`,
+      `${command} trace ${input.plan?.slug ?? '<plan-slug>'}`,
+      `${command} evidence new ${input.plan?.slug ?? '<plan-slug>'}`,
+    );
   }
   if (input.run && (input.run.state === 'failed' || input.run.state === 'blocked')) {
-    return {
-      action: input.repairHypothesis
+    return nextAction(
+      input.repairHypothesis
         ? `Retry run ${input.run.run_id} with the recorded repair hypothesis: ${input.repairHypothesis}`
         : `Inspect why run ${input.run.run_id} is ${input.run.state}, record feedback with a repair hypothesis, then retry.`,
-      commands: [
-        `${command} trace ${input.plan?.slug ?? '<plan-slug>'}`,
-        `${command} run .osc/plans/active/${input.plan?.slug ?? '<plan-slug>'}.md --dry-run`,
-      ],
-    };
+      `${command} trace ${input.plan?.slug ?? '<plan-slug>'}`,
+      `${command} run .osc/plans/active/${input.plan?.slug ?? '<plan-slug>'}.md --dry-run`,
+    );
   }
   if (input.plan) {
     const unchecked = input.plan.acceptance_criteria.filter((item) => !item.checked);
     if (unchecked.length) {
-      return {
-        action: unchecked[0].text,
-        commands: [
-          `${command} plan validate ${input.plan.slug} --strict`,
-          ...input.verificationSteps.slice(0, 2),
-        ].filter(Boolean),
-      };
+      return nextAction(unchecked[0].text, ...[
+        `${command} plan validate ${input.plan.slug} --strict`,
+        ...input.verificationSteps.slice(0, 2),
+      ].filter(Boolean));
     }
-    return {
-      action: `All acceptance criteria are checked for ${input.plan.slug}: record and fill evidence, verify it, and close the slice.`,
-      commands: [
-        `${command} evidence new ${input.plan.slug}`,
-        `${command} verify`,
-        `${command} close ${input.plan.slug} --message "<what shipped>"`,
-      ],
-    };
+    return nextAction(
+      `All acceptance criteria are checked for ${input.plan.slug}: record and fill evidence, verify it, and close the slice.`,
+      `${command} evidence new ${input.plan.slug}`,
+      `${command} verify`,
+      `${command} close ${input.plan.slug} --message "<what shipped>"`,
+    );
   }
   if (input.backlogCount > 0) {
-    return {
-      action: `No active plan. Promote one of the ${input.backlogCount} backlog plan(s) or create a new one.`,
-      commands: [`${command} plan move <slug> --to active`, `${command} plan new <slug> --stage active`],
-    };
+    return nextAction(
+      `No active plan. Promote one of the ${input.backlogCount} backlog plan(s) or create a new one.`,
+      `${command} plan move <slug> --to active`, `${command} plan new <slug> --stage active`,
+    );
   }
-  return {
-    action: 'No active plan. Create the next bounded slice.',
-    commands: [`${command} plan new <slug> --stage active`],
-  };
+  return nextAction('No active plan. Create the next bounded slice.', `${command} plan new <slug> --stage active`);
 }
 
 function statusLine(input: { scaffoldPresent: boolean; missionDefined: boolean; plan: ResumeActivePlan | null; backlogCount: number }): string {
@@ -467,9 +456,7 @@ function renderAmbientCapture(summary: ResumeSummary, mode: 'full' | 'brief' | '
   if (ambient.status === 'requested-unavailable') {
     lines.push('Requested ambient session unavailable.');
   } else if (ambient.records.length > 0) {
-    for (const record of ambient.records.slice(0, mode === 'full' ? DEFAULT_AMBIENT_RECORD_LIMIT : 1)) {
-      lines.push(`- ${renderAmbientSummary(record, mode === 'full')}`);
-    }
+    lines.push(...ambient.records.slice(0, mode === 'full' ? DEFAULT_AMBIENT_RECORD_LIMIT : 1).map((record) => `- ${renderAmbientSummary(record, mode === 'full')}`));
     if (ambient.warnings.length > 0 && mode === 'full') lines.push(`- Warnings: ${ambient.warnings.slice(0, 3).join(' | ')}`);
   } else if (ambient.status === 'unavailable') {
     lines.push('Ambient capture records unavailable.');
@@ -479,57 +466,70 @@ function renderAmbientCapture(summary: ResumeSummary, mode: 'full' | 'brief' | '
 }
 
 function renderPacket(summary: ResumeSummary, extras: { missionText: string; verificationSteps: string[]; acCap: number; includeLessons: boolean; ambientMode: 'full' | 'brief' | 'none' }): string {
-  const lines: string[] = ['# Resume Packet', '', `Status: ${summary.status}`, ''];
-
-  lines.push('## Mission', '');
-  lines.push(summary.mission.defined ? (extras.missionText || 'Mission is defined in MISSION.md.') : 'Mission is not defined yet.');
-  lines.push('');
-
-  if (summary.active_plan) {
-    const plan = summary.active_plan;
-    lines.push(`## Active plan: ${plan.slug}`, '');
+  const plan = summary.active_plan;
+  const lines = ['# Resume Packet', '', `Status: ${summary.status}`, '', '## Mission', '',
+    summary.mission.defined ? (extras.missionText || 'Mission is defined in MISSION.md.') : 'Mission is not defined yet.', '',
+    ...(plan ? [`## Active plan: ${plan.slug}`, ''] : ['## Active plan', '', 'None.', ''])];
+  if (plan) {
     if (plan.goal) lines.push(`Goal: ${redactPacketText(plan.goal, 280)}`, '');
     const total = plan.acceptance_criteria.length;
     const checked = plan.acceptance_criteria.filter((item) => item.checked).length;
     lines.push(`Acceptance criteria (${checked}/${total} complete):`);
     const ordered = [...plan.acceptance_criteria.filter((item) => !item.checked), ...plan.acceptance_criteria.filter((item) => item.checked)];
-    for (const item of ordered.slice(0, extras.acCap)) {
-      lines.push(`- [${item.checked ? 'x' : ' '}] ${redactPacketText(item.text, 200)}`);
-    }
+    lines.push(...ordered.slice(0, extras.acCap).map((item) => `- [${item.checked ? 'x' : ' '}] ${redactPacketText(item.text, 200)}`));
     if (ordered.length > extras.acCap) lines.push(`- (+${ordered.length - extras.acCap} more in the plan file)`);
     if (summary.amendments.count > 0) lines.push('', `Amendments (read in order after the plan): ${summary.amendments.ids.join(', ')}`);
     if (summary.other_active_plans.length) lines.push('', `Also active: ${summary.other_active_plans.join(', ')}`);
     lines.push('');
-  } else {
-    lines.push('## Active plan', '', 'None.', '');
   }
 
-  if (summary.latest_run) {
-    const run = summary.latest_run;
-    lines.push('## Latest run', '');
-    lines.push(`${run.run_id} — ${run.state}; ${run.pending_gates} pending gate(s)`);
-    if (summary.repair_hypothesis) lines.push(`Repair hypothesis: ${summary.repair_hypothesis}`);
-    lines.push('');
-  }
+  const run = summary.latest_run;
+  if (run) lines.push('## Latest run', '', `${run.run_id} — ${run.state}; ${run.pending_gates} pending gate(s)`,
+    ...(summary.repair_hypothesis ? [`Repair hypothesis: ${summary.repair_hypothesis}`] : []), '');
 
   lines.push(...renderAmbientCapture(summary, extras.ambientMode));
 
-  if (extras.includeLessons && summary.lessons.count > 0) {
-    lines.push(`## Lessons to inherit (${summary.lessons.count})`, '');
-    for (const slug of summary.lessons.slugs.slice(0, 5)) lines.push(`- .osc/improvements/applied/${slug}.md`);
-    lines.push('');
-  }
+  if (extras.includeLessons && summary.lessons.count > 0) lines.push(
+    `## Lessons to inherit (${summary.lessons.count})`, '', ...summary.lessons.slugs.slice(0, 5).map((slug) => `- .osc/improvements/applied/${slug}.md`), '');
 
-  lines.push('## Next actions', '');
-  lines.push(`1. ${summary.next_bounded_action}`);
-  let step = 2;
-  for (const command of summary.next_commands.slice(0, 4)) {
-    lines.push(`${step}. \`${command}\``);
-    step += 1;
+  return finishPacket([...lines, ...nextActionLines(summary.next_bounded_action, summary.next_commands.slice(0, 4))]);
+}
+
+function nextActionLines(action: string, commands: string[]): string[] {
+  return ['## Next actions', '', `1. ${action}`, ...commands.map((command, index) => `${index + 2}. \`${command}\``), ''];
+}
+
+function finishPacket(lines: string[]): string {
+  return [...lines, 'Boundary: read-only packet compiled from repo truth. It is not approval and grants no merge, publish, release, or spawn authority.', ''].join('\n');
+}
+
+function renderCompactPacket(summary: ResumeSummary, maxChars: number): string {
+  const plan = summary.active_plan;
+  const status = summary.status.replace(/^active plan .+; (\d+\/\d+) acceptance criteria complete$/, 'active plan; $1 complete');
+  const lines = ['# Resume Packet', '', `Status: ${status}`, '',
+    ...(plan ? [`## Active plan: ${plan.slug}`, ''] : ['## Active plan', '', 'None.', ''])];
+  if (summary.latest_run) {
+    const run = summary.latest_run;
+    const state = redactPacketText(run.state.replace(/[\u0000-\u001f\u007f-\u009f]/g, ' '), 24, 'unknown');
+    lines.push(`Run: ${state}; ${run.pending_gates} pending gate(s).`, '');
   }
-  lines.push('');
-  lines.push('Boundary: read-only packet compiled from repo truth. It is not approval and grants no merge, publish, release, or spawn authority.');
-  return `${lines.join('\n')}\n`;
+  if (summary.ambient_capture.status === 'requested-unavailable') lines.push('Requested ambient session unavailable.', '');
+  const placeholder = 'Action details omitted; see --json.';
+  let action = placeholder;
+  // Reserve the first whole command before expanding the action prose.
+  const commands = summary.next_commands.slice(0, 1);
+  const render = () => finishPacket([...lines, ...nextActionLines(action, commands), 'Details/commands omitted; see --json.', '']);
+  if (render().length > maxChars) commands.pop();
+  action = summary.next_bounded_action;
+  if (render().length > maxChars) action = placeholder;
+  for (const command of commands.length ? summary.next_commands.slice(1, 4) : []) {
+    commands.push(command);
+    if (render().length > maxChars) {
+      commands.pop();
+      break;
+    }
+  }
+  return render();
 }
 
 function compileHasRealScaffold(root: string): boolean {
@@ -630,7 +630,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
   let packet = renderPacket(summary, { missionText, verificationSteps, acCap: 8, includeLessons: true, ambientMode: 'full' });
   if (packet.length > maxChars) packet = renderPacket(summary, { missionText, verificationSteps, acCap: 5, includeLessons: false, ambientMode: 'brief' });
   if (packet.length > maxChars) packet = renderPacket(summary, { missionText, verificationSteps, acCap: 5, includeLessons: false, ambientMode: 'none' });
-  if (packet.length > maxChars) packet = `${packet.slice(0, maxChars - 2).trimEnd()}…\n`;
+  if (packet.length > maxChars) packet = renderCompactPacket(summary, maxChars);
 
   return { summary, packet };
 }
