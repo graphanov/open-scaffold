@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -27,11 +27,11 @@ The unfinished-work warning recognizes the standalone word pending without flagg
 
 ## Acceptance criteria
 
-- [ ] Release notes recording closure and only embedded occurrences such as pending_gates, pending_gate_ids or depending do not produce release_note.pending_after_close.
-- [ ] Standalone pending, mixed-case PENDING and punctuation-adjacent pending still produce the same warning when closure evidence exists; absent closure evidence does not trigger it.
-- [ ] Live parser diagnostics and historical characterization pass without any fixture/golden edits; all unrelated warning behavior remains unchanged.
-- [ ] Only the three admitted paths change after writer admission; maintained source remains within the unchanged 16866-line/41-file cap and the owner's exact README restoration is preserved.
-- [ ] Failed-first regression, unchanged committed-head strict/build/full verification and fresh independent review precede public effects.
+- [x] Release notes recording closure and only embedded occurrences such as pending_gates, pending_gate_ids or depending do not produce release_note.pending_after_close. | Evidence: .osc/releases/2026-10-08-191-evidence-pending-token.md
+- [x] Standalone pending, mixed-case PENDING and punctuation-adjacent pending still produce the same warning when closure evidence exists; absent closure evidence does not trigger it. | Evidence: .osc/releases/2026-10-08-191-evidence-pending-token.md
+- [x] Live parser diagnostics and historical characterization pass without any fixture/golden edits; all unrelated warning behavior remains unchanged. | Evidence: .osc/releases/2026-10-08-191-evidence-pending-token.md
+- [x] Only the three admitted paths change after writer admission; maintained source remains within the unchanged 16866-line/41-file cap and the owner's exact README restoration is preserved. | Evidence: .osc/releases/2026-10-08-191-evidence-pending-token.md
+- [x] Failed-first regression, unchanged committed-head strict/build/full verification and fresh independent review precede public effects. | Evidence: .osc/releases/2026-10-08-191-evidence-pending-token.md
 
 ## Verification steps
 

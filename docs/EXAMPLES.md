@@ -12,50 +12,40 @@ Run the smoke:
 npm run smoke:e2e
 ```
 
-## 60-second viewer demo
+## Linked-record viewer
 
-This is a reading path, not a setup script. A fresh viewer should be able to scan it in under a minute and see the whole loop.
+Run these three read-only commands from the Open Scaffold source-checkout root. They need no CLI installation or build. The example paths belong to this checkout; an initialized downstream project does not contain them.
 
-### 0–10s — Mission
+This is a committed synthetic work record: one mission, a done bootstrap plan, and the evidence note linked to that plan.
 
-Open the project mission:
-
-```bash
-sed -n '1,80p' MISSION.md
-```
-
-The mission says what the project is, what it should achieve, and what it must not become.
-
-### 10–25s — Plan
-
-Open one active plan:
+### Mission
 
 ```bash
-find .osc/plans/active -maxdepth 1 -type f -name '*.md' | head -1 | xargs sed -n '1,120p'
+sed -n '1,80p' examples/resume-demo/MISSION.md
 ```
 
-A plan names the goal, constraints, files to touch, acceptance criteria, verification steps, and open questions.
+The mission defines the greeting demo and its goals and non-goals.
 
-### 25–40s — Verification
-
-Run the methodology check:
+### Done plan
 
 ```bash
-./verify.sh --standard
+sed -n '1,120p' examples/resume-demo/.osc/plans/done/scaffold-init.md
 ```
 
-This proves the mission exists, plans are present, amendments are ordered, release/evidence notes have required fields, and active plans are not obviously stale.
+The plan records the bootstrap goal, constraints, three checked acceptance criteria, and verification steps.
 
-### 40–60s — Evidence/status
-
-Inspect the latest release or evidence note:
+### Linked evidence
 
 ```bash
-find .osc/releases -maxdepth 1 -type f -name '*.md' | sort | tail -1 | xargs sed -n '1,120p'
+sed -n '1,120p' examples/resume-demo/.osc/releases/2026-05-10-scaffold-init.md
 ```
 
-That note should connect the work back to a plan, run or task identity, verification, outcome, and follow-up.
+The note's Plan line points to the displayed done plan. Read its recorded **Verification**, **Outcome**, and **Follow-up**: bootstrap checks are recorded as successful, and the next slice is `demo-add-greeting`. No run packet is linked.
 
-## What this shows
+These are historical sample results, not certification of the current checkout. The checked stage-folder criterion includes `backlog` and `blocked`, but those empty directories are absent from the committed fixture.
 
-Open Scaffold is not trying to hide complexity behind a magic agent. It gives the human and the agent the same source of truth: mission, plan, verification, evidence, and next step, all in the repo.
+## Continue your own active work
+
+Follow [START_HERE's session-to-session handoff](START_HERE.md#your-first-session-to-session-handoff) and the [resume walkthrough](RESUME_WALKTHROUGH.md) for the invocation appropriate to your setup. Choose an exact active slug, then use `handoff --plan <slug>` and `trace <slug>` with that same slug. Read the selected plan, its amendments, and only the evidence trace binds to it.
+
+Missing evidence or a missing run is a valid recorded state. The fixture's active `demo-add-greeting` plan has no matching evidence note; the `scaffold-init` note above belongs to a different, done plan. Keep the absence visible instead of substituting the latest repository-wide note.

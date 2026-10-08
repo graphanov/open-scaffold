@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { basename, join, relative, resolve } from 'node:path';
+import { buildTrace } from '../src/trace.js';
 
 const repoRoot = resolve(process.cwd());
 
@@ -9,6 +11,64 @@ function read(path: string): string {
 }
 
 describe('first-run documentation truth', () => {
+  it('follows the examples-index viewer link, reads its files and traces exactly its plan and evidence', () => {
+    const link = read('docs/examples/README.md')
+      .match(/\[[^\]\n]*viewer[^\]\n]*\]\(([^#\s)]+)#([^)\s]+)\)/i);
+    expect(link, 'examples-index viewer link').not.toBeNull();
+    const viewerPath = resolve(repoRoot, 'docs/examples', link![1]);
+    // Validate the named source target before reading a path parsed from Markdown.
+    expect(viewerPath).toBe(join(repoRoot, 'docs/EXAMPLES.md'));
+    const viewer = readFileSync(viewerPath, 'utf8').split(/^## /m)
+      .find((section) => section.split('\n')[0].toLowerCase().replace(/ /g, '-') === link![2]);
+    expect(viewer, `viewer heading target: ${link![0]}`).toBeDefined();
+    expect(viewer!.split('\n')[0]).toBe('Linked-record viewer');
+    const commands = [...viewer!.matchAll(/```bash\n([\s\S]*?)```/g)]
+      .map((match) => match[1].trim());
+    const paths = [
+      'examples/resume-demo/MISSION.md',
+      'examples/resume-demo/.osc/plans/done/scaffold-init.md',
+      'examples/resume-demo/.osc/releases/2026-05-10-scaffold-init.md',
+    ];
+    const outputs = paths.map((path, index) => {
+      const command = commands[index] ?? '';
+      // Execute only a literal sed read; documentation cannot introduce shell effects.
+      const args = command.match(/^sed -n '(1,\d+)p' ([A-Za-z0-9._/-]+)$/);
+      expect(args, `safe file read: ${command}`).not.toBeNull();
+      expect(args![2], command).toBe(path);
+      const result = spawnSync('sed', ['-n', `${args![1]}p`, args![2]], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+      });
+      expect(result.status, command).toBe(0);
+      expect(result.stderr, command).toBe('');
+      expect(result.stdout, command).toBe(read(path));
+      return result.stdout;
+    });
+    expect(commands).toHaveLength(paths.length);
+
+    const fixtureRoot = join(repoRoot, 'examples/resume-demo');
+    const shownPlan = relative(fixtureRoot, join(repoRoot, paths[1])).split('\\').join('/');
+    const shownNote = relative(fixtureRoot, join(repoRoot, paths[2])).split('\\').join('/');
+    const trace = buildTrace(fixtureRoot, basename(shownPlan, '.md'));
+    expect(trace.plan).toMatchObject({ path: shownPlan, stage: 'done', status: 'done' });
+    expect(outputs[2].match(/^- Plan: (.+)$/m)?.[1]).toBe(shownPlan);
+    expect(trace.links.filter((link) => link.type === 'release_note')).toMatchObject([
+      { status: 'local', reference: shownNote },
+    ]);
+    expect(trace.links.filter((link) => link.type === 'run_packet')).toMatchObject([
+      { status: 'missing' },
+    ]);
+    expect(trace.summary).toMatchObject({ release_notes: 1, runs: 0 });
+    for (const section of ['Verification', 'Outcome', 'Follow-up']) {
+      expect(outputs[2]).toContain(`## ${section}\n`);
+    }
+    const activeTrace = buildTrace(fixtureRoot, 'demo-add-greeting');
+    expect(activeTrace.links.filter((link) => link.type === 'release_note')).toMatchObject([
+      { status: 'missing' },
+    ]);
+    expect(activeTrace.summary.release_notes).toBe(0);
+  });
+
   it('advertises the published guided first-run as the default adoption path', () => {
     expect(read('README.md')).toContain('npx open-scaffold@latest first-run');
     expect(read('docs/START_HERE.md')).toContain('npx open-scaffold@latest first-run');
