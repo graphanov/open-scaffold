@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -31,11 +31,11 @@ Pending-gate handoff guides the next agent to its existing selected-plan evidenc
 
 ## Acceptance criteria
 
-- [ ] Pending-gate selected-plan handoff with safe existing evidence names inspection material and omits duplicate creation; primary trace and gate identity/count/precedence/unresolved status remain intact.
-- [ ] Pending no-note handoff keeps trace then creation, and gate-free completed evidence guidance retains198behavior; no note body or fabricated approval resolves the gate.
-- [ ] Meaningful real implementation/CLI regressions fail on baseline and pass on candidate, with record byte preservation, invocation/alias, redaction, safety and packet-budget controls.
-- [ ] Only admitted paths change; exact readable metric growth stays within intent, with roots/algorithm/baseline/filecap and excluded source/templates/workflows/README/frozen definitions/canonical drafts preserved or explicitly unknown.
-- [ ] Independent committed-head strict/build/full verification and fresh complete publication review/current CI precede authorized delivery/readback/release and factual closeout.
+- [x] Pending-gate selected-plan handoff with safe existing evidence names inspection material and omits duplicate creation; primary trace and gate identity/count/precedence/unresolved status remain intact. | Evidence: .osc/releases/2026-10-08-199-pending-gate-existing-evidence.md
+- [x] Pending no-note handoff keeps trace then creation, and gate-free completed evidence guidance retains198behavior; no note body or fabricated approval resolves the gate. | Evidence: .osc/releases/2026-10-08-199-pending-gate-existing-evidence.md
+- [x] Meaningful real implementation/CLI regressions fail on baseline and pass on candidate, with record byte preservation, invocation/alias, redaction, safety and packet-budget controls. | Evidence: .osc/releases/2026-10-08-199-pending-gate-existing-evidence.md
+- [x] Only admitted paths change; exact readable metric growth stays within intent, with roots/algorithm/baseline/filecap and excluded source/templates/workflows/README/frozen definitions/canonical drafts preserved or explicitly unknown. | Evidence: .osc/releases/2026-10-08-199-pending-gate-existing-evidence.md
+- [x] Independent committed-head strict/build/full verification and fresh complete publication review/current CI precede authorized delivery/readback/release and factual closeout. | Evidence: .osc/releases/2026-10-08-199-pending-gate-existing-evidence.md
 
 ## Verification steps
 

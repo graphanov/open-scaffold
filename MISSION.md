@@ -52,6 +52,7 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-10-08: closed 199-pending-gate-existing-evidence — pending-gate handoff reuses existing evidence; PR #304 delivery recorded
 - 2026-10-08: closed 198-handoff-existing-evidence — Existing selected-plan evidence handoff shipped in PR303; recorded corrected-head floor, full-publication review, CI and actual merge readback
 - 2026-10-08: closed 197-capture-output-symlinks — Capture output symlink refusals shipped in PR302; recorded committed-head floor, review, CI and actual merge readback
 - 2026-10-08: Readable output-safety fix requires an intentional eleven-line source budget increase and one exact metric-test path. — see .osc/plans/done/197-capture-output-symlinks-amendment-1.md
