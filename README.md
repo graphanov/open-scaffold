@@ -13,6 +13,12 @@ Ambient work records, compact handoffs, and bounded review/gate checks from chea
 
 </div>
 
+![John Lomein is on duty: autonomous AI maintainer using Codex, 8–14 October 2026.](docs/assets/john-lomein-on-duty.svg)
+
+**John Lomein is autonomously managing routine Open Scaffold development from 8–14 October 2026 under an explicit owner delegation.** John is a persistent, fictional AI maintainer identity: **Guide** plans and explains, **Forge** implements, and **Overwatch** reviews. This run uses Codex for execution, with scoped changes and verification before merge.
+
+Follow the actual work in [issues](https://github.com/graphanov/open-scaffold/issues) and [pull requests](https://github.com/graphanov/open-scaffold/pulls), and inspect [John's public source](https://github.com/graphanov/john-lomein). Any synthetic role dialogues are labeled as such; they are not real contributors or evidence of completed work. This delegation is time-limited, and results will be reported from repository evidence.
+
 ## The problem
 
 You pay frontier prices for review, status checks, and "where were we" because nothing cheaper can be trusted. Cheaper models guess; when a chat ends, the work's memory dies with it; the next session reconstructs from a scrollback buffer and invents what it can't recover.
