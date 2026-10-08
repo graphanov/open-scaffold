@@ -234,7 +234,8 @@ FENCE_OPEN='^(`{3,}|~{3,})'
 FENCE_CLOSE='^(`{3,}|~{3,})[[:blank:]]*$'
 HEADING='^##[[:blank:]]+[^[:blank:]]'
 CHANGELOG_HEADING='^##[[:blank:]]+Changelog([[:blank:]]+#+[[:blank:]]*|[[:blank:]]*)$'
-TARGET='^(- [0-9]{4}-[0-9]{2}-[0-9]{2}: .* — see )(\.osc/plans/((active|backlog|blocked)/)?([^/[:space:]]+\.md))([[:blank:]]*)$'
+POSIX_TARGET='^(- [0-9]{4}-[0-9]{2}-[0-9]{2}: .* — see )(\.osc/plans/((active|backlog|blocked)/)?([^/[:space:]]+\.md))([[:blank:]]*)$'
+WINDOWS_TARGET='^(- [0-9]{4}-[0-9]{2}-[0-9]{2}: .* — see )(\.osc\\plans\\((active|backlog|blocked)\\)?([^/\\[:space:]]+\.md))([[:blank:]]*)$'
 while true; do
   if IFS= read -r line; then
     ENDING=$'\n'
@@ -264,13 +265,20 @@ while true; do
     if [[ "$LOGICAL_LINE" =~ $CHANGELOG_HEADING ]]; then
       IN_CHANGELOG=true
     fi
-  elif [ "$IN_CHANGELOG" = true ] && [[ "$LOGICAL_LINE" =~ $TARGET ]]; then
+  elif [ "$IN_CHANGELOG" = true ] && { [[ "$LOGICAL_LINE" =~ $POSIX_TARGET ]] || [[ "$LOGICAL_LINE" =~ $WINDOWS_TARGET ]]; }; then
     PREFIX=${BASH_REMATCH[1]}
     OLD_PATH=${BASH_REMATCH[2]}
+    NORMALIZED_PATH=$OLD_PATH
+    if [[ "$OLD_PATH" == '.osc\plans\'* ]]; then
+      NORMALIZED_PATH=${OLD_PATH//\\/\/}
+    fi
     FILENAME=${BASH_REMATCH[5]}
     SUFFIX=${BASH_REMATCH[6]}
     for f in "${MOVED_FILES[@]}"; do
-      if [ "$FILENAME" = "$f" ] && [ ! -e "$ROOT/$OLD_PATH" ] && [ ! -L "$ROOT/$OLD_PATH" ] && [ -f "$DONE_DIR/$f" ] && [ ! -L "$DONE_DIR/$f" ]; then
+      if [ "$FILENAME" = "$f" ] &&
+         [ ! -e "$ROOT/$OLD_PATH" ] && [ ! -L "$ROOT/$OLD_PATH" ] &&
+         [ ! -e "$ROOT/$NORMALIZED_PATH" ] && [ ! -L "$ROOT/$NORMALIZED_PATH" ] &&
+         [ -f "$DONE_DIR/$f" ] && [ ! -L "$DONE_DIR/$f" ]; then
         line="${PREFIX}.osc/plans/done/${f}${SUFFIX}"
         line="${line}${CR_SUFFIX}"
         RETARGETED=true

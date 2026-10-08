@@ -415,3 +415,106 @@ describe('shell refuses incomplete historical staging within partial-close bound
     });
   });
 });
+
+
+describe('Windows helper navigation portable close', () => {
+  it('repairs uniform terminal fields for actual moved regular files and preserves other raw history', () => {
+    withShellNavigation('prior-stage', (root, oldPath, amendment, parent) => {
+      const name = `${slug}-amendment-1.md`;
+      const windows = (path: string) => path.replace(/\//g, '\\');
+      const paths = ['active/', 'backlog/', 'blocked/', ''].map((stage) => windows(`.osc/plans/${stage}${name}`));
+      const link = `${slug}-amendment-2.md`;
+      const directory = `${slug}-amendment-3.md`;
+      writeFileSync(join(root, 'target.md'), 'Target remains.\n');
+      symlinkSync(join(root, 'target.md'), join(root, `.osc/plans/blocked/${link}`));
+      mkdirSync(join(root, `.osc/plans/blocked/${directory}`));
+      const rows = [oldPath, ...paths].map((path, index) => `- 2026-10-02: History ${index} — see ${path}\t  `);
+      const rejected = [
+        `.osc/plans\\active\\${name}`, `.osc\\plans/active\\${name}`, `.osc\\plans\\active/${name}`,
+        `C:\\${paths[0]}`, `\\\\host\\${paths[0]}`, `/${oldPath}`, `.osc\\plans\\..\\${name}`,
+        `.osc\\plans\\active\\002-unmoved.md`, `.osc/plans/active/${slug}-amendment-1\\literal.md`,
+        windows(`.osc/plans/blocked/${link}`), windows(`.osc/plans/blocked/${directory}`),
+      ].map((path) => `- 2026-10-03: Excluded — see ${path}`);
+      rejected.push(`- 2026-10-03: Inline — see \`${paths[0]}\``, `- 2026-10-03: Suffix — see ${paths[0]}#detail`, `- 2026-10-03: URL — see https://example.invalid/${paths[0]}`);
+      const fenced = `- 2026-10-01: Fenced or outside — see ${paths[0]}`;
+      const before = ['# Mission', 'Fixture.', fenced, '~~~~markdown', '## Changelog', fenced, '~~~~~',
+        '## Changelog ###', anchor, '## \t  ', ...rows, ...rejected,
+        '````markdown', fenced, '```', fenced, '`````', '## Later', fenced].join('\r\n');
+      writeFileSync(join(root, 'MISSION.md'), before);
+      let expected = before;
+      for (const row of rows) expected = expected.replace(row, row.replace(/ — see .*?(?=[\t ]*$)/, ` — see .osc/plans/done/${name}`));
+      const result = close(root, '--message', '  win shipped  ');
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain(`Moved to done/: ${slug}.md ${name} ${link}`);
+      expect(existsSync(join(root, `.osc/plans/blocked/${directory}`))).toBe(true);
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(expected.replace(`${anchor}\r\n`, `${anchor}\r\n- ${shellDate()}: closed ${slug} —   win shipped  \n`));
+      expect(readFileSync(join(root, `.osc/plans/done/${name}`), 'utf8')).toBe(amendment);
+      expect(readFileSync(join(root, `.osc/plans/done/${slug}.md`), 'utf8')).toBe(parent.replace(/^(active|backlog|blocked)$/m, 'done'));
+      const after = readFileSync(join(root, 'MISSION.md'), 'utf8');
+      expect(close(root, '--message', 'repeat').status).toBe(0);
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(after);
+    });
+  });
+
+  it('preserves Windows aliases and repairs an actual moved POSIX literal filename despite an unrelated normalized nested alias', () => {
+    withShellNavigation('active', (root, oldPath) => {
+      const rows = [`- 2026-10-02: Regular — see ${oldPath.replace(/\//g, '\\')}\t  `];
+      for (const [index, kind] of ['file', 'directory', 'dangling', 'file', 'directory', 'dangling'].entries()) {
+        const name = `${slug}-amendment-${index + 2}.md`;
+        writeFileSync(join(root, `.osc/plans/active/${name}`), `Amendment ${index + 2}.\n`);
+        const path = `.osc\\plans\\backlog\\${name}`;
+        const alias = join(root, index < 3 ? path : path.replace(/\\/g, '/'));
+        if (kind === 'directory') mkdirSync(alias);
+        else if (kind === 'dangling') symlinkSync('absent.md', alias);
+        else writeFileSync(alias, 'Surviving entry.\n');
+        rows.push(`- 2026-10-03: ${kind} alias ${index} — see ${path}\t  `);
+      }
+      const literal = `.osc/plans/active/${slug}-amendment-8\\literal.md`;
+      writeFileSync(join(root, literal), 'Literal POSIX filename.\n');
+      rows.push(`- 2026-10-03: Literal — see ${literal}\t  `);
+      const nestedAlias = literal.replace(/\\/g, '/');
+      mkdirSync(join(root, nestedAlias, '..'));
+      writeFileSync(join(root, nestedAlias), 'Unrelated nested POSIX entry.\n');
+      const unrelated = '.osc/plans/active/002-unrelated\\literal.md';
+      writeFileSync(join(root, unrelated), 'Unrelated literal filename.\n');
+      rows.push(`- 2026-10-03: Unrelated — see ${unrelated}\t  `);
+      const before = ['# Mission', 'Fixture.', '## Changelog', ...rows].join('\n');
+      const object = installMissionObject(root, before, 'symlink', 0o755);
+      const repaired = before.replace(rows[0], rows[0].replace(oldPath.replace(/\//g, '\\'), `.osc/plans/done/${slug}-amendment-1.md`))
+        .replace(literal, `.osc/plans/done/${slug}-amendment-8\\literal.md`);
+      const result = close(root);
+      expect(result.status, result.stderr).toBe(0);
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(`${repaired}\n- ${shellDate()}: closed ${slug}\n`);
+      expect(readFileSync(join(root, `.osc/plans/done/${slug}-amendment-8\\literal.md`), 'utf8')).toBe('Literal POSIX filename.\n');
+      expect(result.stdout).toContain(`Moved to done/: ${slug}.md ${slug}-amendment-1.md ${slug}-amendment-2.md ${slug}-amendment-3.md ${slug}-amendment-4.md ${slug}-amendment-5.md ${slug}-amendment-6.md ${slug}-amendment-7.md ${slug}-amendment-8\\literal.md\n`);
+      expect(readFileSync(join(root, nestedAlias), 'utf8')).toBe('Unrelated nested POSIX entry.\n');
+      expect(readFileSync(join(root, unrelated), 'utf8')).toBe('Unrelated literal filename.\n');
+      assertMissionIdentity(object, 'symlink', 0o755);
+      const after = readFileSync(join(root, 'MISSION.md'));
+      expect(close(root).status).toBe(0);
+      expect(readFileSync(join(root, 'MISSION.md'))).toEqual(after);
+      assertMissionIdentity(object, 'symlink', 0o755);
+    });
+  });
+
+  it.each(['file', 'directory', 'dangling'])('preserves a surviving raw POSIX literal filename alias of kind %s', (kind) => {
+    withShellNavigation('active', (root) => {
+      const name = `${slug}-amendment-9\\literal.md`;
+      const old = `.osc/plans/backlog/${name}`;
+      writeFileSync(join(root, `.osc/plans/active/${name}`), 'Actual moved literal filename.\n');
+      if (kind === 'directory') mkdirSync(join(root, old));
+      else if (kind === 'dangling') symlinkSync('absent.md', join(root, old));
+      else writeFileSync(join(root, old), 'Surviving raw POSIX alias.\n');
+      const before = `# Mission\nFixture.\n## Changelog\n${anchor}\n- 2026-10-03: Raw alias — see ${old}\t  `;
+      writeFileSync(join(root, 'MISSION.md'), before);
+      const result = close(root);
+      expect(result.status, result.stderr).toBe(0);
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(before.replace(`${anchor}\n`, `${anchor}\n- ${shellDate()}: closed ${slug}\n`));
+      expect(readFileSync(join(root, `.osc/plans/done/${name}`), 'utf8')).toBe('Actual moved literal filename.\n');
+      const entry = lstatSync(join(root, old));
+      expect([entry.isFile(), entry.isDirectory(), entry.isSymbolicLink()]).toEqual([kind === 'file', kind === 'directory', kind === 'dangling']);
+      if (kind === 'file') expect(readFileSync(join(root, old), 'utf8')).toBe('Surviving raw POSIX alias.\n');
+      if (kind === 'dangling') expect(readlinkSync(join(root, old))).toBe('absent.md');
+    });
+  });
+});
