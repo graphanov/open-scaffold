@@ -204,7 +204,12 @@ function dedupeLinks(links: TraceLink[]): TraceLink[] {
   });
 }
 
-function planMatchesRun(planSlug: string, run: unknown): { matches: boolean; runId?: string } {
+function planMatchesRun(planSlug: string, run: unknown): {
+  matches: boolean;
+  runId?: string;
+  conflicting?: boolean;
+  mentionsIdentity?: boolean;
+} {
   if (!run || typeof run !== 'object') return { matches: false };
   const record = run as Record<string, unknown>;
   const rawPlan = record.plan;
@@ -212,8 +217,17 @@ function planMatchesRun(planSlug: string, run: unknown): { matches: boolean; run
   if (typeof rawPlan === 'string') return { matches: rawPlan === planSlug, runId };
   if (rawPlan && typeof rawPlan === 'object') {
     const plan = rawPlan as Record<string, unknown>;
+    const pathSlug = typeof plan.path === 'string' ? basename(plan.path, extname(plan.path)) : undefined;
+    if (plan.slug !== undefined && pathSlug !== undefined && plan.slug !== pathSlug) {
+      return {
+        matches: false,
+        runId,
+        conflicting: true,
+        mentionsIdentity: plan.slug === planSlug || pathSlug === planSlug,
+      };
+    }
     if (plan.slug === planSlug) return { matches: true, runId };
-    if (typeof plan.path === 'string' && basename(plan.path, extname(plan.path)) === planSlug) return { matches: true, runId };
+    if (pathSlug === planSlug) return { matches: true, runId };
   }
   return { matches: false, runId };
 }
@@ -230,11 +244,22 @@ function collectRunLinks(root: string, planSlug: string, options: Required<Trace
     try {
       const parsed = JSON.parse(text) as unknown;
       const match = planMatchesRun(planSlug, parsed);
+      if (match.conflicting) {
+        warnings.push({
+          code: 'conflicting_run_plan_identity',
+          message: 'Run packet plan slug and path disagree; excluded from local plan links and external references.',
+          path: rel,
+        });
+      }
       if (match.matches) {
         links.push({ type: 'run_packet', status: 'local', reference: rel, detail: 'Run packet references this plan.', run_id: match.runId ?? entry.name });
         links.push(...extractExternalRefs(text, rel));
-      } else if (options.includeUnverified && containsExactToken(text, planSlug)) {
-        links.push({ type: 'run_packet', status: 'unverified', reference: rel, detail: 'Run packet mentions the plan slug but does not expose a canonical plan slug/path.', run_id: match.runId ?? entry.name });
+      } else if (options.includeUnverified && (match.mentionsIdentity || containsExactToken(text, planSlug))) {
+        links.push({ type: 'run_packet', status: 'unverified', reference: rel,
+          detail: match.conflicting
+            ? 'Run packet contains conflicting plan slug/path identities; association with this plan is unverified.'
+            : 'Run packet mentions the plan slug but does not expose a canonical plan slug/path.',
+          run_id: match.runId ?? entry.name });
       }
     } catch {
       warnings.push({ code: 'unreadable_run_packet', message: 'Run packet is not valid JSON.', path: rel });

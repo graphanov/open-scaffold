@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { buildTrace, formatTraceReport } from '../src/trace.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
-const tsx = join(repoRoot, 'node_modules/.bin/tsx');
+const loader = join(repoRoot, 'node_modules/tsx/dist/loader.mjs');
 const cli = join(repoRoot, 'src/cli.ts');
 
 function tempRepo(prefix = 'osc-trace-') {
@@ -98,10 +98,122 @@ Approved fixture.
 }
 
 function runCli(root: string, args: string[]) {
-  return spawnSync(tsx, [cli, ...args], { cwd: root, encoding: 'utf8' });
+  return spawnSync(process.execPath, ['--import', loader, cli, ...args], { cwd: root, encoding: 'utf8' });
+}
+
+function competingRuns() {
+  const root = tempRepo();
+  writePlan(root, 'active', '001-repair-a');
+  writePlan(root, 'active', '002-review-b');
+  writeRun(root, '001-repair-a', 'failed-a');
+  writeRun(root, '001-repair-a', 'retry-a');
+  const runId = writeRun(root, '002-review-b', 'competing-b');
+  const path = join(root, '.osc/runs', runId, 'run.json');
+  const packet = JSON.parse(readFileSync(path, 'utf8'));
+  packet.taskId = 'opaque-task-b';
+  packet.bindings = {
+    githubPr: 'https://github.com/example/repo/pull/902',
+    githubIssue: 'https://github.com/example/repo/issues/903',
+  };
+  const clean = JSON.stringify(packet, null, 2);
+  writeFileSync(path, clean);
+  packet.plan.slug = '001-repair-a';
+  return { root, path, clean, conflict: JSON.stringify(packet, null, 2) };
 }
 
 describe('trace work-record replay', () => {
+  it('excludes a single-field plan identity conflict from both API queries and restores the control', () => {
+    const fixture = competingRuns();
+    const before = ['001-repair-a', '002-review-b'].map((slug) => buildTrace(fixture.root, slug));
+    expect(before.map((report) => report.summary.runs)).toEqual([2, 1]);
+    expect(before[1].summary.external_refs).toBe(2);
+    writeFileSync(fixture.path, fixture.conflict);
+
+    for (const slug of ['001-repair-a', '002-review-b']) {
+      const report = buildTrace(fixture.root, slug);
+      expect(report.summary.runs).toBe(slug === '001-repair-a' ? 2 : 0);
+      expect(report.links.some((link) => link.run_id === 'competing-b')).toBe(false);
+      expect(report.summary.external_refs).toBe(0);
+      expect(report.warnings).toContainEqual(expect.objectContaining({ code: 'conflicting_run_plan_identity', path: '.osc/runs/competing-b/run.json' }));
+      const unverified = buildTrace(fixture.root, slug, { includeUnverified: true });
+      expect(unverified.links).toContainEqual(expect.objectContaining({ type: 'run_packet', status: 'unverified', run_id: 'competing-b', detail: expect.stringContaining('conflicting') }));
+      expect(unverified.summary.external_refs).toBe(0);
+      expect(formatTraceReport(unverified)).toContain('Structural-only warning:');
+      expect(formatTraceReport(unverified)).toContain('conflicting_run_plan_identity');
+    }
+    expect(readFileSync(fixture.path, 'utf8')).toBe(fixture.conflict);
+    writeFileSync(fixture.path, fixture.clean);
+    expect(['001-repair-a', '002-review-b'].map((slug) => buildTrace(fixture.root, slug))).toEqual(before);
+  });
+
+  it('excludes a single-field plan identity conflict from both CLI queries and restores the control', () => {
+    const fixture = competingRuns();
+    const read = (slug: string, extra: string[] = []) => {
+      const result = runCli(fixture.root, ['trace', slug, '--json', ...extra]);
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      return JSON.parse(result.stdout);
+    };
+    const before = ['001-repair-a', '002-review-b'].map((slug) => read(slug));
+    writeFileSync(fixture.path, fixture.conflict);
+    for (const slug of ['001-repair-a', '002-review-b']) {
+      const report = read(slug);
+      expect(report.schema).toBe('open-scaffold.trace.v1');
+      expect(report.summary.runs).toBe(slug === '001-repair-a' ? 2 : 0);
+      expect(report.links.some((link: { run_id?: string }) => link.run_id === 'competing-b')).toBe(false);
+      expect(report.summary.external_refs).toBe(0);
+      expect(report.warnings.map((warning: { code: string }) => warning.code)).toContain('conflicting_run_plan_identity');
+      const unverified = read(slug, ['--include-unverified']);
+      expect(unverified.links).toContainEqual(expect.objectContaining({ type: 'run_packet', status: 'unverified', run_id: 'competing-b' }));
+      expect(unverified.summary.external_refs).toBe(0);
+    }
+    expect(readFileSync(fixture.path, 'utf8')).toBe(fixture.conflict);
+    writeFileSync(fixture.path, fixture.clean);
+    expect(['001-repair-a', '002-review-b'].map((slug) => read(slug))).toEqual(before);
+  });
+
+  it.each([
+    ['legacy string', '010-compatible'],
+    ['slug only', { slug: '010-compatible' }],
+    ['path only', { path: '.osc/plans/backlog/010-compatible.md' }],
+    ['previous stage', { slug: '010-compatible', path: '.osc/plans/active/010-compatible.md' }],
+    ['legacy basename path', { path: 'historical-plans/010-compatible.md' }],
+    ['consistent legacy path', { slug: '010-compatible', path: 'historical-plans/010-compatible.md' }],
+  ])('preserves supported %s identity without requiring a full run schema', (_label, plan) => {
+    const root = tempRepo();
+    writePlan(root, 'done', '010-compatible');
+    const runId = writeRun(root, '010-compatible');
+    writeFileSync(join(root, '.osc/runs', runId, 'run.json'), JSON.stringify({ runId, taskId: 'opaque-unrelated-id', plan }));
+    const report = buildTrace(root, '010-compatible');
+    expect(report.summary.runs).toBe(1);
+    expect(report.warnings).toEqual([]);
+  });
+
+  it('keeps partial identities exact and malformed or weak packets unverified only when requested', () => {
+    const root = tempRepo();
+    writePlan(root, 'active', '011-exact');
+    for (const [runId, plan] of [
+      ['string-neighbor', '011-exact-extra'],
+      ['slug-neighbor', { slug: '011-exact-extra' }],
+      ['path-neighbor', { path: 'legacy/011-exact-extra.md' }],
+      ['weak-mention', { note: 'mentions 011-exact' }],
+    ] as const) {
+      const dir = join(root, '.osc/runs', runId);
+      mkdirSync(dir);
+      writeFileSync(join(dir, 'run.json'), JSON.stringify({ runId, plan }));
+    }
+    mkdirSync(join(root, '.osc/runs/malformed'));
+    writeFileSync(join(root, '.osc/runs/malformed/run.json'), '{"mention":"011-exact",');
+    const report = buildTrace(root, '011-exact');
+    expect(report.summary.runs).toBe(0);
+    expect(report.summary.unverified).toBe(0);
+    const requested = buildTrace(root, '011-exact', { includeUnverified: true });
+    expect(requested.summary.runs).toBe(0);
+    expect(requested.summary.unverified).toBe(2);
+    expect(requested.links.some((link) => link.reference.includes('neighbor'))).toBe(false);
+    expect(requested.warnings.map((warning) => warning.code)).toContain('unreadable_run_packet');
+  });
+
   it('finds a plan in any stage and summarizes status, goal, path, and acceptance criteria', () => {
     const root = tempRepo();
     writePlan(root, 'backlog', '117-fixture', {
@@ -216,7 +328,7 @@ describe('trace work-record replay', () => {
     writeRelease(root, '004-subdir');
     const before = readdirSync(join(root, '.osc/releases')).join('\n');
 
-    const result = spawnSync(tsx, [cli, 'trace', '004-subdir'], { cwd: join(root, 'src'), encoding: 'utf8' });
+    const result = runCli(join(root, 'src'), ['trace', '004-subdir']);
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Path: .osc/plans/done/004-subdir.md');
