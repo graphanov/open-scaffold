@@ -6,10 +6,10 @@ The stable source handoff CLI drops its dedicated navigation and boundary prose 
 
 ## Traceability
 
-- Roadmap / task: plan 189, following independently verified plan 181 delivery; public issue not yet created.
+- Roadmap / task: plan 189, following independently verified plan 181 delivery; https://github.com/graphanov/open-scaffold/issues/293 (open).
 - Plan: `.osc/plans/active/189-stable-handoff-budget.md`.
 - Run packet: N/A — design preparation, before native source-writer admission.
-- Branch: `codex/john-stable-handoff-budget`. No PR exists for this slice; design and independent review precede implementation/publication.
+- Branch: `codex/john-stable-handoff-budget-v2`. No PR exists for this slice; design and independent review precede implementation/publication.
 
 ## Verification
 
@@ -26,3 +26,7 @@ Prepared from a real source discovery and separate Root reproduction; no source 
 
 - Fresh Forge design and independent Overwatch critique must resolve a readable budget-rendering approach within the unmodified source cap before exact task admission.
 - Preserve both the failed source behavior and compatibility evidence; independently verify the unchanged committed candidate and current GitHub CI before public effects.
+
+## Design gate
+
+Fresh design critique returned REVISE before source implementation: specify a compact run-state cap and worst-case 600-character frame, retain an ordered six-key public-run allowlist, and distinguish the three-path writer scope from the full publication diff. The earlier design and review remain private evidence. The source branch was recreated from main after PR 294 and copied only prior unpublished lifecycle preparation; the owner-requested README restoration remains exact. A revised design and fresh critique precede writer admission.
