@@ -481,7 +481,7 @@ if [ "$TIER" = "--standard" ] || [ "$TIER" = "--strict" ]; then
           RELEASES_OK=false
         fi
       done
-      if grep -qi 'pending' "$f" && grep -Eqi '(PR #[0-9]+ merged|issue #[0-9]+ closed|Tag:[[:space:]]*v[0-9]|GitHub Release:[[:space:]]*https?://)' "$f"; then
+      if LC_ALL=C grep -Eqi '(^|[^A-Za-z0-9_])pending([^A-Za-z0-9_]|$)' "$f" && grep -Eqi '(PR #[0-9]+ merged|issue #[0-9]+ closed|Tag:[[:space:]]*v[0-9]|GitHub Release:[[:space:]]*https?://)' "$f"; then
         warn "Release note $basename still says pending while citing merged/closed/released evidence"
         RELEASES_OK=false
       fi

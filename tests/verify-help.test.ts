@@ -177,3 +177,80 @@ Fixture only.
     }
   });
 });
+
+
+const embeddedPendingTokens = [
+  'pending_gates', 'pending_gate_ids', 'depending', 'not_pending', 'pendingStatus',
+  'pending2', 'suspending', 'appending', 'impending', 'pending42', '42pending', '_pending', 'pending_',
+];
+const standalonePendingTokens = [
+  'pending', 'PENDING', 'PeNdInG', 'pending.', '(pending)', 'pending!', 'pending?',
+  'pending:', 'pending;', 'pending,', 'pending/', 'pending-issue',
+];
+const closureEvidence = [
+  'PR #42 merged', 'issue #293 closed', 'Tag: v0.35.0',
+  'GitHub Release: https://github.com/example/repo/releases/tag/v0.35.0',
+];
+const pendingCases = [
+  ...embeddedPendingTokens.map((token) => ({ token, evidence: 'issue #293 closed', warns: false })),
+  ...closureEvidence.flatMap((evidence) => standalonePendingTokens.map((token) => ({ token, evidence, warns: true }))),
+  ...[...embeddedPendingTokens, ...standalonePendingTokens].map((token) => ({ token, evidence: 'Local checks only.', warns: false })),
+];
+const availableLocales = spawnSync('locale', ['-a'], { encoding: 'utf8' }).stdout?.split(/\r?\n/) ?? [];
+const utf8Locale = availableLocales.find((locale) => /^en_US[.].*utf.?8$/i.test(locale))
+  ?? availableLocales.find((locale) => /utf.?8$/i.test(locale));
+const pendingLocales = ['C', ...(utf8Locale ? [utf8Locale] : [])];
+const pendingShellWarning = 'Release note 2026-10-08-fixture.md still says pending while citing merged/closed/released evidence';
+
+function pendingShellNote(token: string, evidence: string): string {
+  return `# Release / Evidence Note
+
+## Summary
+
+${token}
+
+## Traceability
+
+- Plan: .osc/plans/backlog/001-valid.md
+
+## Verification
+
+- Local fixture.
+
+## Outcome
+
+${evidence}
+`;
+}
+
+function runShellNote(note: string, locale: string) {
+  const root = makeMinimalScaffold('open-scaffold-verify-pending-');
+  try {
+    writeFileSync(join(root, '.osc/plans/backlog/001-valid.md'), validPlanBody);
+    writeFileSync(join(root, '.osc/releases/2026-10-08-fixture.md'), note);
+    return spawnSync('bash', ['verify.sh', '--standard'], {
+      cwd: root, encoding: 'utf8', env: { ...process.env, LC_ALL: locale },
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+describe('real shell release-note freshness predicate', () => {
+  it.each(pendingCases)('$token with $evidence => warning $warns', ({ token, evidence, warns }) => {
+    for (const locale of pendingLocales) {
+      const result = runShellNote(pendingShellNote(token, evidence), locale);
+      expect(result.status, locale).toBe(0); // This freshness diagnostic remains a warning.
+      expect(result.stderr, locale).toBe('');
+      expect(result.stdout.includes(pendingShellWarning), locale).toBe(warns);
+      expect(result.stdout, locale).not.toContain('missing section:');
+    }
+  });
+
+  it('keeps unrelated release-note section warnings', () => {
+    const result = runShellNote(pendingShellNote('pending.', 'issue #293 closed').replace('## Verification', '## Checks'), 'C');
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(pendingShellWarning);
+    expect(result.stdout).toContain('Release note 2026-10-08-fixture.md missing section: Verification');
+  });
+});
