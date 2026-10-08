@@ -364,7 +364,7 @@ function findPlanBySlug(root: string, slug: string, stages: readonly (PlanStage 
   return null;
 }
 
-function assertMissionReady(root: string): void {
+function assertMissionReady(root: string): { missionPath: string; mission: string } {
   const missionPath = join(root, 'MISSION.md');
   if (!existsSync(missionPath)) {
     throw new Error(`MISSION.md not found at ${missionPath}`);
@@ -373,28 +373,40 @@ function assertMissionReady(root: string): void {
   if (mission.includes('mission:unset') || mission.includes('TODO: define mission')) {
     throw new Error('Mission is not yet defined. Run ./bootstrap.sh or edit MISSION.md first.');
   }
+  return { missionPath, mission };
 }
 
-function stampMissionChangelog(root: string, line: string, idempotencyToken?: string): boolean {
-  assertMissionReady(root);
-  const missionPath = join(root, 'MISSION.md');
-  const mission = readFileSync(missionPath, 'utf8');
+function stampMissionChangelog(root: string, line: string, idempotencyToken?: string, movedRegularDoneFiles: readonly string[] = []): boolean {
+  const { missionPath, mission } = assertMissionReady(root);
   if (idempotencyToken && mission.includes(idempotencyToken)) return false;
+
+  const sections = parseMarkdownSections(mission);
+  const changelogIndex = sections.findIndex((section) => section.heading === 'Changelog');
+  const bodyStart = sections[changelogIndex]?.line ?? Number.POSITIVE_INFINITY;
+  const bodyEnd = (sections[changelogIndex + 1]?.line ?? Number.POSITIVE_INFINITY) - 1;
+  let fence: FenceState | null = null;
+  const retargetedMission = mission.split(/(?<=\n)/).map((rawLine, index) => {
+    const existingLine = rawLine.replace(/\r?\n$/, '');
+    const wasFenced = fence;
+    if (fence && fenceClose(existingLine, fence)) fence = null;
+    else if (!fence) fence = fenceOpen(existingLine);
+    if (wasFenced || fence || index < bodyStart || index >= bodyEnd) return rawLine;
+    return rawLine.replace(
+      /^(- \d{4}-\d{2}-\d{2}: .* — see )(\.osc\/plans\/(?:(?:active|backlog|blocked)\/)?([^/\s]+\.md))([ \t]*(?:\r?\n)?$)/,
+      (original, prefix: string, oldPath: string, filename: string, suffix: string) => {
+        if (!movedRegularDoneFiles.includes(filename) || lstatSync(join(root, oldPath), { throwIfNoEntry: false })) return original;
+        return `${prefix}${OSC_NAMESPACE}/plans/done/${filename}${suffix}`;
+      },
+    );
+  }).join('');
 
   const anchor = '<!-- append YYYY-MM-DD entries below this line -->';
   const entry = `- ${line}`;
-  let nextMission: string;
-  if (mission.includes(anchor)) {
-    const lines = mission.split(/\r?\n/);
-    const output: string[] = [];
-    for (const existingLine of lines) {
-      output.push(existingLine);
-      if (existingLine.includes(anchor)) output.push(entry);
-    }
-    nextMission = output.join('\n');
-  } else {
-    nextMission = `${mission.replace(/\s*$/, '')}\n\n${entry}\n`;
-  }
+  const anchorPattern = new RegExp(`(^[^\\r\\n]*${escapeRegex(anchor)}[^\\r\\n]*)(\\r?\\n|$)`, 'gm');
+  const nextMission = retargetedMission.includes(anchor)
+    ? retargetedMission.replace(anchorPattern, (_original, existingLine: string, ending: string) =>
+      `${existingLine}${ending || '\n'}${entry}${ending}`)
+    : `${retargetedMission.replace(/\s*$/, '')}\n\n${entry}\n`;
   writeFileSync(missionPath, nextMission, 'utf8');
   return true;
 }
@@ -484,6 +496,19 @@ function closedPlanStatus(markdown: string): string {
   throw new Error('Plan has an empty ## Status. Refusing to close without a lifecycle stage.');
 }
 
+function filesForPlanMove(root: string, slug: string, parentDir: string, targetDir: string, fileKind: 'plan' | 'done plan' = 'plan'): string[] {
+  const amendmentPattern = new RegExp(`^${escapeRegex(slug)}-amendment-\\d+\\.md$`);
+  const files = [
+    `${slug}.md`,
+    ...readdirSync(parentDir).filter((file) => amendmentPattern.test(file)).sort(),
+  ];
+  const collision = files.map((file) => join(targetDir, file)).find((destination) => existsSync(destination));
+  if (collision) {
+    throw new Error(`Refusing to overwrite existing ${fileKind} file: ${relative(root, collision)}`);
+  }
+  return files;
+}
+
 export function movePlan(slug: string, toStage: PlanCreationStage, start = process.cwd()): MovedPlanResult {
   if (!PLAN_CREATION_STAGES.includes(toStage)) {
     throw new Error(`Invalid plan stage: ${toStage}. Expected one of: ${PLAN_CREATION_STAGES.join(', ')}`);
@@ -508,17 +533,7 @@ export function movePlan(slug: string, toStage: PlanCreationStage, start = proce
 
   const targetDir = join(root, OSC_NAMESPACE, 'plans', toStage);
   mkdirSync(targetDir, { recursive: true });
-  const amendmentPattern = new RegExp(`^${escapeRegex(safeSlug)}-amendment-\\d+\\.md$`);
-  const filesToMove = [
-    `${safeSlug}.md`,
-    ...readdirSync(parent.dir).filter((file) => amendmentPattern.test(file)).sort(),
-  ];
-  for (const file of filesToMove) {
-    const destination = join(targetDir, file);
-    if (existsSync(destination)) {
-      throw new Error(`Refusing to overwrite existing plan file: ${relative(root, destination)}`);
-    }
-  }
+  const filesToMove = filesForPlanMove(root, safeSlug, parent.dir, targetDir);
   for (const file of filesToMove) {
     renameSync(join(parent.dir, file), join(targetDir, file));
   }
@@ -552,10 +567,8 @@ export function createPlanAmendment(slug: string, start = process.cwd(), message
   assertMissionReady(root);
   writeFileSync(path, renderAmendmentSkeleton(safeSlug, amendmentNumber, date), 'utf8');
 
-  const dateText = formatLocalDate(date);
-  const changelogLine = message.trim()
-    ? `${dateText}: ${message.trim()} — see ${relativePath}`
-    : `${dateText}: amendment ${amendmentNumber} to ${safeSlug} — see ${relativePath}`;
+  const description = message.trim() || `amendment ${amendmentNumber} to ${safeSlug}`;
+  const changelogLine = `${formatLocalDate(date)}: ${description} — see ${relativePath}`;
   const changelogStamped = stampMissionChangelog(root, changelogLine, filename);
   return { root, path, relativePath, slug: safeSlug, parentPath: parent.path, amendmentNumber, changelogStamped };
 }
@@ -576,27 +589,15 @@ export function closePlan(slug: string, start = process.cwd(), message = '', dat
 
   const doneDir = join(root, OSC_NAMESPACE, 'plans', 'done');
   mkdirSync(doneDir, { recursive: true });
-  const amendmentPattern = new RegExp(`^${escapeRegex(safeSlug)}-amendment-\\d+\\.md$`);
-  const filesToMove = [
-    `${safeSlug}.md`,
-    ...readdirSync(parent.dir).filter((file) => amendmentPattern.test(file)).sort(),
-  ];
-  for (const file of filesToMove) {
-    const destination = join(doneDir, file);
-    if (existsSync(destination)) {
-      throw new Error(`Refusing to overwrite existing done plan file: ${relative(root, destination)}`);
-    }
-  }
+  const filesToMove = filesForPlanMove(root, safeSlug, parent.dir, doneDir, 'done plan');
   assertMissionReady(root);
   for (const file of filesToMove) {
     renameSync(join(parent.dir, file), join(doneDir, file));
   }
   if (updatedParentText !== originalParentText) writeFileSync(join(doneDir, `${safeSlug}.md`), updatedParentText, 'utf8');
-  const dateText = formatLocalDate(date);
-  const changelogLine = message.trim()
-    ? `${dateText}: closed ${safeSlug} — ${message.trim()}`
-    : `${dateText}: closed ${safeSlug}`;
-  const changelogStamped = stampMissionChangelog(root, changelogLine);
+  const details = message.trim() ? ` — ${message.trim()}` : '';
+  const changelogLine = `${formatLocalDate(date)}: closed ${safeSlug}${details}`;
+  const changelogStamped = stampMissionChangelog(root, changelogLine, undefined, filesToMove.filter((file) => isRealFile(join(doneDir, file))));
   return { root, slug: safeSlug, fromStage: parent.stage, movedFiles: filesToMove, changelogStamped, alreadyDone: false };
 }
 

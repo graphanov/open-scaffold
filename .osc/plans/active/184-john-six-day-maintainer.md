@@ -29,10 +29,10 @@ Produce an independently observed six-day record of useful bounded maintenance a
 
 ## Acceptance criteria
 
-- [ ] Versioned owner delegation, six-day expiry, actor/controller separation and independent audit are recorded.
-- [ ] At least one actual task reaches committed-head verification, independent review and a real pull request through the native Codex lane.
+- [x] Versioned owner delegation, six-day expiry, actor/controller separation and independent audit are recorded. | Evidence: .osc/releases/2026-10-08-184-john-six-day-maintainer.md, .osc/releases/2026-10-08-194-viewer-reference-labels.md
+- [x] At least one actual task reaches committed-head verification, independent review and a real pull request through the native Codex lane. | Evidence: .osc/releases/2026-10-08-184-john-six-day-maintainer.md, .osc/releases/2026-10-08-194-viewer-reference-labels.md
 - [ ] Synthetic cases exercise useful requests, justified no-change, correction, malicious inputs and interrupted handoffs without granting authority.
-- [ ] Actual changes carry task/verification/review/external-readback evidence; failed attempts remain recorded.
+- [x] Actual changes carry task/verification/review/external-readback evidence; failed attempts remain recorded. | Evidence: .osc/releases/2026-10-08-184-john-six-day-maintainer.md, .osc/releases/2026-10-08-194-viewer-reference-labels.md
 - [ ] The six-day interval ends with supported scope, observed failures, unknown usage, continuation shutdown and independent auditor findings.
 
 ## Verification steps

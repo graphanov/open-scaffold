@@ -221,20 +221,81 @@ fi
 
 CHANGELOG_STAMPED=false
 ANCHOR='<!-- append YYYY-MM-DD entries below this line -->'
+HAS_ANCHOR=false
 if grep -Fq "$ANCHOR" "$MISSION"; then
-  TMPFILE=$(mktemp)
-  while IFS= read -r line || [ -n "$line" ]; do
-    printf '%s\n' "$line"
-    if printf '%s' "$line" | grep -Fq "$ANCHOR"; then
-      printf -- '- %s\n' "$CHANGELOG_LINE"
-    fi
-  done < "$MISSION" > "$TMPFILE"
-  mv "$TMPFILE" "$MISSION"
-  CHANGELOG_STAMPED=true
-else
-  printf '\n- %s\n' "$CHANGELOG_LINE" >> "$MISSION"
-  CHANGELOG_STAMPED=true
+  HAS_ANCHOR=true
 fi
+TMPFILE=$(mktemp) || exit 1
+IN_CHANGELOG=false
+RETARGETED=false
+FENCE_MARKER=""
+FENCE_COUNT=0
+FENCE_OPEN='^(`{3,}|~{3,})'
+FENCE_CLOSE='^(`{3,}|~{3,})[[:blank:]]*$'
+HEADING='^##[[:blank:]]+[^[:blank:]]'
+CHANGELOG_HEADING='^##[[:blank:]]+Changelog([[:blank:]]+#+[[:blank:]]*|[[:blank:]]*)$'
+TARGET='^(- [0-9]{4}-[0-9]{2}-[0-9]{2}: .* — see )(\.osc/plans/((active|backlog|blocked)/)?([^/[:space:]]+\.md))([[:blank:]]*)$'
+while true; do
+  if IFS= read -r line; then
+    ENDING=$'\n'
+  elif [ -n "$line" ]; then
+    ENDING=""
+  else
+    break
+  fi
+  CR_SUFFIX=""
+  if [[ "$line" == *$'\r' ]]; then
+    CR_SUFFIX=$'\r'
+  fi
+  LOGICAL_LINE=${line%$'\r'}
+  if [ -n "$FENCE_MARKER" ]; then
+    if [[ "$LOGICAL_LINE" =~ $FENCE_CLOSE ]]; then
+      RUN=${BASH_REMATCH[1]}
+      if [ "${RUN:0:1}" = "$FENCE_MARKER" ] && [ "${#RUN}" -ge "$FENCE_COUNT" ]; then
+        FENCE_MARKER=""
+      fi
+    fi
+  elif [[ "$LOGICAL_LINE" =~ $FENCE_OPEN ]]; then
+    RUN=${BASH_REMATCH[1]}
+    FENCE_MARKER=${RUN:0:1}
+    FENCE_COUNT=${#RUN}
+  elif [[ "$LOGICAL_LINE" =~ $HEADING ]]; then
+    IN_CHANGELOG=false
+    if [[ "$LOGICAL_LINE" =~ $CHANGELOG_HEADING ]]; then
+      IN_CHANGELOG=true
+    fi
+  elif [ "$IN_CHANGELOG" = true ] && [[ "$LOGICAL_LINE" =~ $TARGET ]]; then
+    PREFIX=${BASH_REMATCH[1]}
+    OLD_PATH=${BASH_REMATCH[2]}
+    FILENAME=${BASH_REMATCH[5]}
+    SUFFIX=${BASH_REMATCH[6]}
+    for f in "${MOVED_FILES[@]}"; do
+      if [ "$FILENAME" = "$f" ] && [ ! -e "$ROOT/$OLD_PATH" ] && [ ! -L "$ROOT/$OLD_PATH" ] && [ -f "$DONE_DIR/$f" ] && [ ! -L "$DONE_DIR/$f" ]; then
+        line="${PREFIX}.osc/plans/done/${f}${SUFFIX}"
+        line="${line}${CR_SUFFIX}"
+        RETARGETED=true
+        break
+      fi
+    done
+  fi
+  printf '%s%s' "$line" "$ENDING" || exit 1
+  if [ "$HAS_ANCHOR" = true ] && [[ "$line" == *"$ANCHOR"* ]]; then
+    if [ -z "$ENDING" ]; then
+      printf '\n' || exit 1
+    fi
+    printf -- '- %s\n' "$CHANGELOG_LINE" || exit 1
+  fi
+done < "$MISSION" > "$TMPFILE" || exit 1
+if [ "$HAS_ANCHOR" = true ]; then
+  mv "$TMPFILE" "$MISSION" || exit 1
+else
+  if [ "$RETARGETED" = true ]; then
+    cat "$TMPFILE" > "$MISSION" || exit 1
+  fi
+  printf '\n- %s\n' "$CHANGELOG_LINE" >> "$MISSION"
+  rm -f "$TMPFILE" || exit 1
+fi
+CHANGELOG_STAMPED=true
 
 # ──────────────────────────────────────────
 # Optional git staging

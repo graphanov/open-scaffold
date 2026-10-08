@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+
+import { closePlan, createPlanAmendment, movePlan } from '../src/scaffold.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const tsx = join(repoRoot, 'node_modules/.bin/tsx');
@@ -220,4 +222,163 @@ describe('osc lifecycle parity helper CLI', () => {
     expect(missingRoot.status).toBe(1);
     expect(missingRoot.stderr).toContain('No Open Scaffold root found');
   });
+});
+
+
+const navigationSlug = '001-first-task';
+const navigationAnchor = '<!-- append YYYY-MM-DD entries below this line -->';
+const fixedDate = new Date(2026, 9, 8);
+
+function today(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function withNavigation(stage: string, run: (root: string, oldPath: string, amendment: string, parent: string) => void) {
+  const root = initializedScaffold();
+  try {
+    expect(spawnSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: root }).status).not.toBe(0);
+    fillPlan(root);
+    if (stage === 'root') renameSync(join(root, `.osc/plans/active/${navigationSlug}.md`), join(root, `.osc/plans/${navigationSlug}.md`));
+    else if (stage === 'backlog' || stage === 'blocked') movePlan(navigationSlug, stage, root);
+    execFileSync(tsx, [cli, 'amend', navigationSlug, '--message', '  Scope changed  '], { cwd: root, encoding: 'utf8' });
+    const prefix = stage === 'root' ? '.osc/plans/' : `.osc/plans/${stage === 'prior-stage' ? 'active' : stage}/`;
+    const oldPath = `${prefix}${navigationSlug}-amendment-1.md`;
+    const amendment = readFileSync(join(root, oldPath), 'utf8');
+    if (stage === 'prior-stage') movePlan(navigationSlug, 'blocked', root);
+    const parentPath = stage === 'prior-stage' ? `.osc/plans/blocked/${navigationSlug}.md` : `${prefix}${navigationSlug}.md`;
+    run(root, oldPath, amendment, readFileSync(join(root, parentPath), 'utf8'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+describe('close generated terminal navigation', () => {
+  it.each(['active', 'backlog', 'blocked', 'root', 'prior-stage'].flatMap((stage) => ['\n', '\r\n'].map((ending) => ({ stage, ending }))))(
+    'retargets supported $stage navigation with $ending while preserving excluded history', ({ stage, ending }) => {
+      withNavigation(stage, (root, oldPath, amendment, parent) => {
+        const name = `${navigationSlug}-amendment-1.md`;
+        const parentOld = oldPath.replace('-amendment-1', '');
+        const sourceStage = stage === 'root' ? '' : `${stage === 'prior-stage' ? 'blocked' : stage}/`;
+        const otherStage = stage === 'backlog' ? 'active' : 'backlog';
+        const alias = `.osc/plans/${otherStage}/${name}`;
+        writeFileSync(join(root, alias), 'Surviving same-basename record.\n');
+        const directoryAlias = `.osc/plans/${otherStage}/${navigationSlug}.md`;
+        mkdirSync(join(root, directoryAlias));
+        const second = `${navigationSlug}-amendment-2.md`;
+        writeFileSync(join(root, `.osc/plans/${sourceStage}${second}`), 'Second amendment.\r\n');
+        const dangling = `.osc/plans/${otherStage}/${second}`;
+        symlinkSync('missing.md', join(root, dangling));
+        const rows = [
+          `- 2026-10-01: Amendment — see ${oldPath}\t  `,
+          `- 2026-10-02: Parent — see ${parentOld}`,
+          `- 2026-10-03: Absent prior alias — see .osc/plans/blocked/${second}`,
+        ];
+        const excluded = [
+          `- 2026-10-04: Basename — see ${name}`,
+          `- 2026-10-04: Prose recorded ${oldPath} at the time.`,
+          `- 2026-10-04: External — see https://example.invalid/${oldPath}`,
+          `- 2026-10-04: Unmoved — see .osc/plans/active/002-other.md`,
+          ...['.bak', '?view=1', '#detail', ' for the old location.', '`'].map((suffix) => `- 2026-10-04: Suffix — see ${oldPath}${suffix}`),
+          `- 2026-10-04: Inline — see \`${oldPath}\``,
+          `- 2026-10-04: Alias — see ${alias}`,
+          `- 2026-10-04: Directory — see ${directoryAlias}`,
+          `- 2026-10-04: Dangling — see ${dangling}`,
+          `- 2026-10-04: Longer filename — see ${oldPath.replace('.md', '-extra.md')}`,
+        ];
+        const outside = `- 2026-09-30: Outside — see ${oldPath}`;
+        const before = ['# Mission', '', 'Lifecycle navigation fixture.', outside,
+          '~~~~markdown', '## Changelog', outside, '~~~~~',
+          '## Changelog ###', navigationAnchor, '## \t  ', ...rows, ...excluded,
+          '````markdown', outside, '```', '## Fenced heading', outside, '~~~~', '```` prose', outside, '`````',
+          '## Later', outside].join(ending);
+        writeFileSync(join(root, 'MISSION.md'), before);
+        const repaired = before.replace(rows[0], rows[0].replace(oldPath, `.osc/plans/done/${name}`))
+          .replace(rows[1], rows[1].replace(parentOld, `.osc/plans/done/${navigationSlug}.md`))
+          .replace(rows[2], rows[2].replace(`.osc/plans/blocked/${second}`, `.osc/plans/done/${second}`));
+        const output = execFileSync(tsx, [cli, 'close', navigationSlug, '--message', '  shipped  '], { cwd: root, encoding: 'utf8' });
+        expect(output).toContain(`Moved to done/: ${navigationSlug}.md, ${name}, ${second}`);
+        expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(repaired.replace(`${navigationAnchor}${ending}`, `${navigationAnchor}${ending}- ${today()}: closed ${navigationSlug} — shipped${ending}`));
+        expect(readFileSync(join(root, `.osc/plans/done/${name}`), 'utf8')).toBe(amendment);
+        expect(readFileSync(join(root, `.osc/plans/done/${second}`), 'utf8')).toBe('Second amendment.\r\n');
+        expect(readFileSync(join(root, `.osc/plans/done/${navigationSlug}.md`), 'utf8')).toBe(parent.replace(/^(active|backlog|blocked)$/m, 'done'));
+        const after = readFileSync(join(root, 'MISSION.md'), 'utf8');
+        execFileSync(tsx, [cli, 'close', navigationSlug, '--message', 'repeat'], { cwd: root });
+        expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(after);
+      });
+    },
+  );
+
+  it.each(['symlink', 'directory'])('excludes moved %s destinations while returning the complete lexical list', (kind) => {
+    withNavigation('active', (root) => {
+      const ten = `${navigationSlug}-amendment-10.md`;
+      const two = `${navigationSlug}-amendment-2.md`;
+      writeFileSync(join(root, `.osc/plans/active/${ten}`), 'Ten unchanged.\r\n');
+      if (kind === 'directory') mkdirSync(join(root, `.osc/plans/active/${two}`));
+      else { writeFileSync(join(root, 'target.md'), 'Unrelated.\n'); symlinkSync(join(root, 'target.md'), join(root, `.osc/plans/active/${two}`)); }
+      const regular = `- 2026-10-02: Regular — see .osc/plans/active/${ten}`;
+      const excluded = `- 2026-10-03: Nonregular — see .osc/plans/active/${two}`;
+      const before = `# Mission\nFixture.\n## Changelog\n${navigationAnchor}\n${regular}\n${excluded}\n`;
+      writeFileSync(join(root, 'MISSION.md'), before);
+      const result = closePlan(navigationSlug, root, '', fixedDate);
+      expect(result).toMatchObject({ movedFiles: [`${navigationSlug}.md`, `${navigationSlug}-amendment-1.md`, ten, two], fromStage: 'active', alreadyDone: false, changelogStamped: true });
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(before.replace(regular, regular.replace('/active/', '/done/')).replace(`${navigationAnchor}\n`, `${navigationAnchor}\n- 2026-10-08: closed ${navigationSlug}\n`));
+    });
+  });
+
+  it.each(['\n', '\r\n'].flatMap((ending) => [true, false].map((anchored) => ({ ending, anchored }))))(
+    'preserves anchored raw EOF or legacy fallback trimming with $ending, anchor $anchored', ({ ending, anchored }) => {
+      withNavigation('active', (root, oldPath) => {
+        const before = ['# Mission', 'Fixture.', '## Changelog', ...(anchored ? [navigationAnchor] : []), `- 2026-10-02: History — see ${oldPath}\t  `].join(ending);
+        writeFileSync(join(root, 'MISSION.md'), before);
+        closePlan(navigationSlug, root, '', fixedDate);
+        const repaired = before.replace(oldPath, `.osc/plans/done/${navigationSlug}-amendment-1.md`);
+        const entry = `- 2026-10-08: closed ${navigationSlug}`;
+        expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(anchored ? repaired.replace(`${navigationAnchor}${ending}`, `${navigationAnchor}${ending}${entry}${ending}`) : `${repaired.trimEnd()}\n\n${entry}\n`);
+      });
+    },
+  );
+
+  it('retains duplicate/EOF anchor insertion and ignores fenced-only Changelog', () => {
+    withNavigation('active', (root, oldPath) => {
+      const before = `# Mission\nFixture.\n\`\`\`markdown\n## Changelog\n- 2026-10-01: Fenced — see ${oldPath}\n\`\`\`\n${navigationAnchor}\n${navigationAnchor}`;
+      writeFileSync(join(root, 'MISSION.md'), before);
+      closePlan(navigationSlug, root, '', fixedDate);
+      const entry = `- 2026-10-08: closed ${navigationSlug}`;
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(before.replace(`${navigationAnchor}\n`, `${navigationAnchor}\n${entry}\n`).replace(new RegExp(`${navigationAnchor}$`), `${navigationAnchor}\n${entry}`));
+    });
+  });
+
+  it('keeps default/trimmed amendment messages and non-done movement semantics', () => {
+    withNavigation('active', (root) => {
+      createPlanAmendment(navigationSlug, root, '', fixedDate);
+      createPlanAmendment(navigationSlug, root, '  adjusted  ', fixedDate);
+      const before = readFileSync(join(root, 'MISSION.md'), 'utf8');
+      expect(before).toContain(`2026-10-08: amendment 2 to ${navigationSlug} — see .osc/plans/active/${navigationSlug}-amendment-2.md`);
+      expect(before).toContain(`2026-10-08: adjusted — see .osc/plans/active/${navigationSlug}-amendment-3.md`);
+      writeFileSync(join(root, `.osc/plans/active/${navigationSlug}-amendment-10.md`), 'Ten.\n');
+      const moved = movePlan(navigationSlug, 'blocked', root);
+      expect(moved).toMatchObject({ fromStage: 'active', toStage: 'blocked', alreadyInStage: false, movedFiles: [`${navigationSlug}.md`, `${navigationSlug}-amendment-1.md`, `${navigationSlug}-amendment-10.md`, `${navigationSlug}-amendment-2.md`, `${navigationSlug}-amendment-3.md`] });
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(before);
+      expect(movePlan(navigationSlug, 'blocked', root).alreadyInStage).toBe(true);
+    });
+  });
+
+  it.each(['close', 'move'].flatMap((operation) => [true, false].map((parentCollision) => ({ operation, parentCollision }))))(
+    'retains exact first $operation collision and readiness order, parent $parentCollision', ({ operation, parentCollision }) => {
+      withNavigation('active', (root, oldPath, amendment, parent) => {
+        const destination = operation === 'close' ? 'done' : 'blocked';
+        const names = [`${navigationSlug}-amendment-10.md`, `${navigationSlug}-amendment-2.md`];
+        for (const name of names) { writeFileSync(join(root, `.osc/plans/active/${name}`), 'Active.\n'); writeFileSync(join(root, `.osc/plans/${destination}/${name}`), 'Existing.\n'); }
+        if (parentCollision) writeFileSync(join(root, `.osc/plans/${destination}/${navigationSlug}.md`), 'Existing parent.\n');
+        const unset = '# Mission\nmission:unset\n';
+        writeFileSync(join(root, 'MISSION.md'), unset);
+        const first = parentCollision ? `${navigationSlug}.md` : names[0];
+        expect(() => operation === 'close' ? closePlan(navigationSlug, root) : movePlan(navigationSlug, 'blocked', root)).toThrow(`Refusing to overwrite existing ${operation === 'close' ? 'done plan' : 'plan'} file: .osc/plans/${destination}/${first}`);
+        expect(readFileSync(join(root, `.osc/plans/active/${navigationSlug}.md`), 'utf8')).toBe(parent);
+        expect(readFileSync(join(root, oldPath), 'utf8')).toBe(amendment);
+        expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(unset);
+      });
+    },
+  );
 });
