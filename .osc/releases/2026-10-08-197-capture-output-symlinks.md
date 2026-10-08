@@ -46,3 +46,17 @@ Exact command arguments, UTC timings, exit statuses, raw stdout/stderr and befor
 Observed tests qualify macOS filesystem fixtures only. Actual Windows capture, hardlinks, concurrent replacement races and explicit external parent links remain unqualified. This local work performs no push, PR, merge, issue/plan close, admission or release action. Parent 184 remains active; independent floor, complete publication review, current CI and public-effect readback belong to later gates.
 
 The first precommit strict check returned exit 0 with 9 passes, 0 failures and 18 historical plan-intent warnings on untouched paths. After this factual note update, strict verification will run again before build/full-suite verification and commit. The earlier strict attempt remains retained.
+
+## Delivered capture correction
+
+PR [#302](https://github.com/graphanov/open-scaffold/pull/302) delivered source head `545bfca440013a98f53a6cd626cb759e3eb0e016` on 2026-10-08 at 17:51:14Z. Squash merge `d3babe25932b02da5b8fb3cc843cac60bb2997fb` has parent `c40e07f281638b095e2eba831484076238633af9` and reviewed tree `cbf8f3e2c358a8e701dcc53c89eb2e9872a8bf5b`. Actual PR/main readback matched the complete tree and all eleven public path identities.
+
+The worker passed strict/build/full verification before commit and again on unchanged committed head `545bfca`; its retained full-suite logs prove 1,129 tests across 56 files, with strict 9 passes, 0 failures and 18 historical warnings. Independent Root repeated the same floor on that head (canonical receipt `8ae23739`); numerical counts come from worker logs, not Root raw stdout. Fresh independent SHIP review covered all ten publication entries/eleven identities and seven additional passing controls (review `579a8c5c`, seal `e199217d`). Maintained source is 16,877 physical lines/41 files, with the intentional eleven-line cap increase and unchanged roots, algorithm, 20,890 baseline and file ceiling.
+
+Five required GitHub Actions checks passed on `545bfca`: ci, Validate evidence notes, Structural Open Scaffold PR check, Validate changed plans, and Native Windows Node amend/close smoke. Two optional mirror checks were skipped. The complete review-thread readback had zero unresolved threads and no next page. The Windows job qualifies its amend/close fixtures; it adds no Windows capture or symlink qualification.
+
+The single merge command returned exit 1 with HTTP 502. Independent actual PR/main readback proved the merge had already succeeded, so no repeated merge command was issued. The implementation release record reports released; earlier failed-first regressions, source-cap refusal, socket-path and lookup failures, and checkpoint snapshots remain retained.
+
+This delivery qualifies observed macOS fixtures only. Hardlinks, transactions, concurrent parent replacement, explicit external parent links and actual Windows capture remain unqualified; the host /tmp alias was observed rather than newly exercised. Model identity and per-task usage remain unknown. Parent plan 184 remains active, and this local factual closeout is unpublished and makes no six-day completion claim.
+
+Native source CLI close ran once with exit 0, moved both regular plan records to done, set the original Status to done, automatically retargeted MISSION's amendment reference, and added one close stamp. Amendment bytes and committed requirements are unchanged. Completed records: `.osc/plans/done/197-capture-output-symlinks.md` and `.osc/plans/done/197-capture-output-symlinks-amendment-1.md`. No manual pointer repair was needed.

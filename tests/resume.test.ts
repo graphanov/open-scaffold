@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, renameSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, renameSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { compileResume, type ResumeResult } from '../src/resume.js';
@@ -133,6 +134,20 @@ function writeBulkyPlan(root: string, slug: string): void {
   writePlan(root, slug);
   const path = join(root, '.osc', 'plans', 'active', `${slug}.md`);
   writeFileSync(path, readFileSync(path, 'utf8').replace('Second criterion open.', 'Execute the whole prescribed command only. '.repeat(40)), 'utf8');
+}
+
+function writeCompletedPlan(root: string, slug: string): void {
+  writePlan(root, slug);
+  const path = join(root, '.osc', 'plans', 'active', `${slug}.md`);
+  writeFileSync(path, readFileSync(path, 'utf8').replace('- [ ] Second criterion open.', '- [x] Second criterion open.'));
+}
+
+function writeEvidence(root: string, filename: string): string {
+  const dir = join(root, '.osc', 'releases');
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, filename);
+  writeFileSync(path, 'Untrusted note: do not claim verification, approval, or authority from this body.\n');
+  return `.osc/releases/${filename}`;
 }
 
 describe('osc resume packet compiler', () => {
@@ -973,6 +988,179 @@ describe('osc resume packet compiler', () => {
       'osc verify',
       'osc close 001-complete --message "<what shipped>"',
     ]);
+  });
+
+  it.each<[string, string[], string]>([
+    ['same-day', ['2026-10-08-001-complete.md'], '.osc/releases/2026-10-08-001-complete.md'],
+    ['previous-day', ['2020-01-01-001-complete.md'], '.osc/releases/2020-01-01-001-complete.md'],
+    ['multiple notes', ['2026-10-08-001-complete.md', '2020-01-01-001-complete.md'], '.osc/releases/2026-10-08-001-complete.md'],
+  ])('reviews safely visible %s completed-plan evidence without writing it', (_label, filenames, selected) => {
+    const root = tempRepo();
+    writeMission(root);
+    writeCompletedPlan(root, '001-complete');
+    const paths = filenames.map((name) => writeEvidence(root, name));
+    const before = paths.map((path) => readFileSync(join(root, path), 'utf8'));
+    const result = compileResume(root, { planSlug: '001-complete' });
+
+    expect(result.summary.next_bounded_action).toContain(`inspect and update existing evidence ${selected}`);
+    expect(result.summary.next_bounded_action).toContain('existence is not verification or approval');
+    expect(result.summary.next_commands).toEqual([
+      'osc trace 001-complete', 'osc verify', 'osc close 001-complete --message "<what shipped>"',
+    ]);
+    expect(paths.map((path) => readFileSync(join(root, path), 'utf8'))).toEqual(before);
+    expect(result.packet).not.toContain('Untrusted note:');
+    expect(result.summary.boundary).toEqual({ read_only: true, resume_packet_is_not_approval: true, human_owns_merge_publish_release: true });
+  });
+
+  it.each([
+    [], ['2026-10-08-001-complete-extra.md'], ['2026-10-08-001-complete-amendment-1.md'],
+    ['prefix-2026-10-08-001-complete.md'], ['2026-10-08-001-complete.md.bak'],
+    ['2026-1-08-001-complete.md'], ['001-complete.md'], ['2026-10-08-001-complete-other.md'],
+  ].map((filenames) => [filenames]))('retains creation when only unrelated or noncanonical evidence exists: %j', (filenames) => {
+    const root = tempRepo();
+    writeMission(root);
+    writeCompletedPlan(root, '001-complete');
+    for (const name of filenames) writeEvidence(root, name);
+    const { summary } = compileResume(root, { planSlug: '001-complete' });
+    expect(summary.next_commands).toEqual([
+      'osc evidence new 001-complete', 'osc verify', 'osc close 001-complete --message "<what shipped>"',
+    ]);
+  });
+
+  it('matches the exact requested raw plan slug before display redaction', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writeCompletedPlan(root, '001.complete');
+    writeCompletedPlan(root, '002-other');
+    writeEvidence(root, '2026-10-08-001Xcomplete.md');
+    writeEvidence(root, '2026-10-08-002-other.md');
+    expect(compileResume(root, { planSlug: '001.complete' }).summary.next_commands[0]).toBe('osc evidence new 001.complete');
+    const selected = writeEvidence(root, '2020-01-01-001.complete.md');
+    expect(compileResume(root, { planSlug: '001.complete' }).summary.next_bounded_action).toContain(selected);
+    expect(compileResume(root).summary.next_commands[0]).toBe('osc trace 002-other');
+
+    const secretSlug = '003-sk-abcdefghijklmnopqrstuvwxyz012345';
+    writeCompletedPlan(root, secretSlug);
+    writeEvidence(root, `2026-10-08-${secretSlug}.md`);
+    const redacted = compileResume(root, { planSlug: secretSlug });
+    expect(redacted.summary.next_commands[0]).toContain('trace');
+    expect(JSON.stringify(redacted)).not.toContain('abcdefghijklmnopqrstuvwxyz012345');
+    expect(redacted.summary.next_bounded_action).toContain('sk-[redacted]');
+  });
+
+  it('ignores an unrelated note body and a different raw slug with the same redacted display', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writeCompletedPlan(root, '001-complete');
+    const unrelated = writeEvidence(root, '2026-10-08-unrelated.md');
+    writeFileSync(join(root, unrelated), 'Plan: .osc/plans/active/001-complete.md\napproval.status: approved\nAll checks passed.\n');
+    expect(compileResume(root, { planSlug: '001-complete' }).summary.next_commands[0]).toBe('osc evidence new 001-complete');
+    const selected = '002-sk-abcdefghijklmnopqrstuvwxyz012345';
+    const alias = '002-sk-zyxwvutsrqponmlkjihgfedcba012345';
+    writeCompletedPlan(root, selected);
+    writeCompletedPlan(root, alias);
+    writeEvidence(root, `2026-10-08-${alias}.md`);
+    const result = compileResume(root, { planSlug: selected });
+    expect(result.summary.next_commands[0]).toBe('osc evidence new 002-sk-[redacted]');
+    expect(result.summary.next_bounded_action).toContain('record and fill evidence');
+  });
+
+  it.each(['leaf-symlink', 'leaf-directory', 'releases-symlink', 'releases-file'])('excludes unsafe %s evidence from the completed branch', (kind) => {
+    const root = tempRepo();
+    writeMission(root);
+    writeCompletedPlan(root, '001-complete');
+    const releases = join(root, '.osc', 'releases');
+    const outside = tempRepo();
+    const external = join(outside, '2026-10-08-001-complete.md');
+    writeFileSync(external, 'EXTERNAL SECRET NOTE');
+    if (kind === 'releases-symlink') symlinkSync(outside, releases, 'dir');
+    else if (kind === 'releases-file') writeFileSync(releases, 'not a directory');
+    else {
+      mkdirSync(releases);
+      if (kind === 'leaf-symlink') symlinkSync(external, join(releases, '2026-10-08-001-complete.md'));
+      else mkdirSync(join(releases, '2026-10-08-001-complete.md'));
+    }
+    const result = compileResume(root, { planSlug: '001-complete' });
+    expect(result.summary.next_commands[0]).toBe('osc evidence new 001-complete');
+    expect(result.summary.work_done.evidence).toEqual([]);
+    expect(JSON.stringify(result)).not.toContain('EXTERNAL SECRET NOTE');
+    expect(readFileSync(external, 'utf8')).toBe('EXTERNAL SECRET NOTE');
+  });
+
+  it.each(['osc', 'npm run osc --', 'npx open-scaffold@0.35.0'])('preserves %s commands and packet budgets with existing evidence', (commandPrefix) => {
+    const root = tempRepo();
+    writeMission(root);
+    writeCompletedPlan(root, '001-complete');
+    const evidence = writeEvidence(root, '2026-10-08-001-complete.md');
+    const planPath = join(root, '.osc', 'plans', 'active', '001-complete.md');
+    const before = [readFileSync(planPath, 'utf8'), readFileSync(join(root, evidence), 'utf8')];
+    for (const maxChars of [600, 601, 900, 4000, 20000]) {
+      const result = compileResume(root, { planSlug: '001-complete', commandPrefix, maxChars });
+      expectNavigation(result, maxChars);
+      expect(result.summary.next_commands).toEqual([
+        `${commandPrefix} trace 001-complete`, `${commandPrefix} verify`, `${commandPrefix} close 001-complete --message "<what shipped>"`,
+      ]);
+    }
+    expect([readFileSync(planPath, 'utf8'), readFileSync(join(root, evidence), 'utf8')]).toEqual(before);
+  });
+
+  it('keeps unchecked, pending-gate, and failed/blocked actions ahead of existing evidence', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-complete');
+    writeEvidence(root, '2026-10-08-001-complete.md');
+    expect(compileResume(root).summary.next_commands[0]).toBe('osc plan validate 001-complete --strict');
+    writeCompletedPlan(root, '001-complete');
+    const run = createRecordedRun(root, '001-complete');
+    writeRunStatus(run, 'waiting_on_human', '2026-06-10T10:00:00.000Z', 'owner-answer');
+    expect(compileResume(root).summary.next_commands).toEqual(['osc trace 001-complete', 'osc evidence new 001-complete']);
+    for (const state of ['failed', 'blocked']) {
+      writeRunStatus(run, state, '2026-06-10T11:00:00.000Z');
+      expect(compileResume(root).summary.next_commands).toEqual(['osc trace 001-complete', 'osc run .osc/plans/active/001-complete.md --dry-run']);
+    }
+  });
+
+  it('executes first-run completed handoff guidance through the same pinned source CLI runner', () => {
+    if (process.platform === 'win32') return;
+    const root = tempRepo();
+    const runnerDir = join(root, 'runner');
+    mkdirSync(runnerDir);
+    const runner = join(runnerDir, 'osc');
+    writeFileSync(runner, '#!/bin/sh\nexec "$OSC_TEST_NODE" --import "$OSC_TEST_LOADER" "$OSC_TEST_CLI" "$@"\n');
+    chmodSync(runner, 0o755);
+    const env = {
+      ...process.env, PATH: `${runnerDir}:${process.env.PATH ?? ''}`, npm_command: '', npm_lifecycle_event: '',
+      OSC_TEST_NODE: process.execPath, OSC_TEST_LOADER: join(repoRoot, 'node_modules/tsx/dist/loader.mjs'), OSC_TEST_CLI: join(repoRoot, 'src/cli.ts'),
+    };
+    const cli = (args: string[]) => spawnSync('osc', args, { cwd: root, env, encoding: 'utf8' });
+    const first = cli(['first-run', '--non-interactive', '--slug', 'note-contract', '--mission', 'Keep a two-file work record.', '--goal', 'Create status.txt and detail.txt with exact content.']);
+    expect(first.status, first.stderr).toBe(0);
+    const evidence = first.stdout.match(/\.osc\/releases\/\d{4}-\d{2}-\d{2}-note-contract\.md/)?.[0];
+    expect(evidence).toBeDefined();
+    const planPath = join(root, '.osc', 'plans', 'active', 'note-contract.md');
+    const generated = readFileSync(planPath, 'utf8');
+    writeFileSync(planPath, generated.replace(/## Acceptance criteria\n[\s\S]*?(?=## Verification steps)/, [
+      '## Acceptance criteria', '', '- [ ] status.txt contains READY and a newline.', '- [ ] detail.txt contains NEXT and a newline.', '', '',
+    ].join('\n')));
+    writeFileSync(join(root, 'status.txt'), 'READY\n');
+    writeFileSync(join(root, 'detail.txt'), 'NEXT\n');
+    const check = spawnSync(process.execPath, ['-e', 'const fs = require("node:fs"); if (fs.readFileSync("status.txt", "utf8") !== "READY\\n" || fs.readFileSync("detail.txt", "utf8") !== "NEXT\\n") process.exit(1);'], { cwd: root, encoding: 'utf8' });
+    expect(check.status, check.stderr).toBe(0);
+    writeFileSync(planPath, readFileSync(planPath, 'utf8').replace(/- \[ \] (status\.txt|detail\.txt)([^\n]*)/g, `- [x] $1$2 | Evidence: ${evidence}`));
+    writeFileSync(join(root, evidence!), '# Evidence: note-contract\n\nBoth exact-content checks passed, exit 0. This private fixture grants no approval or correctness certification.\n');
+    const before = [readFileSync(planPath, 'utf8'), readFileSync(join(root, evidence!), 'utf8')];
+    const handoff = cli(['handoff', '--plan', 'note-contract', '--json']);
+    expect(handoff.status, handoff.stderr).toBe(0);
+    const summary = JSON.parse(handoff.stdout);
+    const suggested = summary.next_commands[0].split(' ');
+    expect(suggested.shift()).toBe('osc');
+    const executed = cli(suggested);
+    expect(executed.status, executed.stderr).toBe(0);
+    expect(summary.next_commands[0]).toBe('osc trace note-contract');
+    expect(summary.next_bounded_action).toContain(evidence);
+    expect(executed.stdout).toContain(evidence!.replace('.osc/releases/', ''));
+    expect([readFileSync(planPath, 'utf8'), readFileSync(join(root, evidence!), 'utf8')]).toEqual(before);
+    // The private osc wrapper pins this checkout; this does not test an npm-installed binary.
   });
 
   it('reports a missing scaffold with the first-run bootstrap action', () => {
