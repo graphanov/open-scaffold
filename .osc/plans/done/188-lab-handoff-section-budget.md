@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -26,11 +26,11 @@ The lab handoff compiler preserves every complete required section within its te
 
 ## Acceptance criteria
 
-- [ ] The exact S03 reduced 139-character state/two 260-character blockers at maxChars 900 emits all five complete sections, validation pass and length at most 900.
-- [ ] The initial legitimate large 900-character case and ordinary/default-budget cases retain structure and redaction; all existing tests remain.
-- [ ] Tiny or insufficient structural budgets remain honest failures, never a false pass or silent larger-than-requested budget.
-- [ ] Only the two scoped files change after admission; no maintained-source/dependency/API/CLI threshold changes.
-- [ ] Targeted tests, strict verification, both builds, full tests and independent unchanged-head/full-scope review pass before public effects.
+- [x] The exact S03 reduced 139-character state/two 260-character blockers at maxChars 900 emits all five complete sections, validation pass and length at most 900. | Evidence: .osc/releases/2026-10-08-188-lab-handoff-section-budget.md
+- [x] The initial legitimate large 900-character case and ordinary/default-budget cases retain structure and redaction; all existing tests remain. | Evidence: .osc/releases/2026-10-08-188-lab-handoff-section-budget.md
+- [x] Tiny or insufficient structural budgets remain honest failures, never a false pass or silent larger-than-requested budget. | Evidence: .osc/releases/2026-10-08-188-lab-handoff-section-budget.md
+- [x] Only the two scoped files change after admission; no maintained-source/dependency/API/CLI threshold changes. | Evidence: .osc/releases/2026-10-08-188-lab-handoff-section-budget.md
+- [x] Targeted tests, strict verification, both builds, full tests and independent unchanged-head/full-scope review pass before public effects. | Evidence: .osc/releases/2026-10-08-188-lab-handoff-section-budget.md
 
 ## Verification steps
 
