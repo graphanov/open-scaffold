@@ -189,6 +189,69 @@ Shipped.
     expect(codes).not.toContain('release_note.traceability_missing_publication');
   });
 
+  describe('release note unfinished-work tokens', () => {
+    const notePath = '.osc/releases/2026-05-12-lexical-token.md';
+    const closureEvidence = [
+      'PR #42 merged',
+      'issue #293 closed',
+      'Tag: v0.35.0',
+      'GitHub Release: https://github.com/example/repo/releases/tag/v0.35.0',
+    ];
+
+    function tokenWarnings(token: string, evidence: string) {
+      const root = tempRepo();
+      writeFileSync(join(root, '.osc/plans/done/001-sample.md'), plan.replace('active', 'done'));
+      writeFileSync(join(root, notePath), `# Release / Evidence Note
+
+## Summary
+
+Recorded ${token}.
+
+## Traceability
+
+- Plan: .osc/plans/done/001-sample.md
+- ${evidence}
+
+## Verification
+
+- npm test -> pass
+
+## Outcome
+
+Recorded local evidence.
+`);
+      return validateScaffold(root).warnings.filter((warning) => warning.code === 'release_note.pending_after_close');
+    }
+
+    it.each(['pending_gates', 'pending_gate_ids', 'depending', 'not_pending', 'pendingStatus', 'pending2'])(
+      'does not warn for embedded occurrence %s after closure',
+      (token) => {
+        expect(tokenWarnings(token, 'issue #293 closed')).toEqual([]);
+      },
+    );
+
+    describe.each(closureEvidence)('with closure evidence %s', (evidence) => {
+      it.each(['pending', 'PeNdInG', 'pending.', '(PENDING)'])(
+        'preserves the warning and metadata for standalone token %s',
+        (token) => {
+          expect(tokenWarnings(token, evidence)).toEqual([{
+            level: 'warn',
+            code: 'release_note.pending_after_close',
+            message: 'Release note still says pending while also citing merged/closed/released evidence',
+            path: notePath,
+          }]);
+        },
+      );
+    });
+
+    it.each(['pending', 'PeNdInG', 'pending.', '(PENDING)'])(
+      'does not warn for standalone token %s without closure evidence',
+      (token) => {
+        expect(tokenWarnings(token, 'Branch: codex/lexical-token')).toEqual([]);
+      },
+    );
+  });
+
 
   it('accepts canonical GitHub pull request URLs as publication evidence', () => {
     const root = tempRepo();
