@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -32,12 +32,12 @@ Successful supported CLI and shell closeouts retarget their recognized MISSION h
 
 ## Acceptance criteria
 
-- [ ] Supported successful CLI and Bash close cases retarget exact recognized canonical-Changelog terminal fields to regular done files moved by that invocation, including absent prior-stage aliases after a supported move.
-- [ ] Unrelated/external/suffix/prose/basename/inline-code and recognized fenced-example references remain unchanged; surviving old entries and nonregular done destinations prevent retargeting, with complete public moved lists preserved.
-- [ ] Shell whitespace-only H2 handling matches the stated canonical space/tab contract; retargeted raw bytes and explicit anchored preservation improvements pass LF/CRLF/EOF controls while legacy no-anchor behaviors remain unchanged.
-- [ ] Exact collision/error/mission ordering, parent-first lexical lists, non-done moves, default/custom message semantics, parent Status, amendment bytes and repeat-close idempotence pass compatibility controls.
-- [ ] Only the five admitted paths change after implementation admission, maintained source is at most 16866/41 with no golfing or metric change, and root README restoration/SVG absence remain preserved.
-- [ ] Failed-first production regressions, unchanged committed-head strict/build/full verification and fresh independent full-publication review precede branch/PR publication; fresh actual GitHub CI and current bindings precede delegated merge.
+- [x] Supported successful CLI and Bash close cases retarget exact recognized canonical-Changelog terminal fields to regular done files moved by that invocation, including absent prior-stage aliases after a supported move. | Evidence: .osc/releases/2026-10-08-193-close-generated-navigation.md
+- [x] Unrelated/external/suffix/prose/basename/inline-code and recognized fenced-example references remain unchanged; surviving old entries and nonregular done destinations prevent retargeting, with complete public moved lists preserved. | Evidence: .osc/releases/2026-10-08-193-close-generated-navigation.md
+- [x] Shell whitespace-only H2 handling matches the stated canonical space/tab contract; retargeted raw bytes and explicit anchored preservation improvements pass LF/CRLF/EOF controls while legacy no-anchor behaviors remain unchanged. | Evidence: .osc/releases/2026-10-08-193-close-generated-navigation.md
+- [x] Exact collision/error/mission ordering, parent-first lexical lists, non-done moves, default/custom message semantics, parent Status, amendment bytes and repeat-close idempotence pass compatibility controls. | Evidence: .osc/releases/2026-10-08-193-close-generated-navigation.md
+- [x] Only the five admitted paths change after implementation admission, maintained source is at most 16866/41 with no golfing or metric change, and root README restoration/SVG absence remain preserved. | Evidence: .osc/releases/2026-10-08-193-close-generated-navigation.md
+- [x] Failed-first production regressions, unchanged committed-head strict/build/full verification and fresh independent full-publication review precede branch/PR publication; fresh actual GitHub CI and current bindings precede delegated merge. | Evidence: .osc/releases/2026-10-08-193-close-generated-navigation.md
 
 ## Verification steps
 
