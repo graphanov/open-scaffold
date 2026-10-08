@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -31,11 +31,11 @@ Capture refuses symlinked output files and in-repository output parents before m
 
 ## Acceptance criteria
 
-- [ ] Existing final in-repository and explicit external output symlinks are refused before target mutation; symlink identities and transcript bytes remain intact.
-- [ ] In-repository output parent links with missing final files are refused before directory/file mutation; ordinary output and legitimate repository-root aliases continue working.
-- [ ] Public CLI default and hook-safe regressions fail on the bound baseline and pass on the candidate; hook-safe exit/output semantics and transcript-alias protections remain unchanged.
-- [ ] Only admitted source/test/evidence paths change, with readable implementation and unchanged schemas/dependencies/workflows/README/frozen definitions/canonical owner drafts.
-- [ ] Independent strict/build/full checks on unchanged committed head, fresh complete publication review/current CI and actual public-effect readback precede delegated delivery and factual closeout.
+- [x] Existing final in-repository and explicit external output symlinks are refused before target mutation; symlink identities and transcript bytes remain intact. | Evidence: .osc/releases/2026-10-08-197-capture-output-symlinks.md
+- [x] In-repository output parent links with missing final files are refused before directory/file mutation; ordinary output and legitimate repository-root aliases continue working. | Evidence: .osc/releases/2026-10-08-197-capture-output-symlinks.md
+- [x] Public CLI default and hook-safe regressions fail on the bound baseline and pass on the candidate; hook-safe exit/output semantics and transcript-alias protections remain unchanged. | Evidence: .osc/releases/2026-10-08-197-capture-output-symlinks.md
+- [x] Only admitted source/test/evidence paths change, with readable implementation and unchanged schemas/dependencies/workflows/README/frozen definitions/canonical owner drafts. | Evidence: .osc/releases/2026-10-08-197-capture-output-symlinks.md
+- [x] Independent strict/build/full checks on unchanged committed head, fresh complete publication review/current CI and actual public-effect readback precede delegated delivery and factual closeout. | Evidence: .osc/releases/2026-10-08-197-capture-output-symlinks.md
 
 ## Verification steps
 
