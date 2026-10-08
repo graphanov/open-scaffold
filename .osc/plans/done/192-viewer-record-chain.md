@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -28,11 +28,11 @@ A source-checkout viewer can follow one explicitly linked synthetic mission, pla
 
 ## Acceptance criteria
 
-- [ ] The primary viewer uses the exact existing resume-demo mission, done scaffold-init plan and its linked dated evidence note, with no arbitrary active-file or global latest-note selector.
-- [ ] It explicitly describes source-checkout scope and a committed synthetic record, showing recorded checks/outcome/follow-up without claiming current criterion certification, executed adoption or measured read time.
-- [ ] The displayed evidence binds to the displayed done plan; meaningful executable docs coverage runs the advertised safe reads and checks that the existing trace resolves exactly that plan/note while preserving missing-run state.
-- [ ] Existing guidance for own active work uses explicit same-slug handoff/trace and permits missing linked evidence; no CLI, fixture, README, asset, dependency or maintained-source cap changes occur.
-- [ ] Exactly the three admitted paths change after implementation admission; targeted checks, unchanged committed-head strict/build/full verification and fresh independent full-scope review precede public effects.
+- [x] The primary viewer uses the exact existing resume-demo mission, done scaffold-init plan and its linked dated evidence note, with no arbitrary active-file or global latest-note selector. | Evidence: .osc/releases/2026-10-08-192-viewer-record-chain.md
+- [x] It explicitly describes source-checkout scope and a committed synthetic record, showing recorded checks/outcome/follow-up without claiming current criterion certification, executed adoption or measured read time. | Evidence: .osc/releases/2026-10-08-192-viewer-record-chain.md
+- [x] The displayed evidence binds to the displayed done plan; meaningful executable docs coverage runs the advertised safe reads and checks that the existing trace resolves exactly that plan/note while preserving missing-run state. | Evidence: .osc/releases/2026-10-08-192-viewer-record-chain.md
+- [x] Existing guidance for own active work uses explicit same-slug handoff/trace and permits missing linked evidence; no CLI, fixture, README, asset, dependency or maintained-source cap changes occur. | Evidence: .osc/releases/2026-10-08-192-viewer-record-chain.md
+- [x] Exactly the three admitted paths change after implementation admission; targeted checks, unchanged committed-head strict/build/full verification and fresh independent full-scope review precede public effects. | Evidence: .osc/releases/2026-10-08-192-viewer-record-chain.md
 
 ## Verification steps
 

@@ -369,7 +369,7 @@ A reasonable rule of thumb: adopt Open Scaffold when at least one of {multi-sess
 
 ## Where to go next
 
-- [`docs/EXAMPLES.md`](../EXAMPLES.md) — the 60-second reading-path version of the same loop on Open Scaffold itself.
+- [`docs/EXAMPLES.md`](../EXAMPLES.md#linked-record-viewer) — a linked-record viewer with three read-only commands showing a synthetic greeting-project mission, done bootstrap plan, and linked evidence note.
 - [`../CI.md#lifecycle-e2e-smoke`](../CI.md#lifecycle-e2e-smoke) — the automated smoke that exercises this fixture mechanically.
 - [`docs/RUNTIME_BINDING_CONTRACT.md`](../RUNTIME_BINDING_CONTRACT.md) — the contract any external runtime, coordinator, or harness uses when consuming `.osc/runs/<run_id>/run.json`.
 - [`docs/WORKFLOW.md`](../WORKFLOW.md) — phase-to-tool guide.
