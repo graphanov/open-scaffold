@@ -52,6 +52,7 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-10-08: closed 187-parser-characterization-fixtures — PR 290 merged; full historical and strict live parser characterization verified
 - 2026-10-08: closed 186-ambient-token-availability — PR 287 merged; nullable token usage and complete totals verified
 - 2026-10-08: closed 185-john-autonomous-maintainer-readme — PR 285 merged; dated AI maintainer banner verified on default branch
 - 2026-10-07: closed 182-0350-publication-follow-through — Published owner-approved open-scaffold@0.35.0 through trusted workflow 37537279815; npm latest, live lifecycle, source integrity, and matching GitHub Release verified.

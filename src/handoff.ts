@@ -53,30 +53,37 @@ function truncate(value: string, max: number): string {
   return `${text.slice(0, Math.max(0, max - 1)).trim()}…`;
 }
 
-function render(input: Required<Omit<HandoffCompilerInput, 'maxChars' | 'reason'>> & { maxChars: number; reason: string }, stateChars: number): string {
-  const lines = [
-    '# Resume Packet',
-    '',
-    'Compact, token-efficient handoff. Keep evidence refs, not raw logs.',
-    '',
-    '## State',
-    truncate(input.state, stateChars),
-    '',
-    '## Decisions',
-    ...bullets(input.decisions, 'No durable decisions recorded yet.', 180),
-    '',
-    '## Blockers / Open Questions',
-    ...bullets(input.blockers, 'No known blockers.', 260),
-    '',
-    '## Evidence refs',
-    ...bullets(input.evidenceRefs, 'No evidence refs yet.', 180),
-    '',
-    '## Next Actions',
-    ...bullets(input.nextActions, 'Verify the referenced work before claiming pass.', 180),
-    '',
-    `Compiler reason: ${truncate(input.reason, 90)}`,
+function render(input: HandoffCompilerInput, stateChars: number, maxChars = Infinity): string {
+  const bodies = [
+    [truncate(input.state ?? '', stateChars)],
+    bullets(input.decisions, 'No durable decisions recorded yet.', 180),
+    bullets(input.blockers, 'No known blockers.', 260),
+    bullets(input.evidenceRefs, 'No evidence refs yet.', 180),
+    bullets(input.nextActions, 'Verify the referenced work before claiming pass.', 180),
+    [truncate(input.reason ?? 'handoff compiler', 90)],
   ];
-  return `${lines.join('\n').replace(/\n+$/, '')}\n`;
+  const assemble = () => [
+    '# Resume Packet', '', 'Compact, token-efficient handoff. Keep evidence refs, not raw logs.', '',
+    ...REQUIRED_SECTIONS.flatMap((section, index) => [`## ${section}`, ...bodies[index].filter(Boolean), '']),
+    `Compiler reason: ${bodies[5][0]}`, '',
+  ].join('\n');
+  let content = assemble();
+  // Headings and wrapper are fixed; only already-redacted body lines may shrink.
+  while (content.length > maxChars) {
+    let target = { section: 0, index: 0 };
+    bodies.forEach((values, section) => values.forEach((value, index) => {
+      if (value.length > bodies[target.section][target.index].length) target = { section, index };
+    }));
+    const value = bodies[target.section][target.index];
+    if (!value) break; // The structural minimum remains an explicit over-budget failure.
+    const bodyChars = bodies.flat().reduce((sum, body) => sum + body.length, 0);
+    const reduction = Math.max(1, Math.ceil((content.length - maxChars) * value.length / bodyChars));
+    const limit = Math.max(0, value.length - reduction);
+    bodies[target.section][target.index] = limit > (value.startsWith('- ') ? 3 : 0)
+      ? `${value.slice(0, limit - 1).trimEnd()}…` : '';
+    content = assemble();
+  }
+  return content;
 }
 
 export function validateHandoffPacket(content: string, options: { maxChars?: number } = {}): HandoffValidation {
@@ -94,20 +101,13 @@ export function validateHandoffPacket(content: string, options: { maxChars?: num
 
 export function compileHandoffPacket(input: HandoffCompilerInput) {
   const maxChars = input.maxChars ?? 1600;
-  const normalized = {
-    state: input.state ?? '',
-    decisions: input.decisions ?? [],
-    blockers: input.blockers ?? [],
-    evidenceRefs: input.evidenceRefs ?? [],
-    nextActions: input.nextActions ?? [],
-    maxChars,
-    reason: input.reason ?? 'handoff compiler',
-  };
-
-  let content = render(normalized, Math.max(120, Math.min(700, Math.floor(maxChars * 0.35))));
-  if (content.length > maxChars) content = render(normalized, 220);
-  if (content.length > maxChars) content = render({ ...normalized, decisions: normalized.decisions.slice(0, 2), blockers: normalized.blockers.slice(0, 2), evidenceRefs: normalized.evidenceRefs.slice(0, 2), nextActions: normalized.nextActions.slice(0, 2) }, 140);
-  if (content.length > maxChars) content = `${content.slice(0, maxChars - 1).trim()}\n`;
+  let content = render(input, Math.max(120, Math.min(700, Math.floor(maxChars * 0.35))));
+  if (content.length > maxChars) content = render(input, 220);
+  if (content.length > maxChars) {
+    const limited = { ...input };
+    for (const field of ['decisions', 'blockers', 'evidenceRefs', 'nextActions'] as const) limited[field] = input[field]?.slice(0, 2);
+    content = render(limited, 140, maxChars);
+  }
 
   return {
     schema: HANDOFF_COMPILER_SCHEMA,
