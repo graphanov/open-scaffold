@@ -52,6 +52,7 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-10-08: closed 194-viewer-reference-labels — Merged accurate synthetic viewer referrals and current target fragments via PR298
 - 2026-10-08: closed 192-viewer-record-chain — Merged coherent sample viewer, actual incoming anchor and executable trace coverage via PR297
 - 2026-10-08: Update the existing inbound viewer reference and validate its actual target — see .osc/plans/done/192-viewer-record-chain-amendment-1.md
 - 2026-10-08: closed 191-evidence-pending-token — Merged independently verified lexical evidence predicates and real shell/CI controls via PR296

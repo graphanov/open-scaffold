@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -28,10 +28,10 @@ Both remaining reader-path references accurately describe and reach the current 
 
 ## Acceptance criteria
 
-- [ ] The two existing referrals name the current synthetic linked-record viewer and resolve to its actual EXAMPLES file/heading.
-- [ ] Neither referral promises a timed read or describes the greeting snapshot as current Open Scaffold implementation proof.
-- [ ] Only the three admitted paths change after admission; no fixture/core/rootREADME/asset/dependency/cap or unrelated prose changes occur.
-- [ ] Existing viewer/parser checks, unchanged committed-head strict/build/full verification and fresh independent full-publication review precede public effects; current GitHub CI precedes delegated merge.
+- [x] The two existing referrals name the current synthetic linked-record viewer and resolve to its actual EXAMPLES file/heading. | Evidence: .osc/releases/2026-10-08-194-viewer-reference-labels.md
+- [x] Neither referral promises a timed read or describes the greeting snapshot as current Open Scaffold implementation proof. | Evidence: .osc/releases/2026-10-08-194-viewer-reference-labels.md
+- [x] Only the three admitted paths change after admission; no fixture/core/rootREADME/asset/dependency/cap or unrelated prose changes occur. | Evidence: .osc/releases/2026-10-08-194-viewer-reference-labels.md
+- [x] Existing viewer/parser checks, unchanged committed-head strict/build/full verification and fresh independent full-publication review precede public effects; current GitHub CI precedes delegated merge. | Evidence: .osc/releases/2026-10-08-194-viewer-reference-labels.md
 
 ## Verification steps
 
