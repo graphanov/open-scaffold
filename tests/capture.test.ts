@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { mkdirSync, mkdtempSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, readlinkSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import {
   CAPTURE_FORMATS,
   CaptureUsageError,
@@ -554,5 +554,122 @@ describe('usage errors', () => {
   });
   it('requires a format or detection', () => {
     expect(() => captureRecord({ transcriptPath: codexFixture })).not.toThrow();
+  });
+});
+
+
+describe.skipIf(process.platform === 'win32')('capture output path safety', () => {
+  const record = captureRecord({ transcriptPath: codexFixture, format: 'codex' }).record;
+
+  it.each(['relative', 'absolute'] as const)('refuses %s in-repository final links, including dangling links', (style) => {
+    for (const targetKind of ['inside', 'outside', 'dangling'] as const) {
+      const repo = mkdtempSync(join(tmpdir(), 'osc-cap-final-'));
+      const outside = mkdtempSync(join(tmpdir(), 'osc-cap-outside-'));
+      const transcript = join(repo, 'input.jsonl');
+      const original = readFileSync(codexFixture, 'utf8');
+      writeFileSync(transcript, original);
+      const output = join(repo, 'out', 'record.json');
+      const target = join(targetKind === 'outside' ? outside : repo, 'kept.md');
+      mkdirSync(dirname(output), { recursive: true });
+      if (targetKind !== 'dangling') writeFileSync(target, 'keep evidence\n');
+      const link = targetKind === 'inside' ? relative(dirname(output), target) : target;
+      symlinkSync(link, output);
+
+      expect(() => writeCaptureRecord(repo, style === 'absolute' ? output : 'out/record.json', record, true, [transcript])).toThrow(/symlink/);
+      expect(lstatSync(output).isSymbolicLink()).toBe(true);
+      expect(readlinkSync(output)).toBe(link);
+      if (targetKind === 'dangling') expect(existsSync(target)).toBe(false);
+      else expect(readFileSync(target, 'utf8')).toBe('keep evidence\n');
+      expect(readFileSync(transcript, 'utf8')).toBe(original);
+    }
+  });
+
+  it.each(['relative', 'absolute'] as const)('refuses %s in-repository parent links before creating a missing child', (style) => {
+    const repo = mkdtempSync(join(tmpdir(), 'osc-cap-parent-'));
+    const target = join(repo, 'kept');
+    mkdirSync(target);
+    const parent = join(repo, 'linked');
+    symlinkSync('kept', parent, 'dir');
+    const output = join(parent, 'record.json');
+
+    expect(() => writeCaptureRecord(repo, style === 'absolute' ? output : 'linked/record.json', record, true)).toThrow(/symlink/);
+    expect(readlinkSync(parent)).toBe('kept');
+    expect(readdirSync(target)).toEqual([]);
+    expect(existsSync(join(target, 'record.json'))).toBe(false);
+  });
+
+  it('refuses a dangling in-repository parent without creating its target', () => {
+    const repo = mkdtempSync(join(tmpdir(), 'osc-cap-dangling-parent-'));
+    const parent = join(repo, 'linked');
+    symlinkSync('missing', parent, 'dir');
+    expect(() => writeCaptureRecord(repo, 'linked/record.json', record)).toThrow();
+    expect(readlinkSync(parent)).toBe('missing');
+    expect(existsSync(join(repo, 'missing'))).toBe(false);
+  });
+
+  it('refuses explicit external final links, including dangling links', () => {
+    const repo = mkdtempSync(join(tmpdir(), 'osc-cap-external-root-'));
+    for (const dangling of [false, true]) {
+      const outside = mkdtempSync(join(tmpdir(), 'osc-cap-external-final-'));
+      const target = join(outside, 'kept.md');
+      if (!dangling) writeFileSync(target, 'keep external evidence\n');
+      const output = join(outside, 'record.json');
+      symlinkSync(target, output);
+      expect(() => writeCaptureRecord(repo, output, record, true)).toThrow(/symlink/);
+      expect(readlinkSync(output)).toBe(target);
+      if (dangling) expect(existsSync(target)).toBe(false);
+      else expect(readFileSync(target, 'utf8')).toBe('keep external evidence\n');
+    }
+  });
+
+  it('supports regular relative, absolute, and explicit external outputs', () => {
+    const repo = mkdtempSync(join(tmpdir(), 'osc-cap-regular-'));
+    const outside = mkdtempSync(join(tmpdir(), 'osc-cap-external-regular-'));
+    for (const [output, explicit] of [['relative/record.json', false], [join(repo, 'absolute.json'), false], [join(outside, 'new/record.json'), true], [join(outside, 'existing.json'), true]] as const) {
+      if (output.endsWith('existing.json')) writeFileSync(output, 'old record');
+      const written = writeCaptureRecord(repo, output, record, explicit);
+      expect(JSON.parse(readFileSync(written, 'utf8')).schema).toBe('osc.ambient-work-record.v1');
+    }
+    expect(() => writeCaptureRecord(repo, join(outside, 'not-explicit.json'), record)).toThrow(/inside the repository/);
+    expect(existsSync(join(outside, 'not-explicit.json'))).toBe(false);
+  });
+
+  it('supports repository-root aliases with physical and aliased absolute output prefixes', () => {
+    const holder = mkdtempSync(join(tmpdir(), 'osc-cap-root-alias-'));
+    const repo = join(holder, 'physical');
+    const alias = join(holder, 'alias');
+    mkdirSync(repo);
+    symlinkSync(repo, alias, 'dir');
+    for (const [root, output] of [[alias, 'relative.json'], [alias, join(repo, 'physical.json')], [repo, join(alias, 'alias.json')]] as const) {
+      const written = writeCaptureRecord(root, output, record);
+      expect(written).toBe(join(realpathSync(repo), basename(output)));
+      expect(JSON.parse(readFileSync(written, 'utf8')).schema).toBe('osc.ambient-work-record.v1');
+    }
+    // A root alias does not authorize a second link below the root, even one that re-enters it.
+    symlinkSync(repo, join(repo, 'reentry'), 'dir');
+    expect(() => writeCaptureRecord(alias, join(alias, 'reentry', 'blocked.json'), record, true)).toThrow(/symlink/);
+    expect(readlinkSync(join(repo, 'reentry'))).toBe(repo);
+    expect(existsSync(join(repo, 'blocked.json'))).toBe(false);
+  });
+
+  it('preserves transcript protection through input and output aliases', () => {
+    const holder = mkdtempSync(join(tmpdir(), 'osc-cap-input-alias-'));
+    const repo = join(holder, 'physical');
+    const rootAlias = join(holder, 'alias');
+    mkdirSync(repo);
+    symlinkSync(repo, rootAlias, 'dir');
+    const transcript = join(repo, 'input.jsonl');
+    const original = readFileSync(codexFixture, 'utf8');
+    writeFileSync(transcript, original);
+    const inputAlias = join(repo, 'input-alias.jsonl');
+    const outputAlias = join(repo, 'output-alias.json');
+    symlinkSync('input.jsonl', inputAlias);
+    symlinkSync('input.jsonl', outputAlias);
+    for (const [output, input] of [[transcript, inputAlias], [outputAlias, transcript], [join(rootAlias, 'input.jsonl'), inputAlias], [transcript, join(rootAlias, 'input.jsonl')]] as const) {
+      expect(() => writeCaptureRecord(rootAlias, output, record, true, [input])).toThrow(/must not overwrite --transcript/);
+    }
+    expect(readFileSync(transcript, 'utf8')).toBe(original);
+    expect(readlinkSync(inputAlias)).toBe('input.jsonl');
+    expect(readlinkSync(outputAlias)).toBe('input.jsonl');
   });
 });

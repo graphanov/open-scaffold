@@ -902,10 +902,10 @@ export function defaultOutPath(repoRoot: string, runId: string): string {
 
 /**
  * Write a captured record. `out` may be absolute or relative.
- * - When it resolves inside repoRoot, the repo-safe writer is used (refuses .. escapes
+ * - When it is inside repoRoot, the repo-safe writer is used (refuses .. escapes
  *   and symlinked components); this covers the default and relative-path cases.
- * - When `explicit` is true and the path resolves OUTSIDE the repo (e.g. `--out /tmp/x`),
- *   it is the user's deliberate choice and is written with a symlink-safe direct write.
+ * - When `explicit` is true and the path is OUTSIDE the repo (e.g. `--out /tmp/x`),
+ *   it is the user's deliberate choice and is written without following a final symlink.
  *   The default path is never `explicit`, so it can never silently escape the repo.
  * Returns the absolute path written.
  */
@@ -917,12 +917,11 @@ export function writeCaptureRecord(
   forbiddenPaths: string[] = [],
 ): string {
   const root = realOrResolve(resolve(repoRoot));
-  // Realpath both sides so a symlinked root prefix (e.g. macOS /var -> /private/var)
-  // cancels and the relativeness check reflects the true tree, not the link surface.
-  const absolute = realOrResolve(isAbsolute(out) ? resolve(out) : resolve(root, out));
+  const absolute = captureOutputPath(root, out);
+  const canonicalOutput = realOrResolve(absolute);
   for (const forbiddenPath of forbiddenPaths) {
     const forbiddenAbsolute = realOrResolve(isAbsolute(forbiddenPath) ? resolve(forbiddenPath) : resolve(process.cwd(), forbiddenPath));
-    if (absolute === forbiddenAbsolute) {
+    if (canonicalOutput === forbiddenAbsolute) {
       throw new CaptureUsageError('--out must not overwrite --transcript; choose a separate record path.');
     }
   }
@@ -935,6 +934,18 @@ export function writeCaptureRecord(
     throw new CaptureUsageError(`--out must resolve to a path inside the repository: ${out}`);
   }
   return writeJsonNoFollow(absolute, record);
+}
+
+/** Rebase only a repository-root alias; keep every component below it lexical. */
+function captureOutputPath(root: string, out: string): string {
+  const absolute = isAbsolute(out) ? resolve(out) : resolve(root, out);
+  let mapped = absolute;
+  // The outermost matching ancestor wins, so a link below the root that points
+  // back to the root is still presented to the safe writer as a link.
+  for (let parent = dirname(absolute); ; parent = dirname(parent)) {
+    if (realOrResolve(parent) === root) mapped = resolve(root, relative(parent, absolute));
+    if (parent === dirname(parent)) return mapped;
+  }
 }
 
 /**
