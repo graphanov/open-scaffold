@@ -29,4 +29,4 @@ Local documentation and executable regression are implemented. The viewer labels
 ## Follow-up
 
 - Commit the exact three admitted paths, freeze the head and verify that unchanged committed candidate; retain those results separately so verification does not change the tested head.
-- Obtain fresh independent review of the full public diff and actual GitHub CI before any external effect. Plan closure requires observed delivery.
+- Before branch or PR publication, require worker/Root local strict/build/full verification of the unchanged committed head plus fresh independent review of the full public diff. Before delegated merge, require fresh actual GitHub CI and refresh the current head, base, scope and review bindings. Plan closure requires observed delivery.
