@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, resolve, win32 } from 'node:path';
 import { buildTrace, formatTraceReport } from '../src/trace.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');
@@ -101,7 +101,12 @@ function runCli(root: string, args: string[]) {
   return spawnSync(process.execPath, ['--import', loader, cli, ...args], { cwd: root, encoding: 'utf8' });
 }
 
-function competingRuns() {
+const competingPlanPaths = [
+  '.osc/plans/done/002-review-b.md',
+  win32.relative('C:\\repo', win32.join('C:\\repo', '.osc', 'plans', 'done', '002-review-b.md')),
+];
+
+function competingRuns(planPath: string) {
   const root = tempRepo();
   writePlan(root, 'active', '001-repair-a');
   writePlan(root, 'active', '002-review-b');
@@ -110,6 +115,7 @@ function competingRuns() {
   const runId = writeRun(root, '002-review-b', 'competing-b');
   const path = join(root, '.osc/runs', runId, 'run.json');
   const packet = JSON.parse(readFileSync(path, 'utf8'));
+  packet.plan.path = planPath;
   packet.taskId = 'opaque-task-b';
   packet.bindings = {
     githubPr: 'https://github.com/example/repo/pull/902',
@@ -122,11 +128,12 @@ function competingRuns() {
 }
 
 describe('trace work-record replay', () => {
-  it('excludes a single-field plan identity conflict from both API queries and restores the control', () => {
-    const fixture = competingRuns();
+  it.each(competingPlanPaths)('excludes a single-field plan identity conflict from both API queries and restores the control (%s)', (planPath) => {
+    const fixture = competingRuns(planPath);
     const before = ['001-repair-a', '002-review-b'].map((slug) => buildTrace(fixture.root, slug));
     expect(before.map((report) => report.summary.runs)).toEqual([2, 1]);
     expect(before[1].summary.external_refs).toBe(2);
+    expect(before[1].warnings).toEqual([]);
     writeFileSync(fixture.path, fixture.conflict);
 
     for (const slug of ['001-repair-a', '002-review-b']) {
@@ -146,8 +153,9 @@ describe('trace work-record replay', () => {
     expect(['001-repair-a', '002-review-b'].map((slug) => buildTrace(fixture.root, slug))).toEqual(before);
   });
 
-  it('excludes a single-field plan identity conflict from both CLI queries and restores the control', () => {
-    const fixture = competingRuns();
+  // Each case performs eight sequential Node/tsx startups; allow a bounded slower-host margin.
+  it.each(competingPlanPaths)('excludes a single-field plan identity conflict from both CLI queries and restores the control (%s)', (planPath) => {
+    const fixture = competingRuns(planPath);
     const read = (slug: string, extra: string[] = []) => {
       const result = runCli(fixture.root, ['trace', slug, '--json', ...extra]);
       expect(result.status).toBe(0);
@@ -155,6 +163,9 @@ describe('trace work-record replay', () => {
       return JSON.parse(result.stdout);
     };
     const before = ['001-repair-a', '002-review-b'].map((slug) => read(slug));
+    expect(before.map((report) => report.summary.runs)).toEqual([2, 1]);
+    expect(before[1].summary.external_refs).toBe(2);
+    expect(before[1].warnings).toEqual([]);
     writeFileSync(fixture.path, fixture.conflict);
     for (const slug of ['001-repair-a', '002-review-b']) {
       const report = read(slug);
@@ -170,15 +181,19 @@ describe('trace work-record replay', () => {
     expect(readFileSync(fixture.path, 'utf8')).toBe(fixture.conflict);
     writeFileSync(fixture.path, fixture.clean);
     expect(['001-repair-a', '002-review-b'].map((slug) => read(slug))).toEqual(before);
-  });
+  }, 15_000);
 
   it.each([
     ['legacy string', '010-compatible'],
     ['slug only', { slug: '010-compatible' }],
     ['path only', { path: '.osc/plans/backlog/010-compatible.md' }],
+    ['Windows path only', { path: win32.join('.osc', 'plans', 'backlog', '010-compatible.md') }],
     ['previous stage', { slug: '010-compatible', path: '.osc/plans/active/010-compatible.md' }],
+    ['previous Windows stage', { slug: '010-compatible', path: win32.join('.osc', 'plans', 'active', '010-compatible.md') }],
     ['legacy basename path', { path: 'historical-plans/010-compatible.md' }],
+    ['Windows legacy basename path', { path: win32.join('historical-plans', '010-compatible.md') }],
     ['consistent legacy path', { slug: '010-compatible', path: 'historical-plans/010-compatible.md' }],
+    ['consistent Windows legacy path', { slug: '010-compatible', path: win32.join('historical-plans', '010-compatible.md') }],
   ])('preserves supported %s identity without requiring a full run schema', (_label, plan) => {
     const root = tempRepo();
     writePlan(root, 'done', '010-compatible');

@@ -217,7 +217,8 @@ function planMatchesRun(planSlug: string, run: unknown): {
   if (typeof rawPlan === 'string') return { matches: rawPlan === planSlug, runId };
   if (rawPlan && typeof rawPlan === 'object') {
     const plan = rawPlan as Record<string, unknown>;
-    const pathSlug = typeof plan.path === 'string' ? basename(plan.path, extname(plan.path)) : undefined;
+    const planPath = typeof plan.path === 'string' ? plan.path.replace(/\\/g, '/') : undefined;
+    const pathSlug = planPath !== undefined ? basename(planPath, extname(planPath)) : undefined;
     if (plan.slug !== undefined && pathSlug !== undefined && plan.slug !== pathSlug) {
       return {
         matches: false,
