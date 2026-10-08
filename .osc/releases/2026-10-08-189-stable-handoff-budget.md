@@ -8,7 +8,7 @@ The stable source handoff compiler now retains dedicated navigation and its comp
 
 - Roadmap / task: plan 189, following verified plan 181 delivery; [issue #293](https://github.com/graphanov/open-scaffold/issues/293) records the real source finding.
 - Plan: `.osc/plans/active/189-stable-handoff-budget.md`.
-- Run packet: N/A — bounded source development under the existing delegation; no external runtime was executed.
+- Run packet: N/A — a native Codex worker performed bounded source development under the existing delegation; no osc run package or runtime adapter was used to dispatch this work.
 - Branch: `codex/john-stable-handoff-budget-v2`; writer base `fb8da91321779557de22ebe5f8a85c502c9195e4`. No PR, merge or package publication exists for this slice at this evidence snapshot.
 
 ## Verification
