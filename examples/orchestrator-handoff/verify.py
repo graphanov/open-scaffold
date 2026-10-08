@@ -638,6 +638,26 @@ def verify_secondary_excerpts(bundle, findings, raw_key, text_field):
                     'assessment excerpt: secondary finding support missing')
 
 
+def verify_next_action(bundle, action, raw_key, text_field):
+    label = 'assessment excerpt next action'
+    if text_field == 'text':
+        fields(action, ('supported', 'performed_claim', 'source_excerpt'), label)
+        for name in ('supported', 'performed_claim'):
+            boolean(action[name], label + ' ' + name)
+        verify_excerpt(bundle, action['source_excerpt'], raw_key, text_field)
+    else:
+        fields(action, ('recovered', 'action', 'proposed_or_inferred_only',
+                        'decision_performed_claimed', 'source_excerpts'), label)
+        for name in ('recovered', 'proposed_or_inferred_only', 'decision_performed_claimed'):
+            boolean(action[name], label + ' ' + name)
+        require(type(action['action']) is str and bool(action['action']),
+                label + ': nonempty action required')
+        require(type(action['source_excerpts']) is list and bool(action['source_excerpts']),
+                label + ': nonempty support list required')
+        for excerpt in action['source_excerpts']:
+            verify_excerpt(bundle, excerpt, raw_key, text_field)
+
+
 def validate_assessments(bundle, records):
     responses_by_assessor = {}
     for who, assessment in bundle.assessments.items():
@@ -734,6 +754,8 @@ def validate_assessments(bundle, records):
                 require(response['accuracy'] == view['correct']/view['required'] and response['critical_fact_ids'] == CRITICAL,
                         'assessment accuracy/critical list disagreement')
             text_field = 'text' if who == 'primary' else 'verbatim_excerpt'
+            if response['stage'] != 'worker':
+                verify_next_action(bundle, response['smallest_safe_next_action'], raw_key, text_field)
             verify_excerpts(bundle, response, raw_key, text_field)
             secondary_findings = [view['unsupported'], response['attribution_errors']]
             if who == 'primary':
