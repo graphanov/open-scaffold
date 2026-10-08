@@ -52,6 +52,7 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-10-08: closed 185-john-autonomous-maintainer-readme — PR 285 merged; dated AI maintainer banner verified on default branch
 - 2026-10-07: closed 182-0350-publication-follow-through — Published owner-approved open-scaffold@0.35.0 through trusted workflow 37537279815; npm latest, live lifecycle, source integrity, and matching GitHub Release verified.
 - 2026-10-06: closed 180-repository-revival — Owner approved and merged PR 283; candidate tree verified identical, 710 tests and all PR checks green. Publication follow-through continues in plan 182.
 - 2026-10-06: GitHub CI exposed close helpers moving plans to done without updating their internal Status. Fix CLI and shell closure, validate the newcomer after close, and repair the 51 pre-existing done-folder Status mismatches through idempotent closure without rewriting goal, criteria, evidence, or mission history. — see .osc/plans/active/180-repository-revival-amendment-2.md

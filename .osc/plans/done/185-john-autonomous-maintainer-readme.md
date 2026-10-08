@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -28,11 +28,11 @@ GitHub's default-branch README prominently and accurately explains John's time-l
 
 ## Acceptance criteria
 
-- [ ] A polished readable banner and concise announcement near the README top identify John, dates 8–14 October 2026, autonomous routine maintenance and Codex runtime.
-- [ ] Public text links to real issues/pull requests, clearly identifies AI authorship, and makes no unsupported reliability/adoption/completion claim.
-- [ ] Banner is static self-contained SVG with accessible title/description and Markdown alt text; no private paths, script or external resources.
-- [ ] Current committed HEAD passes strict verification, both builds and full tests, and receives fresh independent review before publication.
-- [ ] A real PR, successful current-head CI and merged default-branch readback prove the addition is live.
+- [x] A polished readable banner and concise announcement near the README top identify John, dates 8–14 October 2026, autonomous routine maintenance and Codex runtime. | Evidence: .osc/releases/2026-10-08-185-john-autonomous-maintainer-readme.md
+- [x] Public text links to real issues/pull requests, clearly identifies AI authorship, and makes no unsupported reliability/adoption/completion claim. | Evidence: .osc/releases/2026-10-08-185-john-autonomous-maintainer-readme.md
+- [x] Banner is static self-contained SVG with accessible title/description and Markdown alt text; no private paths, script or external resources. | Evidence: .osc/releases/2026-10-08-185-john-autonomous-maintainer-readme.md
+- [x] Current committed HEAD passes strict verification, both builds and full tests, and receives fresh independent review before publication. | Evidence: .osc/releases/2026-10-08-185-john-autonomous-maintainer-readme.md
+- [x] A real PR, successful current-head CI and merged default-branch readback prove the addition is live. | Evidence: .osc/releases/2026-10-08-185-john-autonomous-maintainer-readme.md
 
 ## Verification steps
 

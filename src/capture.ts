@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { closeSync, constants, existsSync, mkdirSync, openSync, readFileSync, realpathSync, writeSync } from 'node:fs';
 import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
-import { AMBIENT_WORK_RECORD_SCHEMA, AmbientObserved, AmbientUsage, ambientDigest, buildTranscriptWorkRecord } from './ambient.js';
+import { AMBIENT_WORK_RECORD_SCHEMA, AmbientObserved, AmbientUsage, ambientDigest, ambientTokenCount, buildTranscriptWorkRecord } from './ambient.js';
 import { redactSecrets } from './redaction.js';
 import { writeJsonUnder } from './path-safety.js';
 
@@ -76,8 +76,10 @@ interface CaptureParser {
 }
 
 function emptyUsage(): AmbientUsage {
-  return { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
+  return { input_tokens: null, output_tokens: null, cache_creation_input_tokens: null, cache_read_input_tokens: null };
 }
+
+const USAGE_SPLITS = ['input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens'] as const;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -85,10 +87,6 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
-}
-
-function numberOr(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
 function parseJsonl(raw: string): ParsedLines {
@@ -138,7 +136,8 @@ function redactUnknown(value: unknown): unknown {
 // --- Claude Code: session JSONL ({type:"assistant", message:{usage, content:[...]}}) ---
 // Ports examples/spikes/ambient-from-transcript.mjs: assistant turns, per-turn usage
 // totals (input/output/cache split), tool-call census, files touched, session span,
-// final text digest + claim-word sniff. Usage is per-turn here, so summing is correct.
+// final text digest + claim-word sniff. Each per-turn split needs complete coverage
+// across counted assistant messages before its sum is a session measurement.
 const claudeCodeParser: CaptureParser = {
   format: 'claude-code',
   sniff(parsed) {
@@ -173,11 +172,11 @@ const claudeCodeParser: CaptureParser = {
       if (!message) continue;
       assistantTurns += 1;
       const turnUsage = asRecord(message.usage);
-      if (turnUsage) {
-        usage.input_tokens = numberOr(usage.input_tokens, 0) + numberOr(turnUsage.input_tokens, 0);
-        usage.output_tokens = numberOr(usage.output_tokens, 0) + numberOr(turnUsage.output_tokens, 0);
-        usage.cache_creation_input_tokens = numberOr(usage.cache_creation_input_tokens, 0) + numberOr(turnUsage.cache_creation_input_tokens, 0);
-        usage.cache_read_input_tokens = numberOr(usage.cache_read_input_tokens, 0) + numberOr(turnUsage.cache_read_input_tokens, 0);
+      for (const key of USAGE_SPLITS) {
+        const count = ambientTokenCount(turnUsage?.[key]);
+        const previous = assistantTurns === 1 ? 0 : usage[key];
+        // Gaps remain null across later turns; explicit zero is a measurement.
+        usage[key] = previous !== null && count !== null ? ambientTokenCount(previous + count) : null;
       }
       const turnText: string[] = [];
       for (const block of asArray(message.content)) {
@@ -205,7 +204,9 @@ const claudeCodeParser: CaptureParser = {
       files_touched: [...files].sort(),
       final_message_digest: finalText ? digestText(finalText) : null,
       final_message_claim_words: claimWords(finalText),
-      notes: [],
+      notes: USAGE_SPLITS.some((key) => usage[key] === null)
+        ? ['claude token split coverage unavailable: no counted assistant turns or incomplete/invalid split reports; aggregates recorded null.']
+        : [],
     };
     return { observed, adapter: 'claude-code-transcript', command: 'claude-code-session', intent: firstUserContent };
   },
@@ -214,8 +215,9 @@ const claudeCodeParser: CaptureParser = {
 // --- Codex: rollout JSONL ({timestamp, type, payload}) ---
 // type:"response_item" payloads carry message/function_call/function_call_output;
 // type:"event_msg" payloads carry agent_message/mcp_tool_call_end/task_complete and
-// token_count. Codex reports cumulative token totals in the LAST token_count event
-// (info.total_token_usage) and has no cache-creation split — recorded null + a note.
+// token_count. Codex reports cumulative usage in info.total_token_usage: the latest
+// object replaces the whole snapshot. Events without a snapshot supply no update.
+// No cache-creation split is available — recorded null + a note.
 const codexParser: CaptureParser = {
   format: 'codex',
   sniff(parsed) {
@@ -288,23 +290,17 @@ const codexParser: CaptureParser = {
       }
     }
 
-    const notes: string[] = [];
-    const usage = emptyUsage();
-    if (lastTotalUsage) {
-      // Codex total_token_usage is cumulative; take the last event, do not sum across events.
-      usage.input_tokens = numberOr(lastTotalUsage.input_tokens, 0);
-      usage.output_tokens = numberOr(lastTotalUsage.output_tokens, 0);
-      usage.cache_read_input_tokens = numberOr(lastTotalUsage.cached_input_tokens, 0);
-      usage.total_tokens = numberOr(lastTotalUsage.total_tokens, usage.input_tokens + usage.output_tokens);
-      usage.cache_creation_input_tokens = null;
-      notes.push('codex reports cumulative token_count.info.total_token_usage; total_tokens is authoritative and cache-creation split is unavailable (recorded null).');
-    } else {
-      usage.input_tokens = null;
-      usage.output_tokens = null;
-      usage.cache_read_input_tokens = null;
-      usage.cache_creation_input_tokens = null;
-      notes.push('no codex token_count event found; token usage recorded null.');
-    }
+    // Map only the latest cumulative object; overlapping splits cannot reconstruct its total.
+    const usage: AmbientUsage = {
+      input_tokens: ambientTokenCount(lastTotalUsage?.input_tokens),
+      output_tokens: ambientTokenCount(lastTotalUsage?.output_tokens),
+      cache_read_input_tokens: ambientTokenCount(lastTotalUsage?.cached_input_tokens),
+      cache_creation_input_tokens: null,
+      total_tokens: ambientTokenCount(lastTotalUsage?.total_tokens),
+    };
+    const notes = ['codex uses latest cumulative token_count.info.total_token_usage; only valid reported total_tokens is authoritative; cache-creation split unavailable (recorded null).'];
+    if (!lastTotalUsage) notes.push('no codex token_count event found with a cumulative usage snapshot; token usage recorded null.');
+    else if (usage.total_tokens === null) notes.push('codex latest cumulative total_tokens unavailable; no split fallback.');
 
     stamps.sort();
     const observed: AmbientObserved = {
@@ -570,15 +566,13 @@ function optionalNumberOrNullField(record: Record<string, unknown>, key: string,
     warnings.push(`${path}.${key} unavailable.`);
     return null;
   }
-  if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value) || value < 0) failAmbientRecord(`${path}.${key} must be a non-negative integer or null`);
-  return value;
+  const count = ambientTokenCount(value);
+  if (count === null) failAmbientRecord(`${path}.${key} must be a non-negative integer or null`);
+  return count;
 }
 
 function optionalCountField(record: Record<string, unknown>, key: string, path: string, warnings: string[]): number | null {
-  const value = optionalNumberOrNullField(record, key, path, warnings);
-  if (value === null) return null;
-  if (!Number.isInteger(value) || value < 0) failAmbientRecord(`${path}.${key} must be a non-negative integer`);
-  return value;
+  return optionalNumberOrNullField(record, key, path, warnings);
 }
 
 function validateUsage(value: unknown, warnings: string[]): Record<string, number | null> {
