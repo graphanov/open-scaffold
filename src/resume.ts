@@ -375,6 +375,12 @@ function deriveNextAction(input: {
   }
   if (input.run && input.run.pending_gates > 0) {
     const gateId = input.run.pending_gate_ids[0] ?? '<gate-id>';
+    if (input.evidencePath) {
+      return nextAction(
+        `Pending gate ${gateId} remains unresolved: inspect and update existing evidence ${input.evidencePath} or the external coordinator; existence is not approval.`,
+        `${command} trace ${input.plan?.slug ?? '<plan-slug>'}`,
+      );
+    }
     return nextAction(
       `Record the answer for gate ${gateId} in evidence or the external coordinator, then continue from repo truth.`,
       `${command} trace ${input.plan?.slug ?? '<plan-slug>'}`,

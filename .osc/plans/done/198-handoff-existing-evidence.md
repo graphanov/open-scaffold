@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -31,11 +31,11 @@ Completed-plan handoff directs the next agent to inspect existing selected-plan 
 
 ## Acceptance criteria
 
-- [ ] Completed selected-plan handoff with a safely visible matching note names/reviews existing evidence, preserves bytes and omits duplicate creation; no-note handoff retains evidence creation.
-- [ ] Exact selected-plan matching, unrelated/amendment notes, symlink/directory exclusions and redaction remain safe; evidence existence does not certify correctness or grant authority.
-- [ ] A real first-run/checklist/evidence handoff regression fails on baseline and passes on candidate; invocation prefixes, read-only behavior, packet budgets and other next-action branches retain their contracts.
-- [ ] Only four admitted implementation paths change; exact readable growth is measured within the declared ceiling, with roots/algorithm/baseline/filecap/dependencies/workflows/README/frozen definitions and canonical drafts preserved.
-- [ ] Independent unchanged committed-head strict/build/full verification and fresh full-publication review/current CI precede public effects, delegated delivery/readback/release and factual closeout.
+- [x] Completed selected-plan handoff with a safely visible matching note names/reviews existing evidence, preserves bytes and omits duplicate creation; no-note handoff retains evidence creation. | Evidence: .osc/releases/2026-10-08-198-handoff-existing-evidence.md
+- [x] Exact selected-plan matching, unrelated/amendment notes, symlink/directory exclusions and redaction remain safe; evidence existence does not certify correctness or grant authority. | Evidence: .osc/releases/2026-10-08-198-handoff-existing-evidence.md
+- [x] A real first-run/checklist/evidence handoff regression fails on baseline and passes on candidate; invocation prefixes, read-only behavior, packet budgets and other next-action branches retain their contracts. | Evidence: .osc/releases/2026-10-08-198-handoff-existing-evidence.md
+- [x] Only four admitted implementation paths change; exact readable growth is measured within the declared ceiling, with roots/algorithm/baseline/filecap/dependencies/workflows/README/frozen definitions and canonical drafts preserved. | Evidence: .osc/releases/2026-10-08-198-handoff-existing-evidence.md
+- [x] Independent unchanged committed-head strict/build/full verification and fresh full-publication review/current CI precede public effects, delegated delivery/readback/release and factual closeout. | Evidence: .osc/releases/2026-10-08-198-handoff-existing-evidence.md
 
 ## Verification steps
 
