@@ -7,9 +7,9 @@ The viewer now reads the existing synthetic resume-demo mission, done scaffold-i
 ## Traceability
 
 - Task: plan 192, from read-only repository discovery and independent local corroboration.
-- Plan: `.osc/plans/active/192-viewer-record-chain.md`.
+- Plan: `.osc/plans/done/192-viewer-record-chain.md`.
 - Run packet: N/A — native Codex repository maintenance under the six-day delegation; no osc runtime adapter dispatch.
-- Branch: `codex/john-viewer-demo-docs-v2`; no PR for this slice yet.
+- Branch: `codex/john-viewer-demo-docs-v2`; actual delivery is [PR #297](https://github.com/graphanov/open-scaffold/pull/297).
 
 ## Verification
 
@@ -24,7 +24,7 @@ The viewer now reads the existing synthetic resume-demo mission, done scaffold-i
 
 ## Outcome
 
-Local documentation and executable regression are implemented. The viewer labels the record synthetic and historical, explains the absent empty stage folders, and links active-work guidance using an explicit same-slug handoff and trace. Missing evidence stays visible. No delivery or approval is claimed; parent 184 stays active.
+Local documentation and executable regression are implemented. The viewer labels the record synthetic and historical, explains the absent empty stage folders, and links active-work guidance using an explicit same-slug handoff and trace. Missing evidence stays visible. The initial local snapshot above preceded the observed delivery below; plan 192 is now done and parent 184 stays active.
 
 ## Follow-up
 
@@ -50,3 +50,13 @@ Failed-first: `npm test -- tests/first-run-docs.test.ts` returned 1, with one fa
 After the callout fix, `npm test -- tests/first-run-docs.test.ts tests/section-parser.test.ts tests/framework-cleanup-metric.test.ts` passed 43 tests in three files. The captured local precommit floor passed: `./verify.sh --strict` reported 9 pass / 0 fail / 18 retained historical warnings; `npm run build` passed both TypeScript builds; `npm test` passed 1,042 tests in 56 files. These counts come from this repair worker's newly captured outputs, not from nonexistent raw Root logs for c983b80d.
 
 Only docs/examples/README.md, tests/first-run-docs.test.ts and this dated note may change from the accepted repair base. Maintained source remains 16,865 physical TypeScript lines / 41 files under the unchanged 16,866 / 41 cap; root README bytes and absent SVG are preserved. Earlier attempts and receipts remain unchanged. The committed repair head and its subsequent unchanged-head worker floor will be recorded separately to preserve the tested head. Fresh Root verification and independent full-publication review are still required before branch/PR publication; fresh actual GitHub CI and current head/base/scope/review bindings are required before delegated merge. No public delivery or human approval is claimed, and plans 192 and parent 184 remain active.
+
+## Observed delivery and closeout
+
+PR [#297](https://github.com/graphanov/open-scaffold/pull/297) merged at 2026-10-08T09:30:23Z as `bad82777c2938e3b71d7a8b3e92cba32c72c249f`, from exact reviewed candidate `6e43aca74b62c10c200a6390e9736a50b773ae51`. Captured worker logs on that head show strict 9 pass / 0 fail / 18 historical intent warnings, both builds and 1,042 tests / 56 files. Root independently ran the same pinned strict/build/npm-test floor on the unchanged committed head and observed exit 0 for all commands. Root's native receipt retains output digests; numeric totals are attributed to the captured worker logs, not nonexistent Root raw stdout.
+
+Fresh independent review returned SHIP across ten Git entries / twelve no-rename paths. It passed 43 focused checks, nine complete advertised file reads across three locales, six source CLI reads and ten meaningful negative controls, including validation before file access and execution. The reference resolves to the current viewer heading and its three reads; shown plan/evidence are bound, and missing run or active-plan evidence remains visible.
+
+All four required actual GitHub checks passed, with two optional mirrors skipped. Root refreshed current head, base, scope and review before the owner-delegated squash merge without admin bypass or fabricated human approval. Default-branch readback matches the entire candidate tree, all twelve path identities and expected prior main parent. Root README has its exact pre-announcement bytes and the removed SVG is absent.
+
+The original failed-first, evidence-order correction, subsequent inbound-reference miss, amended repair and Root instrumentation failures remain retained. Native publication readback is observed and the repair lease released. Supported CLI closeout moved plan 192 and amendment 1 to done; six-day parent 184 stays active. No package/release, credential, access or protection action occurred. The sample remains historical synthetic evidence rather than current criterion certification or adoption.
