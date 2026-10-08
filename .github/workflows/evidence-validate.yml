@@ -98,7 +98,7 @@ jobs:
               for section in required_sections:
                   if not re.search(rf'^## .*{re.escape(section)}\b', text, re.M | re.I):
                       failures.append(f'{line}: missing ## {section}')
-              if re.search(r'pending', text, re.I) and stale_pattern.search(text):
+              if re.search(r'\bpending\b', text, re.I | re.ASCII) and stale_pattern.search(text):
                   failures.append(f'{line}: says pending while citing merged/closed/released evidence')
 
           if failures:

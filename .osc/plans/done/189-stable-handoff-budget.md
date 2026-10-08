@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -28,11 +28,11 @@ Supported compact handoff text retains usable navigation and a complete read-onl
 
 ## Acceptance criteria
 
-- [ ] At maxChars 600, the committed resume-demo text retains its title, status, selected plan identity, complete Next actions section with at least one full generated command and complete read-only boundary; output length is at most 600.
-- [ ] Bulky active-plan, no-plan, gated-run and redaction cases remain bounded and retain essential navigation/boundary structure, with honest detail omission and no truncated executable command or invented approval.
-- [ ] JSON summaries and budget validation remain unchanged; packets already fitting their requested budget remain byte-compatible.
-- [ ] Only the three scoped paths change after admission, with no maintained-source cap, dependency, schema, API or CLI range changes.
-- [ ] Failed-first and passing targeted tests, unchanged committed-head strict/build/full tests, independent full-scope review and current GitHub CI precede publication and delegated merge.
+- [x] At maxChars 600, the committed resume-demo text retains its title, status, selected plan identity, complete Next actions section with at least one full generated command and complete read-only boundary; output length is at most 600. | Evidence: .osc/releases/2026-10-08-189-stable-handoff-budget.md
+- [x] Bulky active-plan, no-plan, gated-run and redaction cases remain bounded and retain essential navigation/boundary structure, with honest detail omission and no truncated executable command or invented approval. | Evidence: .osc/releases/2026-10-08-189-stable-handoff-budget.md
+- [x] JSON summaries and budget validation remain unchanged; packets already fitting their requested budget remain byte-compatible. | Evidence: .osc/releases/2026-10-08-189-stable-handoff-budget.md
+- [x] Only the three scoped paths change after admission, with no maintained-source cap, dependency, schema, API or CLI range changes. | Evidence: .osc/releases/2026-10-08-189-stable-handoff-budget.md
+- [x] Failed-first and passing targeted tests, unchanged committed-head strict/build/full tests, independent full-scope review and current GitHub CI precede publication and delegated merge. | Evidence: .osc/releases/2026-10-08-189-stable-handoff-budget.md
 
 ## Verification steps
 

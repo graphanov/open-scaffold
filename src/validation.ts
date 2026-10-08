@@ -164,7 +164,7 @@ export function validateScaffold(root = process.cwd(), options: ValidationOption
       warnings.push({ level: 'warn', code: 'release_note.empty_verification', message: 'Release note Verification section is empty or a placeholder', path: rel });
     }
 
-    if (/pending/i.test(text) && /(?:PR\s+#\d+\s+merged|issue\s+#\d+\s+closed|Tag:\s+v\d|GitHub Release:\s+https?:\/\/)/i.test(text)) {
+    if (/\bpending\b/i.test(text) && /(?:PR\s+#\d+\s+merged|issue\s+#\d+\s+closed|Tag:\s+v\d|GitHub Release:\s+https?:\/\/)/i.test(text)) {
       warnings.push({ level: 'warn', code: 'release_note.pending_after_close', message: 'Release note still says pending while also citing merged/closed/released evidence', path: rel });
     }
     const runIds = text.match(/\b\d{8}T\d{6}Z-[a-z0-9-]+\b/g) ?? [];
