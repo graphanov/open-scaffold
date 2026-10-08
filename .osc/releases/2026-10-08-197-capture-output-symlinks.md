@@ -27,3 +27,7 @@ Initial metadata parser failed one live-corpus check because the preparation not
 ## Outcome
 
 Prepared scope only. No public effect, capture fix, whole-platform qualification or six-day completion is claimed.
+
+## Scope amendment 1
+
+Plan amendment: .osc/plans/active/197-capture-output-symlinks-amendment-1.md. Private readable candidate adds11 maintained lines (16,877/41); fixed source cap rejects that growth. Forge reported REVISE with no excluded metric edit. The amendment permits exact16,877 cap/assertion plus rationale in tests/framework-cleanup-metric.test.ts, preserving roots/algorithm/baseline/filecap. Five implementation paths require fresh acceptance/admission. No source fix or public effect is claimed by this metadata amendment.
