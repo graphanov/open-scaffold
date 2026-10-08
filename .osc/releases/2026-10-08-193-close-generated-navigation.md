@@ -25,3 +25,9 @@ Preparation only. No production fix, public effect, human approval, adoption or 
 ## Follow-up
 
 - Read independent design acceptance, bind exact production base/paths/lease, retain meaningful failed-first controls and independently verify the committed implementation before publication; actual fresh GitHub CI gates merge.
+
+## Private v3 acceptance failure
+
+Fresh independent review reproduced an unapproved shell no-anchor metadata/identity regression: the baseline appended to MISSION, while v3 mv-replaced a temporary file. Six isolated comparisons showed mode 0644 becoming 0600, symlinks replaced without stamping their targets, and hardlinks split without updating shared targets. Bytes and exit 0 alone did not establish compatibility.
+
+No real source or public effect occurred. Supported amendment 1 makes baseline append identity/metadata behavior explicit. Private v3 control results and this counterexample are retained; a v4 redesign and fresh independent acceptance must precede production admission.
