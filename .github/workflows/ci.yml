@@ -73,3 +73,145 @@ jobs:
 
       - name: Verify with CLI
         run: npm run osc -- verify
+
+  native-windows-amend-close:
+    name: Native Windows Node amend/close smoke
+    runs-on: windows-2025
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out repository with public fallback
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_TERMINAL_PROMPT: "0"
+          OSC_EVENT_NAME: ${{ github.event_name }}
+          OSC_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          git init .
+          if ($LASTEXITCODE -ne 0) { throw 'git init failed' }
+          $oscServerUrl = 'https://github.com'
+          if ($env:GITHUB_SERVER_URL) { $oscServerUrl = $env:GITHUB_SERVER_URL.TrimEnd('/') }
+          git remote add origin "$oscServerUrl/${env:GITHUB_REPOSITORY}.git"
+          if ($LASTEXITCODE -ne 0) { throw 'git remote add failed' }
+          function Fetch-WithFallback {
+            param([string[]]$oscFetchArgs)
+            if ($env:GITHUB_TOKEN) {
+              $oscAuth = $null
+              $oscAuthenticated = $false
+              try {
+                $oscAuth = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("x-access-token:$env:GITHUB_TOKEN"))
+                # Suppress native output and never print arguments or caught errors containing the header.
+                git -c credential.helper= -c "http.$oscServerUrl/.extraheader=AUTHORIZATION: basic $oscAuth" fetch @oscFetchArgs 1>$null 2>$null
+                $oscAuthenticated = $LASTEXITCODE -eq 0
+              } catch {
+                $oscAuthenticated = $false
+              } finally {
+                $oscAuth = $null
+              }
+              if ($oscAuthenticated) { return }
+              Write-Host 'Authenticated fetch failed; falling back to public unauthenticated fetch.'
+            }
+            git -c credential.helper= fetch @oscFetchArgs 1>$null 2>$null
+            if ($LASTEXITCODE -ne 0) { throw 'Public fetch failed' }
+          }
+          Fetch-WithFallback -oscFetchArgs @('--no-tags', '--prune', 'origin', '+refs/heads/*:refs/remotes/origin/*', '+refs/tags/*:refs/tags/*')
+          if ($env:OSC_EVENT_NAME -eq 'pull_request') {
+            if ($env:OSC_PR_NUMBER -notmatch '^\d+$') { throw 'Missing PR number' }
+            $oscMergeRef = "refs/pull/${env:OSC_PR_NUMBER}/merge"
+            Fetch-WithFallback -oscFetchArgs @('--no-tags', 'origin', "${oscMergeRef}:refs/remotes/pull/${env:OSC_PR_NUMBER}/merge")
+            $oscCheckoutRef = "refs/remotes/pull/${env:OSC_PR_NUMBER}/merge"
+          } else {
+            if ($env:GITHUB_SHA -notmatch '^[a-f0-9]{40}$') { throw 'Missing event commit' }
+            $oscCheckoutRef = $env:GITHUB_SHA
+          }
+          git checkout --force $oscCheckoutRef
+          if ($LASTEXITCODE -ne 0) { throw 'git checkout failed' }
+          git config --global --add safe.directory $env:GITHUB_WORKSPACE
+          if ($LASTEXITCODE -ne 0) { throw 'safe.directory configuration failed' }
+
+      - name: Bind tested source and runner
+        env:
+          OSC_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          OSC_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          OSC_EVENT_NAME: ${{ github.event_name }}
+          OSC_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $oscTestedCommit = [string](git rev-parse HEAD)
+          if ($LASTEXITCODE -ne 0) { throw 'HEAD binding failed' }
+          $oscTestedCommit = $oscTestedCommit.Trim()
+          if ($oscTestedCommit -ne $env:GITHUB_SHA) { throw 'Fetched commit differs from this workflow event' }
+          $oscParentsText = [string](git show -s --format=%P HEAD)
+          if ($LASTEXITCODE -ne 0) { throw 'Parent binding failed' }
+          $oscParents = @($oscParentsText.Trim().Split(' ', [StringSplitOptions]::RemoveEmptyEntries))
+          if ($env:OSC_EVENT_NAME -eq 'pull_request') {
+            if ($oscParents.Count -ne 2 -or $oscParents[0] -ne $env:OSC_PR_BASE_SHA -or $oscParents[1] -ne $env:OSC_PR_HEAD_SHA) {
+              throw 'Fetched merge parents differ from this PR event base and head'
+            }
+          }
+          $oscFiles = @(git ls-files -- src package.json package-lock.json tsconfig.json tests/native-amend-close-smoke.mjs .github/workflows/ci.yml .osc/.gitignore .osc/cockpit.example.json .osc/RULES.md .osc/plans/WORKFLOW.md .osc/plans/README.md .osc/plans/handoff-template.md .osc/plans/templates .osc/releases/README.md verify.sh close.sh bootstrap.sh)
+          if ($LASTEXITCODE -ne 0 -or $oscFiles.Count -eq 0) { throw 'Tracked source enumeration failed' }
+          git diff --exit-code HEAD -- @oscFiles
+          if ($LASTEXITCODE -ne 0) { throw 'Tracked source differs from tested commit' }
+          $oscBindings = foreach ($oscFile in $oscFiles) {
+            $oscBlob = [string](git rev-parse "HEAD:$oscFile")
+            if ($LASTEXITCODE -ne 0) { throw 'Source blob binding failed' }
+            @{ path = $oscFile; git_blob_oid = $oscBlob.Trim(); working_sha256 = (Get-FileHash -LiteralPath $oscFile -Algorithm SHA256).Hash.ToLowerInvariant(); bytes = (Get-Item -LiteralPath $oscFile).Length }
+          }
+          @{ schema = 'open-scaffold.native-windows-source-binding.v1'; tested_commit = $oscTestedCommit; tested_parents = $oscParents; event_sha = $env:GITHUB_SHA; event_name = $env:OSC_EVENT_NAME; pr_head_sha = $env:OSC_PR_HEAD_SHA; pr_base_sha = $env:OSC_PR_BASE_SHA; pr_number = $env:OSC_PR_NUMBER; repository = $env:GITHUB_REPOSITORY; workflow = $env:GITHUB_WORKFLOW; run_id = $env:GITHUB_RUN_ID; run_attempt = $env:GITHUB_RUN_ATTEMPT; runner_os = $env:RUNNER_OS; runner_label = 'windows-2025'; image_os = $env:ImageOS; image_version = $env:ImageVersion; powershell_version = $PSVersionTable.PSVersion.ToString(); files = @($oscBindings) } |
+            ConvertTo-Json -Depth 6 | Set-Content -Encoding utf8NoBOM native-windows-source-binding.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.12.0
+          cache: npm
+
+      - name: Install existing locked dependencies
+        run: |
+          npm.cmd ci
+          if ($LASTEXITCODE -ne 0) { throw 'Locked dependency installation failed' }
+
+      - name: Build core CLI
+        run: |
+          npm.cmd run build:core
+          if ($LASTEXITCODE -ne 0) { throw 'Core CLI build failed' }
+
+      - name: Qualify native Node amend and close
+        run: |
+          node tests/native-amend-close-smoke.mjs --require-windows --source-binding native-windows-source-binding.json --evidence native-windows-amend-close.json
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows smoke failed; inspect the bounded JSON and logs' }
+
+      - name: Require complete successful current-run evidence
+        if: always()
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($oscPath in @('native-windows-source-binding.json', 'native-windows-amend-close.json')) {
+            if (-not (Test-Path -LiteralPath $oscPath -PathType Leaf)) { throw 'Required qualification evidence is missing' }
+          }
+          $oscBinding = Get-Content -LiteralPath native-windows-source-binding.json -Raw | ConvertFrom-Json
+          $oscResult = Get-Content -LiteralPath native-windows-amend-close.json -Raw | ConvertFrom-Json
+          $oscBindingHash = (Get-FileHash -LiteralPath native-windows-source-binding.json -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($oscBinding.schema -ne 'open-scaffold.native-windows-source-binding.v1' -or $oscResult.schema -ne 'open-scaffold.native-amend-close-smoke.v1' -or $oscResult.passed -ne $true -or $oscResult.cleanup.removed -ne $true) { throw 'Qualification evidence is incomplete or failed' }
+          if ($oscResult.qualification -ne 'native-windows-node-amend-close-smoke' -or $oscResult.execution.platform -ne 'win32' -or $oscResult.execution.arch -ne 'x64' -or $oscResult.execution.node -ne 'v22.12.0') { throw 'Qualification runtime differs from the declared Windows/Node scope' }
+          if ($oscBinding.tested_commit -ne $env:GITHUB_SHA -or $oscBinding.event_sha -ne $env:GITHUB_SHA -or $oscBinding.run_id -ne $env:GITHUB_RUN_ID -or $oscBinding.run_attempt -ne $env:GITHUB_RUN_ATTEMPT -or $oscResult.sourceBinding.sha256 -ne $oscBindingHash) { throw 'Qualification evidence belongs to another commit or run' }
+          foreach ($oscFile in $oscBinding.files) {
+            if ((Get-FileHash -LiteralPath $oscFile.path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $oscFile.working_sha256) { throw 'Bound source changed during qualification' }
+          }
+
+      - name: Upload bounded qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-windows-amend-close-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            native-windows-source-binding.json
+            native-windows-amend-close.json
+          if-no-files-found: error
