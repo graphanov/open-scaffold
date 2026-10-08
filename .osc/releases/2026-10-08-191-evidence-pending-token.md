@@ -7,9 +7,9 @@ The core diagnostic, shell verifier and changed-evidence workflow now match the 
 ## Traceability
 
 - Task: plan 191, found during actual plan 189 closeout.
-- Plan: `.osc/plans/active/191-evidence-pending-token.md`.
+- Plan: `.osc/plans/done/191-evidence-pending-token.md`.
 - Run packet: N/A — native Codex source maintenance under the six-day owner delegation; no osc runtime adapter dispatch.
-- Branch: `codex/john-evidence-pending-token`; no PR for this slice yet.
+- Branch: `codex/john-evidence-pending-token`; actual delivery is [PR #296](https://github.com/graphanov/open-scaffold/pull/296).
 
 ## Verification
 
@@ -24,11 +24,11 @@ The core diagnostic, shell verifier and changed-evidence workflow now match the 
 
 ## Outcome
 
-The repaired predicates and executable regressions pass the worker precommit checks below. Root independent verification, fresh Overwatch review of the repaired committed head, GitHub CI and publication are not observed by this note. Plans 191 and six-day parent 184 stay active.
+The repaired predicates and executable regressions pass the worker precommit checks below. That precommit snapshot preceded Root independent verification, fresh repaired-head review, GitHub CI and delivery. Those observed results are recorded below. Plan 191 is now done; six-day parent 184 stays active.
 
 ## Follow-up
 
-- Freeze the committed candidate and obtain fresh committed-head verification and independent review before publication.
+- Plan 191 is closed following the observed delivery below. Preserve the genuine-warning regressions and whole-note lexical limits in future work.
 
 ## Initial candidate review and scoped repair
 
@@ -50,3 +50,13 @@ Supported amendment 1 adds the two remaining verifier predicates and executable 
 - An initial resume attempt exceeded macOS's Unix-socket path limit with the long private temporary path. The normal runtime replay passed with the shorter admitted temporary path. The quick gate passed; all attempted commands and discarded local workaround evidence are retained privately.
 - Maintained source is unchanged at 16,865 lines / 41 files under the unchanged 16,866 / 41 cap. Core source/tests, parser fixtures/goldens, immutable parent plan/amendment and exact README restoration match the repair base; SVG remains absent. Only the five repair paths change.
 - These are worker precommit results. New unchanged committed-head strict/build/full verification and its native receipt follow the commit; Root independent floor and fresh Overwatch review remain required before public effects. The native helper checks envelope/lease/evidence bindings and does not establish provider capacity or sandboxing. Actual inherited model remains unreported.
+
+## Observed delivery and closeout
+
+PR [#296](https://github.com/graphanov/open-scaffold/pull/296) merged at 2026-10-08T07:57:30Z as `d666f7c5ffa9429307f4e2cafea2efcb3f98aec7`, from reviewed candidate `f3cf4ddbaf416d8586bda66e0f54eeeb97c33aa3`. Root independently ran strict/build/all 1,041 tests on that unchanged committed head in the normal OS temporary environment, without the worker's Git-ceiling override. Strict reported 9 pass, 0 fail and 18 historical intent warnings.
+
+Fresh Overwatch returned SHIP on the full thirteen-path publication scope: 164 independent core/extracted-CI cases and 492 real shell runs across C, en_US.UTF-8 and tr_TR.UTF-8 passed, including embedded/Unicode-casefold controls, genuine standalone warnings, absent closure evidence, unchanged unrelated diagnostics, actual publication notes and the rejected old checker replay. This is separate from the worker's controls. All four required actual GitHub checks then passed; two optional mirrors skipped. Root refreshed the current head, base, review, scope and CI before the delegated squash merge; no human approval was fabricated or protection bypassed.
+
+Default-branch readback matches the complete candidate tree, all thirteen changed-path blobs and expected prior main parent. The exact restored root README and absent SVG remain preserved. The native publication reservation was observed and the repair lease released. Supported CLI closeout moved plan 191 and amendment 1 to done; parent 184 remains active. No package/release, credential, access or protection action occurred.
+
+The rejected partial candidate, failed-first controls and command-local test-runner failures/corrections remain retained. The matcher remains a whole-note lexical heuristic: words in quoted material can still cause false positives, and local checks are not deployment, adoption or semantic approval proof.
