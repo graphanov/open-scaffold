@@ -15,7 +15,7 @@ import {
   verifyAmbientRecordText,
   writeCaptureRecord,
 } from '../src/capture.js';
-import { ambientDigest } from '../src/ambient.js';
+import { AmbientObserved, AmbientUsage, ambientDigest, buildTranscriptWorkRecord } from '../src/ambient.js';
 import { redactSecrets } from '../src/redaction.js';
 
 const fixtures = resolve(import.meta.dirname, 'fixtures/capture');
@@ -113,6 +113,214 @@ describe('codex parser', () => {
     expect(o.usage.input_tokens).toBeNull();
     expect((record.record.runtime as Record<string, any>).tokenTotal).toBeNull();
     expect(o.notes.some((note: string) => note.includes('no codex token_count event found'))).toBe(true);
+  });
+});
+
+describe('token measurement availability', () => {
+  const splitKeys = ['input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens'] as const;
+  const completeUsage = { input_tokens: 7, output_tokens: 2, cache_creation_input_tokens: 1, cache_read_input_tokens: 3 };
+  const unknownUsage = { input_tokens: null, output_tokens: null, cache_creation_input_tokens: null, cache_read_input_tokens: null };
+  const zeroUsage = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
+  const cumulativeUsage = { input_tokens: 5200, output_tokens: 340, cached_input_tokens: 1500, total_tokens: 5750 };
+
+  function claudeTurn(usage: unknown, index = 0) {
+    return {
+      type: 'assistant', timestamp: `2026-06-13T10:00:0${index}.000Z`,
+      message: { role: 'assistant', ...(usage === undefined ? {} : { usage }), content: [{ type: 'text', text: 'Synthetic observation.' }] },
+    };
+  }
+
+  function codexSnapshot(usage: unknown) {
+    return { type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: usage } } };
+  }
+
+  function captureInline(format: 'claude-code' | 'codex', lines: unknown[]) {
+    return captureRecord({ transcriptPath: 'synthetic-token-availability', format, rawText: lines.map((line) => JSON.stringify(line)).join('\n') }).record;
+  }
+
+  function recordUsage(record: Record<string, unknown>) {
+    return (record.observed as AmbientObserved).usage;
+  }
+
+  function expectAvailability(record: Record<string, unknown>, total: number | null, observedAvailability: 'available' | 'unavailable') {
+    expect((record.runtime as Record<string, unknown>).tokenTotal).toBe(total);
+    const report = buildAmbientTrustReport(record);
+    expect(report.runtime.token_total).toBe(total);
+    expect(report.runtime.token_availability).toBe(total === null ? 'unavailable' : 'available');
+    expect(report.transcript_observed.token_availability).toBe(observedAvailability);
+    if (total === null) expect(report.warnings).toContain('runtime.tokenTotal unavailable.');
+    if (observedAvailability === 'unavailable') {
+      expect(report.transcript_observed.fidelity_notes).toContain('token-usage-unavailable');
+      expect(report.transcript_observed.fidelity_notes).not.toContain('high-fidelity-transcript-summary');
+    }
+    return report;
+  }
+
+  it.each([
+    ['empty transcript', []],
+    ['user-only transcript', [{ type: 'user', message: { content: 'Synthetic request.' } }]],
+    ['absent usage', [claudeTurn(undefined)]],
+    ['null usage', [claudeTurn(null)]],
+    ['empty usage', [claudeTurn({})]],
+  ])('keeps Claude %s unavailable', (_label, lines) => {
+    const record = captureInline('claude-code', lines as unknown[]);
+    expect(recordUsage(record)).toEqual(unknownUsage);
+    const report = expectAvailability(record, null, 'unavailable');
+    expect(renderAmbientTrustReport(report)).toContain('tokenTotal=unavailable; tokenAvailability=unavailable');
+  });
+
+  it.each([7, 0])('preserves a reported Claude input split of %s without inventing other splits or a total', (input) => {
+    const record = captureInline('claude-code', [claudeTurn({ input_tokens: input })]);
+    expect(recordUsage(record)).toEqual({ ...unknownUsage, input_tokens: input });
+    const report = expectAvailability(record, null, 'available');
+    expect(report.warnings).toContain('observed.usage.output_tokens unavailable.');
+    expect(report.warnings).toContain('observed.usage.cache_read_input_tokens unavailable.');
+  });
+
+  it.each([
+    ['reported then absent', [completeUsage, undefined]],
+    ['absent then reported', [undefined, completeUsage]],
+    ['reported then empty', [completeUsage, {}]],
+    ['empty then reported', [{}, completeUsage]],
+  ])('keeps Claude coverage gaps unavailable: %s', (_label, usages) => {
+    const record = captureInline('claude-code', (usages as unknown[]).map(claudeTurn));
+    expect((record.observed as AmbientObserved).assistant_turns).toBe(2);
+    expect(recordUsage(record)).toEqual(unknownUsage);
+    expect((record.observed as AmbientObserved).notes.some((note) => note.includes('coverage'))).toBe(true);
+    expectAvailability(record, null, 'unavailable');
+  });
+
+  it('poisons only the Claude split with incomplete assistant-turn coverage', () => {
+    const record = captureInline('claude-code', [claudeTurn(completeUsage), claudeTurn({ input_tokens: 5, output_tokens: 4, cache_creation_input_tokens: 0 }, 1)]);
+    expect(recordUsage(record)).toEqual({ input_tokens: 12, output_tokens: 6, cache_creation_input_tokens: 1, cache_read_input_tokens: null });
+    expectAvailability(record, null, 'available');
+  });
+
+  it.each(splitKeys)('keeps an invalid Claude %s unavailable while preserving other complete splits', (key) => {
+    const record = captureInline('claude-code', [claudeTurn({ ...completeUsage, [key]: -1 }), claudeTurn(completeUsage, 1)]);
+    const expected = Object.fromEntries(splitKeys.map((split) => [split, split === key ? null : completeUsage[split] * 2]));
+    expect(recordUsage(record)).toEqual(expected);
+    expectAvailability(record, null, 'available');
+  });
+
+  it.each([null, '7', false, {}, -1, 1.5])('treats invalid Claude input %j as unavailable', (input) => {
+    const record = captureInline('claude-code', [claudeTurn({ ...completeUsage, input_tokens: input })]);
+    expect(recordUsage(record)).toEqual({ ...completeUsage, input_tokens: null });
+    expectAvailability(record, null, 'available');
+  });
+
+  it('treats a non-finite JSON token count as unavailable without breaking capture verification', () => {
+    const rawText = JSON.stringify(claudeTurn(completeUsage)).replace('"input_tokens":7', '"input_tokens":1e400');
+    const record = captureRecord({ transcriptPath: 'synthetic-non-finite', format: 'claude-code', rawText }).record;
+    expect(recordUsage(record)).toEqual({ ...completeUsage, input_tokens: null });
+    expectAvailability(record, null, 'available');
+  });
+
+  it('keeps an overflowing Claude aggregate unavailable', () => {
+    const record = captureInline('claude-code', [claudeTurn({ ...completeUsage, input_tokens: Number.MAX_VALUE }), claudeTurn({ ...completeUsage, input_tokens: Number.MAX_VALUE }, 1)]);
+    expect(recordUsage(record)).toEqual({ input_tokens: null, output_tokens: 4, cache_creation_input_tokens: 2, cache_read_input_tokens: 6 });
+    expectAvailability(record, null, 'available');
+  });
+
+  it.each([
+    ['complete observations', completeUsage, { input_tokens: 14, output_tokens: 4, cache_creation_input_tokens: 2, cache_read_input_tokens: 6 }, 26],
+    ['explicit complete zeros', zeroUsage, zeroUsage, 0],
+  ])('sums Claude %s across all counted turns', (_label, usage, expected, total) => {
+    const record = captureInline('claude-code', [claudeTurn(usage), claudeTurn(usage, 1)]);
+    expect(recordUsage(record)).toEqual(expected);
+    expectAvailability(record, total as number, 'available');
+  });
+
+  it.each([
+    ['empty cumulative snapshot', {}, { ...unknownUsage, total_tokens: null }, null, 'unavailable'],
+    ['input only', { input_tokens: 7 }, { ...unknownUsage, input_tokens: 7, total_tokens: null }, null, 'available'],
+    ['all supported splits without a total', { input_tokens: 7, output_tokens: 2, cached_input_tokens: 3 }, { ...unknownUsage, input_tokens: 7, output_tokens: 2, cache_read_input_tokens: 3, total_tokens: null }, null, 'available'],
+    ['total only', { total_tokens: 17 }, { ...unknownUsage, total_tokens: 17 }, 17, 'available'],
+    ['explicit zero total', { total_tokens: 0 }, { ...unknownUsage, total_tokens: 0 }, 0, 'available'],
+  ])('uses only explicitly reported fields in the Codex %s', (_label, usage, expected, total, availability) => {
+    const record = captureInline('codex', [codexSnapshot(usage)]);
+    expect(recordUsage(record)).toEqual(expected);
+    expectAvailability(record, total as number | null, availability as 'available' | 'unavailable');
+  });
+
+  it.each([
+    ['empty', {}],
+    ['input only', { input_tokens: 7 }],
+    ['total only', { total_tokens: 17 }],
+    ['invalid total', { total_tokens: -1 }],
+  ])('does not salvage older fields from a Codex %s final snapshot', (_label, latest) => {
+    const record = captureInline('codex', [codexSnapshot(cumulativeUsage), codexSnapshot(latest)]);
+    const latestOnly = captureInline('codex', [codexSnapshot(latest)]);
+    expect(recordUsage(record)).toEqual(recordUsage(latestOnly));
+    const expectedTotal = (latest as { total_tokens?: number }).total_tokens === 17 ? 17 : null;
+    expectAvailability(record, expectedTotal, _label === 'input only' || _label === 'total only' ? 'available' : 'unavailable');
+  });
+
+  it.each([undefined, null, [], 'unavailable'])('ignores Codex token_count events without a cumulative object: %j', (nonSnapshot) => {
+    const record = captureInline('codex', [codexSnapshot(cumulativeUsage), codexSnapshot(nonSnapshot)]);
+    const snapshotOnly = captureInline('codex', [codexSnapshot(cumulativeUsage)]);
+    expect(recordUsage(record)).toEqual(recordUsage(snapshotOnly));
+    expectAvailability(record, 5750, 'available');
+  });
+
+  it('keeps an empty Codex transcript unavailable', () => {
+    const record = captureInline('codex', []);
+    expect(recordUsage(record)).toEqual({ ...unknownUsage, total_tokens: null });
+    expectAvailability(record, null, 'unavailable');
+  });
+
+  it.each(['input_tokens', 'output_tokens', 'cached_input_tokens', 'total_tokens'])('keeps invalid Codex %s null while preserving a reported authoritative total', (key) => {
+    const record = captureInline('codex', [codexSnapshot({ ...cumulativeUsage, [key]: -1 })]);
+    const expected = { input_tokens: 5200, output_tokens: 340, cache_creation_input_tokens: null, cache_read_input_tokens: 1500, total_tokens: 5750 };
+    const normalizedKey = key === 'cached_input_tokens' ? 'cache_read_input_tokens' : key;
+    expect(recordUsage(record)).toEqual({ ...expected, [normalizedKey]: null });
+    expectAvailability(record, key === 'total_tokens' ? null : 5750, 'available');
+  });
+
+  it.each([null, '17', -1, 1.5])('keeps invalid Codex authoritative total %j unavailable', (total) => {
+    const record = captureInline('codex', [codexSnapshot({ ...cumulativeUsage, total_tokens: total })]);
+    expect(recordUsage(record).total_tokens).toBeNull();
+    expectAvailability(record, null, 'available');
+    expect((record.observed as AmbientObserved).notes.some((note) => note.includes('total_tokens unavailable'))).toBe(true);
+  });
+
+  it('keeps a non-finite Codex authoritative total unavailable', () => {
+    const rawText = JSON.stringify(codexSnapshot(cumulativeUsage)).replace('"total_tokens":5750', '"total_tokens":1e400');
+    const record = captureRecord({ transcriptPath: 'synthetic-non-finite', format: 'codex', rawText }).record;
+    expect(recordUsage(record).total_tokens).toBeNull();
+    expectAvailability(record, null, 'available');
+  });
+
+  function buildWithUsage(usage: AmbientUsage) {
+    return buildTranscriptWorkRecord({
+      runId: 'synthetic-direct-builder', adapter: 'claude-code-transcript', command: 'synthetic', intent: null,
+      observed: { assistant_turns: 1, user_events: 0, started_at: null, ended_at: null, usage, tool_calls: {}, files_touched: [], final_message_digest: null, final_message_claim_words: [], notes: [] },
+    });
+  }
+
+  it.each(splitKeys)('requires a valid direct-builder %s before constructing a total', (key) => {
+    for (const value of [null, -1, 1.5, NaN, Infinity]) {
+      const record = buildWithUsage({ ...completeUsage, [key]: value });
+      expect((record.runtime as Record<string, unknown>).tokenTotal).toBeNull();
+    }
+  });
+
+  it.each([null, -1, 1.5, NaN, Infinity])('does not replace an explicitly unavailable or invalid direct-builder total %s with a split sum', (total) => {
+    const record = buildWithUsage({ ...completeUsage, total_tokens: total });
+    expect((record.runtime as Record<string, unknown>).tokenTotal).toBeNull();
+  });
+
+  it('keeps a direct-builder partial measurement or overflowing split sum unavailable', () => {
+    expectAvailability(buildWithUsage({ ...unknownUsage, input_tokens: 7 }), null, 'available');
+    const overflowing = buildWithUsage({ ...completeUsage, input_tokens: Number.MAX_VALUE, output_tokens: Number.MAX_VALUE });
+    expect((overflowing.runtime as Record<string, unknown>).tokenTotal).toBeNull();
+  });
+
+  it('preserves valid direct-builder totals and complete disjoint split sums, including zero', () => {
+    expectAvailability(buildWithUsage(completeUsage), 13, 'available');
+    expectAvailability(buildWithUsage(zeroUsage), 0, 'available');
+    expectAvailability(buildWithUsage({ ...unknownUsage, total_tokens: 17 }), 17, 'available');
+    expectAvailability(buildWithUsage({ ...unknownUsage, total_tokens: 0 }), 0, 'available');
   });
 });
 

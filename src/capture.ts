@@ -76,8 +76,10 @@ interface CaptureParser {
 }
 
 function emptyUsage(): AmbientUsage {
-  return { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
+  return { input_tokens: null, output_tokens: null, cache_creation_input_tokens: null, cache_read_input_tokens: null };
 }
+
+const USAGE_SPLITS = ['input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens'] as const;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -87,8 +89,8 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function numberOr(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+function tokenCountOrNull(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value) && value >= 0 ? value : null;
 }
 
 function parseJsonl(raw: string): ParsedLines {
@@ -138,7 +140,8 @@ function redactUnknown(value: unknown): unknown {
 // --- Claude Code: session JSONL ({type:"assistant", message:{usage, content:[...]}}) ---
 // Ports examples/spikes/ambient-from-transcript.mjs: assistant turns, per-turn usage
 // totals (input/output/cache split), tool-call census, files touched, session span,
-// final text digest + claim-word sniff. Usage is per-turn here, so summing is correct.
+// final text digest + claim-word sniff. Each per-turn split needs complete coverage
+// across counted assistant messages before its sum is a session measurement.
 const claudeCodeParser: CaptureParser = {
   format: 'claude-code',
   sniff(parsed) {
@@ -173,11 +176,13 @@ const claudeCodeParser: CaptureParser = {
       if (!message) continue;
       assistantTurns += 1;
       const turnUsage = asRecord(message.usage);
-      if (turnUsage) {
-        usage.input_tokens = numberOr(usage.input_tokens, 0) + numberOr(turnUsage.input_tokens, 0);
-        usage.output_tokens = numberOr(usage.output_tokens, 0) + numberOr(turnUsage.output_tokens, 0);
-        usage.cache_creation_input_tokens = numberOr(usage.cache_creation_input_tokens, 0) + numberOr(turnUsage.cache_creation_input_tokens, 0);
-        usage.cache_read_input_tokens = numberOr(usage.cache_read_input_tokens, 0) + numberOr(turnUsage.cache_read_input_tokens, 0);
+      for (const key of USAGE_SPLITS) {
+        const count = tokenCountOrNull(turnUsage?.[key]);
+        const previous = usage[key];
+        // A missing/invalid turn poisons only this aggregate, including when it
+        // precedes the first reported value. Explicit zero remains a measurement.
+        usage[key] = assistantTurns === 1 ? count
+          : previous !== null && count !== null ? tokenCountOrNull(previous + count) : null;
       }
       const turnText: string[] = [];
       for (const block of asArray(message.content)) {
@@ -205,7 +210,11 @@ const claudeCodeParser: CaptureParser = {
       files_touched: [...files].sort(),
       final_message_digest: finalText ? digestText(finalText) : null,
       final_message_claim_words: claimWords(finalText),
-      notes: [],
+      notes: assistantTurns === 0
+        ? ['no claude assistant turns found; token usage recorded null.']
+        : USAGE_SPLITS.some((key) => usage[key] === null)
+          ? ['claude token split coverage incomplete or invalid across counted assistant turns; unavailable aggregates recorded null.']
+          : [],
     };
     return { observed, adapter: 'claude-code-transcript', command: 'claude-code-session', intent: firstUserContent };
   },
@@ -214,8 +223,9 @@ const claudeCodeParser: CaptureParser = {
 // --- Codex: rollout JSONL ({timestamp, type, payload}) ---
 // type:"response_item" payloads carry message/function_call/function_call_output;
 // type:"event_msg" payloads carry agent_message/mcp_tool_call_end/task_complete and
-// token_count. Codex reports cumulative token totals in the LAST token_count event
-// (info.total_token_usage) and has no cache-creation split — recorded null + a note.
+// token_count. Codex reports cumulative usage in info.total_token_usage: the latest
+// object replaces the whole snapshot. Events without a snapshot supply no update.
+// No cache-creation split is available — recorded null + a note.
 const codexParser: CaptureParser = {
   format: 'codex',
   sniff(parsed) {
@@ -290,20 +300,19 @@ const codexParser: CaptureParser = {
 
     const notes: string[] = [];
     const usage = emptyUsage();
+    usage.total_tokens = null;
     if (lastTotalUsage) {
-      // Codex total_token_usage is cumulative; take the last event, do not sum across events.
-      usage.input_tokens = numberOr(lastTotalUsage.input_tokens, 0);
-      usage.output_tokens = numberOr(lastTotalUsage.output_tokens, 0);
-      usage.cache_read_input_tokens = numberOr(lastTotalUsage.cached_input_tokens, 0);
-      usage.total_tokens = numberOr(lastTotalUsage.total_tokens, usage.input_tokens + usage.output_tokens);
-      usage.cache_creation_input_tokens = null;
-      notes.push('codex reports cumulative token_count.info.total_token_usage; total_tokens is authoritative and cache-creation split is unavailable (recorded null).');
+      // Never sum cumulative events, salvage older fields, or reconstruct a total
+      // from overlapping provider splits when the authoritative field is absent.
+      usage.input_tokens = tokenCountOrNull(lastTotalUsage.input_tokens);
+      usage.output_tokens = tokenCountOrNull(lastTotalUsage.output_tokens);
+      usage.cache_read_input_tokens = tokenCountOrNull(lastTotalUsage.cached_input_tokens);
+      usage.total_tokens = tokenCountOrNull(lastTotalUsage.total_tokens);
+      notes.push(usage.total_tokens === null
+        ? 'codex latest cumulative token_count.info.total_token_usage has total_tokens unavailable; no split fallback; cache-creation split recorded null.'
+        : 'codex reports cumulative token_count.info.total_token_usage; total_tokens is authoritative and cache-creation split is unavailable (recorded null).');
     } else {
-      usage.input_tokens = null;
-      usage.output_tokens = null;
-      usage.cache_read_input_tokens = null;
-      usage.cache_creation_input_tokens = null;
-      notes.push('no codex token_count event found; token usage recorded null.');
+      notes.push('no codex token_count event found with a cumulative usage snapshot; token usage recorded null.');
     }
 
     stamps.sort();

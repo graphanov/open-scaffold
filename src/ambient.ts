@@ -32,7 +32,7 @@ export function ambientDigest(value: unknown): string {
 
 const digest = ambientDigest;
 
-/** Token usage breakdown shared by transcript parsers; nulls mean "the runtime does not report this split". */
+/** Token measurements shared by transcript parsers; null means a complete valid measurement is unavailable. */
 export interface AmbientUsage {
   input_tokens: number | null;
   output_tokens: number | null;
@@ -56,10 +56,17 @@ export interface AmbientObserved {
 }
 
 function transcriptTokenTotal(usage: AmbientUsage): number | null {
-  if (typeof usage.total_tokens === 'number') return usage.total_tokens;
+  // An explicit total is the authoritative channel, including unavailable/invalid
+  // values. Only an absent total permits deriving a sum of disjoint complete splits.
+  if (Object.prototype.hasOwnProperty.call(usage, 'total_tokens')) return isTokenCount(usage.total_tokens) ? usage.total_tokens : null;
   const splits = [usage.input_tokens, usage.output_tokens, usage.cache_creation_input_tokens, usage.cache_read_input_tokens];
-  if (!splits.some((value) => typeof value === 'number')) return null;
-  return splits.reduce<number>((sum, value) => sum + (typeof value === 'number' ? value : 0), 0);
+  if (!splits.every(isTokenCount)) return null;
+  const total = splits.reduce((sum, value) => sum + value, 0);
+  return isTokenCount(total) ? total : null;
+}
+
+function isTokenCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value) && value >= 0;
 }
 
 /**

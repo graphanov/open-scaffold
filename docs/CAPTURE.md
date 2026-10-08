@@ -55,6 +55,13 @@ ISO session span, a valid SHA-256 final-message digest when present, and generat
 fidelity notes. Unavailable fields are reported as warnings or `unavailable`; values
 are never invented.
 
+Token availability has two scopes. `transcript_observed.token_availability` is
+`available` when at least one valid usage aggregate or authoritative total is known;
+it can describe partial usage. `runtime.token_availability` is `available` only when
+`runtime.tokenTotal` is a valid complete session total. For example, an observed
+input split of 7 with other splits `null` leaves the runtime total unavailable.
+An explicitly reported zero remains a measurement and is available.
+
 The verifier never copies `boundary.note` or other record-authored authority prose. It
 generates its own authority boundary:
 
@@ -73,12 +80,30 @@ terminal controls, and private local paths are not exposed.
 
 | `--from` | Source | Fidelity |
 | --- | --- | --- |
-| `claude-code` | Claude Code session JSONL (`type:"assistant"` with `message.usage`) | full: per-turn usage with cache split, tool-call census, files touched |
-| `codex` | Codex rollout JSONL (`{timestamp, type, payload}`) | full turns + tool census; token totals from the cumulative `token_count` event; no cache-creation split (recorded `null` with a note) |
+| `claude-code` | Claude Code session JSONL (`type:"assistant"` with `message.usage`) | per-turn usage with cache split when coverage is complete; tool-call census, files touched |
+| `codex` | Codex rollout JSONL (`{timestamp, type, payload}`) | full turns + tool census; reported usage from the latest cumulative `token_count.info.total_token_usage` object; no cache-creation split (recorded `null` with a note) |
 | `jsonl-generic` | any JSONL with `role`/`type` and a timestamp field | best-effort: line/role/timestamp counts only; tokens, tools, and files are not available at this fidelity |
 
-Where a runtime lacks a contract field, the record stores `null` plus a note in
-`observed.notes`. Values are never invented. Packet text is run through the redaction
+Token counts must be finite non-negative integers. Missing, null, or invalid values
+are unavailable, never inferred zeros. Claude sums a split only when every counted
+assistant message reports that split validly. A gap makes only that split's aggregate
+`null`, even if later messages report it; an empty transcript has no token measurements.
+Its runtime total requires all four complete disjoint splits: input, output, cache
+creation, and cache read.
+
+Codex cumulative usage objects replace earlier snapshots in full, including empty or
+partial objects. Events without a cumulative object supply no update. Omitted fields
+are `null`; older snapshots cannot fill them. Only the latest object's explicit valid
+`total_tokens` supplies the runtime total, including zero. Input/output splits cannot
+reconstruct a missing total, and cached input overlaps input rather than adding a
+separate category. A reported total can therefore remain available when splits are
+unavailable. The shared transcript record builder also preserves an explicitly null
+or invalid total as unavailable; only an absent total permits summing four valid
+disjoint splits.
+
+Where a complete token measurement is unavailable, the record stores `null` plus a
+note in `observed.notes`. Token measurements do not establish monetary cost or
+per-task account attribution. Packet text is run through the redaction
 helpers (`src/redaction.ts`) before any digest, so secrets and local paths never land in
 the record.
 
