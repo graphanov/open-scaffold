@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -30,12 +30,12 @@ Actual Windows CI provides head-bound evidence for one regular-file Node amend/c
 
 ## Acceptance criteria
 
-- [ ] Existing Ubuntu ci job/check/triggers/checkout/permissions remain intact; the appended Windows job uses declared runner/Node/core-only build/read-only permissions and no masked failure or protected effect.
-- [ ] Portable smoke passes on the local host and require-Windows refuses a non-Windows host before fixture commands; no mock or wrapper turns portable evidence into native qualification.
-- [ ] Actual native Windows smoke preserves native public paths, canonical history, all three regular moved records, Status-only parent edit, unchanged amendments/alias/excluded raw history and repeat idempotence within the declared fixture.
-- [ ] Current actual Windows job/log/downloaded artifact binds tested merge/head commit, source/test/workflow blobs and working hashes, Node/OS/image and command/fixture bytes; missing/stale/native-refused evidence blocks qualification and merge.
-- [ ] Only three implementation paths change after separate admission; product source/API/cap/dependencies/parent184/README/assets/frozen definitions and canonical drafts remain preserved.
-- [ ] Unchanged committed-head independent strict/build/full checks and fresh full-publication review precede public effects; existing required GitHub checks plus the new native check/current bindings precede delegated merge/readback/release/closeout.
+- [x] Existing Ubuntu ci job/check/triggers/checkout/permissions remain intact; the appended Windows job uses declared runner/Node/core-only build/read-only permissions and no masked failure or protected effect. | Evidence: .osc/releases/2026-10-08-196-native-windows-amend-close-smoke.md
+- [x] Portable smoke passes on the local host and require-Windows refuses a non-Windows host before fixture commands; no mock or wrapper turns portable evidence into native qualification. | Evidence: .osc/releases/2026-10-08-196-native-windows-amend-close-smoke.md
+- [x] Actual native Windows smoke preserves native public paths, canonical history, all three regular moved records, Status-only parent edit, unchanged amendments/alias/excluded raw history and repeat idempotence within the declared fixture. | Evidence: .osc/releases/2026-10-08-196-native-windows-amend-close-smoke.md
+- [x] Current actual Windows job/log/downloaded artifact binds tested merge/head commit, source/test/workflow blobs and working hashes, Node/OS/image and command/fixture bytes; missing/stale/native-refused evidence blocks qualification and merge. | Evidence: .osc/releases/2026-10-08-196-native-windows-amend-close-smoke.md
+- [x] Only three implementation paths change after separate admission; product source/API/cap/dependencies/parent184/README/assets/frozen definitions and canonical drafts remain preserved. | Evidence: .osc/releases/2026-10-08-196-native-windows-amend-close-smoke.md
+- [x] Unchanged committed-head independent strict/build/full checks and fresh full-publication review precede public effects; existing required GitHub checks plus the new native check/current bindings precede delegated merge/readback/release/closeout. | Evidence: .osc/releases/2026-10-08-196-native-windows-amend-close-smoke.md
 
 ## Verification steps
 
