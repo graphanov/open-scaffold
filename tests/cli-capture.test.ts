@@ -1,26 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process'; // spawnSync used by run()
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, readlinkSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const cli = resolve(repoRoot, 'src/cli.ts');
-const tsx = join(repoRoot, 'node_modules/.bin/tsx');
+const tsxLoader = join(repoRoot, 'node_modules/tsx/dist/loader.mjs');
 const fixtures = resolve(repoRoot, 'tests/fixtures/capture');
 const recordFixtures = resolve(fixtures, 'records');
 const ambientHook = resolve(repoRoot, 'examples/hooks/ambient-hook.mjs');
 const codexNotifyHook = resolve(repoRoot, 'examples/hooks/codex-notify.mjs');
 
-// Run via the tsx binary (resolves regardless of cwd) with cwd set to the temp repo so
+// Run through the tsx loader with cwd set to the temp repo so
 // capture resolves the .osc root and default output path from there, exactly like a hook.
 function run(args: string[], cwd: string) {
-  return spawnSync(tsx, [cli, ...args], { cwd, encoding: 'utf8' });
+  return spawnSync(process.execPath, ['--import', tsxLoader, cli, ...args], { cwd, encoding: 'utf8' });
 }
 
 function tempRepo() {
   const target = mkdtempSync(join(tmpdir(), 'osc-capture-cli-'));
-  execFileSync(tsx, [cli, 'init', '--tier', 'min', '--target', target], { encoding: 'utf8' });
+  execFileSync(process.execPath, ['--import', tsxLoader, cli, 'init', '--tier', 'min', '--target', target], { encoding: 'utf8' });
   return target;
 }
 
@@ -340,5 +340,108 @@ describe('osc capture CLI surface', () => {
 
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('Use either --write or --dry-run');
+  });
+});
+
+
+describe.skipIf(process.platform === 'win32')('osc capture output link refusals', () => {
+  function localTranscript(repo: string) {
+    const transcript = join(repo, 'interrupted.jsonl');
+    const original = `${readFileSync(join(fixtures, 'claude-code.jsonl'), 'utf8')}\n{"unfinished":`;
+    writeFileSync(transcript, original);
+    return { transcript, original };
+  }
+
+  it.each([false, true])('refuses a default final link with hook-safe=%s and keeps evidence and transcript bytes', (hookSafe) => {
+    const repo = tempRepo();
+    const { transcript, original } = localTranscript(repo);
+    const target = join(repo, '.osc/releases/kept.md');
+    writeFileSync(target, 'keep evidence\n');
+    const output = join(repo, '.osc/state/ambient/interrupted.json');
+    mkdirSync(dirname(output), { recursive: true });
+    symlinkSync(target, output);
+    const result = run(['capture', '--from', 'claude-code', '--transcript', transcript, ...(hookSafe ? ['--hook-safe', '--json'] : [])], repo);
+    expect(result.status).toBe(hookSafe ? 0 : 2);
+    expect(result.stdout).toBe('');
+    if (hookSafe) expect(result.stderr).toBe('');
+    else expect(result.stderr).toContain('symlink');
+    expect(readlinkSync(output)).toBe(target);
+    expect(readFileSync(target, 'utf8')).toBe('keep evidence\n');
+    expect(readFileSync(transcript, 'utf8')).toBe(original);
+  });
+
+  it.each([false, true])('refuses a default parent link with hook-safe=%s before creating output', (hookSafe) => {
+    const repo = tempRepo();
+    const { transcript, original } = localTranscript(repo);
+    const target = join(repo, '.osc/releases');
+    const before = readdirSync(target).sort();
+    const parent = join(repo, '.osc/state/ambient');
+    mkdirSync(dirname(parent), { recursive: true });
+    symlinkSync(target, parent, 'dir');
+    const result = run(['capture', '--from', 'claude-code', '--transcript', transcript, ...(hookSafe ? ['--hook-safe'] : [])], repo);
+    expect(result.status).toBe(hookSafe ? 0 : 2);
+    expect(result.stdout).toBe('');
+    if (hookSafe) expect(result.stderr).toBe('');
+    else expect(result.stderr).toContain('symlink');
+    expect(readlinkSync(parent)).toBe(target);
+    expect(readdirSync(target).sort()).toEqual(before);
+    expect(existsSync(join(target, 'interrupted.json'))).toBe(false);
+    expect(readFileSync(transcript, 'utf8')).toBe(original);
+  });
+
+  it('refuses an explicit external final link without changing its target', () => {
+    const repo = tempRepo();
+    const { transcript, original } = localTranscript(repo);
+    const outside = mkdtempSync(join(tmpdir(), 'osc-capture-cli-outside-'));
+    const target = join(outside, 'kept.md');
+    const output = join(outside, 'record.json');
+    writeFileSync(target, 'keep external evidence\n');
+    symlinkSync(target, output);
+    const result = run(['capture', '--from', 'claude-code', '--transcript', transcript, '--out', output], repo);
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('symlink');
+    expect(readlinkSync(output)).toBe(target);
+    expect(readFileSync(target, 'utf8')).toBe('keep external evidence\n');
+    expect(readFileSync(transcript, 'utf8')).toBe(original);
+  });
+
+  it('keeps ordinary partial-tail capture and explicit external missing/regular output compatible', () => {
+    const repo = tempRepo();
+    const { transcript, original } = localTranscript(repo);
+    const outside = mkdtempSync(join(tmpdir(), 'osc-capture-cli-regular-'));
+    for (const output of [join(outside, 'new', 'record.json'), join(outside, 'existing.json')]) {
+      if (output.endsWith('existing.json')) writeFileSync(output, 'old record');
+      const result = run(['capture', '--from', 'claude-code', '--transcript', transcript, '--out', output, '--json'], repo);
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      const payload = JSON.parse(result.stdout);
+      expect(payload.record.schema).toBe('osc.ambient-work-record.v1');
+      expect(payload.record.observed.notes).toContain('tolerated 1 malformed/non-object json line(s).');
+      expect(JSON.parse(readFileSync(output, 'utf8')).observed.assistant_turns).toBe(3);
+    }
+    expect(readFileSync(transcript, 'utf8')).toBe(original);
+  });
+
+  it('supports aliased repository and output prefixes while protecting an aliased transcript', () => {
+    const repo = tempRepo();
+    const { transcript, original } = localTranscript(repo);
+    const holder = mkdtempSync(join(tmpdir(), 'osc-capture-cli-root-alias-'));
+    const alias = join(holder, 'repo');
+    symlinkSync(repo, alias, 'dir');
+    const inputAlias = join(alias, 'input-alias.jsonl');
+    symlinkSync(transcript, inputAlias);
+    for (const [root, output] of [[alias, join(repo, 'physical.json')], [repo, join(alias, 'alias.json')]] as const) {
+      const result = run(['capture', '--from', 'claude-code', '--transcript', join(alias, 'interrupted.jsonl'), '--repo', root, '--out', output], repo);
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(JSON.parse(readFileSync(output, 'utf8')).schema).toBe('osc.ambient-work-record.v1');
+    }
+    const result = run(['capture', '--from', 'claude-code', '--transcript', inputAlias, '--repo', alias, '--out', transcript], repo);
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('must not overwrite --transcript');
+    expect(readFileSync(transcript, 'utf8')).toBe(original);
+    expect(readlinkSync(inputAlias)).toBe(transcript);
   });
 });

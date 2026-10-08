@@ -52,6 +52,8 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-10-08: Readable output-safety fix requires an intentional eleven-line source budget increase and one exact metric-test path. — see .osc/plans/active/197-capture-output-symlinks-amendment-1.md
+- 2026-10-08: closed 196-native-windows-amend-close-smoke — Recorded PR301 native Windows regular-file amend/close qualification with unreproduced compiled-JS identity preserved
 - 2026-10-08: closed 195-windows-helper-navigation — Merged bounded Windows helper navigation via PR300; record observed delivery and retained native Windows limitation
 - 2026-10-08: Preserve actual moved POSIX literal-backslash fields and normalize only Windows directory forms — see .osc/plans/done/195-windows-helper-navigation-amendment-1.md
 - 2026-10-08: closed 193-close-generated-navigation — Merged bounded close navigation and shell refusal controls via PR299; record observed delivery and Windows follow-up
