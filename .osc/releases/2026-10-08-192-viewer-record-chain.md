@@ -30,3 +30,11 @@ Local documentation and executable regression are implemented. The viewer labels
 
 - Commit the exact three admitted paths, freeze the head and verify that unchanged committed candidate; retain those results separately so verification does not change the tested head.
 - Before branch or PR publication, require worker/Root local strict/build/full verification of the unchanged committed head plus fresh independent review of the full public diff. Before delegated merge, require fresh actual GitHub CI and refresh the current head, base, scope and review bindings. Plan closure requires observed delivery.
+
+## Evidence-order correction and incoming-reference repair
+
+Candidate `45cccfdf798a86c5a4db0e0831729f6bb469fa01` passed the captured worker floor, but fresh review returned REVISE on one evidence-note line that required GitHub CI before any external effect. The note-only candidate `c983b80dfc7a65867307e865cfcf8b2fa157ca1e` corrected that order, preserving docs/test bytes. Fresh final review returned SHIP for its eight publication entries / ten paths. Fresh current-head checks included nine exact file reads and five source CLI reads; old negative controls were carried only after byte identity checks.
+
+Root independently ran the pinned strict/build/npm-test floor on unchanged c983b80d and observed exit 0 for each command. The native helper retained command durations and output digests, not raw stdout; numeric 9/0/18 and 1,042/56 results remain attributed to captured worker-45 logs with identical test/config/source identities. No old-head Root floor is claimed.
+
+A subsequent actual repository search found docs/examples/README.md still pointing at the old viewer anchor and describing four shell commands. No public effect had been reserved or performed. Supported amendment 1 adds that incoming reference and meaningful target coverage under a new exact repair lease; earlier candidate, SHIP, failed-first and note-order correction remain retained. The repaired committed head needs fresh Root verification and independent full-scope review before publication, and actual GitHub CI before merge.
