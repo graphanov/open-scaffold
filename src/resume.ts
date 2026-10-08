@@ -359,6 +359,7 @@ function deriveNextAction(input: {
   run: ResumeLatestRun | null;
   repairHypothesis: string | null;
   verificationSteps: string[];
+  evidencePath: string | null;
   commandPrefix: string;
 }): NextAction {
   const command = input.commandPrefix;
@@ -396,6 +397,14 @@ function deriveNextAction(input: {
         `${command} plan validate ${input.plan.slug} --strict`,
         ...input.verificationSteps.slice(0, 2),
       ].filter(Boolean));
+    }
+    if (input.evidencePath) {
+      return nextAction(
+        `All acceptance criteria are checked for ${input.plan.slug}: inspect and update existing evidence ${input.evidencePath} before verification and closure; existence is not verification or approval.`,
+        `${command} trace ${input.plan.slug}`,
+        `${command} verify`,
+        `${command} close ${input.plan.slug} --message "<what shipped>"`,
+      );
     }
     return nextAction(
       `All acceptance criteria are checked for ${input.plan.slug}: record and fill evidence, verify it, and close the slice.`,
@@ -591,6 +600,12 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
   const lessonsList = scaffoldPresent ? safeAcceptedLessons(root) : [];
   const ambient = compileAmbientCapture(root, options.ambientSession);
   const amendments = listAmendments(root, picked).map((id) => redactPacketText(id, 180));
+  const evidence = listEvidence(root);
+  // Match raw plan identity before redacting the evidence path for display.
+  const planEvidence = evidence.filter((path) => {
+    const slug = path.match(/^\.osc\/releases\/\d{4}-\d{2}-\d{2}-(.+)\.md$/)?.[1];
+    return picked !== null && slug === picked.slug;
+  }).at(-1) ?? null;
   const next = deriveNextAction({
     scaffoldPresent,
     missionDefined: scaffold.mission.defined,
@@ -599,6 +614,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
     run,
     repairHypothesis,
     verificationSteps,
+    evidencePath: planEvidence ? redactPacketText(planEvidence, 220) : null,
     commandPrefix: options.commandPrefix ?? 'osc',
   });
 
@@ -609,7 +625,7 @@ export function compileResume(root = process.cwd(), options: ResumeOptions = {})
     amendments: { count: amendments.length, ids: amendments },
     work_done: {
       done_slices: (scaffold.plans.done ?? []).map((plan) => redactPacketText(plan.slug, 160)),
-      evidence: listEvidence(root).map((evidencePath) => redactPacketText(evidencePath, 220)),
+      evidence: evidence.map((evidencePath) => redactPacketText(evidencePath, 220)),
     },
     status: statusLine({ scaffoldPresent, missionDefined: scaffold.mission.defined, plan: activePlan, backlogCount: scaffold.plans.backlog?.length ?? 0 }),
     next_bounded_action: next.action,

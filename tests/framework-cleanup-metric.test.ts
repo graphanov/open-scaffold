@@ -42,7 +42,8 @@ const cleanupBaselineLoc = 20_890;
 // 244: first-run onboarding preview, brownfield context rendering, and output-mode tests (+212 LOC).
 // 180: task-bound handoff, invocation-aware commands, self-contained onboarding, and coherent close Status (+119 LOC), with no new maintained source file.
 // 197: preserve lexical capture output safety with an intentional eleven-line increase.
-const cleanupTargetLoc = 16_877;
+// 198: safe exact-plan evidence selection and completed handoff review guidance intentionally add 16 readable lines.
+const cleanupTargetLoc = 16_893;
 const cleanupTargetFiles = 41;
 
 interface MaintainedSourceFile {
@@ -85,7 +86,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(16_877);
+    expect(cleanupTargetLoc).toBe(16_893);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);
