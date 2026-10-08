@@ -26,7 +26,7 @@ A single operator using AI assistance against one repo. Truth lives in `MISSION.
 Reading path:
 
 - [`README.md` Start in 60 seconds](../../README.md#start-in-60-seconds) — run the guided first work-record command and follow the printed next steps.
-- [`docs/EXAMPLES.md` 60-second viewer demo](../EXAMPLES.md#60-second-viewer-demo) — mission → plan → verification → evidence in four shell commands.
+- [`docs/EXAMPLES.md` Linked-record viewer](../EXAMPLES.md#linked-record-viewer) — three explicit read-only commands show a synthetic mission, done plan and linked evidence note with recorded verification, outcome and follow-up.
 - [`downstream-walkthrough.md`](downstream-walkthrough.md) — the same loop on Tiny Notes, a small non-Open-Scaffold project with concrete commands, expected outputs, and a day-2 resume check that works without chat history.
 - [`examples/lifecycle-e2e-smoke/`](../../examples/lifecycle-e2e-smoke/README.md) — boring downstream fixture that proves the loop on a non-Open-Scaffold project. Run it with `npm run smoke:e2e`.
 

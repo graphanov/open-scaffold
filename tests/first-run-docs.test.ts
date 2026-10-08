@@ -11,10 +11,18 @@ function read(path: string): string {
 }
 
 describe('first-run documentation truth', () => {
-  it('reads the advertised viewer files and traces exactly the displayed plan and evidence', () => {
-    const viewer = read('docs/EXAMPLES.md').split(/^## /m)
-      .find((section) => /^[^\n]*viewer/i.test(section)) ?? '';
-    const commands = [...viewer.matchAll(/```bash\n([\s\S]*?)```/g)]
+  it('follows the examples-index viewer link, reads its files and traces exactly its plan and evidence', () => {
+    const link = read('docs/examples/README.md')
+      .match(/\[[^\]\n]*viewer[^\]\n]*\]\(([^#\s)]+)#([^)\s]+)\)/i);
+    expect(link, 'examples-index viewer link').not.toBeNull();
+    const viewerPath = resolve(repoRoot, 'docs/examples', link![1]);
+    // Validate the named source target before reading a path parsed from Markdown.
+    expect(viewerPath).toBe(join(repoRoot, 'docs/EXAMPLES.md'));
+    const viewer = readFileSync(viewerPath, 'utf8').split(/^## /m)
+      .find((section) => section.split('\n')[0].toLowerCase().replace(/ /g, '-') === link![2]);
+    expect(viewer, `viewer heading target: ${link![0]}`).toBeDefined();
+    expect(viewer!.split('\n')[0]).toBe('Linked-record viewer');
+    const commands = [...viewer!.matchAll(/```bash\n([\s\S]*?)```/g)]
       .map((match) => match[1].trim());
     const paths = [
       'examples/resume-demo/MISSION.md',
