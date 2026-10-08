@@ -7,7 +7,7 @@ A preregistered synthetic report-transfer pilot completed three worker, six coor
 ## Traceability
 
 - Roadmap / task: plan 181; existing roadmap pilot, with frozen amendment 1.
-- Plan: `.osc/plans/active/181-orchestrator-report-handoff-pilot.md`.
+- Plan: `.osc/plans/done/181-orchestrator-report-handoff-pilot.md`.
 - Run packet: `181-public-comparison-fixture`; source lineage SHA-256 `6fd049932c50e9b9c0aca4b0c75a5d7c7502bc8572c641ef46bffad57e791149`.
 - Branch: `codex/john-report-handoff-pilot`. No PR has been created for this candidate; Root publication and merge remain pending.
 - Example: `examples/orchestrator-handoff/README.md`; exact synthetic sources/prompts/raw outputs and portable metadata projections in `study.json`, both frozen assessment projections, derived results, frozen formatter and offline verifier.
@@ -58,3 +58,11 @@ The experimental attributed envelope is a fixture format, not a shipped core sch
 
 - Root performs independent review, fresh tamper tests and exact committed-head strict/build/test checks before any public pull request or merge.
 - A harder recovery comparison requires separate preregistration; preserve this ceiling result and timing-method deviation.
+
+## Observed delivery
+
+PR [#292](https://github.com/graphanov/open-scaffold/pull/292) merged at 2026-10-08T04:51:35Z as `409f2a0d306b6d3c1379dfe9fd7d6de1b28168da`. The reviewed final candidate was `3787d3e8dca6cb1c299e5fde76db6b4c226fcfa8`. Root independently verified strict/build/all 800 tests/offline checks on its unchanged committed head, then refreshed independent SHIP, all fourteen paths, live base/head and the four required GitHub checks before the delegated squash merge. Two optional mirrors skipped. No human approval was invented.
+
+Fresh independent final review passed 3,072 controls: 85 positive passes and 2,987 intended negative rejections, including all 276 retained next-action bypass copies. Worker controls are separately retained; overlapping matrices are not distinct study samples. Both rejected source candidates, review failures and test-harness diagnostics remain. The completed study's inputs, outputs and all 300 assessor fact scores were unchanged.
+
+Default-branch readback confirmed the merge parent, the full candidate tree, every fourteen changed-file blob and absence of the two old stage paths. The native draft-effect reservation was observed and the source writer lease explicitly released. This records real GitHub delivery, not an offline-helper capability or a package/npm release. Plan 181 was then closed through the supported CLI; current-stage reference targets were moved to done while historical event wording stayed intact. The six-day parent 184 remains active.
