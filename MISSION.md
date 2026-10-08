@@ -52,6 +52,7 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-10-08: Align the same lexical evidence rule in shell and GitHub checks before publication — see .osc/plans/active/191-evidence-pending-token-amendment-1.md
 - 2026-10-08: closed 189-stable-handoff-budget — PR 295 merged; compact navigation/boundary retained with unchanged JSON and fitting legacy packets, independent review and 839 tests.
 - 2026-10-08: closed 190-remove-john-readme-announcement — PR 294 merged; prior README restored exactly and banner deleted on default branch at owner request.
 - 2026-10-08: closed 181-orchestrator-report-handoff-pilot — PR 292 merged; three paired report-transfer trials, preserved failures and two independent assessments published with an offline consistency verifier.

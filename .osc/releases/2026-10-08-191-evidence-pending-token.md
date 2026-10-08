@@ -27,3 +27,11 @@ The narrow source fix and regression tests pass focused and full local verificat
 ## Follow-up
 
 - Freeze the committed candidate and obtain fresh committed-head verification and independent review before publication.
+
+## Initial candidate review and scoped repair
+
+The first candidate `795d965489f1e9c5204968820be1220c93e4b2be` is retained unpublished. Its worker ran strict/build/all 865 tests sequentially on that unchanged committed head. Strict recorded 8 pass, 0 fail and 19 warnings: 18 historical intent warnings plus the unchanged shell substring warning. This is worker verification, not Root independent verification or public delivery.
+
+Fresh Overwatch found the core fix correct: 88 independent controls and 92 focused tests passed, with only the intended live diagnostic removed. Review returned REVISE because the shell verifier and GitHub changed-evidence checker still used substring matching. The exact workflow Python block rejected the actual two-note publication set with exit 1; 86 real-shell/extracted-CI controls confirmed the same identifier collision while retaining genuine warning cases. No GitHub action was attempted.
+
+Supported amendment 1 adds the two remaining verifier predicates and executable tests under a new exact repair admission. The initial lease is released with no public effect. Earlier source, tests, failed attempts and review remain preserved. New repair verification and independent review are still required.
