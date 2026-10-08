@@ -31,3 +31,9 @@ Preparation only. No production fix, public effect, human approval, adoption or 
 Fresh independent review reproduced an unapproved shell no-anchor metadata/identity regression: the baseline appended to MISSION, while v3 mv-replaced a temporary file. Six isolated comparisons showed mode 0644 becoming 0600, symlinks replaced without stamping their targets, and hardlinks split without updating shared targets. Bytes and exit 0 alone did not establish compatibility.
 
 No real source or public effect occurred. Supported amendment 1 makes baseline append identity/metadata behavior explicit. Private v3 control results and this counterexample are retained; a v4 redesign and fresh independent acceptance must precede production admission.
+
+## Private v4 acceptance failure
+
+The private v4 candidate passed prior behavior, metadata and metric checks. Fresh independent fault injection then showed an unguarded renderer printf could omit a qualifying historical row; the incomplete temporary history was copied and the shell exited 0 reporting closure. The original no-anchor append retained historical content under the same injection. This occurred only in an isolated private fixture, with no real source or public effect.
+
+Supported amendment 2 requires guards on the newly introduced renderer writes and loop output/redirection, with nonzero refusal before incomplete MISSION history writes or success reporting. Existing partial-close/no-rollback limits remain explicit. The rejected result and private guard variants are retained; v5 acceptance still precedes production admission.
