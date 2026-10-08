@@ -10,7 +10,7 @@ Open Scaffold is a runtime-neutral, repo-native work record and repository proto
 
 This document is the full ontology. Most readers do not need every protocol page.
 
-- New here? Read the [README](../README.md), then [`docs/EXAMPLES.md`](EXAMPLES.md) for the 60-second viewer demo.
+- New here? Read the [README](../README.md), then [`docs/EXAMPLES.md`](EXAMPLES.md#linked-record-viewer) for the linked-record viewer: three read-only commands showing a synthetic greeting-project mission, done bootstrap plan, and linked evidence note.
 - Wiring task/run identity into a coordinator or task system: [`docs/TASK_RUN_MODEL.md`](TASK_RUN_MODEL.md).
 - Using repo-local tasks before an external tracker: [`WORKFLOW.md#task-trackers-and-plans`](WORKFLOW.md#task-trackers-and-plans).
 - Understanding runtime handoff progressively: start with `osc run` package generation, then read [`docs/RUNTIME_BINDING_CONTRACT.md`](RUNTIME_BINDING_CONTRACT.md), [`docs/SPAWNING_BOUNDARY.md`](SPAWNING_BOUNDARY.md), and the historical label taxonomy in [`docs/ADAPTERS.md`](ADAPTERS.md).
