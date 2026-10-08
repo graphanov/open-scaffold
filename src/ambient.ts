@@ -56,17 +56,15 @@ export interface AmbientObserved {
 }
 
 function transcriptTokenTotal(usage: AmbientUsage): number | null {
-  // An explicit total is the authoritative channel, including unavailable/invalid
-  // values. Only an absent total permits deriving a sum of disjoint complete splits.
-  if (Object.prototype.hasOwnProperty.call(usage, 'total_tokens')) return isTokenCount(usage.total_tokens) ? usage.total_tokens : null;
-  const splits = [usage.input_tokens, usage.output_tokens, usage.cache_creation_input_tokens, usage.cache_read_input_tokens];
-  if (!splits.every(isTokenCount)) return null;
-  const total = splits.reduce((sum, value) => sum + value, 0);
-  return isTokenCount(total) ? total : null;
+  // Explicit unavailable/invalid totals block fallback to a disjoint split sum.
+  if (Object.prototype.hasOwnProperty.call(usage, 'total_tokens')) return ambientTokenCount(usage.total_tokens);
+  const splits = [usage.input_tokens, usage.output_tokens, usage.cache_creation_input_tokens, usage.cache_read_input_tokens].map(ambientTokenCount);
+  if (!splits.every((value) => value !== null)) return null;
+  return ambientTokenCount(splits.reduce((sum, value) => sum + value, 0));
 }
 
-function isTokenCount(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value) && value >= 0;
+export function ambientTokenCount(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value) && value >= 0 ? value : null;
 }
 
 /**

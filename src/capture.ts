@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { closeSync, constants, existsSync, mkdirSync, openSync, readFileSync, realpathSync, writeSync } from 'node:fs';
 import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
-import { AMBIENT_WORK_RECORD_SCHEMA, AmbientObserved, AmbientUsage, ambientDigest, buildTranscriptWorkRecord } from './ambient.js';
+import { AMBIENT_WORK_RECORD_SCHEMA, AmbientObserved, AmbientUsage, ambientDigest, ambientTokenCount, buildTranscriptWorkRecord } from './ambient.js';
 import { redactSecrets } from './redaction.js';
 import { writeJsonUnder } from './path-safety.js';
 
@@ -89,10 +89,6 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function tokenCountOrNull(value: unknown): number | null {
-  return typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value) && value >= 0 ? value : null;
-}
-
 function parseJsonl(raw: string): ParsedLines {
   const lines: Array<Record<string, unknown>> = [];
   let malformed = 0;
@@ -177,12 +173,10 @@ const claudeCodeParser: CaptureParser = {
       assistantTurns += 1;
       const turnUsage = asRecord(message.usage);
       for (const key of USAGE_SPLITS) {
-        const count = tokenCountOrNull(turnUsage?.[key]);
-        const previous = usage[key];
-        // A missing/invalid turn poisons only this aggregate, including when it
-        // precedes the first reported value. Explicit zero remains a measurement.
-        usage[key] = assistantTurns === 1 ? count
-          : previous !== null && count !== null ? tokenCountOrNull(previous + count) : null;
+        const count = ambientTokenCount(turnUsage?.[key]);
+        const previous = assistantTurns === 1 ? 0 : usage[key];
+        // Gaps remain null across later turns; explicit zero is a measurement.
+        usage[key] = previous !== null && count !== null ? ambientTokenCount(previous + count) : null;
       }
       const turnText: string[] = [];
       for (const block of asArray(message.content)) {
@@ -210,11 +204,9 @@ const claudeCodeParser: CaptureParser = {
       files_touched: [...files].sort(),
       final_message_digest: finalText ? digestText(finalText) : null,
       final_message_claim_words: claimWords(finalText),
-      notes: assistantTurns === 0
-        ? ['no claude assistant turns found; token usage recorded null.']
-        : USAGE_SPLITS.some((key) => usage[key] === null)
-          ? ['claude token split coverage incomplete or invalid across counted assistant turns; unavailable aggregates recorded null.']
-          : [],
+      notes: USAGE_SPLITS.some((key) => usage[key] === null)
+        ? ['claude token split coverage unavailable: no counted assistant turns or incomplete/invalid split reports; aggregates recorded null.']
+        : [],
     };
     return { observed, adapter: 'claude-code-transcript', command: 'claude-code-session', intent: firstUserContent };
   },
@@ -298,22 +290,17 @@ const codexParser: CaptureParser = {
       }
     }
 
-    const notes: string[] = [];
-    const usage = emptyUsage();
-    usage.total_tokens = null;
-    if (lastTotalUsage) {
-      // Never sum cumulative events, salvage older fields, or reconstruct a total
-      // from overlapping provider splits when the authoritative field is absent.
-      usage.input_tokens = tokenCountOrNull(lastTotalUsage.input_tokens);
-      usage.output_tokens = tokenCountOrNull(lastTotalUsage.output_tokens);
-      usage.cache_read_input_tokens = tokenCountOrNull(lastTotalUsage.cached_input_tokens);
-      usage.total_tokens = tokenCountOrNull(lastTotalUsage.total_tokens);
-      notes.push(usage.total_tokens === null
-        ? 'codex latest cumulative token_count.info.total_token_usage has total_tokens unavailable; no split fallback; cache-creation split recorded null.'
-        : 'codex reports cumulative token_count.info.total_token_usage; total_tokens is authoritative and cache-creation split is unavailable (recorded null).');
-    } else {
-      notes.push('no codex token_count event found with a cumulative usage snapshot; token usage recorded null.');
-    }
+    // Map only the latest cumulative object; overlapping splits cannot reconstruct its total.
+    const usage: AmbientUsage = {
+      input_tokens: ambientTokenCount(lastTotalUsage?.input_tokens),
+      output_tokens: ambientTokenCount(lastTotalUsage?.output_tokens),
+      cache_read_input_tokens: ambientTokenCount(lastTotalUsage?.cached_input_tokens),
+      cache_creation_input_tokens: null,
+      total_tokens: ambientTokenCount(lastTotalUsage?.total_tokens),
+    };
+    const notes = ['codex uses latest cumulative token_count.info.total_token_usage; only valid reported total_tokens is authoritative; cache-creation split unavailable (recorded null).'];
+    if (!lastTotalUsage) notes.push('no codex token_count event found with a cumulative usage snapshot; token usage recorded null.');
+    else if (usage.total_tokens === null) notes.push('codex latest cumulative total_tokens unavailable; no split fallback.');
 
     stamps.sort();
     const observed: AmbientObserved = {
@@ -579,15 +566,13 @@ function optionalNumberOrNullField(record: Record<string, unknown>, key: string,
     warnings.push(`${path}.${key} unavailable.`);
     return null;
   }
-  if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value) || value < 0) failAmbientRecord(`${path}.${key} must be a non-negative integer or null`);
-  return value;
+  const count = ambientTokenCount(value);
+  if (count === null) failAmbientRecord(`${path}.${key} must be a non-negative integer or null`);
+  return count;
 }
 
 function optionalCountField(record: Record<string, unknown>, key: string, path: string, warnings: string[]): number | null {
-  const value = optionalNumberOrNullField(record, key, path, warnings);
-  if (value === null) return null;
-  if (!Number.isInteger(value) || value < 0) failAmbientRecord(`${path}.${key} must be a non-negative integer`);
-  return value;
+  return optionalNumberOrNullField(record, key, path, warnings);
 }
 
 function validateUsage(value: unknown, warnings: string[]): Record<string, number | null> {
