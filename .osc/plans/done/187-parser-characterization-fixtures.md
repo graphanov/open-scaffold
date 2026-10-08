@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -29,11 +29,11 @@ Valid new work records and clean plan closures pass parser tests without golden-
 
 ## Acceptance criteria
 
-- [ ] Full historical fixture membership and bytes match the qualified source; complete ordered section bodies and both existing validation outcome hashes remain pinned and checked.
-- [ ] Existing recognition/fence/CRLF/order/line-number tests remain; deliberate fence regression, body loss and fixture omission/tampering are detected by characterization even if validator errors remain empty.
-- [ ] Disposable valid plan/evidence additions and clean status-aligned closure pass without expected-data changes; valid new canonical fenced/ATX/CRLF documents pass live validation.
-- [ ] New errors, stage/status mismatch, vague-goal warnings or missing release sections fail the live checks with readable full diagnostic/path differences; known warning rows remain exact.
-- [ ] Only the four test-fixture paths change after admission; targeted tests, strict verification, both builds, full tests and fresh independent current-head/scope review precede publication.
+- [x] Full historical fixture membership and bytes match the qualified source; complete ordered section bodies and both existing validation outcome hashes remain pinned and checked. | Evidence: .osc/releases/2026-10-08-187-parser-characterization-fixtures.md
+- [x] Existing recognition/fence/CRLF/order/line-number tests remain; deliberate fence regression, body loss and fixture omission/tampering are detected by characterization even if validator errors remain empty. | Evidence: .osc/releases/2026-10-08-187-parser-characterization-fixtures.md
+- [x] Disposable valid plan/evidence additions and clean status-aligned closure pass without expected-data changes; valid new canonical fenced/ATX/CRLF documents pass live validation. | Evidence: .osc/releases/2026-10-08-187-parser-characterization-fixtures.md
+- [x] New errors, stage/status mismatch, vague-goal warnings or missing release sections fail the live checks with readable full diagnostic/path differences; known warning rows remain exact. | Evidence: .osc/releases/2026-10-08-187-parser-characterization-fixtures.md
+- [x] Only the four test-fixture paths change after admission; targeted tests, strict verification, both builds, full tests and fresh independent current-head/scope review precede publication. | Evidence: .osc/releases/2026-10-08-187-parser-characterization-fixtures.md
 
 ## Verification steps
 
