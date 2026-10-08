@@ -1,0 +1,2147 @@
+{
+  "schema": "open-scaffold.orchestrator-handoff.results.v1",
+  "interpretation": "Both frozen assessors scored every fresh reader 12/12. All three paired differences are zero: a tie at the ceiling, with no observed recovery advantage.",
+  "assessments": {
+    "primary": {
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "plain",
+            "osc"
+          ],
+          "plain_correct": 12,
+          "osc_correct": 12,
+          "required": 12,
+          "plain_accuracy": 1.0,
+          "osc_accuracy": 1.0,
+          "osc_minus_plain_facts": 0,
+          "osc_minus_plain_accuracy": 0.0
+        },
+        {
+          "pair": 2,
+          "order": [
+            "osc",
+            "plain"
+          ],
+          "plain_correct": 12,
+          "osc_correct": 12,
+          "required": 12,
+          "plain_accuracy": 1.0,
+          "osc_accuracy": 1.0,
+          "osc_minus_plain_facts": 0,
+          "osc_minus_plain_accuracy": 0.0
+        },
+        {
+          "pair": 3,
+          "order": [
+            "plain",
+            "osc"
+          ],
+          "plain_correct": 12,
+          "osc_correct": 12,
+          "required": 12,
+          "plain_accuracy": 1.0,
+          "osc_accuracy": 1.0,
+          "osc_minus_plain_facts": 0,
+          "osc_minus_plain_accuracy": 0.0
+        }
+      ],
+      "arm_means": {
+        "plain": {
+          "readers": 3,
+          "correct_fact_total": 36,
+          "possible_fact_total": 36,
+          "mean_correct_facts": 12.0,
+          "mean_accuracy": 1.0,
+          "mean_omissions": 0.0
+        },
+        "osc": {
+          "readers": 3,
+          "correct_fact_total": 36,
+          "possible_fact_total": 36,
+          "mean_correct_facts": 12.0,
+          "mean_accuracy": 1.0,
+          "mean_omissions": 0.0
+        }
+      },
+      "mean_paired_osc_minus_plain_accuracy": 0.0,
+      "secondary": {
+        "reader": {
+          "omissions": 0,
+          "critical_omissions": 0,
+          "unsupported_completion_claims": 0,
+          "attribution_errors": 0,
+          "other_unsupported_zero_usage_cost_scalability_claims": 0,
+          "disagreement_and_open_decision_assessments": {
+            "pair-1-plain-reader": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-plain-reader.txt",
+                    "start_line": 8,
+                    "end_line": 8,
+                    "text": "- **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is not verified complete. Evidence: `fixture/A/marker.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-plain-reader.txt",
+                    "start_line": 21,
+                    "end_line": 21,
+                    "text": "- **Observed:** Older documentation reports `0.34.0` and is stale relative to the pinned release evidence. Evidence: `fixture/C/old-doc.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-plain-reader.txt",
+                    "start_line": 22,
+                    "end_line": 22,
+                    "text": "- **Unresolved:** The full verifier head is `bbbbbbbb`, differing from Worker A’s candidate `aaaaaaaa`. A cannot inherit that verification. The verifier’s result is not supplied. Evidence: `fixture/C/verifier.json`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-plain-reader.txt",
+                    "start_line": 15,
+                    "end_line": 15,
+                    "text": "- **Unresolved:** Partial counts must remain visible. Presentation of incomplete session totals requires a pending coordinator decision. Evidence: `fixture/B/decision.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-plain-reader.txt",
+                    "start_line": 13,
+                    "end_line": 13,
+                    "text": "- **Inferred:** Preserving per-field coverage may repair the failure. This is a proposed, untested repair; no performed repair is reported. Evidence: `fixture/B/hypothesis.txt`, source ordinal 1.\n"
+                  }
+                ]
+              }
+            },
+            "pair-1-osc-reader": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-osc-reader.txt",
+                    "start_line": 8,
+                    "end_line": 8,
+                    "text": "4. **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is not verified complete. Evidence: `fixture/A/marker.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-osc-reader.txt",
+                    "start_line": 20,
+                    "end_line": 20,
+                    "text": "10. **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence. Evidence: `fixture/C/old-doc.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-osc-reader.txt",
+                    "start_line": 21,
+                    "end_line": 21,
+                    "text": "11. **Unresolved:** The full verifier head is `bbbbbbbb`, whereas worker A’s candidate is `aaaaaaaa`. A cannot inherit verification associated with the different head. The verifier’s outcome and detailed results are not supplied. Evidence: `fixture/C/verifier.json`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-osc-reader.txt",
+                    "start_line": 15,
+                    "end_line": 15,
+                    "text": "8. **Unresolved:** Partial counts must remain visible. The final presentation of incomplete session totals requires a coordinator decision. No decision is recorded. Evidence: `fixture/B/decision.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-osc-reader.txt",
+                    "start_line": 13,
+                    "end_line": 13,
+                    "text": "6. **Inferred:** Preserving per-field coverage may repair that failure. This is a proposed, untested repair; the handoff supplies no evidence that it was performed. Evidence: `fixture/B/hypothesis.txt`, source ordinal 1.\n"
+                  }
+                ]
+              }
+            },
+            "pair-2-plain-reader": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-plain-reader.txt",
+                    "start_line": 9,
+                    "end_line": 9,
+                    "text": "- **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is not verified complete. Evidence: `fixture/A/marker.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-plain-reader.txt",
+                    "start_line": 25,
+                    "end_line": 25,
+                    "text": "- **Observed documentation discrepancy:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence. Evidence: `fixture/C/old-doc.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-plain-reader.txt",
+                    "start_line": 26,
+                    "end_line": 26,
+                    "text": "- **Unresolved verification mismatch:** Full verifier head `bbbbbbbb` differs from A’s candidate `aaaaaaaa`; that verification cannot establish A’s candidate as verified. Evidence: `fixture/C/verifier.json`, source ordinal 1. No verifier outcome or scope is supplied beyond this head attribution.\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-plain-reader.txt",
+                    "start_line": 18,
+                    "end_line": 18,
+                    "text": "- **Unresolved decision:** Partial counts must remain visible, but presentation of incomplete session totals requires a coordinator decision. Evidence: `fixture/B/decision.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-plain-reader.txt",
+                    "start_line": 16,
+                    "end_line": 16,
+                    "text": "- **Inferred:** Preserving per-field coverage may repair the failure. This is a proposed, untested repair; the handoff does not establish implementation or success. Evidence: `fixture/B/hypothesis.txt`, source ordinal 1.\n"
+                  }
+                ]
+              }
+            },
+            "pair-2-osc-reader": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-osc-reader.txt",
+                    "start_line": 8,
+                    "end_line": 8,
+                    "text": "- **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is not verified complete (`fixture/A/marker.txt`, source ordinal 1).\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-osc-reader.txt",
+                    "start_line": 22,
+                    "end_line": 22,
+                    "text": "- **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence (`fixture/C/old-doc.txt`, source ordinal 1).\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-osc-reader.txt",
+                    "start_line": 23,
+                    "end_line": 23,
+                    "text": "- **Unresolved:** The full verifier head `bbbbbbbb` does not match A’s candidate `aaaaaaaa`, so its verification cannot be transferred to A (`fixture/C/verifier.json`, source ordinal 1).\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-osc-reader.txt",
+                    "start_line": 16,
+                    "end_line": 16,
+                    "text": "- **Unresolved:** Partial counts must remain visible, while the final presentation of incomplete session totals requires a coordinator decision (`fixture/B/decision.txt`, source ordinal 1).\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-osc-reader.txt",
+                    "start_line": 14,
+                    "end_line": 14,
+                    "text": "- **Inferred:** Preserving per-field coverage may repair the failure. This repair is proposed and untested; no performed repair is established (`fixture/B/hypothesis.txt`, source ordinal 1).\n"
+                  }
+                ]
+              }
+            },
+            "pair-3-plain-reader": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-plain-reader.txt",
+                    "start_line": 6,
+                    "end_line": 6,
+                    "text": "  - **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is therefore **not verified complete**. Provenance: `fixture/A/marker.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-plain-reader.txt",
+                    "start_line": 18,
+                    "end_line": 18,
+                    "text": "  - **Observed:** The older documentation fixture reports **`0.34.0`** and is stale relative to the pinned release evidence. Provenance: `fixture/C/old-doc.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-plain-reader.txt",
+                    "start_line": 7,
+                    "end_line": 7,
+                    "text": "  - **Unresolved, reported by Worker C:** Full verifier head is `bbbbbbbb`, which differs from A’s candidate `aaaaaaaa`; A cannot inherit that verification. Provenance: Worker C, task `fixture-evidence-docs`, run `C-r1`, `fixture/C/verifier.json`, source ordinal 1. No verifier result sufficient to establish A’s completion is supplied.\n"
+                  },
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-plain-reader.txt",
+                    "start_line": 19,
+                    "end_line": 19,
+                    "text": "  - **Unresolved:** The full verifier head `bbbbbbbb` does not match A’s candidate `aaaaaaaa`. Provenance: `fixture/C/verifier.json`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-plain-reader.txt",
+                    "start_line": 13,
+                    "end_line": 13,
+                    "text": "  - **Unresolved:** Partial counts must remain visible, but presentation of incomplete session totals requires a coordinator decision. Provenance: `fixture/B/decision.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-plain-reader.txt",
+                    "start_line": 11,
+                    "end_line": 11,
+                    "text": "  - **Inferred:** Preserving per-field coverage may repair the failure. This is a **proposed, untested repair**; no performed repair or successful retest is supported. Provenance: `fixture/B/hypothesis.txt`, source ordinal 1.\n"
+                  }
+                ]
+              }
+            },
+            "pair-3-osc-reader": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-osc-reader.txt",
+                    "start_line": 7,
+                    "end_line": 7,
+                    "text": "- **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is not verified complete. Evidence: `fixture/A/marker.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-osc-reader.txt",
+                    "start_line": 21,
+                    "end_line": 21,
+                    "text": "- **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence. Evidence: `fixture/C/old-doc.txt`, source ordinal 1. No documentation update is established.\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-osc-reader.txt",
+                    "start_line": 8,
+                    "end_line": 8,
+                    "text": "- **Unresolved, reported by Worker C:** Full verifier head `bbbbbbbb` differs from A’s candidate `aaaaaaaa`; A cannot inherit that verification. Evidence: `fixture/C/verifier.json`, source ordinal 1, attributed to Worker C, task `fixture-evidence-docs`, run `C-r1`. No full-verifier result is supplied.\n"
+                  },
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-osc-reader.txt",
+                    "start_line": 22,
+                    "end_line": 22,
+                    "text": "- **Unresolved:** C reports the verifier/candidate head mismatch described under Worker A. Evidence: `fixture/C/verifier.json`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-osc-reader.txt",
+                    "start_line": 15,
+                    "end_line": 15,
+                    "text": "- **Unresolved:** Partial counts must remain visible. The final presentation of incomplete session totals requires a coordinator decision. Evidence: `fixture/B/decision.txt`, source ordinal 1.\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-osc-reader.txt",
+                    "start_line": 13,
+                    "end_line": 13,
+                    "text": "- **Inferred:** Preserving per-field coverage may repair the failure. This is a proposed, untested repair; implementation or successful repair is not established. Evidence: `fixture/B/hypothesis.txt`, source ordinal 1.\n"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "coordinator": {
+          "omissions": 0,
+          "critical_omissions": 0,
+          "unsupported_completion_claims": 0,
+          "attribution_errors": 0,
+          "other_unsupported_zero_usage_cost_scalability_claims": 0,
+          "disagreement_and_open_decision_assessments": {
+            "pair-1-plain-coordinator": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-plain-coordinator.txt",
+                    "start_line": 14,
+                    "end_line": 15,
+                    "text": "4. **Unresolved:** A worker success marker says complete, but the required full verification is missing; the task is not verified complete.  \n   Evidence: `fixture/A/marker.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-plain-coordinator.txt",
+                    "start_line": 36,
+                    "end_line": 37,
+                    "text": "10. **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence.  \n    Evidence: `fixture/C/old-doc.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-plain-coordinator.txt",
+                    "start_line": 39,
+                    "end_line": 40,
+                    "text": "11. **Unresolved:** The full verifier head is `bbbbbbbb`, while worker A candidate is `aaaaaaaa`; A cannot inherit that verification.  \n    Evidence: `fixture/C/verifier.json`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-plain-coordinator.txt",
+                    "start_line": 28,
+                    "end_line": 29,
+                    "text": "8. **Unresolved:** Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision.  \n   Evidence: `fixture/B/decision.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-plain-coordinator.txt",
+                    "start_line": 22,
+                    "end_line": 23,
+                    "text": "6. **Inferred:** Preserving per-field coverage may repair the failure; this repair is only proposed and untested.  \n   Evidence: `fixture/B/hypothesis.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              }
+            },
+            "pair-1-osc-coordinator": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-osc-coordinator.txt",
+                    "start_line": 11,
+                    "end_line": 12,
+                    "text": "4. **Unresolved:** A worker success marker says complete, but the required full verification is missing; the task is not verified complete.  \n   Evidence: `fixture/A/marker.txt`; source ordinal: 1.\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-osc-coordinator.txt",
+                    "start_line": 29,
+                    "end_line": 30,
+                    "text": "10. **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence.  \n    Evidence: `fixture/C/old-doc.txt`; source ordinal: 1.\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-osc-coordinator.txt",
+                    "start_line": 31,
+                    "end_line": 32,
+                    "text": "11. **Unresolved:** The full verifier head is `bbbbbbbb`, while worker A candidate is `aaaaaaaa`; A cannot inherit that verification.  \n    Evidence: `fixture/C/verifier.json`; source ordinal: 1.\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-osc-coordinator.txt",
+                    "start_line": 22,
+                    "end_line": 23,
+                    "text": "8. **Unresolved:** Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision.  \n   Evidence: `fixture/B/decision.txt`; source ordinal: 1.\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-1-osc-coordinator.txt",
+                    "start_line": 18,
+                    "end_line": 19,
+                    "text": "6. **Inferred:** Preserving per-field coverage may repair the failure; this repair is only proposed and untested.  \n   Evidence: `fixture/B/hypothesis.txt`; source ordinal: 1.\n"
+                  }
+                ]
+              }
+            },
+            "pair-2-plain-coordinator": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-plain-coordinator.txt",
+                    "start_line": 12,
+                    "end_line": 13,
+                    "text": "4. **Unresolved:** A worker success marker says complete, but the required full verification is missing; the task is not verified complete.\n   Evidence: `fixture/A/marker.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-plain-coordinator.txt",
+                    "start_line": 32,
+                    "end_line": 33,
+                    "text": "10. **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence.\n    Evidence: `fixture/C/old-doc.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-plain-coordinator.txt",
+                    "start_line": 34,
+                    "end_line": 35,
+                    "text": "11. **Unresolved:** The full verifier head is `bbbbbbbb`, while worker A candidate is `aaaaaaaa`; A cannot inherit that verification.\n    Evidence: `fixture/C/verifier.json`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-plain-coordinator.txt",
+                    "start_line": 24,
+                    "end_line": 25,
+                    "text": "8. **Unresolved:** Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision.\n   Evidence: `fixture/B/decision.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-plain-coordinator.txt",
+                    "start_line": 20,
+                    "end_line": 21,
+                    "text": "6. **Inferred:** Preserving per-field coverage may repair the failure; this repair is only proposed and untested.\n   Evidence: `fixture/B/hypothesis.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              }
+            },
+            "pair-2-osc-coordinator": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-osc-coordinator.txt",
+                    "start_line": 15,
+                    "end_line": 17,
+                    "text": "4. **Worker A | Task fixture-token-parser | Run A-r1**  \n   Category: **unresolved**. Evidence: `fixture/A/marker.txt`. Source ordinal: 1.  \n   A worker success marker says complete, but the required full verification is missing; the task is not verified complete.\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-osc-coordinator.txt",
+                    "start_line": 39,
+                    "end_line": 41,
+                    "text": "10. **Worker C | Task fixture-evidence-docs | Run C-r1**  \n    Category: **observed**. Evidence: `fixture/C/old-doc.txt`. Source ordinal: 1.  \n    The older documentation fixture reports 0.34.0 and is stale relative to the pinned release evidence.\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-osc-coordinator.txt",
+                    "start_line": 43,
+                    "end_line": 45,
+                    "text": "11. **Worker C | Task fixture-evidence-docs | Run C-r1**  \n    Category: **unresolved**. Evidence: `fixture/C/verifier.json`. Source ordinal: 1.  \n    The full verifier head is bbbbbbbb, while worker A candidate is aaaaaaaa; A cannot inherit that verification.\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-osc-coordinator.txt",
+                    "start_line": 31,
+                    "end_line": 33,
+                    "text": "8. **Worker B | Task fixture-capture-integration | Run B-r1**  \n   Category: **unresolved**. Evidence: `fixture/B/decision.txt`. Source ordinal: 1.  \n   Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision.\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-2-osc-coordinator.txt",
+                    "start_line": 23,
+                    "end_line": 25,
+                    "text": "6. **Worker B | Task fixture-capture-integration | Run B-r1**  \n   Category: **inferred**. Evidence: `fixture/B/hypothesis.txt`. Source ordinal: 1.  \n   Preserving per-field coverage may repair the failure; this repair is only proposed and untested.\n"
+                  }
+                ]
+              }
+            },
+            "pair-3-plain-coordinator": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-plain-coordinator.txt",
+                    "start_line": 9,
+                    "end_line": 9,
+                    "text": "4. **Unresolved:** A worker success marker says complete, but the required full verification is missing; the task is not verified complete. Evidence: `fixture/A/marker.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-plain-coordinator.txt",
+                    "start_line": 23,
+                    "end_line": 23,
+                    "text": "10. **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence. Evidence: `fixture/C/old-doc.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-plain-coordinator.txt",
+                    "start_line": 24,
+                    "end_line": 24,
+                    "text": "11. **Unresolved:** The full verifier head is `bbbbbbbb`, while worker A candidate is `aaaaaaaa`; A cannot inherit that verification. Evidence: `fixture/C/verifier.json`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-plain-coordinator.txt",
+                    "start_line": 17,
+                    "end_line": 17,
+                    "text": "8. **Unresolved:** Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision. Evidence: `fixture/B/decision.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-plain-coordinator.txt",
+                    "start_line": 15,
+                    "end_line": 15,
+                    "text": "6. **Inferred:** Preserving per-field coverage may repair the failure; this repair is only proposed and untested. Evidence: `fixture/B/hypothesis.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              }
+            },
+            "pair-3-osc-coordinator": {
+              "completion_marker_conflict": {
+                "preserved": true,
+                "fact_id": "A4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-osc-coordinator.txt",
+                    "start_line": 12,
+                    "end_line": 13,
+                    "text": "4. **Worker A | Task fixture-token-parser | Run A-r1 — unresolved.** A worker success marker says complete, but the required full verification is missing; the task is not verified complete.  \n   Evidence: `fixture/A/marker.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "stale_documentation_disagreement": {
+                "preserved": true,
+                "fact_id": "C2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-osc-coordinator.txt",
+                    "start_line": 30,
+                    "end_line": 31,
+                    "text": "10. **Worker C | Task fixture-evidence-docs | Run C-r1 — observed.** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence.  \n    Evidence: `fixture/C/old-doc.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "verifier_candidate_head_mismatch": {
+                "preserved": true,
+                "fact_id": "C3",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-osc-coordinator.txt",
+                    "start_line": 33,
+                    "end_line": 34,
+                    "text": "11. **Worker C | Task fixture-evidence-docs | Run C-r1 — unresolved.** The full verifier head is `bbbbbbbb`, while worker A candidate is `aaaaaaaa`; A cannot inherit that verification.  \n    Evidence: `fixture/C/verifier.json`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "unresolved_partial_total_presentation_decision": {
+                "preserved": true,
+                "fact_id": "B4",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-osc-coordinator.txt",
+                    "start_line": 24,
+                    "end_line": 25,
+                    "text": "8. **Worker B | Task fixture-capture-integration | Run B-r1 — unresolved.** Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision.  \n   Evidence: `fixture/B/decision.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              },
+              "proposed_untested_repair": {
+                "preserved": true,
+                "fact_id": "B2",
+                "source_excerpts": [
+                  {
+                    "path": "study:comparison-runs/raw/pair-3-osc-coordinator.txt",
+                    "start_line": 18,
+                    "end_line": 19,
+                    "text": "6. **Worker B | Task fixture-capture-integration | Run B-r1 — inferred.** Preserving per-field coverage may repair the failure; this repair is only proposed and untested.  \n   Evidence: `fixture/B/hypothesis.txt`; ordinal in source: 1.\n"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "uncertainty": [
+        "Independent assessment is of the frozen synthetic texts and matching receipt bindings. Underlying fixture/source actions and provider execution are not independently observed by this grader.",
+        "Arm labels and packaging are visible; this is an independent assessment, not an arm-blinded one. No sibling grading artifacts were read.",
+        "Section headings bind subordinate factual bullets to worker/task/run. Combining A1/A2 in one bullet in pair 3 does not omit either clause. C3 remains correct when explicitly attributed to C while discussed under A.",
+        "Pair-3 plain reader’s summary does not repeat the head mismatch and says “No further disagreement”; explicit factual statements preserve the mismatch and non-inheritance. This limited summary-language ambiguity does not change the binary score.",
+        "No fact-level scoring ambiguity or unsupported positive completion/merge/publication assertion was identified. Reported success-marker wording is qualified as unverified and is not an asserted task completion.",
+        "Matching file hashes and separate native session identifiers validate the saved records, not OS-level isolation or exact provider runtime. Root attestation remains the authority for runtime observations."
+      ]
+    },
+    "independent": {
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "plain",
+            "osc"
+          ],
+          "plain_correct": 12,
+          "osc_correct": 12,
+          "required": 12,
+          "plain_accuracy": 1.0,
+          "osc_accuracy": 1.0,
+          "osc_minus_plain_facts": 0,
+          "osc_minus_plain_accuracy": 0.0
+        },
+        {
+          "pair": 2,
+          "order": [
+            "osc",
+            "plain"
+          ],
+          "plain_correct": 12,
+          "osc_correct": 12,
+          "required": 12,
+          "plain_accuracy": 1.0,
+          "osc_accuracy": 1.0,
+          "osc_minus_plain_facts": 0,
+          "osc_minus_plain_accuracy": 0.0
+        },
+        {
+          "pair": 3,
+          "order": [
+            "plain",
+            "osc"
+          ],
+          "plain_correct": 12,
+          "osc_correct": 12,
+          "required": 12,
+          "plain_accuracy": 1.0,
+          "osc_accuracy": 1.0,
+          "osc_minus_plain_facts": 0,
+          "osc_minus_plain_accuracy": 0.0
+        }
+      ],
+      "arm_means": {
+        "plain": {
+          "readers": 3,
+          "correct_fact_total": 36,
+          "possible_fact_total": 36,
+          "mean_correct_facts": 12.0,
+          "mean_accuracy": 1.0,
+          "mean_omissions": 0.0
+        },
+        "osc": {
+          "readers": 3,
+          "correct_fact_total": 36,
+          "possible_fact_total": 36,
+          "mean_correct_facts": 12.0,
+          "mean_accuracy": 1.0,
+          "mean_omissions": 0.0
+        }
+      },
+      "mean_paired_osc_minus_plain_accuracy": 0.0,
+      "secondary": {
+        "reader": {
+          "omissions": 0,
+          "critical_omissions": 0,
+          "unsupported_completion_claims": 0,
+          "attribution_errors": 0,
+          "other_unsupported_zero_usage_cost_scalability_claims": 0,
+          "disagreement_and_open_decision_assessments": {
+            "pair-1-plain-reader": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 21,
+                    "end_line": 21,
+                    "verbatim_excerpt": "- **Observed:** Older documentation reports `0.34.0` and is stale relative to the pinned release evidence. Evidence: `fixture/C/old-doc.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-1-plain-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 22,
+                    "end_line": 22,
+                    "verbatim_excerpt": "- **Unresolved:** The full verifier head is `bbbbbbbb`, differing from Worker A’s candidate `aaaaaaaa`. A cannot inherit that verification. The verifier’s result is not supplied. Evidence: `fixture/C/verifier.json`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-1-plain-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 15,
+                    "end_line": 15,
+                    "verbatim_excerpt": "- **Unresolved:** Partial counts must remain visible. Presentation of incomplete session totals requires a pending coordinator decision. Evidence: `fixture/B/decision.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-1-plain-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 8,
+                    "end_line": 8,
+                    "verbatim_excerpt": "- **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is not verified complete. Evidence: `fixture/A/marker.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-1-plain-reader.txt"
+                  }
+                ]
+              }
+            ],
+            "pair-1-osc-reader": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 20,
+                    "end_line": 20,
+                    "verbatim_excerpt": "10. **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence. Evidence: `fixture/C/old-doc.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-1-osc-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 21,
+                    "end_line": 21,
+                    "verbatim_excerpt": "11. **Unresolved:** The full verifier head is `bbbbbbbb`, whereas worker A’s candidate is `aaaaaaaa`. A cannot inherit verification associated with the different head. The verifier’s outcome and detailed results are not supplied. Evidence: `fixture/C/verifier.json`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-1-osc-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 15,
+                    "end_line": 15,
+                    "verbatim_excerpt": "8. **Unresolved:** Partial counts must remain visible. The final presentation of incomplete session totals requires a coordinator decision. No decision is recorded. Evidence: `fixture/B/decision.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-1-osc-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 8,
+                    "end_line": 8,
+                    "verbatim_excerpt": "4. **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is not verified complete. Evidence: `fixture/A/marker.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-1-osc-reader.txt"
+                  }
+                ]
+              }
+            ],
+            "pair-2-osc-reader": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 22,
+                    "end_line": 22,
+                    "verbatim_excerpt": "- **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence (`fixture/C/old-doc.txt`, source ordinal 1).",
+                    "path": "study:comparison-runs/raw/pair-2-osc-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 23,
+                    "end_line": 23,
+                    "verbatim_excerpt": "- **Unresolved:** The full verifier head `bbbbbbbb` does not match A’s candidate `aaaaaaaa`, so its verification cannot be transferred to A (`fixture/C/verifier.json`, source ordinal 1).",
+                    "path": "study:comparison-runs/raw/pair-2-osc-reader.txt"
+                  },
+                  {
+                    "start_line": 9,
+                    "end_line": 9,
+                    "verbatim_excerpt": "- **Verification mismatch, reported by Worker C:** The full verifier head is `bbbbbbbb`, whereas A’s candidate is `aaaaaaaa`. A cannot inherit that verification (`fixture/C/verifier.json`, source ordinal 1; Task `fixture-evidence-docs`, Run `C-r1`). The handoff does not supply the full verifier’s result.",
+                    "path": "study:comparison-runs/raw/pair-2-osc-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 16,
+                    "end_line": 16,
+                    "verbatim_excerpt": "- **Unresolved:** Partial counts must remain visible, while the final presentation of incomplete session totals requires a coordinator decision (`fixture/B/decision.txt`, source ordinal 1).",
+                    "path": "study:comparison-runs/raw/pair-2-osc-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 8,
+                    "end_line": 8,
+                    "verbatim_excerpt": "- **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is not verified complete (`fixture/A/marker.txt`, source ordinal 1).",
+                    "path": "study:comparison-runs/raw/pair-2-osc-reader.txt"
+                  }
+                ]
+              }
+            ],
+            "pair-2-plain-reader": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 25,
+                    "end_line": 25,
+                    "verbatim_excerpt": "- **Observed documentation discrepancy:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence. Evidence: `fixture/C/old-doc.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-2-plain-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 26,
+                    "end_line": 26,
+                    "verbatim_excerpt": "- **Unresolved verification mismatch:** Full verifier head `bbbbbbbb` differs from A’s candidate `aaaaaaaa`; that verification cannot establish A’s candidate as verified. Evidence: `fixture/C/verifier.json`, source ordinal 1. No verifier outcome or scope is supplied beyond this head attribution.",
+                    "path": "study:comparison-runs/raw/pair-2-plain-reader.txt"
+                  },
+                  {
+                    "start_line": 10,
+                    "end_line": 10,
+                    "verbatim_excerpt": "- **Verification attribution:** Worker C reports full verifier head `bbbbbbbb`, which differs from A’s candidate `aaaaaaaa`. A cannot inherit that verification. Evidence: `fixture/C/verifier.json`, source ordinal 1. The handoff supplies no matching full verification for A’s candidate.",
+                    "path": "study:comparison-runs/raw/pair-2-plain-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 18,
+                    "end_line": 18,
+                    "verbatim_excerpt": "- **Unresolved decision:** Partial counts must remain visible, but presentation of incomplete session totals requires a coordinator decision. Evidence: `fixture/B/decision.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-2-plain-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 9,
+                    "end_line": 9,
+                    "verbatim_excerpt": "- **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is not verified complete. Evidence: `fixture/A/marker.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-2-plain-reader.txt"
+                  }
+                ]
+              }
+            ],
+            "pair-3-plain-reader": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 18,
+                    "end_line": 18,
+                    "verbatim_excerpt": "  - **Observed:** The older documentation fixture reports **`0.34.0`** and is stale relative to the pinned release evidence. Provenance: `fixture/C/old-doc.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-3-plain-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 19,
+                    "end_line": 19,
+                    "verbatim_excerpt": "  - **Unresolved:** The full verifier head `bbbbbbbb` does not match A’s candidate `aaaaaaaa`. Provenance: `fixture/C/verifier.json`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-3-plain-reader.txt"
+                  },
+                  {
+                    "start_line": 7,
+                    "end_line": 7,
+                    "verbatim_excerpt": "  - **Unresolved, reported by Worker C:** Full verifier head is `bbbbbbbb`, which differs from A’s candidate `aaaaaaaa`; A cannot inherit that verification. Provenance: Worker C, task `fixture-evidence-docs`, run `C-r1`, `fixture/C/verifier.json`, source ordinal 1. No verifier result sufficient to establish A’s completion is supplied.",
+                    "path": "study:comparison-runs/raw/pair-3-plain-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 13,
+                    "end_line": 13,
+                    "verbatim_excerpt": "  - **Unresolved:** Partial counts must remain visible, but presentation of incomplete session totals requires a coordinator decision. Provenance: `fixture/B/decision.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-3-plain-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 6,
+                    "end_line": 6,
+                    "verbatim_excerpt": "  - **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is therefore **not verified complete**. Provenance: `fixture/A/marker.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-3-plain-reader.txt"
+                  }
+                ]
+              }
+            ],
+            "pair-3-osc-reader": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 21,
+                    "end_line": 21,
+                    "verbatim_excerpt": "- **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence. Evidence: `fixture/C/old-doc.txt`, source ordinal 1. No documentation update is established.",
+                    "path": "study:comparison-runs/raw/pair-3-osc-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 22,
+                    "end_line": 22,
+                    "verbatim_excerpt": "- **Unresolved:** C reports the verifier/candidate head mismatch described under Worker A. Evidence: `fixture/C/verifier.json`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-3-osc-reader.txt"
+                  },
+                  {
+                    "start_line": 8,
+                    "end_line": 8,
+                    "verbatim_excerpt": "- **Unresolved, reported by Worker C:** Full verifier head `bbbbbbbb` differs from A’s candidate `aaaaaaaa`; A cannot inherit that verification. Evidence: `fixture/C/verifier.json`, source ordinal 1, attributed to Worker C, task `fixture-evidence-docs`, run `C-r1`. No full-verifier result is supplied.",
+                    "path": "study:comparison-runs/raw/pair-3-osc-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 15,
+                    "end_line": 15,
+                    "verbatim_excerpt": "- **Unresolved:** Partial counts must remain visible. The final presentation of incomplete session totals requires a coordinator decision. Evidence: `fixture/B/decision.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-3-osc-reader.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 7,
+                    "end_line": 7,
+                    "verbatim_excerpt": "- **Unresolved:** A worker success marker says complete, but required full verification is missing. The task is not verified complete. Evidence: `fixture/A/marker.txt`, source ordinal 1.",
+                    "path": "study:comparison-runs/raw/pair-3-osc-reader.txt"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "coordinator": {
+          "omissions": 0,
+          "critical_omissions": 0,
+          "unsupported_completion_claims": 0,
+          "attribution_errors": 0,
+          "other_unsupported_zero_usage_cost_scalability_claims": 0,
+          "disagreement_and_open_decision_assessments": {
+            "pair-1-plain-coordinator": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 36,
+                    "end_line": 37,
+                    "verbatim_excerpt": "10. **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence.  \n    Evidence: `fixture/C/old-doc.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-1-plain-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 39,
+                    "end_line": 40,
+                    "verbatim_excerpt": "11. **Unresolved:** The full verifier head is `bbbbbbbb`, while worker A candidate is `aaaaaaaa`; A cannot inherit that verification.  \n    Evidence: `fixture/C/verifier.json`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-1-plain-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 28,
+                    "end_line": 29,
+                    "verbatim_excerpt": "8. **Unresolved:** Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision.  \n   Evidence: `fixture/B/decision.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-1-plain-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 14,
+                    "end_line": 15,
+                    "verbatim_excerpt": "4. **Unresolved:** A worker success marker says complete, but the required full verification is missing; the task is not verified complete.  \n   Evidence: `fixture/A/marker.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-1-plain-coordinator.txt"
+                  }
+                ]
+              }
+            ],
+            "pair-1-osc-coordinator": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 29,
+                    "end_line": 30,
+                    "verbatim_excerpt": "10. **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence.  \n    Evidence: `fixture/C/old-doc.txt`; source ordinal: 1.",
+                    "path": "study:comparison-runs/raw/pair-1-osc-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 31,
+                    "end_line": 32,
+                    "verbatim_excerpt": "11. **Unresolved:** The full verifier head is `bbbbbbbb`, while worker A candidate is `aaaaaaaa`; A cannot inherit that verification.  \n    Evidence: `fixture/C/verifier.json`; source ordinal: 1.",
+                    "path": "study:comparison-runs/raw/pair-1-osc-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 22,
+                    "end_line": 23,
+                    "verbatim_excerpt": "8. **Unresolved:** Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision.  \n   Evidence: `fixture/B/decision.txt`; source ordinal: 1.",
+                    "path": "study:comparison-runs/raw/pair-1-osc-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 11,
+                    "end_line": 12,
+                    "verbatim_excerpt": "4. **Unresolved:** A worker success marker says complete, but the required full verification is missing; the task is not verified complete.  \n   Evidence: `fixture/A/marker.txt`; source ordinal: 1.",
+                    "path": "study:comparison-runs/raw/pair-1-osc-coordinator.txt"
+                  }
+                ]
+              }
+            ],
+            "pair-2-osc-coordinator": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 39,
+                    "end_line": 41,
+                    "verbatim_excerpt": "10. **Worker C | Task fixture-evidence-docs | Run C-r1**  \n    Category: **observed**. Evidence: `fixture/C/old-doc.txt`. Source ordinal: 1.  \n    The older documentation fixture reports 0.34.0 and is stale relative to the pinned release evidence.",
+                    "path": "study:comparison-runs/raw/pair-2-osc-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 43,
+                    "end_line": 45,
+                    "verbatim_excerpt": "11. **Worker C | Task fixture-evidence-docs | Run C-r1**  \n    Category: **unresolved**. Evidence: `fixture/C/verifier.json`. Source ordinal: 1.  \n    The full verifier head is bbbbbbbb, while worker A candidate is aaaaaaaa; A cannot inherit that verification.",
+                    "path": "study:comparison-runs/raw/pair-2-osc-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 31,
+                    "end_line": 33,
+                    "verbatim_excerpt": "8. **Worker B | Task fixture-capture-integration | Run B-r1**  \n   Category: **unresolved**. Evidence: `fixture/B/decision.txt`. Source ordinal: 1.  \n   Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision.",
+                    "path": "study:comparison-runs/raw/pair-2-osc-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 15,
+                    "end_line": 17,
+                    "verbatim_excerpt": "4. **Worker A | Task fixture-token-parser | Run A-r1**  \n   Category: **unresolved**. Evidence: `fixture/A/marker.txt`. Source ordinal: 1.  \n   A worker success marker says complete, but the required full verification is missing; the task is not verified complete.",
+                    "path": "study:comparison-runs/raw/pair-2-osc-coordinator.txt"
+                  }
+                ]
+              }
+            ],
+            "pair-2-plain-coordinator": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 32,
+                    "end_line": 33,
+                    "verbatim_excerpt": "10. **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence.\n    Evidence: `fixture/C/old-doc.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-2-plain-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 34,
+                    "end_line": 35,
+                    "verbatim_excerpt": "11. **Unresolved:** The full verifier head is `bbbbbbbb`, while worker A candidate is `aaaaaaaa`; A cannot inherit that verification.\n    Evidence: `fixture/C/verifier.json`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-2-plain-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 24,
+                    "end_line": 25,
+                    "verbatim_excerpt": "8. **Unresolved:** Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision.\n   Evidence: `fixture/B/decision.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-2-plain-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 12,
+                    "end_line": 13,
+                    "verbatim_excerpt": "4. **Unresolved:** A worker success marker says complete, but the required full verification is missing; the task is not verified complete.\n   Evidence: `fixture/A/marker.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-2-plain-coordinator.txt"
+                  }
+                ]
+              }
+            ],
+            "pair-3-plain-coordinator": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 23,
+                    "end_line": 23,
+                    "verbatim_excerpt": "10. **Observed:** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence. Evidence: `fixture/C/old-doc.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-3-plain-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 24,
+                    "end_line": 24,
+                    "verbatim_excerpt": "11. **Unresolved:** The full verifier head is `bbbbbbbb`, while worker A candidate is `aaaaaaaa`; A cannot inherit that verification. Evidence: `fixture/C/verifier.json`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-3-plain-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 17,
+                    "end_line": 17,
+                    "verbatim_excerpt": "8. **Unresolved:** Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision. Evidence: `fixture/B/decision.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-3-plain-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 9,
+                    "end_line": 9,
+                    "verbatim_excerpt": "4. **Unresolved:** A worker success marker says complete, but the required full verification is missing; the task is not verified complete. Evidence: `fixture/A/marker.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-3-plain-coordinator.txt"
+                  }
+                ]
+              }
+            ],
+            "pair-3-osc-coordinator": [
+              {
+                "topic": "stale documentation versus pinned release",
+                "fact_id": "C2",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 30,
+                    "end_line": 31,
+                    "verbatim_excerpt": "10. **Worker C | Task fixture-evidence-docs | Run C-r1 — observed.** The older documentation fixture reports `0.34.0` and is stale relative to the pinned release evidence.  \n    Evidence: `fixture/C/old-doc.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-3-osc-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "verifier/candidate mismatch and no inherited verification",
+                "fact_id": "C3",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 33,
+                    "end_line": 34,
+                    "verbatim_excerpt": "11. **Worker C | Task fixture-evidence-docs | Run C-r1 — unresolved.** The full verifier head is `bbbbbbbb`, while worker A candidate is `aaaaaaaa`; A cannot inherit that verification.  \n    Evidence: `fixture/C/verifier.json`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-3-osc-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "pending incomplete-total presentation and visible partial counts",
+                "fact_id": "B4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 24,
+                    "end_line": 25,
+                    "verbatim_excerpt": "8. **Worker B | Task fixture-capture-integration | Run B-r1 — unresolved.** Partial counts must remain visible, but the final presentation for incomplete session totals needs a coordinator decision.  \n   Evidence: `fixture/B/decision.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-3-osc-coordinator.txt"
+                  }
+                ]
+              },
+              {
+                "topic": "completion-marker conflict",
+                "fact_id": "A4",
+                "preserved": true,
+                "source_excerpts": [
+                  {
+                    "start_line": 12,
+                    "end_line": 13,
+                    "verbatim_excerpt": "4. **Worker A | Task fixture-token-parser | Run A-r1 — unresolved.** A worker success marker says complete, but the required full verification is missing; the task is not verified complete.  \n   Evidence: `fixture/A/marker.txt`; ordinal in source: 1.",
+                    "path": "study:comparison-runs/raw/pair-3-osc-coordinator.txt"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "uncertainty": {
+        "per_fact_uncertainty": "None unresolved after semantic assessment; combined and cross-referenced clauses were inspected in context.",
+        "ground_truth_boundary": "Synthetic key facts and supplied provenance only; no real repository completion, release or source-file authenticity was assessed.",
+        "actual_model_route": "inherited/unreported",
+        "model_name": null,
+        "model_version": null,
+        "temperature": null,
+        "provider_usage": null,
+        "missing_usage_meaning": "unavailable, never zero",
+        "runtime_or_latency_claim": false,
+        "monetary_or_cost_efficiency_claim": false,
+        "scalability_claim": false,
+        "named_model_or_model_superiority_claim": false,
+        "statistical_significance_claim": false,
+        "design_limits": [
+          "One fixed synthetic inventory and three paired repetitions.",
+          "Fixed alternating order is neither randomized nor fully counterbalanced, with a one-pair imbalance.",
+          "The capture/timing method changed after five invocations, and an original timing error has an append-only correction.",
+          "Native hidden system/tool context, exact model/version, tokenizer and provider usage are unavailable.",
+          "Provider-exact runtime and monetary basis are unavailable.",
+          "Other assessor results were not accessed; inter-assessor disagreement is pending separate Root comparison."
+        ]
+      }
+    }
+  },
+  "assessor_score_disagreement": [],
+  "context_measurements": [
+    {
+      "stem": "worker-A",
+      "materialized_input": {
+        "sha256": "6b4ac6295f57127ac49fbc63ba77a5015bb33dddf2ee2e910cbd3be1c03e0c04",
+        "utf8_bytes": 5074,
+        "characters": 5074
+      },
+      "raw_output": {
+        "sha256": "088a933c797cd8cdc2ffef33b420fa471ffaf9e53e38c8f279082193c524e654",
+        "utf8_bytes": 816,
+        "characters": 816
+      },
+      "original_routing": {
+        "sha256": "68fcfc60d686b2e692a8cfa351f647f57a76845868fcb6330a98b6b750a334d5",
+        "utf8_bytes": 648
+      },
+      "routing_projection": {
+        "sha256": "7ee9d5e6b3d2b9832e2a94e05de8cf15a58b9bc228d4851d9e2833e2f9dddd01",
+        "utf8_bytes": 578,
+        "characters": 578
+      },
+      "original_complete_supplied_utf8_bytes": 5722,
+      "original_complete_supplied_characters": null,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "worker-B",
+      "materialized_input": {
+        "sha256": "c711cb06b426ceab8a944edd5c83e999936fe70f7f4345d13da96dd92598db90",
+        "utf8_bytes": 5665,
+        "characters": 5665
+      },
+      "raw_output": {
+        "sha256": "9e299cdc0b21d4d0f6bdfc701c67d771415b135085a2850aa5124212291f66fe",
+        "utf8_bytes": 899,
+        "characters": 899
+      },
+      "original_routing": {
+        "sha256": "44259eec8c7f4d89be694b37ec85d164af89b58dc9230703ea3eec4d520ddcac",
+        "utf8_bytes": 648
+      },
+      "routing_projection": {
+        "sha256": "de32317c9533e2b513f9d97748e9305253872dc20016a7ad55e54973b1a8931e",
+        "utf8_bytes": 578,
+        "characters": 578
+      },
+      "original_complete_supplied_utf8_bytes": 6313,
+      "original_complete_supplied_characters": null,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "worker-C",
+      "materialized_input": {
+        "sha256": "f8a2881b3002d21e1d7bbd93b169f740d07743823b625777b8b368f14a4d212f",
+        "utf8_bytes": 5878,
+        "characters": 5878
+      },
+      "raw_output": {
+        "sha256": "60806ddaa7b070247628ddfe7059d0b3b44c5b9da01779d71bd4cd18f7065fa2",
+        "utf8_bytes": 888,
+        "characters": 888
+      },
+      "original_routing": {
+        "sha256": "965726556ebb3638c955696d269568e6298e25284acc787f0f33d742516f0cc6",
+        "utf8_bytes": 648
+      },
+      "routing_projection": {
+        "sha256": "e7ab750bc617d6244061693634a38450a58abe2c145494cbb8151e522a59818f",
+        "utf8_bytes": 578,
+        "characters": 578
+      },
+      "original_complete_supplied_utf8_bytes": 6526,
+      "original_complete_supplied_characters": null,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-1-plain-coordinator",
+      "materialized_input": {
+        "sha256": "04a18fd917d00c9565a88d195f4d280a58c5e4a9be218f7bd5df0f8d3c6e7745",
+        "utf8_bytes": 4570,
+        "characters": 4568
+      },
+      "raw_output": {
+        "sha256": "862d98dc4edd04ab31f7c587bafa67c4d220c3dff6c783ebecd0bb144825a2b3",
+        "utf8_bytes": 2834,
+        "characters": 2834
+      },
+      "original_routing": {
+        "sha256": "fcffce52398ae8575130b26a48f94dc7c0f9b51bf86b58fbd311f997f4f89fe9",
+        "utf8_bytes": 629
+      },
+      "routing_projection": {
+        "sha256": "f802b9f5e4d6b7514801908c0de86fe985e72be28b2908a0b863d6abd6d37f3a",
+        "utf8_bytes": 559,
+        "characters": 559
+      },
+      "original_complete_supplied_utf8_bytes": 5199,
+      "original_complete_supplied_characters": 5197,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-1-plain-reader",
+      "materialized_input": {
+        "sha256": "fef7ab46787d5ae95f627df9a22a95c89c7c642400c8179160ed86321f081513",
+        "utf8_bytes": 3739,
+        "characters": 3739
+      },
+      "raw_output": {
+        "sha256": "52d9d862937ae63a26f198f464cd5df7db6309b4295e15970eabd16ca5486d77",
+        "utf8_bytes": 3327,
+        "characters": 3311
+      },
+      "original_routing": {
+        "sha256": "fb0f849d2d77a7790e53f9bdf9944f4520646d6272cb644fb84389fb4181d323",
+        "utf8_bytes": 620
+      },
+      "routing_projection": {
+        "sha256": "bb552e689b3e75551d418a089e76a13d5eeb8166ce15565301b7f2aff145fccb",
+        "utf8_bytes": 550,
+        "characters": 550
+      },
+      "original_complete_supplied_utf8_bytes": 4359,
+      "original_complete_supplied_characters": 4359,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-1-osc-coordinator",
+      "materialized_input": {
+        "sha256": "9694c528fe07fef28349832f2ac820578e9ea6b1af9ba2008736cb7c800b882e",
+        "utf8_bytes": 6284,
+        "characters": 6284
+      },
+      "raw_output": {
+        "sha256": "fcc4997d7a4ff1f5d2f883041b5d51589f2de47e2ee789fb710ca4d14cd775de",
+        "utf8_bytes": 2736,
+        "characters": 2736
+      },
+      "original_routing": {
+        "sha256": "3d28db623a900c7ff16b1529b91dddfeb9773ecc86ce87db33e3337dbde37c63",
+        "utf8_bytes": 627
+      },
+      "routing_projection": {
+        "sha256": "5de4b2cc4ab7af7a1a105760efc455ca107e6ef8849e233c00033d11f0cb10c8",
+        "utf8_bytes": 557,
+        "characters": 557
+      },
+      "original_complete_supplied_utf8_bytes": 6911,
+      "original_complete_supplied_characters": 6911,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-1-osc-reader",
+      "materialized_input": {
+        "sha256": "fb3cdef933c947cd65a41db63c9b4536539a6bd20b335f682fa91f263ec828b8",
+        "utf8_bytes": 3641,
+        "characters": 3641
+      },
+      "raw_output": {
+        "sha256": "106cd62718e008b9a60f0bf9a6e529c62fce972f4f04d89ced97d9855e61d863",
+        "utf8_bytes": 3653,
+        "characters": 3619
+      },
+      "original_routing": {
+        "sha256": "dcbf0367b0859d8bad5a8e78b973c690f88e73c3592cb6c1056360f2ad0c2d24",
+        "utf8_bytes": 618
+      },
+      "routing_projection": {
+        "sha256": "b6886494905dd684f59482560815ccc6f97619365e09ec06099a1a2b084b8cec",
+        "utf8_bytes": 548,
+        "characters": 548
+      },
+      "original_complete_supplied_utf8_bytes": 4259,
+      "original_complete_supplied_characters": 4259,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-2-osc-coordinator",
+      "materialized_input": {
+        "sha256": "9694c528fe07fef28349832f2ac820578e9ea6b1af9ba2008736cb7c800b882e",
+        "utf8_bytes": 6284,
+        "characters": 6284
+      },
+      "raw_output": {
+        "sha256": "a5f788f4a704e3b44f0630d96a2ce91243d2fad03a2d0ea8183b4141be13038d",
+        "utf8_bytes": 3541,
+        "characters": 3539
+      },
+      "original_routing": {
+        "sha256": "dcc959870e117ed6cc5911a833e72b1bde768953b941762c07beb37f3a57723e",
+        "utf8_bytes": 627
+      },
+      "routing_projection": {
+        "sha256": "e51b987b340b700da09bca3f9c96bf10ac17160a772b242be557a5e8faa06455",
+        "utf8_bytes": 557,
+        "characters": 557
+      },
+      "original_complete_supplied_utf8_bytes": 6911,
+      "original_complete_supplied_characters": 6911,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-2-osc-reader",
+      "materialized_input": {
+        "sha256": "a749a63161ca1c6a4c87763955a41b04bd631744538fde34d3bc39cb3aa43cfe",
+        "utf8_bytes": 4446,
+        "characters": 4444
+      },
+      "raw_output": {
+        "sha256": "f2e982893b897915a8c15be9dcbcc0c42aba940f9699a8a263b91d5d4c2a91c1",
+        "utf8_bytes": 3652,
+        "characters": 3630
+      },
+      "original_routing": {
+        "sha256": "dbb0cb92e03b998461c6471c0b933993b5897ea63a7a87ff578898fe496b6260",
+        "utf8_bytes": 618
+      },
+      "routing_projection": {
+        "sha256": "7ae9208b14fa43776ad42248d7f4d9a65c681e4dece1e30a11d50e2dec093fd6",
+        "utf8_bytes": 548,
+        "characters": 548
+      },
+      "original_complete_supplied_utf8_bytes": 5064,
+      "original_complete_supplied_characters": 5062,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-2-plain-coordinator",
+      "materialized_input": {
+        "sha256": "04a18fd917d00c9565a88d195f4d280a58c5e4a9be218f7bd5df0f8d3c6e7745",
+        "utf8_bytes": 4570,
+        "characters": 4568
+      },
+      "raw_output": {
+        "sha256": "3ba38b33e42e7bb102ee6c4870b9af15439c0d9fd9d864ea428f88dbea4fd936",
+        "utf8_bytes": 2992,
+        "characters": 2972
+      },
+      "original_routing": {
+        "sha256": "990f32a616c78e8d0f8cbc678641d03e6c26a9cc3f86d3a7771527236f04e990",
+        "utf8_bytes": 629
+      },
+      "routing_projection": {
+        "sha256": "cfa8d817b5c0d1f3998f164146ba6bad6e44edac635ea417d1c4d590c0d05634",
+        "utf8_bytes": 559,
+        "characters": 559
+      },
+      "original_complete_supplied_utf8_bytes": 5199,
+      "original_complete_supplied_characters": 5197,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-2-plain-reader",
+      "materialized_input": {
+        "sha256": "183a9505d11cacc8c12eb9e137efb9e0ad1f65b884e9464b4e1bcda10e921fa2",
+        "utf8_bytes": 3897,
+        "characters": 3877
+      },
+      "raw_output": {
+        "sha256": "00b1dbaa0fcd8451af9555e164a3fa203c72722294afa0c95669d8e5ee73fbff",
+        "utf8_bytes": 4043,
+        "characters": 4007
+      },
+      "original_routing": {
+        "sha256": "b287b2aa3fdbc136275bed238df97060aadd87b11118dc1be5a299c8a178f62e",
+        "utf8_bytes": 620
+      },
+      "routing_projection": {
+        "sha256": "593f94e5473736fea4e29c84083db9de577bdbc6032808cb0d8103082c2b6fd3",
+        "utf8_bytes": 550,
+        "characters": 550
+      },
+      "original_complete_supplied_utf8_bytes": 4517,
+      "original_complete_supplied_characters": 4497,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-3-plain-coordinator",
+      "materialized_input": {
+        "sha256": "04a18fd917d00c9565a88d195f4d280a58c5e4a9be218f7bd5df0f8d3c6e7745",
+        "utf8_bytes": 4570,
+        "characters": 4568
+      },
+      "raw_output": {
+        "sha256": "9fa7ca54d71dd52885897d6ab6c356a059b8ef4382724938862ea93ca70100d1",
+        "utf8_bytes": 3050,
+        "characters": 3048
+      },
+      "original_routing": {
+        "sha256": "a0232d62235a2cae8231dfca5530364dea8ed097f928d18892d92c276fa24a18",
+        "utf8_bytes": 629
+      },
+      "routing_projection": {
+        "sha256": "df816a8e818b38c82bcf904d6028f08ed50a21a729515982ae4787d80356bde1",
+        "utf8_bytes": 559,
+        "characters": 559
+      },
+      "original_complete_supplied_utf8_bytes": 5199,
+      "original_complete_supplied_characters": 5197,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-3-plain-reader",
+      "materialized_input": {
+        "sha256": "a1f850758e8c355ac304c0e5e07c9cdb3e46461e4494ce8b29b113b660c5ed87",
+        "utf8_bytes": 3955,
+        "characters": 3953
+      },
+      "raw_output": {
+        "sha256": "cd907ebe4a8cacd6e255b56559d6e2fe08b0c3ebbe4a2bb05f4f4a583af94f20",
+        "utf8_bytes": 3776,
+        "characters": 3754
+      },
+      "original_routing": {
+        "sha256": "4613511e5018dba00bbe60a8a86986676d4d8a6c0db80984e73bc26c6ea7f8ca",
+        "utf8_bytes": 620
+      },
+      "routing_projection": {
+        "sha256": "9eae471260e5b06e784e53359cef94c161b7e3d53d3281de2f3d8287bdd33b00",
+        "utf8_bytes": 550,
+        "characters": 550
+      },
+      "original_complete_supplied_utf8_bytes": 4575,
+      "original_complete_supplied_characters": 4573,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-3-osc-coordinator",
+      "materialized_input": {
+        "sha256": "9694c528fe07fef28349832f2ac820578e9ea6b1af9ba2008736cb7c800b882e",
+        "utf8_bytes": 6284,
+        "characters": 6284
+      },
+      "raw_output": {
+        "sha256": "ef75383f0281d7a3148d4cdcd05be22fd32f9b1296f405eaf84367988f1d332d",
+        "utf8_bytes": 3278,
+        "characters": 3254
+      },
+      "original_routing": {
+        "sha256": "22c54b3d224d1341472f6ee0ee05014130329aa09f8de0350b7d33871b84d93f",
+        "utf8_bytes": 627
+      },
+      "routing_projection": {
+        "sha256": "540ddade792df9ae10a11474132dead687deda9908cbe8da65c67f333fbdf003",
+        "utf8_bytes": 557,
+        "characters": 557
+      },
+      "original_complete_supplied_utf8_bytes": 6911,
+      "original_complete_supplied_characters": 6911,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    },
+    {
+      "stem": "pair-3-osc-reader",
+      "materialized_input": {
+        "sha256": "1efe481efc6b8edb2ce2129c07dd5c990d2118971d4a87b317b9af256a5ea372",
+        "utf8_bytes": 4183,
+        "characters": 4159
+      },
+      "raw_output": {
+        "sha256": "826895b8f5f91f0be2636468e2938b82172d1d1ae34c41f7c7d640d6b684a93e",
+        "utf8_bytes": 3686,
+        "characters": 3660
+      },
+      "original_routing": {
+        "sha256": "6d17504642c57b5b661f31040e4f4083ce787e76465edffb2a4185620cb38aa6",
+        "utf8_bytes": 618
+      },
+      "routing_projection": {
+        "sha256": "4ac8cca9683bb15638d031bd882069ebedc5a8e855eada7b26f4de9d5fb02a09",
+        "utf8_bytes": 548,
+        "characters": 548
+      },
+      "original_complete_supplied_utf8_bytes": 4801,
+      "original_complete_supplied_characters": 4777,
+      "native_hidden_system_tools": "unmeasured",
+      "exact_tokens": null
+    }
+  ],
+  "context_comparison": {
+    "coordinator": {
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "plain",
+            "osc"
+          ],
+          "osc_minus_plain_materialized_input_utf8_bytes": 1714,
+          "osc_minus_plain_original_complete_supplied_utf8_bytes": 1712,
+          "osc_minus_plain_raw_output_utf8_bytes": -98
+        },
+        {
+          "pair": 2,
+          "order": [
+            "osc",
+            "plain"
+          ],
+          "osc_minus_plain_materialized_input_utf8_bytes": 1714,
+          "osc_minus_plain_original_complete_supplied_utf8_bytes": 1712,
+          "osc_minus_plain_raw_output_utf8_bytes": 549
+        },
+        {
+          "pair": 3,
+          "order": [
+            "plain",
+            "osc"
+          ],
+          "osc_minus_plain_materialized_input_utf8_bytes": 1714,
+          "osc_minus_plain_original_complete_supplied_utf8_bytes": 1712,
+          "osc_minus_plain_raw_output_utf8_bytes": 228
+        }
+      ],
+      "arm_means": {
+        "plain": {
+          "materialized_input_utf8_bytes": 4570.0,
+          "original_complete_supplied_utf8_bytes": 5199.0,
+          "raw_output_utf8_bytes": 2958.6666666666665
+        },
+        "osc": {
+          "materialized_input_utf8_bytes": 6284.0,
+          "original_complete_supplied_utf8_bytes": 6911.0,
+          "raw_output_utf8_bytes": 3185.0
+        }
+      }
+    },
+    "reader": {
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "plain",
+            "osc"
+          ],
+          "osc_minus_plain_materialized_input_utf8_bytes": -98,
+          "osc_minus_plain_original_complete_supplied_utf8_bytes": -100,
+          "osc_minus_plain_raw_output_utf8_bytes": 326
+        },
+        {
+          "pair": 2,
+          "order": [
+            "osc",
+            "plain"
+          ],
+          "osc_minus_plain_materialized_input_utf8_bytes": 549,
+          "osc_minus_plain_original_complete_supplied_utf8_bytes": 547,
+          "osc_minus_plain_raw_output_utf8_bytes": -391
+        },
+        {
+          "pair": 3,
+          "order": [
+            "plain",
+            "osc"
+          ],
+          "osc_minus_plain_materialized_input_utf8_bytes": 228,
+          "osc_minus_plain_original_complete_supplied_utf8_bytes": 226,
+          "osc_minus_plain_raw_output_utf8_bytes": -90
+        }
+      ],
+      "arm_means": {
+        "plain": {
+          "materialized_input_utf8_bytes": 3863.6666666666665,
+          "original_complete_supplied_utf8_bytes": 4483.666666666667,
+          "raw_output_utf8_bytes": 3715.3333333333335
+        },
+        "osc": {
+          "materialized_input_utf8_bytes": 4090.0,
+          "original_complete_supplied_utf8_bytes": 4708.0,
+          "raw_output_utf8_bytes": 3663.6666666666665
+        }
+      }
+    }
+  },
+  "context_limit": "Exact materialized prompts and output bytes; original routing totals use opaque source metadata. Sanitized routing projections have independent sizes. Native hidden system/tools and exact tokens are unmeasured.",
+  "timing": {
+    "original_receipt_sum_seconds": 1110,
+    "correction_overlay_seconds": 29,
+    "effective_parent_aggregate_seconds": 1139,
+    "first_five": "Root attestation only; no separately saved raw clock/provider event receipt.",
+    "last_ten": "Saved clock tool objects; second precision; parent observation bounds include receipt latency.",
+    "provider_latency_measured": false
+  },
+  "actual_model": "inherited/unreported",
+  "model_name": null,
+  "model_version": null,
+  "temperature": null,
+  "tokenizer_version": null,
+  "provider_usage": null,
+  "cost": null,
+  "reruns": 0,
+  "claims_supported": {
+    "recovery_advantage": false,
+    "statistical_significance": false,
+    "runtime_advantage": false,
+    "cost_efficiency": false,
+    "named_model_superiority": false,
+    "scalability": false
+  }
+}
