@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -33,12 +33,12 @@ New amendment navigation is canonical POSIX text, and supported CLI and Bash clo
 
 ## Acceptance criteria
 
-- [ ] New amendment MISSION fields use canonical slash paths with actual win32.relative formatting under a labeled isolated test, while native public relativePath/output and ordinary POSIX default/custom behavior remain unchanged.
-- [ ] Actual supported CLI and Bash closes retarget admitted uniform Windows or POSIX terminal fields only for regular done files moved by that invocation, including supported absent prior-stage aliases, with complete public moved lists intact.
-- [ ] Surviving raw/normalized old entries, nonregular done destinations, mixed/drive/UNC/traversal/unmoved/inline/prose/URL/suffix/outside/fenced/unrelated literal backslash fields remain unchanged; raw prefixes/suffixes/endings preserve the admitted stamping contract.
-- [ ] Existing Status, amendment bytes/idempotence, close/move errors/readiness/order, message, LF/CRLF/EOF, no-anchor object identity and renderer/copy refusal boundaries pass meaningful retained controls without migration or rollback claims.
-- [ ] Only the five implementation paths change after separate admission; source ceiling/roots remain unchanged with readable code, root README restoration and SVG absence preserved, and no native Windows qualification claim.
-- [ ] Failed-first production regressions, unchanged committed-head strict/build/full verification and fresh full-publication review precede public effects; actual current GitHub CI/current bindings precede delegated merge and readback/lease release/closeout.
+- [x] New amendment MISSION fields use canonical slash paths with actual win32.relative formatting under a labeled isolated test, while native public relativePath/output and ordinary POSIX default/custom behavior remain unchanged. | Evidence: .osc/releases/2026-10-08-195-windows-helper-navigation.md
+- [x] Actual supported CLI and Bash closes retarget admitted uniform Windows or POSIX terminal fields only for regular done files moved by that invocation, including supported absent prior-stage aliases, with complete public moved lists intact. | Evidence: .osc/releases/2026-10-08-195-windows-helper-navigation.md
+- [x] Surviving raw/normalized old entries, nonregular done destinations, mixed/drive/UNC/traversal/unmoved/inline/prose/URL/suffix/outside/fenced/unrelated literal backslash fields remain unchanged; raw prefixes/suffixes/endings preserve the admitted stamping contract. | Evidence: .osc/releases/2026-10-08-195-windows-helper-navigation.md
+- [x] Existing Status, amendment bytes/idempotence, close/move errors/readiness/order, message, LF/CRLF/EOF, no-anchor object identity and renderer/copy refusal boundaries pass meaningful retained controls without migration or rollback claims. | Evidence: .osc/releases/2026-10-08-195-windows-helper-navigation.md
+- [x] Only the five implementation paths change after separate admission; source ceiling/roots remain unchanged with readable code, root README restoration and SVG absence preserved, and no native Windows qualification claim. | Evidence: .osc/releases/2026-10-08-195-windows-helper-navigation.md
+- [x] Failed-first production regressions, unchanged committed-head strict/build/full verification and fresh full-publication review precede public effects; actual current GitHub CI/current bindings precede delegated merge and readback/lease release/closeout. | Evidence: .osc/releases/2026-10-08-195-windows-helper-navigation.md
 
 ## Verification steps
 

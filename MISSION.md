@@ -52,7 +52,8 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
-- 2026-10-08: Preserve actual moved POSIX literal-backslash fields and normalize only Windows directory forms — see .osc/plans/active/195-windows-helper-navigation-amendment-1.md
+- 2026-10-08: closed 195-windows-helper-navigation — Merged bounded Windows helper navigation via PR300; record observed delivery and retained native Windows limitation
+- 2026-10-08: Preserve actual moved POSIX literal-backslash fields and normalize only Windows directory forms — see .osc/plans/done/195-windows-helper-navigation-amendment-1.md
 - 2026-10-08: closed 193-close-generated-navigation — Merged bounded close navigation and shell refusal controls via PR299; record observed delivery and Windows follow-up
 - 2026-10-08: Propagate new shell renderer and temporary-output failures before history write or success — see .osc/plans/done/193-close-generated-navigation-amendment-2.md
 - 2026-10-08: Preserve legacy shell no-anchor file identity and metadata as well as bytes — see .osc/plans/done/193-close-generated-navigation-amendment-1.md
