@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -381,4 +381,106 @@ describe('close generated terminal navigation', () => {
       });
     },
   );
+});
+
+
+describe('Windows helper navigation portable serializer', () => {
+  it('canonicalizes only amendment history under an isolated actual win32.relative mock', async () => {
+    const root = initializedScaffold();
+    let calls = 0;
+    try {
+      vi.resetModules();
+      vi.doMock('node:path', async (importOriginal) => {
+        const actual = await importOriginal<typeof import('node:path')>();
+        return { ...actual, relative: (from: string, to: string) => {
+          calls += 1;
+          return actual.win32.relative('C:\\fixture', `C:\\fixture\\${actual.relative(from, to).replace(/\//g, '\\')}`);
+        } };
+      });
+      // All filesystem functions and all other path functions stay native POSIX.
+      const isolated = await import('../src/scaffold.js');
+      const result = isolated.createPlanAmendment(navigationSlug, root, '  serialized  ', fixedDate);
+      expect(calls).toBe(1);
+      expect(result.relativePath).toBe(`.osc\\plans\\active\\${navigationSlug}-amendment-1.md`);
+      expect(result.path).toBe(join(root, `.osc/plans/active/${navigationSlug}-amendment-1.md`));
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toContain(`2026-10-08: serialized — see .osc/plans/active/${navigationSlug}-amendment-1.md`);
+      expect(isolated.closePlan(navigationSlug, root, '', fixedDate).movedFiles).toEqual([`${navigationSlug}.md`, `${navigationSlug}-amendment-1.md`]);
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toContain(`serialized — see .osc/plans/done/${navigationSlug}-amendment-1.md`);
+    } finally {
+      vi.doUnmock('node:path');
+      vi.resetModules();
+      rmSync(root, { recursive: true, force: true });
+    }
+    const control = initializedScaffold();
+    try {
+      const native = await import('../src/scaffold.js');
+      expect(native.createPlanAmendment(navigationSlug, control, '', fixedDate).relativePath).toBe(`.osc/plans/active/${navigationSlug}-amendment-1.md`);
+    } finally {
+      rmSync(control, { recursive: true, force: true });
+    }
+  });
+});
+
+
+describe('Windows helper navigation portable close', () => {
+  it('repairs uniform terminal fields for actual moved regular files and preserves other raw history', () => {
+    withNavigation('prior-stage', (root, oldPath, amendment, parent) => {
+      const name = `${navigationSlug}-amendment-1.md`;
+      const windows = (path: string) => path.replace(/\//g, '\\');
+      const paths = ['active/', 'backlog/', 'blocked/', ''].map((stage) => windows(`.osc/plans/${stage}${name}`));
+      const link = `${navigationSlug}-amendment-2.md`;
+      const directory = `${navigationSlug}-amendment-3.md`;
+      writeFileSync(join(root, 'target.md'), 'Target remains.\n');
+      symlinkSync(join(root, 'target.md'), join(root, `.osc/plans/blocked/${link}`));
+      mkdirSync(join(root, `.osc/plans/blocked/${directory}`));
+      const rows = [oldPath, ...paths].map((path, index) => `- 2026-10-02: History ${index} — see ${path}\t  `);
+      const rejected = [
+        `.osc/plans\\active\\${name}`, `.osc\\plans/active\\${name}`, `.osc\\plans\\active/${name}`,
+        `C:\\${paths[0]}`, `\\\\host\\${paths[0]}`, `/${oldPath}`, `.osc\\plans\\..\\${name}`,
+        `.osc\\plans\\active\\002-unmoved.md`, `.osc/plans/active/${navigationSlug}-amendment-1\\literal.md`,
+        windows(`.osc/plans/blocked/${link}`), windows(`.osc/plans/blocked/${directory}`),
+      ].map((path) => `- 2026-10-03: Excluded — see ${path}`);
+      rejected.push(`- 2026-10-03: Inline — see \`${paths[0]}\``, `- 2026-10-03: Suffix — see ${paths[0]}#detail`, `- 2026-10-03: URL — see https://example.invalid/${paths[0]}`);
+      const fenced = `- 2026-10-01: Fenced or outside — see ${paths[0]}`;
+      const before = ['# Mission', 'Fixture.', fenced, '~~~~markdown', '## Changelog', fenced, '~~~~~',
+        '## Changelog ###', navigationAnchor, '## \t  ', ...rows, ...rejected,
+        '````markdown', fenced, '```', fenced, '`````', '## Later', fenced].join('\r\n');
+      writeFileSync(join(root, 'MISSION.md'), before);
+      let expected = before;
+      for (const row of rows) expected = expected.replace(row, row.replace(/ — see .*?(?=[\t ]*$)/, ` — see .osc/plans/done/${name}`));
+      const output = execFileSync(tsx, [cli, 'close', navigationSlug, '--message', '  win shipped  '], { cwd: root, encoding: 'utf8' });
+      expect(output).toContain(`Moved to done/: ${navigationSlug}.md, ${name}, ${link}, ${directory}`);
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(expected.replace(`${navigationAnchor}\r\n`, `${navigationAnchor}\r\n- ${today()}: closed ${navigationSlug} — win shipped\r\n`));
+      expect(readFileSync(join(root, `.osc/plans/done/${name}`), 'utf8')).toBe(amendment);
+      expect(readFileSync(join(root, `.osc/plans/done/${navigationSlug}.md`), 'utf8')).toBe(parent.replace(/^(active|backlog|blocked)$/m, 'done'));
+      const after = readFileSync(join(root, 'MISSION.md'), 'utf8');
+      execFileSync(tsx, [cli, 'close', navigationSlug, '--message', 'repeat'], { cwd: root });
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(after);
+    });
+  });
+
+  it('preserves surviving raw and normalized file, directory and dangling aliases plus literal POSIX backslashes', () => {
+    withNavigation('active', (root, oldPath) => {
+      const rows = [`- 2026-10-02: Regular — see ${oldPath.replace(/\//g, '\\')}\t  `];
+      for (const [index, kind] of ['file', 'directory', 'dangling', 'file', 'directory', 'dangling'].entries()) {
+        const name = `${navigationSlug}-amendment-${index + 2}.md`;
+        writeFileSync(join(root, `.osc/plans/active/${name}`), `Amendment ${index + 2}.\n`);
+        const path = `.osc\\plans\\backlog\\${name}`;
+        const alias = join(root, index < 3 ? path : path.replace(/\\/g, '/'));
+        if (kind === 'directory') mkdirSync(alias);
+        else if (kind === 'dangling') symlinkSync('absent.md', alias);
+        else writeFileSync(alias, 'Surviving entry.\n');
+        rows.push(`- 2026-10-03: ${kind} alias ${index} — see ${path}\t  `);
+      }
+      const literal = `.osc/plans/active/${navigationSlug}-amendment-8\\literal.md`;
+      writeFileSync(join(root, literal), 'Literal POSIX filename.\n');
+      rows.push(`- 2026-10-03: Literal — see ${literal}\t  `);
+      const before = ['# Mission', 'Fixture.', '## Changelog', ...rows].join('\n');
+      writeFileSync(join(root, 'MISSION.md'), before);
+      const repaired = before.replace(rows[0], rows[0].replace(oldPath.replace(/\//g, '\\'), `.osc/plans/done/${navigationSlug}-amendment-1.md`));
+      execFileSync(tsx, [cli, 'close', navigationSlug], { cwd: root });
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(`${repaired.trimEnd()}\n\n- ${today()}: closed ${navigationSlug}\n`);
+      expect(readFileSync(join(root, literal), 'utf8')).toBe('Literal POSIX filename.\n');
+    });
+  });
 });

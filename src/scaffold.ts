@@ -392,10 +392,12 @@ function stampMissionChangelog(root: string, line: string, idempotencyToken?: st
     else if (!fence) fence = fenceOpen(existingLine);
     if (wasFenced || fence || index < bodyStart || index >= bodyEnd) return rawLine;
     return rawLine.replace(
-      /^(- \d{4}-\d{2}-\d{2}: .* — see )(\.osc\/plans\/(?:(?:active|backlog|blocked)\/)?([^/\s]+\.md))([ \t]*(?:\r?\n)?$)/,
-      (original, prefix: string, oldPath: string, filename: string, suffix: string) => {
-        if (!movedRegularDoneFiles.includes(filename) || lstatSync(join(root, oldPath), { throwIfNoEntry: false })) return original;
-        return `${prefix}${OSC_NAMESPACE}/plans/done/${filename}${suffix}`;
+      /^(- \d{4}-\d{2}-\d{2}: .* — see )(\.osc([/\\])plans\3(?:(?:active|backlog|blocked)\3)?([^/\\\s]+\.md))([ \t]*(?:\r?\n)?$)/,
+      (original, prefix: string, oldPath: string, _separator: string, filename: string, suffix: string) => {
+        if (!movedRegularDoneFiles.includes(filename)) return original;
+        const oldEntrySurvives = [oldPath, oldPath.replace(/\\/g, '/')].some((path) =>
+          lstatSync(join(root, path), { throwIfNoEntry: false }));
+        return oldEntrySurvives ? original : `${prefix}${OSC_NAMESPACE}/plans/done/${filename}${suffix}`;
       },
     );
   }).join('');
@@ -553,9 +555,7 @@ export function createPlanAmendment(slug: string, start = process.cwd(), message
   const amendmentPattern = new RegExp(`^${escapeRegex(safeSlug)}-amendment-(\\d+)\\.md$`);
   for (const file of readdirSync(parent.dir)) {
     const match = file.match(amendmentPattern);
-    if (!match) continue;
-    const value = Number.parseInt(match[1], 10);
-    if (value > max) max = value;
+    if (match) max = Math.max(max, Number.parseInt(match[1], 10));
   }
   const amendmentNumber = max + 1;
   const filename = `${safeSlug}-amendment-${amendmentNumber}.md`;
@@ -568,7 +568,7 @@ export function createPlanAmendment(slug: string, start = process.cwd(), message
   writeFileSync(path, renderAmendmentSkeleton(safeSlug, amendmentNumber, date), 'utf8');
 
   const description = message.trim() || `amendment ${amendmentNumber} to ${safeSlug}`;
-  const changelogLine = `${formatLocalDate(date)}: ${description} — see ${relativePath}`;
+  const changelogLine = `${formatLocalDate(date)}: ${description} — see ${relativePath.replace(/\\/g, '/')}`;
   const changelogStamped = stampMissionChangelog(root, changelogLine, filename);
   return { root, path, relativePath, slug: safeSlug, parentPath: parent.path, amendmentNumber, changelogStamped };
 }
