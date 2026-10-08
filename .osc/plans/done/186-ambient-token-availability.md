@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -29,11 +29,11 @@ Ambient capture and handoff records preserve missing token measurements as unava
 
 ## Acceptance criteria
 
-- [ ] Absent/empty Claude usage and empty transcripts preserve null splits/unavailable total instead of measured zero.
-- [ ] Each Claude split aggregates only with complete valid assistant-turn coverage; mixed gaps remain unavailable, explicit complete zeros remain zero and complete fixture total 18070 is preserved.
-- [ ] Codex latest cumulative snapshot preserves missing split/total nulls and explicit total including zero; no input/output fallback or stale-field salvage; existing complete fixture total 5750 is preserved.
-- [ ] Direct ambient builder preserves incomplete/invalid usage as unavailable total; genuinely complete valid splits can still produce a total.
-- [ ] Tests cover records and trust-report availability, documentation distinguishes partial from complete measurements, and strict verification/build/full tests plus independent current-head review precede publication.
+- [x] Absent/empty Claude usage and empty transcripts preserve null splits/unavailable total instead of measured zero. | Evidence: .osc/releases/2026-10-08-186-ambient-token-availability.md
+- [x] Each Claude split aggregates only with complete valid assistant-turn coverage; mixed gaps remain unavailable, explicit complete zeros remain zero and complete fixture total 18070 is preserved. | Evidence: .osc/releases/2026-10-08-186-ambient-token-availability.md
+- [x] Codex latest cumulative snapshot preserves missing split/total nulls and explicit total including zero; no input/output fallback or stale-field salvage; existing complete fixture total 5750 is preserved. | Evidence: .osc/releases/2026-10-08-186-ambient-token-availability.md
+- [x] Direct ambient builder preserves incomplete/invalid usage as unavailable total; genuinely complete valid splits can still produce a total. | Evidence: .osc/releases/2026-10-08-186-ambient-token-availability.md
+- [x] Tests cover records and trust-report availability, documentation distinguishes partial from complete measurements, and strict verification/build/full tests plus independent current-head review precede publication. | Evidence: .osc/releases/2026-10-08-186-ambient-token-availability.md
 
 ## Verification steps
 
