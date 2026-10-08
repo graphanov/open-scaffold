@@ -14,6 +14,8 @@ A preregistered synthetic report-transfer pilot completed three worker, six coor
 
 ## Verification
 
+The following checks describe the original candidate preparation; the later independent rejection and bounded repair are recorded below.
+
 - `npm run osc -- resume` and `./verify.sh --quick --quiet` passed before implementation.
 - `python3 examples/orchestrator-handoff/verify.py` passed: 146 closed artifact entries, twelve ordered facts, fifteen captures, ten saved clock objects, six termination/fresh-reader links, both assessment projections and derived results.
 - `python3 examples/orchestrator-handoff/formatter.py --check-parity` passed: frozen semantic SHA-256 `8adf7272ae2155782b1b4f67a2dc27df7c7a741676a6778158659368435cc7bd`; OSC 5,485 bytes/characters, plain 3,771 bytes and 3,769 characters.
@@ -21,6 +23,18 @@ A preregistered synthetic report-transfer pilot completed three worker, six coor
 - Twenty-four disposable-copy tamper cases failed nonzero for their intended reasons. Relationship cases recomputed affected local hashes before checking identities, source ordinals/categories/order, own-reader handoff, termination links, clock arithmetic, timing correction, excerpt binding, binary scores, secondary counts and derived results. Duplicate JSON members and unsafe file/reference paths also failed.
 - `npm run build` passed. The initial `npm test` run passed 799/800 tests; the live release corpus reported an extra publication-traceability warning from Root's preimplementation preparation note. Its Branch field now uses the existing validator's supported spelling. The rerun passed all 56 test files and 800 tests. `./verify.sh --strict` passed with nine checks, zero failures and eighteen existing plan-intent history warnings. Committed-candidate checks remain pending.
 - `git diff --check` passed after the example and note edits. Independent fresh implementation/tamper review remains pending.
+
+## Independent review and bounded repair
+
+Independent review of rejected candidate `3175db3c279f30168cefea80387c550dce0b6527` returned REVISE: 43 of 50 malformed temporary-copy cases rejected, but seven required support, attribution or preservation excerpt cases incorrectly passed. The verifier discovered records only after `start_line` existed. The same review found the new MISSION amendment-1 stamp pointed to a missing backlog path. The rejected commit and failed review evidence remain in history; no public effect occurred.
+
+Amendment 2 admits only `examples/orchestrator-handoff/verify.py`, the amendment-1 reference target in `MISSION.md`, and this dated note. The verifier now checks every element of the declared support, attribution/scope and preservation excerpt fields, including next-action excerpts and populated unsupported-claim/attribution-error findings. Records require the assessor's exact `text` or `verbatim_excerpt` shape, their own raw-output reference, integer existing line bounds and nonempty exact saved content. The documented independent assessor's one-line worker substring exception remains. The MISSION change replaces only the amendment-1 target with its current active path; date, event wording and other entries are preserved.
+
+Before repair, a private replay reproduced all 43 rejections and seven bypasses. After repair, all 50 replay cases rejected for their intended reasons. A fresh private matrix passed 13 positive controls and rejected 340 malformed cases for their intended reasons, covering empty/scalar/missing-bounds records, wrong assessor text fields, noninteger/invalid bounds, wrong outputs, unsupported excerpts and populated secondary findings. Those relational copies recomputed affected local hashes and synchronized derived result mirrors so stale checksums or result equality could not mask excerpt validation. These disposable structural controls do not rescore the actual study.
+
+The repair working tree passed `./verify.sh --strict` (nine checks, zero failures, eighteen existing intent-history warnings), `npm run build`, `npm test` (56 files, 800 tests), the offline verifier and `git diff --check`. New committed-head checks and fresh independent review remain pending.
+
+The unchanged frozen bundle passes the repaired offline verifier. Study, both assessment projections, results, raw/source-evidence payloads, prompts and formatter remain byte-for-byte unchanged. Maintained TypeScript remains 16,865 lines across 41 files, within the unmodified 16,866/41 cap. This bounded repair is prepared for fresh independent review; the example remains unshipped.
 
 ## Outcome
 

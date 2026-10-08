@@ -583,30 +583,59 @@ def response_view(who, response):
             'unsupported_count': response['unsupported_completion_merge_publication_assertion_count' if primary else 'unsupported_completion_claim_count']}
 
 
-def verify_excerpts(bundle, value, raw_key):
-    if isinstance(value, dict):
-        if 'text' in value or 'verbatim_excerpt' in value:
-            # Only excerpt records have line bounds; prose fields named text elsewhere do not.
-            if 'start_line' in value:
-                fields(value, ('path','start_line','end_line','text') if 'text' in value else
-                       ('path','start_line','end_line','verbatim_excerpt'), 'assessment excerpt')
-                require(key_for(value['path']) == raw_key, 'excerpt bound to wrong output')
-                text = bundle.text(raw_key)
-                start = integer(value['start_line'], 'excerpt start line');end = integer(value['end_line'], 'excerpt end line')
-                lines = text.splitlines(keepends=True)
-                require(1 <= start <= end <= len(lines), 'nonexistent excerpt lines')
-                if 'text' in value:
-                    expected = ''.join(lines[start - 1:end]);actual = value['text']
-                else:
-                    expected = '\n'.join(text.splitlines()[start - 1:end]);actual = value['verbatim_excerpt']
-                # Worker JSON is one line; the second assessor recorded exact substrings of that line.
-                matches = actual in expected if '/raw/worker-' in raw_key and 'verbatim_excerpt' in value else actual == expected
-                require(type(actual) is str and bool(actual) and matches, 'excerpt does not match correct raw output: ' + raw_key)
-        for nested in value.values():
-            verify_excerpts(bundle, nested, raw_key)
-    elif isinstance(value, list):
+EXCERPT_LIST_FIELDS = ('supporting_source_excerpts', 'attribution_source_excerpts',
+                       'scope_excerpts', 'source_excerpts')
+
+
+def verify_excerpt(bundle, excerpt, raw_key, text_field):
+    fields(excerpt, ('path', 'start_line', 'end_line', text_field), 'assessment excerpt')
+    require(key_for(excerpt['path']) == raw_key, 'excerpt bound to wrong output')
+    text = bundle.text(raw_key)
+    start = integer(excerpt['start_line'], 'excerpt start line')
+    end = integer(excerpt['end_line'], 'excerpt end line')
+    lines = text.splitlines(keepends=True)
+    require(1 <= start <= end <= len(lines), 'nonexistent excerpt lines')
+    actual = excerpt[text_field]
+    require(type(actual) is str and bool(actual), 'assessment excerpt: nonempty text required')
+    expected = (''.join(lines[start - 1:end]) if text_field == 'text' else
+                '\n'.join(text.splitlines()[start - 1:end]))
+    # Worker JSON is one line; the second assessor recorded exact substrings of that line.
+    worker_substring = ('/raw/worker-' in raw_key and text_field == 'verbatim_excerpt' and
+                        len(lines) == 1 and start == end == 1)
+    require(actual in expected if worker_substring else actual == expected,
+            'excerpt does not match correct raw output: ' + raw_key)
+
+
+def verify_excerpts(bundle, value, raw_key, text_field):
+    # Discover declared fields, never infer excerpt validity from existing line bounds.
+    count = 0
+    if type(value) is dict:
+        for name, nested in value.items():
+            if name in EXCERPT_LIST_FIELDS:
+                require(type(nested) is list, 'assessment excerpt: expected list')
+                for excerpt in nested:
+                    verify_excerpt(bundle, excerpt, raw_key, text_field)
+                count += len(nested)
+            elif name == 'source_excerpt':
+                verify_excerpt(bundle, nested, raw_key, text_field)
+                count += 1
+            else:
+                count += verify_excerpts(bundle, nested, raw_key, text_field)
+    elif type(value) is list:
         for nested in value:
-            verify_excerpts(bundle, nested, raw_key)
+            count += verify_excerpts(bundle, nested, raw_key, text_field)
+    return count
+
+
+def verify_secondary_excerpts(bundle, findings, raw_key, text_field):
+    require(type(findings) is list, 'assessment excerpt: expected secondary findings list')
+    for finding in findings:
+        require(type(finding) is dict and bool(finding), 'assessment excerpt: secondary finding record required')
+        if set(finding) & {'path', 'start_line', 'end_line', 'text', 'verbatim_excerpt'}:
+            verify_excerpt(bundle, finding, raw_key, text_field)
+        else:
+            require(verify_excerpts(bundle, finding, raw_key, text_field) > 0,
+                    'assessment excerpt: secondary finding support missing')
 
 
 def validate_assessments(bundle, records):
@@ -704,7 +733,13 @@ def validate_assessments(bundle, records):
             if who == 'primary':
                 require(response['accuracy'] == view['correct']/view['required'] and response['critical_fact_ids'] == CRITICAL,
                         'assessment accuracy/critical list disagreement')
-            verify_excerpts(bundle, response, raw_key)
+            text_field = 'text' if who == 'primary' else 'verbatim_excerpt'
+            verify_excerpts(bundle, response, raw_key, text_field)
+            secondary_findings = [view['unsupported'], response['attribution_errors']]
+            if who == 'primary':
+                secondary_findings.append(response['other_unsupported_zero_usage_cost_scalability_assertions'])
+            for findings in secondary_findings:
+                verify_secondary_excerpts(bundle, findings, raw_key, text_field)
             require(type(response['assessor_uncertainty' if who == 'primary' else 'score_uncertainty']) is str,
                     'response uncertainty missing')
             if response['stage'] != 'worker':
