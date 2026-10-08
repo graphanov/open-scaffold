@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, linkSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, readdirSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { splitSections } from '../src/scaffold.js';
@@ -166,6 +166,252 @@ describe('supported shell close fallback', () => {
       assertRejectedWithoutMutation(root, plan);
       expect(readFileSync(join(root, '.osc/plans/done', amendment), 'utf8')).toBe('# Existing amendment\n');
       expect(readFileSync(join(root, '.osc/plans/active', amendment), 'utf8')).toBe('# Active amendment\n');
+    });
+  });
+});
+
+
+const anchor = '<!-- append YYYY-MM-DD entries below this line -->';
+
+function shellDate(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function withShellNavigation(stage: string, run: (root: string, oldPath: string, amendment: string, parent: string) => void) {
+  withScaffold((root) => {
+    expect(spawnSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: root }).status).not.toBe(0);
+    for (const folder of ['backlog', 'blocked']) mkdirSync(join(root, '.osc/plans', folder));
+    writeFileSync(join(root, 'amend.sh'), readFileSync(join(repoRoot, 'amend.sh')));
+    const prefix = stage === 'root' ? '.osc/plans/' : `.osc/plans/${stage === 'prior-stage' ? 'active' : stage}/`;
+    if (stage !== 'active' && stage !== 'prior-stage') renameSync(join(root, activePath), join(root, `${prefix}${slug}.md`));
+    const amended = spawnSync('/bin/bash', ['amend.sh', slug, '--message', '  Scope changed  '], { cwd: root, encoding: 'utf8' });
+    expect(amended.status, amended.stderr).toBe(0);
+    const oldPath = `${prefix}${slug}-amendment-1.md`;
+    const amendment = readFileSync(join(root, oldPath), 'utf8');
+    if (stage === 'prior-stage') execFileSync(tsx, [cli, 'plan', 'move', slug, '--to', 'blocked'], { cwd: root });
+    const parentPath = stage === 'prior-stage' ? `.osc/plans/blocked/${slug}.md` : `${prefix}${slug}.md`;
+    run(root, oldPath, amendment, readFileSync(join(root, parentPath), 'utf8'));
+  });
+}
+
+function installMissionObject(root: string, before: string, kind: string, mode: number) {
+  const path = join(root, 'MISSION.md');
+  const shared = join(root, 'shared-mission.md');
+  rmSync(path);
+  if (kind === 'symlink') { writeFileSync(shared, before); symlinkSync('shared-mission.md', path); }
+  else { writeFileSync(path, before); if (kind === 'hardlink') linkSync(path, shared); }
+  chmodSync(path, mode);
+  return { path, shared, object: statSync(path), entry: lstatSync(path) };
+}
+
+function assertMissionIdentity(file: ReturnType<typeof installMissionObject>, kind: string, mode: number) {
+  const object = statSync(file.path);
+  const entry = lstatSync(file.path);
+  expect([object.dev, object.ino, object.mode & 0o777]).toEqual([file.object.dev, file.object.ino, mode]);
+  expect([entry.dev, entry.ino, entry.isSymbolicLink()]).toEqual([file.entry.dev, file.entry.ino, kind === 'symlink']);
+  if (kind === 'symlink') expect(readlinkSync(file.path)).toBe('shared-mission.md');
+  if (kind !== 'regular') {
+    expect(readFileSync(file.shared)).toEqual(readFileSync(file.path));
+    expect([statSync(file.shared).dev, statSync(file.shared).ino]).toEqual([file.object.dev, file.object.ino]);
+  }
+  if (kind === 'hardlink') expect(object.nlink).toBe(file.object.nlink);
+}
+
+describe('shell generated terminal navigation', () => {
+  it.each(['active', 'backlog', 'blocked', 'root', 'prior-stage'].flatMap((stage) => ['\n', '\r\n'].map((ending) => ({ stage, ending }))))(
+    'repairs supported $stage paths with $ending and leaves excluded fields intact', ({ stage, ending }) => {
+      withShellNavigation(stage, (root, oldPath, amendment, parent) => {
+        const name = `${slug}-amendment-1.md`;
+        const parentOld = oldPath.replace('-amendment-1', '');
+        const sourceStage = stage === 'root' ? '' : `${stage === 'prior-stage' ? 'blocked' : stage}/`;
+        const otherStage = stage === 'backlog' ? 'active' : 'backlog';
+        const second = `${slug}-amendment-2.md`;
+        writeFileSync(join(root, `.osc/plans/${sourceStage}${second}`), 'Second amendment.\r\n');
+        const alias = `.osc/plans/${otherStage}/${name}`;
+        const directoryAlias = `.osc/plans/${otherStage}/${slug}.md`;
+        const dangling = `.osc/plans/${otherStage}/${second}`;
+        writeFileSync(join(root, alias), 'Surviving alias.\n');
+        mkdirSync(join(root, directoryAlias));
+        symlinkSync('absent.md', join(root, dangling));
+        const rows = [
+          `- 2026-10-01: Amendment — see ${oldPath}\t  `,
+          `- 2026-10-02: Parent — see ${parentOld}`,
+          `- 2026-10-03: Prior alias — see .osc/plans/blocked/${second}`,
+        ];
+        const excluded = [
+          `- 2026-10-04: Basename — see ${name}`,
+          `- 2026-10-04: Prose recorded ${oldPath} at the time.`,
+          `- 2026-10-04: External — see https://example.invalid/${oldPath}`,
+          `- 2026-10-04: Unmoved — see .osc/plans/active/002-other.md`,
+          ...['.bak', '?view=1', '#detail', ' for the old location.'].map((suffix) => `- 2026-10-04: Suffix — see ${oldPath}${suffix}`),
+          `- 2026-10-04: Inline — see \`${oldPath}\``,
+          `- 2026-10-04: Alias — see ${alias}`,
+          `- 2026-10-04: Directory — see ${directoryAlias}`,
+          `- 2026-10-04: Dangling — see ${dangling}`,
+          `- 2026-10-04: Longer filename — see ${oldPath.replace('.md', '-extra.md')}`,
+        ];
+        const outside = `- 2026-09-30: Outside — see ${oldPath}`;
+        const before = ['# Mission', 'Navigation fixture.', outside, '~~~~markdown', '## Changelog', outside, '~~~~~',
+          '## Changelog ###', anchor, '## \t  ', ...rows, ...excluded,
+          '````markdown', outside, '```', '## Fenced heading', outside, '~~~~', '```` prose', outside, '`````', '## Later', outside].join(ending);
+        writeFileSync(join(root, 'MISSION.md'), before);
+        const repaired = before.replace(rows[0], rows[0].replace(oldPath, `.osc/plans/done/${name}`))
+          .replace(rows[1], rows[1].replace(parentOld, donePath))
+          .replace(rows[2], rows[2].replace(`.osc/plans/blocked/${second}`, `.osc/plans/done/${second}`));
+        const result = close(root, '--message', '  shipped  ');
+        expect(result.status, result.stderr).toBe(0);
+        expect(result.stdout).toContain(`Moved to done/: ${slug}.md ${name} ${second}`);
+        expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(repaired.replace(`${anchor}${ending}`, `${anchor}${ending}- ${shellDate()}: closed ${slug} —   shipped  \n`));
+        expect(readFileSync(join(root, `.osc/plans/done/${name}`), 'utf8')).toBe(amendment);
+        expect(readFileSync(join(root, `.osc/plans/done/${second}`), 'utf8')).toBe('Second amendment.\r\n');
+        expect(readFileSync(join(root, donePath), 'utf8')).toBe(parent.replace(/^(active|backlog|blocked)$/m, 'done'));
+        const after = readFileSync(join(root, 'MISSION.md'), 'utf8');
+        expect(close(root, '--message', 'repeat').status).toBe(0);
+        expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(after);
+      });
+    },
+  );
+
+  it('keeps moved symlinks in the complete lexical list without retargeting their fields', () => {
+    withShellNavigation('active', (root) => {
+      const ten = `${slug}-amendment-10.md`;
+      const two = `${slug}-amendment-2.md`;
+      writeFileSync(join(root, `.osc/plans/active/${ten}`), 'Regular.\n');
+      writeFileSync(join(root, 'target.md'), 'Link target.\n');
+      symlinkSync(join(root, 'target.md'), join(root, `.osc/plans/active/${two}`));
+      const regular = `- 2026-10-02: Regular — see .osc/plans/active/${ten}`;
+      const excluded = `- 2026-10-03: Symlink — see .osc/plans/active/${two}`;
+      const before = `# Mission\nFixture.\n## Changelog\n${anchor}\n${regular}\n${excluded}\n`;
+      writeFileSync(join(root, 'MISSION.md'), before);
+      const result = close(root);
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toContain(`Moved to done/: ${slug}.md ${slug}-amendment-1.md ${ten} ${two}`);
+      expect(lstatSync(join(root, `.osc/plans/done/${two}`)).isSymbolicLink()).toBe(true);
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(before.replace(regular, regular.replace('/active/', '/done/')).replace(`${anchor}\n`, `${anchor}\n- ${shellDate()}: closed ${slug}\n`));
+    });
+  });
+
+  it.each(['\n', '\r\n'])('keeps duplicate anchors, EOF-anchor separation and fenced-only Changelog with %j', (ending) => {
+    withScaffold((root) => {
+      const pointer = `- 2026-10-02: Fenced — see ${activePath}`;
+      const before = ['# Mission', 'Fixture.', '```markdown', '## Changelog', pointer, '```', anchor, anchor].join(ending);
+      writeFileSync(join(root, 'MISSION.md'), before);
+      expect(close(root).status).toBe(0);
+      const entry = `- ${shellDate()}: closed ${slug}\n`;
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(before.replace(`${anchor}${ending}`, `${anchor}${ending}${entry}`).replace(new RegExp(`${anchor}$`), `${anchor}\n${entry}`));
+    });
+  });
+
+  it.each(['regular', 'symlink', 'hardlink'].flatMap((kind) => [false, true].map((repair) => ({ kind, repair }))))(
+    'retains no-anchor $kind metadata and shared content with repair $repair', ({ kind, repair }) => {
+      for (const mode of [0o644, 0o600, 0o755]) withScaffold((root) => {
+        const historical = repair ? `- 2026-10-02: History — see ${activePath}\t  ` : 'Historical prose.\t  ';
+        const before = `# Mission\r\nFixture.\r\n## Changelog\r\n${historical}`;
+        const file = installMissionObject(root, before, kind, mode);
+        const result = close(root);
+        expect(result.status, result.stderr).toBe(0);
+        expect(readFileSync(file.path, 'utf8')).toBe(`${repair ? before.replace(activePath, donePath) : before}\n- ${shellDate()}: closed ${slug}\n`);
+        assertMissionIdentity(file, kind, mode);
+      });
+    },
+  );
+
+  it('keeps shell readiness ahead of collisions and then refuses the first lexical collision', () => {
+    withScaffold((root) => {
+      for (const name of [`${slug}-amendment-10.md`, `${slug}-amendment-2.md`]) {
+        writeFileSync(join(root, `.osc/plans/active/${name}`), 'Active.\n');
+        writeFileSync(join(root, `.osc/plans/done/${name}`), 'Existing.\n');
+      }
+      writeFileSync(join(root, 'MISSION.md'), '# Mission\nmission:unset\n');
+      const unready = close(root);
+      expect(unready.status).toBe(1);
+      expect(unready.stderr).toBe('Error: MISSION.md must exist and define the mission before closing a plan.\n');
+      writeFileSync(join(root, 'MISSION.md'), mission);
+      const collision = close(root);
+      expect(collision.status).toBe(1);
+      expect(collision.stderr).toBe(`Error: refusing to overwrite existing done plan file: ${slug}-amendment-10.md\n`);
+      expect(readFileSync(join(root, activePath), 'utf8')).toBe(plan);
+      expect(readFileSync(join(root, 'MISSION.md'), 'utf8')).toBe(mission);
+    });
+  });
+});
+
+// Deterministic command-boundary faults in disposable fixtures, not physical
+// ENOSPC or atomic recovery tests. Plans have moved before history staging.
+const faultHook = String.raw`mktemp() {
+  if [ "$#" -gt 0 ]; then /usr/bin/mktemp "$@"; return $?; fi
+  case "$CLOSE_FAULT" in
+    temp) builtin printf 'temp\n' >> "$CLOSE_LOG"; return 75 ;;
+    output) builtin printf 'output\n' >> "$CLOSE_LOG"; builtin printf '%s\n' "$CLOSE_DIRECTORY" ;;
+    input) local result; result=$(/usr/bin/mktemp) || return; chmod 000 "$CLOSE_MISSION"; builtin printf 'input\n' >> "$CLOSE_LOG"; builtin printf '%s\n' "$result" ;;
+    *) /usr/bin/mktemp ;;
+  esac
+}
+printf() {
+  local fmt="$1"; local text=""
+  if [ "$#" -ge 2 ]; then text="$2"; fi
+  if [ "$fmt" = -- ]; then fmt="$2"; text="$3"; fi
+  if { [ "$CLOSE_FAULT" = history ] && [ "$fmt" = '%s%s' ] && [[ "$text" == *FAULT-HISTORY* ]]; } ||
+     { [ "$CLOSE_FAULT" = separator ] && [ "$fmt" = '\n' ]; } ||
+     { [ "$CLOSE_FAULT" = entry ] && [ "$fmt" = '- %s\n' ]; }; then
+    builtin printf '%s\n' "$CLOSE_FAULT" >> "$CLOSE_LOG"
+    builtin printf 'PARTIAL-RENDER'
+    return 74
+  fi
+  if [ "$fmt" = '\n- %s\n' ]; then builtin printf 'append\n' >> "$CLOSE_LOG"; fi
+  builtin printf "$@"
+}
+cat() {
+  builtin printf 'copy\n' >> "$CLOSE_LOG"
+  if [ "$CLOSE_FAULT" = copy ]; then return 73; fi
+  if [ "$CLOSE_FAULT" = partial-copy ]; then builtin printf 'PARTIAL-COPY'; return 73; fi
+  /bin/cat "$@"
+}
+`;
+
+const stagingFaults = [
+  { fault: 'history', anchored: false, repair: true },
+  { fault: 'history', anchored: true, repair: true },
+  { fault: 'history', anchored: false, repair: false },
+  { fault: 'history', anchored: true, repair: false },
+  { fault: 'separator', anchored: true, repair: false },
+  { fault: 'entry', anchored: true, repair: true },
+  ...['input', 'output', 'temp'].flatMap((fault) => [
+    { fault, anchored: false, repair: true },
+    { fault, anchored: true, repair: true },
+    { fault, anchored: false, repair: false },
+  ]),
+];
+
+describe('shell refuses incomplete historical staging within partial-close boundaries', () => {
+  it.each([
+    ...stagingFaults.map((test) => ({ ...test, kind: 'regular' })),
+    ...['regular', 'symlink', 'hardlink'].flatMap((kind) => ['copy', 'partial-copy'].map((fault) => ({ kind, fault, anchored: false, repair: true }))),
+  ])('refuses $fault for $kind, anchor $anchored, repair $repair', ({ kind, fault, anchored, repair }) => {
+    withScaffold((root) => {
+      const row = repair ? `- 2026-10-02: FAULT-HISTORY — see ${activePath}\t  ` : 'FAULT-HISTORY prose.\t  ';
+      const before = `# Mission\r\nFault fixture.\r\n## Changelog\r\n${anchored ? anchor : ''}${fault === 'separator' ? '' : `${anchored ? '\r\n' : ''}${row}`}`;
+      const file = installMissionObject(root, before, kind, 0o755);
+      const hook = join(root, 'fault.sh');
+      const log = join(root, 'fault.log');
+      writeFileSync(hook, faultHook);
+      writeFileSync(log, '');
+      const result = spawnSync('/bin/bash', ['close.sh', slug, '--message', '  raw message  '], {
+        cwd: root, encoding: 'utf8',
+        env: { ...process.env, TMPDIR: root, BASH_ENV: hook, CLOSE_FAULT: fault, CLOSE_LOG: log, CLOSE_DIRECTORY: join(root, '.osc/plans'), CLOSE_MISSION: file.path },
+      });
+      // The input-open hook changes fixture permission after readiness. Restore
+      // it only to inspect bytes; this is fixture cleanup, not source recovery.
+      if (fault === 'input') chmodSync(file.path, 0o755);
+      const expected = fault === 'partial-copy' ? 'PARTIAL-COPY' : fault === 'copy' ? '' : before;
+      expect.soft(result.status, result.stderr).toBe(1);
+      expect.soft(result.stdout).not.toMatch(/Closed:|Stamped:/);
+      expect.soft(readFileSync(file.path, 'utf8')).toBe(expected);
+      expect.soft(readFileSync(log, 'utf8')).toBe(['copy', 'partial-copy'].includes(fault) ? 'copy\n' : `${fault}\n`);
+      expect.soft(readFileSync(join(root, donePath), 'utf8')).toBe(plan.replace('\nactive\n', '\ndone\n'));
+      expect.soft(existsSync(join(root, activePath))).toBe(false);
+      assertMissionIdentity(file, kind, 0o755);
     });
   });
 });
