@@ -1,0 +1,136 @@
+{
+  "schema": "open-scaffold.section-parser-live-diagnostics.v1",
+  "plans": [
+    {
+      "path": ".osc/plans/done/052-interactive-plan-wizard.md",
+      "issues": [
+        {
+          "severity": "warning",
+          "line": 57,
+          "rule": "blocking-questions-tagged",
+          "message": "Open question may block execution but is not tagged BLOCKING: Should the wizard auto-detect the stage folder based on answers (e.g., if user mentions \"blocked on X\" in open questions, suggest `--stage blocked`)? That's heuristic and fragile; explicit `--stage` is clearer.",
+          "suggestion": "Prefix genuinely blocking questions with BLOCKING: or resolve the question before implementation."
+        }
+      ]
+    },
+    {
+      "path": ".osc/plans/done/063-github-actions-ci-templates.md",
+      "issues": [
+        {
+          "severity": "warning",
+          "line": 58,
+          "rule": "blocking-questions-tagged",
+          "message": "Open question may block execution but is not tagged BLOCKING: Should `stale-plans.yml` automatically move stale plans to `blocked/` instead of just opening an issue? Decision: no — auto-mutation of plan state from CI is too aggressive. Opening an issue is the right level of automation; the human decides.",
+          "suggestion": "Prefix genuinely blocking questions with BLOCKING: or resolve the question before implementation."
+        }
+      ]
+    },
+    {
+      "path": ".osc/plans/done/075-brownfield-package-release-sync.md",
+      "issues": [
+        {
+          "severity": "warning",
+          "line": 57,
+          "rule": "blocking-questions-tagged",
+          "message": "Open question may block execution but is not tagged BLOCKING: Publish gate: owner approval is required before running real `npm publish` or creating/updating the GitHub Release marked Latest.",
+          "suggestion": "Prefix genuinely blocking questions with BLOCKING: or resolve the question before implementation."
+        }
+      ]
+    },
+    {
+      "path": ".osc/plans/done/076-plan-wizard-package-release-sync.md",
+      "issues": [
+        {
+          "severity": "warning",
+          "line": 56,
+          "rule": "blocking-questions-tagged",
+          "message": "Open question may block execution but is not tagged BLOCKING: Publish gate: owner approval is required before running real `npm publish` or creating/updating the GitHub Release marked Latest.",
+          "suggestion": "Prefix genuinely blocking questions with BLOCKING: or resolve the question before implementation."
+        }
+      ]
+    },
+    {
+      "path": ".osc/plans/done/093-pr89-public-surface-sync.md",
+      "issues": [
+        {
+          "severity": "warning",
+          "line": 95,
+          "rule": "blocking-questions-tagged",
+          "message": "Open question may block execution but is not tagged BLOCKING: Should the plan be archived in this same branch? No. It remains active until real npm/GitHub Release proof exists after owner approval.",
+          "suggestion": "Prefix genuinely blocking questions with BLOCKING: or resolve the question before implementation."
+        }
+      ]
+    },
+    {
+      "path": ".osc/plans/done/095-local-task-database-public-surface-sync.md",
+      "issues": [
+        {
+          "severity": "warning",
+          "line": 96,
+          "rule": "blocking-questions-tagged",
+          "message": "Open question may block execution but is not tagged BLOCKING: GitHub Release title after owner approval: default candidate is `v0.4.15 — Local task database CLI`.",
+          "suggestion": "Prefix genuinely blocking questions with BLOCKING: or resolve the question before implementation."
+        },
+        {
+          "severity": "warning",
+          "line": 97,
+          "rule": "blocking-questions-tagged",
+          "message": "Open question may block execution but is not tagged BLOCKING: Should plan `095` close in this candidate PR? No. It should remain active until npm registry, fresh `npx`, and GitHub Latest Release proof exist after owner approval.",
+          "suggestion": "Prefix genuinely blocking questions with BLOCKING: or resolve the question before implementation."
+        }
+      ]
+    }
+  ],
+  "releases": [
+    {
+      "path": ".osc/releases/2026-05-22-093-pr89-public-surface-sync.md",
+      "warnings": [
+        {
+          "level": "warn",
+          "code": "release_note.traceability_missing_plan",
+          "message": "Release note Traceability section does not cite a .osc/plans/ path",
+          "path": ".osc/releases/2026-05-22-093-pr89-public-surface-sync.md"
+        },
+        {
+          "level": "warn",
+          "code": "release_note.traceability_missing_work_item",
+          "message": "Release note Traceability section does not cite a plan, issue, task, or roadmap item",
+          "path": ".osc/releases/2026-05-22-093-pr89-public-surface-sync.md"
+        }
+      ]
+    },
+    {
+      "path": ".osc/releases/2026-05-29-127-ab-comparison-pilot-harness.md",
+      "warnings": [
+        {
+          "level": "warn",
+          "code": "release_note.traceability_missing_publication",
+          "message": "Release note does not cite a PR, branch, tag, release, or explicit publication rationale",
+          "path": ".osc/releases/2026-05-29-127-ab-comparison-pilot-harness.md"
+        }
+      ]
+    },
+    {
+      "path": ".osc/releases/2026-05-30-132-plan-stats-command.md",
+      "warnings": [
+        {
+          "level": "warn",
+          "code": "release_note.traceability_missing_publication",
+          "message": "Release note does not cite a PR, branch, tag, release, or explicit publication rationale",
+          "path": ".osc/releases/2026-05-30-132-plan-stats-command.md"
+        }
+      ]
+    },
+    {
+      "path": ".osc/releases/2026-10-08-184-john-six-day-maintainer.md",
+      "warnings": [
+        {
+          "level": "warn",
+          "code": "release_note.traceability_missing_publication",
+          "message": "Release note does not cite a PR, branch, tag, release, or explicit publication rationale",
+          "path": ".osc/releases/2026-10-08-184-john-six-day-maintainer.md"
+        }
+      ]
+    }
+  ]
+}
