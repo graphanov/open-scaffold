@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -25,9 +25,9 @@ Restore the pre-announcement README and remove its unused John banner asset on t
 
 ## Acceptance criteria
 
-- [ ] README bytes equal the parent of announcement merge ffc229a2b06f9d5ca36fcd1bbd135901c4315fb6, and the banner asset is absent.
-- [ ] Only the two scoped presentation paths change after admission; other maintenance remains intact.
-- [ ] Independent diff review, unchanged committed-head strict/build/tests, current GitHub CI and default-branch readback precede completion.
+- [x] README bytes equal the parent of announcement merge ffc229a2b06f9d5ca36fcd1bbd135901c4315fb6, and the banner asset is absent. | Evidence: .osc/releases/2026-10-08-190-remove-john-readme-announcement.md
+- [x] Only the two scoped presentation paths change after admission; other maintenance remains intact. | Evidence: .osc/releases/2026-10-08-190-remove-john-readme-announcement.md
+- [x] Independent diff review, unchanged committed-head strict/build/tests, current GitHub CI and default-branch readback precede completion. | Evidence: .osc/releases/2026-10-08-190-remove-john-readme-announcement.md
 
 ## Verification steps
 

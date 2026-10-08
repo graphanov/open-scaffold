@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -29,11 +29,11 @@ Demonstrate whether task-scoped Open Scaffold reports let one orchestrator recov
 
 ## Acceptance criteria
 
-- [ ] Each worker report has an unambiguous task/run binding and links findings to evidence while distinguishing observed, inferred, and unresolved facts.
-- [ ] The coordinator preserves disagreements and provenance when combining all three reports.
-- [ ] A fresh reader resumes the correct task without mixing another worker's blocker or claimed completion.
-- [ ] A preregistered comparison against plain messages measures factual recovery, unsupported claims, synthesis omissions, and context/token size.
-- [ ] Results and failed claims are published with raw local fixtures and pilot boundaries; scaling remains unproven until tested separately.
+- [x] Each worker report has an unambiguous task/run binding and links findings to evidence while distinguishing observed, inferred, and unresolved facts. | Evidence: .osc/releases/2026-10-08-181-orchestrator-report-handoff-pilot.md
+- [x] The coordinator preserves disagreements and provenance when combining all three reports. | Evidence: .osc/releases/2026-10-08-181-orchestrator-report-handoff-pilot.md
+- [x] A fresh reader resumes the correct task without mixing another worker's blocker or claimed completion. | Evidence: .osc/releases/2026-10-08-181-orchestrator-report-handoff-pilot.md
+- [x] A preregistered comparison against plain messages measures factual recovery, unsupported claims, synthesis omissions, and context/token size. | Evidence: .osc/releases/2026-10-08-181-orchestrator-report-handoff-pilot.md
+- [x] Results and failed claims are published with raw local fixtures and pilot boundaries; scaling remains unproven until tested separately. | Evidence: .osc/releases/2026-10-08-181-orchestrator-report-handoff-pilot.md
 
 ## Verification steps
 

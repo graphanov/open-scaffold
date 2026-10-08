@@ -52,9 +52,11 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
-- 2026-10-08: Repair public saved-record excerpt validation and current-stage amendment traceability after independent REVISE; preserve the completed study and scores. — see .osc/plans/active/181-orchestrator-report-handoff-pilot-amendment-2.md
+- 2026-10-08: closed 190-remove-john-readme-announcement — PR 294 merged; prior README restored exactly and banner deleted on default branch at owner request.
+- 2026-10-08: closed 181-orchestrator-report-handoff-pilot — PR 292 merged; three paired report-transfer trials, preserved failures and two independent assessments published with an offline consistency verifier.
+- 2026-10-08: Repair public saved-record excerpt validation and current-stage amendment traceability after independent REVISE; preserve the completed study and scores. — see .osc/plans/done/181-orchestrator-report-handoff-pilot-amendment-2.md
 - 2026-10-08: closed 188-lab-handoff-section-budget — PR 291 merged; lab packet structure verified at supported budget
-- 2026-10-08: Pin native six-day comparison protocol after verified maintenance cycles — see .osc/plans/active/181-orchestrator-report-handoff-pilot-amendment-1.md
+- 2026-10-08: Pin native six-day comparison protocol after verified maintenance cycles — see .osc/plans/done/181-orchestrator-report-handoff-pilot-amendment-1.md
 - 2026-10-08: closed 187-parser-characterization-fixtures — PR 290 merged; full historical and strict live parser characterization verified
 - 2026-10-08: closed 186-ambient-token-availability — PR 287 merged; nullable token usage and complete totals verified
 - 2026-10-08: closed 185-john-autonomous-maintainer-readme — PR 285 merged; dated AI maintainer banner verified on default branch

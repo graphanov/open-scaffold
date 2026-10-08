@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, renameSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { compileResume } from '../src/resume.js';
+import { compileResume, type ResumeResult } from '../src/resume.js';
 import { createRunArtifacts, type RunArtifacts } from '../src/artifacts.js';
 import { parsePlanFile } from '../src/scaffold.js';
 
@@ -112,6 +113,28 @@ function writeRunFeedback(run: RunArtifacts, hypothesis: string): void {
   })}\n`, 'utf8');
 }
 
+const packetBoundary = 'Boundary: read-only packet compiled from repo truth. It is not approval and grants no merge, publish, release, or spawn authority.\n';
+const publicRunKeys = ['run_id', 'command', 'state', 'pending_gates', 'pending_gate_ids', 'updated_at'];
+const sha256 = (text: string) => createHash('sha256').update(text).digest('hex');
+
+function expectNavigation({ summary, packet }: ResumeResult, maxChars: number): void {
+  expect(packet.length).toBeLessThanOrEqual(maxChars);
+  expect(packet).toContain('# Resume Packet\n\nStatus: ');
+  expect(packet).toContain(summary.active_plan ? `## Active plan: ${summary.active_plan.slug}\n` : '## Active plan\n\nNone.\n');
+  expect(packet).toContain('## Next actions\n\n');
+  expect(packet.endsWith(packetBoundary)).toBe(true);
+  const lines = packet.split('\n');
+  expect([`1. ${summary.next_bounded_action}`, '1. Action details omitted; see --json.']).toContain(lines.find((line) => line.startsWith('1. ')));
+  const commands = lines.filter((line) => /^[2-9]\. /.test(line));
+  expect(commands).toEqual(summary.next_commands.slice(0, commands.length).map((command, index) => `${index + 2}. \`${command}\``));
+}
+
+function writeBulkyPlan(root: string, slug: string): void {
+  writePlan(root, slug);
+  const path = join(root, '.osc', 'plans', 'active', `${slug}.md`);
+  writeFileSync(path, readFileSync(path, 'utf8').replace('Second criterion open.', 'Execute the whole prescribed command only. '.repeat(40)), 'utf8');
+}
+
 describe('osc resume packet compiler', () => {
   it('reproduces the committed resume-demo expected summary', () => {
     const expected = JSON.parse(readFileSync(join(fixtureRoot, 'expected-resume-summary.json'), 'utf8'));
@@ -186,11 +209,260 @@ describe('osc resume packet compiler', () => {
     expect(packet).not.toContain('open-scaffold@latest');
   });
 
-  it('stays within the character budget and degrades gracefully', () => {
-    const { packet } = compileResume(fixtureRoot, { maxChars: 600 });
+  it.each([600, 601])('retains usable navigation and the complete boundary at %s characters', (maxChars) => {
+    const { packet } = compileResume(fixtureRoot, { maxChars });
 
-    expect(packet.length).toBeLessThanOrEqual(600);
-    expect(packet).toContain('# Resume Packet');
+    expect.soft(packet.length).toBeLessThanOrEqual(maxChars);
+    expect.soft(packet).toContain('# Resume Packet\n\nStatus: ');
+    expect.soft(packet).toContain('## Active plan: demo-add-greeting\n');
+    expect.soft(packet).toContain('## Next actions\n\n1. Greeting history is written to the releases folder as an evidence note on each run.\n');
+    expect.soft(packet).toContain('2. `osc plan validate demo-add-greeting --strict`\n');
+    expect.soft(packet).toContain('Details/commands omitted; see --json.');
+    expect.soft(packet).toMatch(/Boundary: read-only packet compiled from repo truth\. It is not approval and grants no merge, publish, release, or spawn authority\.\n$/);
+  });
+
+  it.each(['osc', 'npm run osc --', 'npx open-scaffold@0.35.0'])('keeps whole ordered commands and a detail cue with bulky actions through %s', (commandPrefix) => {
+    const root = tempRepo();
+    writeMission(root);
+    writeBulkyPlan(root, '001-bulky');
+    for (const maxChars of [600, 601]) {
+      const result = compileResume(root, { maxChars, commandPrefix });
+      expectNavigation(result, maxChars);
+      expect(result.packet).toContain('1. Action details omitted; see --json.\n');
+      expect(result.packet).toContain(`2. \`${commandPrefix} plan validate 001-bulky --strict\`\n`);
+      expect(result.packet).toContain('Details/commands omitted; see --json.');
+      expect(result.summary.next_bounded_action.length).toBe(1000);
+      expect(result.packet).not.toContain('Execute the whole prescribed command');
+    }
+  });
+
+  it.each([
+    [252, 600, 1, 599], [253, 600, 1, 600], [254, 600, 0, 307], [254, 601, 1, 601],
+  ])('fits a whole first command atomically with prefix %s at budget %s', (prefixChars, maxChars, commandCount, packetChars) => {
+    const root = tempRepo();
+    writeMission(root);
+    writeBulkyPlan(root, '001-atomic');
+    // The specified essential frame is 307 characters here; the command line adds prefix + 34 + 6.
+    const result = compileResume(root, { maxChars, commandPrefix: 'x'.repeat(prefixChars) });
+    expectNavigation(result, maxChars);
+    expect(result.packet.length).toBe(packetChars);
+    expect(result.packet.split('\n').filter((line) => /^[2-9]\. /.test(line))).toHaveLength(commandCount);
+    expect(result.packet).not.toContain('Run npm test and confirm exit 0.');
+    expect(result.packet).toContain('Details/commands omitted; see --json.');
+  });
+
+  it('stops at an unfit evidence prerequisite even when the later verify command could fit', () => {
+    const root = tempRepo();
+    const slug = `001-${'x'.repeat(156)}`;
+    writeMission(root);
+    writePlan(root, slug);
+    const path = join(root, '.osc', 'plans', 'active', `${slug}.md`);
+    writeFileSync(path, readFileSync(path, 'utf8').replace('- [ ] Second criterion open.', '- [x] Second criterion open.'), 'utf8');
+    const result = compileResume(root, { maxChars: 600 });
+    expectNavigation(result, 600);
+    expect(result.summary.next_commands).toEqual([
+      `osc evidence new ${slug}`, 'osc verify', `osc close ${slug} --message "<what shipped>"`,
+    ]);
+    expect(result.packet.length + '2. `osc verify`\n'.length).toBeLessThanOrEqual(600);
+    expect(result.packet).not.toContain('2. `');
+    expect(result.packet).not.toContain('osc verify');
+    expect(result.packet).not.toContain('osc close');
+    expect(result.packet).toContain('1. Action details omitted; see --json.');
+  });
+
+  it.each(['bootstrap', 'undefined-mission', 'no-plan', 'backlog'])('keeps essentials with a pathological invocation in the %s state', (state) => {
+    const root = tempRepo();
+    if (state !== 'bootstrap') {
+      writeMission(root, state !== 'undefined-mission');
+      mkdirSync(join(root, '.osc', 'plans', 'active'), { recursive: true });
+    }
+    if (state === 'undefined-mission') writePlan(root, '001-mission-first');
+    if (state === 'backlog') {
+      writePlan(root, '001-backlog');
+      mkdirSync(join(root, '.osc', 'plans', 'backlog'), { recursive: true });
+      renameSync(join(root, '.osc', 'plans', 'active', '001-backlog.md'), join(root, '.osc', 'plans', 'backlog', '001-backlog.md'));
+    }
+    const commandPrefix = `npm run ${'very-long-reviewed-command-'.repeat(50)} --`;
+    for (const maxChars of [600, 601]) {
+      const result = compileResume(root, { maxChars, commandPrefix, ambientSession: '../missing-selector' });
+      expectNavigation(result, maxChars);
+      expect(result.packet).toContain(`Status: ${result.summary.status}\n`);
+      expect(result.packet).toContain('Requested ambient session unavailable.');
+      expect(result.packet).not.toContain('../missing-selector');
+      expect(result.packet).not.toContain('very-long-reviewed-command-');
+      expect(result.packet).not.toContain('2. `');
+      expect(result.packet).toContain('Details/commands omitted; see --json.');
+      if (state === 'bootstrap' || state === 'undefined-mission') expect(result.packet).toContain('1. Action details omitted; see --json.');
+    }
+  });
+
+  it.each(['osc', 'npm run osc --', 'npx open-scaffold@0.35.0'])('retains a complete bootstrap command through the reviewed %s prefix', (commandPrefix) => {
+    const root = tempRepo();
+    const result = compileResume(root, { maxChars: 600, commandPrefix });
+    expectNavigation(result, 600);
+    expect(result.packet).toContain(`2. \`${result.summary.next_commands[0]}\`\n`);
+  });
+
+  it.each(['waiting_on_human', 'completed', 'failed'])('retains bound %s run navigation and gate precedence at 600 characters', (state) => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-current-gate');
+    writePlan(root, '002-unrelated');
+    if (state === 'completed') {
+      const planPath = join(root, '.osc', 'plans', 'active', '001-current-gate.md');
+      writeFileSync(planPath, readFileSync(planPath, 'utf8').replace('- [ ] Second criterion open.', '- [x] Second criterion open.'), 'utf8');
+    }
+    const current = createRecordedRun(root, '001-current-gate');
+    const unrelated = createRecordedRun(root, '002-unrelated');
+    writeRunStatus(current, state, '2026-06-10T10:00:00.000Z', state === 'failed' ? undefined : 'current-gate');
+    writeRunStatus(unrelated, 'waiting_on_human', '2026-06-10T11:00:00.000Z', 'unrelated-gate');
+    if (state === 'failed') writeRunFeedback(current, 'Restore the missing fixture before retrying.');
+    const result = compileResume(root, { maxChars: 600, planSlug: '001-current-gate' });
+    expectNavigation(result, 600);
+    expect(result.summary.latest_run?.run_id).toBe(current.runId);
+    expect(result.packet).toContain(`Run: ${state}; ${state === 'failed' ? 0 : 1} pending gate(s).`);
+    expect(result.packet).not.toContain('unrelated-gate');
+    expect(result.packet).not.toContain(unrelated.runId);
+    expect(result.packet).toContain('2. `osc trace 001-current-gate`\n');
+    if (state === 'failed') {
+      expect(result.summary.next_bounded_action).toContain('Restore the missing fixture');
+      expect(result.summary.next_commands[1]).toBe('osc run .osc/plans/active/001-current-gate.md --dry-run');
+    } else {
+      expect(result.summary.next_bounded_action).toContain('Record the answer for gate current-gate');
+      expect(result.summary.next_commands[1]).toBe('osc evidence new 001-current-gate');
+    }
+  });
+
+  it.each([600, 601])('keeps maximum plan identity, bounded arbitrary run prose and requested unavailability at %s', (maxChars) => {
+    const root = tempRepo();
+    const slug = `001-${'x'.repeat(156)}`;
+    writeMission(root);
+    writePlan(root, slug);
+    const run = createRecordedRun(root, slug);
+    const state = 'an arbitrary recorded run state '.repeat(30);
+    writeRunStatus(run, state, '2026-06-10T10:00:00.000Z', 'pending-human-gate');
+    const result = compileResume(root, { maxChars, planSlug: slug, ambientSession: '../missing' });
+    expectNavigation(result, maxChars);
+    expect(result.summary.active_plan?.slug).toHaveLength(160);
+    expect(result.packet).toContain(`## Active plan: ${result.summary.active_plan?.slug}\n`);
+    expect(result.summary.latest_run?.state).toBe(state);
+    const displayed = result.packet.match(/^Run: (.*); 1 pending gate\(s\)\.$/m)?.[1];
+    expect(displayed).toHaveLength(24);
+    expect(displayed).toMatch(/…$/);
+    expect(result.packet).toContain('Requested ambient session unavailable.');
+    expect(result.packet).not.toContain('## Ambient capture');
+    expect(result.packet).not.toContain('transcript evidence');
+    expect(result.packet).not.toContain('../missing');
+    expect(result.packet).toContain('1. Action details omitted; see --json.');
+  });
+
+  it.each(['created', 'ready', 'waiting_on_human', 'running', 'completed', 'failed', 'blocked', 'unknown'])('preserves the ordinary %s run display in compact mode', (state) => {
+    const root = tempRepo();
+    writeMission(root);
+    writeBulkyPlan(root, '001-state');
+    const run = createRecordedRun(root, '001-state');
+    writeRunStatus(run, state, '2026-06-10T10:00:00.000Z');
+    const result = compileResume(root, { maxChars: 600, planSlug: '001-state' });
+    expectNavigation(result, 600);
+    expect(result.packet).toContain(`Run: ${state}; 0 pending gate(s).`);
+    expect(result.summary.latest_run?.state).toBe(state);
+  });
+
+  it.each(['\u0000\u001b\u007f\u009f', '\u001bsk-proj-abcdefghijklmnopqrstuvwxyz012345 /Users/someone/secrets \u0000'])('sanitizes compact run-state prose without changing its raw JSON value', (state) => {
+    const root = tempRepo();
+    writeMission(root);
+    writeBulkyPlan(root, '001-display');
+    const run = createRecordedRun(root, '001-display');
+    writeRunStatus(run, state, '2026-06-10T10:00:00.000Z');
+    const result = compileResume(root, { maxChars: 600, planSlug: '001-display' });
+    expectNavigation(result, 600);
+    expect(result.summary.latest_run?.state).toBe(state);
+    expect(result.packet).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/);
+    expect(result.packet).not.toContain('/Users/');
+    expect(result.packet).not.toContain('abcdefghijklmnopqrstuvwxyz012345');
+    const displayed = result.packet.match(/^Run: (.*); 0 pending gate\(s\)\.$/m)?.[1];
+    expect(displayed?.length).toBeLessThanOrEqual(24);
+    if (state === '\u0000\u001b\u007f\u009f') expect(displayed).toBe('unknown');
+  });
+
+  it('retains only the ordered public run allowlist including nullable values', () => {
+    const root = tempRepo();
+    writeMission(root);
+    writePlan(root, '001-public-run');
+    const run = createRecordedRun(root, '001-public-run');
+    const statusPath = join(run.runDir, 'status.json');
+    writeFileSync(statusPath, JSON.stringify({
+      runId: run.runId, taskId: 'task:001-public-run', state: 'ready', command: null, updatedAt: null,
+      pendingHumanGates: [], extraPrivateMetadata: 'must-not-escape', raw_run_id: 'another-run', attempt_count: 99,
+    }), 'utf8');
+    const expected = { run_id: run.runId, command: null, state: 'ready', pending_gates: 0, pending_gate_ids: [], updated_at: null };
+    for (const maxChars of [600, 601, 4000, 20000]) {
+      const { summary } = compileResume(root, { maxChars, planSlug: '001-public-run' });
+      expect(Object.keys(summary.latest_run!)).toEqual(publicRunKeys);
+      expect(summary.latest_run).toEqual(expected);
+      expect(JSON.stringify(summary)).not.toContain('must-not-escape');
+      expect(JSON.stringify(summary)).not.toContain('attempt_count');
+      expect(JSON.stringify(summary)).not.toContain('raw_run_id');
+    }
+  });
+
+  it('preserves accepted-base default packet bytes and the entire JSON summary across budgets', () => {
+    // Accepted-base captures precede this implementation; these anchors are not generated from candidate output.
+    for (const maxChars of [600, 601, 1114, 1115, 1116, 4000, 20000]) {
+      const result = compileResume(fixtureRoot, { maxChars });
+      expect(sha256(JSON.stringify(result.summary))).toBe('9f81d61830743197df1efcff261787baaed1ae9f6caeab5111e95c9e1702cd1e');
+      expectNavigation(result, maxChars);
+      if (maxChars >= 1115) {
+        expect(result.packet.length).toBe(1115);
+        expect(sha256(result.packet)).toBe('c42bf65df6b1fb289bd9e6f106074c8651cc3a4a1187f3fefa7bb4260fd196e7');
+      }
+    }
+  });
+
+  it('preserves accepted-base full, brief and no-ambient fitting bytes at exact and adjacent budgets', () => {
+    const root = tempRepo();
+    const slug = '001-baseline-legacy';
+    writeMission(root);
+    writePlan(root, slug);
+    const planPath = join(root, '.osc', 'plans', 'active', `${slug}.md`);
+    const criteria = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth']
+      .map((name, index) => `- [${index === 0 ? 'x' : ' '}] ${name} criterion ${index === 0 ? 'done' : 'open'}.`).join('\n');
+    writeFileSync(planPath, readFileSync(planPath, 'utf8').replace('- [x] First criterion done.\n- [ ] Second criterion open.', criteria), 'utf8');
+    const lessons = join(root, '.osc', 'improvements', 'applied');
+    mkdirSync(lessons, { recursive: true });
+    writeFileSync(join(lessons, '001-baseline-lesson.md'), '# Baseline lesson\n\nSynthetic safe test fixture; preserve explicit verification commands.\n', 'utf8');
+    for (const [fixture, name, session, mtime] of [
+      ['valid-claude-code.json', 'older.json', 'baseline-claude-session', '2026-06-13T10:00:00.000Z'],
+      ['valid-codex.json', 'newer.json', 'baseline-codex-session', '2026-06-13T11:00:00.000Z'],
+    ]) {
+      const dir = join(root, '.osc', 'state', 'ambient');
+      mkdirSync(dir, { recursive: true });
+      const record = JSON.parse(readFileSync(join(ambientRecordFixtures, fixture), 'utf8'));
+      record.runId = session;
+      record.boundary = { note: 'Synthetic compatibility fixture: observed evidence only.' };
+      const path = join(dir, name);
+      writeFileSync(path, JSON.stringify(record, null, 2) + '\n', 'utf8');
+      utimesSync(path, new Date(mtime), new Date(mtime));
+    }
+    for (const [maxChars, chars, packetHash] of [
+      [1772, 1772, '46e6a2c0453225321a9339f87f2cc990ab49b0856273cda7e5f7cf64fbcd89d2'],
+      [1771, 1236, 'cab1fba915eb027edeadbb9ef0b3e704577b83b4c594094cd5fcf7f8a635b1a5'],
+      [1236, 1236, 'cab1fba915eb027edeadbb9ef0b3e704577b83b4c594094cd5fcf7f8a635b1a5'],
+      [1235, 706, 'ba88936275a6cebaa83e4ec341a7ecd1e733ad044b12c417ea8f0bb14976d97b'],
+      [706, 706, 'ba88936275a6cebaa83e4ec341a7ecd1e733ad044b12c417ea8f0bb14976d97b'],
+    ] as const) {
+      const result = compileResume(root, { maxChars });
+      expectNavigation(result, maxChars);
+      expect(result.packet.length).toBe(chars);
+      expect(sha256(result.packet)).toBe(packetHash);
+      expect(sha256(JSON.stringify(result.summary, null, 2) + '\n')).toBe('56dc71be2da5e1eafab117cc6f3222b3f2e5ad1a102f80ab6585d173a86d7754');
+    }
+    const compact = compileResume(root, { maxChars: 705 });
+    expectNavigation(compact, 705);
+    expect(compact.packet).toContain('Details/commands omitted; see --json.');
+    expect(compact.packet).not.toContain('## Ambient capture');
+    expect(compact.packet).not.toContain('baseline-codex-session');
+    expect(compact.packet).not.toContain('final_digest=');
   });
 
   it('includes latest compact ambient capture summaries by default', () => {
@@ -299,7 +571,10 @@ describe('osc resume packet compiler', () => {
     const { summary, packet } = compileResume(root, { maxChars: 600 });
     const outputs = [JSON.stringify(summary), packet];
 
+    expectNavigation({ summary, packet }, 600);
     expect(packet.length).toBeLessThanOrEqual(600);
+    expect(packet).not.toContain('## Ambient capture');
+    expect(packet).not.toContain('final_digest=');
     expect(summary.ambient_capture.status).toBe('included');
     expect(summary.ambient_capture.records[0].source).toBe('unrecognized-source');
     for (const output of outputs) {
@@ -314,8 +589,8 @@ describe('osc resume packet compiler', () => {
     }
   });
 
-  it('rejects out-of-range budgets', () => {
-    expect(() => compileResume(fixtureRoot, { maxChars: 10 })).toThrow(/maxChars/);
+  it.each([10, 599, 20001, 600.5, NaN, Infinity])('rejects the invalid budget %s without changing the supported range', (maxChars) => {
+    expect(() => compileResume(fixtureRoot, { maxChars })).toThrow('maxChars must be an integer between 600 and 20000');
   });
 
 
