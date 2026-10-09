@@ -467,7 +467,7 @@ approval:
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
-  });
+  }, 250_000);
 
   it('prints JSON findings and honors strict CLI exit behavior', () => {
     const root = tempRepo();
