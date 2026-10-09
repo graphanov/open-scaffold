@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -404,5 +404,71 @@ describe('blueprint registry and schema surfaces', () => {
     const evalSchema = spawnSync(tsx, [cli, 'schemas', 'show', 'open-scaffold.evaluation.v1'], { cwd: repoRoot, encoding: 'utf8' });
     expect(evalSchema.status, evalSchema.stderr).toBe(0);
     expect(evalSchema.stdout).toContain('Emitted by: osc eval init');
+  });
+});
+
+function snapshotFirstRunBoundary(root: string): Record<string, { kind: string; value?: string }> {
+  const entries: Record<string, { kind: string; value?: string }> = {};
+  const visit = (path: string) => {
+    const name = relative(root, path).split(sep).join('/') || '.';
+    const stat = lstatSync(path);
+    if (stat.isSymbolicLink()) entries[name] = { kind: 'link', value: readlinkSync(path) };
+    else if (stat.isDirectory()) {
+      entries[name] = { kind: 'directory' };
+      for (const child of readdirSync(path).sort()) visit(join(path, child));
+    } else entries[name] = { kind: 'file', value: readFileSync(path).toString('base64') };
+  };
+  visit(root);
+  return entries;
+}
+
+describe.skipIf(process.platform === 'win32')('source CLI first-run record refusal and recovery', () => {
+  it.each(['MISSION.md', '.osc/releases', `.osc/releases/${new Date().toISOString().slice(0, 10)}-first-task.md`])('refuses redirected %s with nonzero exit, then succeeds after deliberate link repair', (path) => {
+    const owned = mkdtempSync(join(process.env.OSC_FIRST_RUN_FIXTURE_ROOT ?? tmpdir(), 'osc-cli-first-boundary-'));
+    const root = join(owned, "project's café 路径");
+    const outside = join(owned, 'outside-selected-repository');
+    const args = ['first-run', '--non-interactive', '--slug', 'first-task', '--mission', 'Keep safe local records.', '--goal', 'Create one reviewed local record.'];
+    try {
+      mkdirSync(join(root, '.osc/plans/active'), { recursive: true });
+      mkdirSync(join(root, '.osc/releases'));
+      mkdirSync(outside);
+      writeFileSync(join(root, 'MISSION.md'), '# Mission\n<!-- mission:unset -->\n');
+      writeFileSync(join(root, 'application.txt'), 'Existing project: preserve.\n');
+      writeFileSync(join(outside, 'sentinel.txt'), 'Owned sibling: preserve.\n');
+      const endpoint = join(root, path);
+      const destination = join(outside, 'redirected');
+      rmSync(endpoint, { recursive: true, force: true });
+      const directory = path === '.osc/releases';
+      if (path === 'MISSION.md') writeFileSync(destination, '# Mission\n<!-- mission:unset -->\n');
+      else if (directory) mkdirSync(destination);
+      else {
+        rmSync(join(root, '.osc/plans'), { recursive: true });
+        rmSync(join(root, 'MISSION.md'));
+      }
+      symlinkSync(destination, endpoint, directory ? 'dir' : 'file');
+      const before = snapshotFirstRunBoundary(owned);
+      const refused = runOsc(root, args, { NO_COLOR: '1', CI: '1' });
+      expect(refused.status, refused.stdout + refused.stderr).toBe(1);
+      expect(refused.stderr).toContain(path);
+      expect(refused.stderr).toContain('rerun first-run');
+      expect(refused.stdout).not.toContain('Open Scaffold first-run complete');
+      expect(snapshotFirstRunBoundary(owned)).toEqual(before);
+      rmSync(endpoint);
+      if (path === 'MISSION.md') writeFileSync(endpoint, '# Mission\nReviewed regular mission: preserve.\n');
+      else if (directory) mkdirSync(endpoint);
+      else rmSync(join(root, '.osc'), { recursive: true });
+      const siblingBefore = snapshotFirstRunBoundary(outside);
+      const repaired = runOsc(root, args, { NO_COLOR: '1', CI: '1' });
+      expect(repaired.status, repaired.stdout + repaired.stderr).toBe(0);
+      expect(repaired.stdout).toContain('Open Scaffold first-run complete');
+      expect(repaired.stdout).toContain('.osc/plans/active/first-task.md');
+      expect(repaired.stdout).toContain('npx open-scaffold@latest plan validate first-task --strict');
+      expect(snapshotFirstRunBoundary(outside)).toEqual(siblingBefore);
+      const repeatBefore = snapshotFirstRunBoundary(owned);
+      expect(runOsc(root, args, { NO_COLOR: '1' }).status).toBe(0);
+      expect(snapshotFirstRunBoundary(owned)).toEqual(repeatBefore);
+    } finally {
+      rmSync(owned, { recursive: true, force: true });
+    }
   });
 });

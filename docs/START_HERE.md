@@ -18,6 +18,8 @@ npx open-scaffold@latest first-run
 
 Three guided questions produce the minimum work record — `MISSION.md`, one active plan with acceptance criteria, an evidence skeleton — and print the commands to run next. The command writes local scaffold files; fetching the npm package may need network access. No GitHub account, remote document reading, or agent runtime is required. If existing scaffold-owned files conflict, preserve them and review the reported conflicts before initialization.
 
+First-run refuses symlinked record paths, including dangling links, in `MISSION.md`, `.osc` plan/release directories, same-slug staged plans, and the selected evidence note before reading record content or writing files. It also refuses wrong-type record components. The error names the offending repository-relative path. Review and replace the linked path with a regular local file or directory, preserving any needed content, then rerun first-run. Existing selected repository-root aliases remain supported; descendant record links are refused even when they point inside the repository. These static checks and guarded writes do not establish transactions or race-free access, arbitrary-ancestor traversal defense above the selected root, or hardlink safety. Native Windows symlink and separately published npm behavior require separate qualification.
+
 `npx` runs the package for this invocation; it does **not** install the `osc` command on your PATH. Continue with `npx open-scaffold@latest <command>` throughout this guide. If you prefer the shorter `osc` commands used elsewhere in the docs, first install the CLI:
 
 ```bash

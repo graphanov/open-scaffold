@@ -732,20 +732,30 @@ function rejectSymlinkedExistingPath(path: string): void {
   }
 }
 
-function rejectSymlinkedDestination(target: string, destination: string): void {
+export function assertScaffoldWriteDestination(target: string, destination: string, kind?: 'file' | 'directory'): void {
   const relative = relativePath(target, destination);
   const parts = relative.split(sep).filter(Boolean);
   let current = target;
 
-  if (lstatIfPresent(current)?.isSymbolicLink()) {
+  const rootStats = lstatIfPresent(current);
+  if (rootStats?.isSymbolicLink()) {
     throw new Error('Refusing to write through symlinked path: .');
+  }
+  if (kind && rootStats && !rootStats.isDirectory()) {
+    throw new Error('Refusing wrong-type record path: . (expected directory).');
   }
 
   for (const part of parts) {
     current = join(current, part);
-    if (lstatIfPresent(current)?.isSymbolicLink()) {
-      const symlinkRelative = current.slice(target.length + 1) || '.';
-      throw new Error(`Refusing to write through symlinked path: ${symlinkRelative}`);
+    const stats = lstatIfPresent(current);
+    const destinationRelative = current.slice(target.length + 1) || '.';
+    if (stats?.isSymbolicLink()) {
+      const recovery = kind ? ' Review and replace the linked record path with a regular local file or directory, then rerun first-run.' : '';
+      throw new Error(`Refusing to write through symlinked path: ${destinationRelative}${recovery}`);
+    }
+    const expected = current === destination ? kind : 'directory';
+    if (kind && stats && (expected === 'file' ? !stats.isFile() : !stats.isDirectory())) {
+      throw new Error(`Refusing wrong-type record path: ${destinationRelative} (expected ${expected}). Review the local path before rerunning first-run.`);
     }
   }
 }
@@ -762,7 +772,7 @@ export function initializeScaffold(options: InitializeScaffoldOptions): Initiali
   mkdirSync(target, { recursive: true });
 
   for (const file of preview.filesToCreate) {
-    rejectSymlinkedDestination(target, join(target, file));
+    assertScaffoldWriteDestination(target, join(target, file));
   }
 
   if (preview.conflicts.length > 0 && !options.force) {

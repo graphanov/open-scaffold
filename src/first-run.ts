@@ -1,10 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { env, stdin as input, stdout as output } from 'node:process';
 import { findScaffoldRoot, PLAN_STAGES } from './scaffold.js';
 import { findEvidenceNote } from './evidence.js';
-import { initializeScaffold, previewScaffoldInitialization, ScaffoldConflictError, type ExistingProjectDetection, type ScaffoldInitializationPreview } from './init.js';
+import { assertScaffoldWriteDestination, initializeScaffold, previewScaffoldInitialization, ScaffoldConflictError, type ExistingProjectDetection, type ScaffoldInitializationPreview } from './init.js';
+import { writeFileUnder } from './path-safety.js';
 import { validatePlanFile } from './plan-validate.js';
 
 export interface FirstRunOptions {
@@ -51,9 +52,14 @@ function isSafeSlug(value: string): boolean {
   return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value) && !value.includes('..') && !value.endsWith('.md');
 }
 
-function requireOrCreateRoot(start: string): string {
-  const existing = findScaffoldRoot(start);
-  if (existing) return existing;
+function prepareFirstRun(start: string, slug: string, selectedRoot?: string): { root: string; planPath: string; evidencePath: string } {
+  const existing = selectedRoot ?? findScaffoldRoot(start);
+  const root = existing ?? previewScaffoldInitialization({ tier: 'min', target: start, fromExisting: true }).target;
+  const paths = firstRunPaths(root, slug);
+  if (selectedRoot !== undefined && !existsSync(selectedRoot)) {
+    throw new Error('Missing first-run root: . Create the selected target directory before running first-run.');
+  }
+  if (existing !== null && existing !== undefined) return { root, ...paths };
   try {
     initializeScaffold({ tier: 'min', target: start, fromExisting: true });
   } catch (error) {
@@ -64,7 +70,11 @@ function requireOrCreateRoot(start: string): string {
   }
   const created = findScaffoldRoot(start);
   if (!created) throw new Error(`No Open Scaffold root found from ${start}. Run \`npx open-scaffold@latest init\` first.`);
-  return created;
+  return {
+    root: created,
+    planPath: join(created, relative(root, paths.planPath)),
+    evidencePath: join(created, relative(root, paths.evidencePath)),
+  };
 }
 
 function shellQuote(value: string): string {
@@ -113,7 +123,7 @@ function writeMissionIfNeeded(root: string, mission: string): string {
   const trimmed = mission.trim();
   if (!trimmed) throw new Error('Missing mission text for first-run.');
   if (existsSync(path) && !missionIsUnset(readFileSync(path, 'utf8'))) return path;
-  writeFileSync(path, [
+  writeFileUnder(root, 'MISSION.md', [
     '# Mission',
     '',
     trimmed,
@@ -131,7 +141,7 @@ function writeMissionIfNeeded(root: string, mission: string): string {
     '<!-- append YYYY-MM-DD entries below this line -->',
     `- ${new Date().toISOString().slice(0, 10)}: defined mission through osc first-run.`,
     '',
-  ].join('\n'));
+  ].join('\n'), 'first-run mission');
   return path;
 }
 
@@ -220,12 +230,29 @@ function evidenceMarkdown(slug: string, planPath: string): string {
   ].join('\n');
 }
 
+function assertFirstRunDestinations(root: string, slug?: string): string {
+  const physicalRoot = existsSync(root) ? realpathSync(root) : root;
+  assertScaffoldWriteDestination(physicalRoot, join(physicalRoot, 'MISSION.md'), 'file');
+  for (const path of ['.osc', '.osc/plans', '.osc/releases', ...PLAN_STAGES.map((stage) => `.osc/plans/${stage}`)]) {
+    assertScaffoldWriteDestination(physicalRoot, join(physicalRoot, path), 'directory');
+  }
+  if (slug) {
+    for (const stage of PLAN_STAGES) {
+      assertScaffoldWriteDestination(physicalRoot, join(physicalRoot, '.osc/plans', stage, `${slug}.md`), 'file');
+    }
+  }
+  return physicalRoot;
+}
+
 function firstRunPaths(root: string, slug: string): { planPath: string; evidencePath: string } {
+  const physicalRoot = assertFirstRunDestinations(root, slug);
   const plans = PLAN_STAGES.map((stage) => join(root, '.osc', 'plans', stage, `${slug}.md`)).filter(existsSync);
   if (plans.length > 1) throw new Error(`Multiple plans already use first-run slug ${slug}. Resolve duplicate stage copies before continuing.`);
+  const evidencePath = findEvidenceNote(root, slug) ?? join(root, '.osc', 'releases', `${new Date().toISOString().slice(0, 10)}-${slug}.md`);
+  assertScaffoldWriteDestination(physicalRoot, join(physicalRoot, relative(root, evidencePath)), 'file');
   return {
     planPath: plans[0] ?? join(root, '.osc', 'plans', 'active', `${slug}.md`),
-    evidencePath: findEvidenceNote(root, slug) ?? join(root, '.osc', 'releases', `${new Date().toISOString().slice(0, 10)}-${slug}.md`),
+    evidencePath,
   };
 }
 
@@ -235,14 +262,11 @@ export function runFirstRun(options: FirstRunOptions, start = process.cwd()): Fi
   const goal = options.goal.trim();
   if (!goal) throw new Error('Missing first-run goal.');
   if (!options.mission.trim()) throw new Error('Missing mission text for first-run.');
-  const root = options.root ?? requireOrCreateRoot(start);
-  const { planPath, evidencePath } = firstRunPaths(root, slug);
+  const { root, planPath, evidencePath } = prepareFirstRun(start, slug, options.root);
 
   const missionPath = writeMissionIfNeeded(root, options.mission);
-  mkdirSync(join(root, '.osc', 'plans', 'active'), { recursive: true });
-  mkdirSync(join(root, '.osc', 'releases'), { recursive: true });
-  if (!existsSync(planPath)) writeFileSync(planPath, planMarkdown(slug, goal, relative(root, evidencePath).replace(/\\/g, '/')), 'utf8');
-  if (!existsSync(evidencePath)) writeFileSync(evidencePath, evidenceMarkdown(slug, relative(root, planPath).replace(/\\/g, '/')), 'utf8');
+  if (!existsSync(planPath)) writeFileUnder(root, relative(root, planPath), planMarkdown(slug, goal, relative(root, evidencePath).replace(/\\/g, '/')), 'first-run plan');
+  if (!existsSync(evidencePath)) writeFileUnder(root, relative(root, evidencePath), evidenceMarkdown(slug, relative(root, planPath).replace(/\\/g, '/')), 'first-run evidence');
   const validation = validatePlanFile(planPath);
   const nextCommands = [
     `npx open-scaffold@latest plan validate ${slug} --strict`,
@@ -270,9 +294,10 @@ export function resolveFirstRunRenderMode(options: { nonInteractive?: boolean; e
   return { style: simplified ? 'plain' : 'polished' };
 }
 
-export function previewFirstRunTarget(start = process.cwd()): FirstRunTargetPreview {
+function firstRunTargetPreview(start: string, checkConflicts: boolean): FirstRunTargetPreview {
   const existing = findScaffoldRoot(start);
   if (existing) {
+    assertFirstRunDestinations(existing);
     return {
       root: existing,
       target: existing,
@@ -283,7 +308,8 @@ export function previewFirstRunTarget(start = process.cwd()): FirstRunTargetPrev
   }
 
   const preview = previewScaffoldInitialization({ tier: 'min', target: start, fromExisting: true });
-  assertNoInitConflicts(preview);
+  assertFirstRunDestinations(preview.target);
+  if (checkConflicts) assertNoInitConflicts(preview);
   return {
     root: preview.target,
     target: preview.target,
@@ -294,10 +320,17 @@ export function previewFirstRunTarget(start = process.cwd()): FirstRunTargetPrev
   };
 }
 
-export function previewFirstRun(options: FirstRunOptions, start = process.cwd(), targetPreview = previewFirstRunTarget(start)): FirstRunPreview {
+export function previewFirstRunTarget(start = process.cwd()): FirstRunTargetPreview {
+  return firstRunTargetPreview(start, true);
+}
+
+export function previewFirstRun(options: FirstRunOptions, start = process.cwd(), targetPreview = firstRunTargetPreview(start, false)): FirstRunPreview {
   const slug = options.slug.trim();
   if (!isSafeSlug(slug)) throw new Error(`Unsafe first-run slug: ${options.slug}`);
   const { planPath, evidencePath } = firstRunPaths(targetPreview.root, slug);
+  if (targetPreview.willInitializeScaffold) {
+    assertNoInitConflicts(previewScaffoldInitialization({ tier: 'min', target: targetPreview.target, fromExisting: true }));
+  }
   return {
     ...targetPreview,
     slug,
