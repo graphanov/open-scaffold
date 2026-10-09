@@ -57,3 +57,14 @@ Delivery retains the accepted test SHA-256 `f63a1ae6da4496f9e1578d709aef24f0993e
 The supported `node dist/cli.js close 202-first-run-unicode-preservation --message` call ran once at 2026-10-09T04:06:51.877874+00:00–2026-10-09T04:06:51.920679+00:00, exited 0 and moved one plan to `.osc/plans/done/202-first-run-unicode-preservation.md`. All five acceptance criteria are checked with reference-only evidence suffixes; their requirement wording, goal, scope and all other plan content are unchanged. The helper changed the Status stage to done, inserted exactly one MISSION closure stamp and retargeted exactly one helper-managed MISSION reference. Removing that stamp and reverting that reference reconstructs the entire prior MISSION bytes exactly.
 
 All 6,786 prior note bytes remain an exact prefix, SHA-256 `36e6963bf90671469cc85d843673022aa1b8b3a2985e2b7c0b300c0539d6822a`. This local metadata closeout is confined to the active/done plan-202 paths, this evidence note and MISSION. Parent plan `.osc/plans/active/184-john-six-day-maintainer.md` remains byte-identical, SHA-256 `454d930904584b7ed2555d0d0fd49f9844a2b2f799788ba72aa44d08d21d80e6`, active and incomplete. The closeout verification command is `node node_modules/vitest/vitest.mjs run tests/section-parser.test.ts`; it does not rerun the implementation strict/build/full floor. The earlier delivery audit's cutoff does not certify this record, and later independent committed-head verification, release and record audit remain separate observations. The six-day experiment is not complete.
+
+## Close-decision metadata completion (2026-10-09)
+
+This decision is recorded after the factual close helper call. The later strict evidence-chain check at 2026-10-09T07:03:18Z found the missing close-decision fields; the earlier closeout did not contain them.
+
+```yaml
+approval:
+  status: approved
+  approver: maintainer
+  rationale: "The scoped test-only plan-202 slice meets its five recorded criteria: PR #307 delivered squash 6abc8fbb35d4ec78e8bedf236332758561a5b558 after independent committed-candidate strict/build/full verification, complete publication review and current CI, with merge readback recorded above. This is John Lomein's AI-maintainer slice-close judgment under the direct-owner routine maintenance delegation, without human approval. It does not authorize PR #308 merge or npm/release publication or establish all-platform or production readiness. Parent 184 remains active and the six-day interval remains incomplete."
+```
