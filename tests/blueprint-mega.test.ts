@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const repoRoot = resolve(import.meta.dirname, '..');
@@ -131,12 +131,52 @@ describe('blueprint first-run and PR check surfaces', () => {
     }
   });
 
-  it('creates one valid first work-record path in an existing non-scaffold repo', () => {
-    const root = mkdtempSync(join(tmpdir(), 'osc-first-run-existing-'));
+  it.each([
+    { variant: 'ASCII', directory: undefined },
+    { variant: 'Unicode, spaces and apostrophe', directory: "project's café 路径" },
+  ])('creates one valid first work-record path in an existing non-scaffold repo ($variant)', ({ directory }) => {
+    const parent = mkdtempSync(join(tmpdir(), 'osc-first-run-existing-'));
+    const root = directory ? join(parent, directory) : parent;
+    const snapshotTree = (dir = root): Map<string, Buffer | null> => {
+      const entries = new Map<string, Buffer | null>();
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = join(dir, entry.name);
+        const name = relative(root, path).split(sep).join('/');
+        expect(entry.isDirectory() || entry.isFile(), name).toBe(true);
+        if (entry.isDirectory()) {
+          entries.set(`${name}/`, null);
+          for (const [child, bytes] of snapshotTree(path)) entries.set(child, bytes);
+        } else {
+          entries.set(name, readFileSync(path));
+        }
+      }
+      return entries;
+    };
+    const reportedPaths = (stdout: string) => {
+      const field = (label: string) => {
+        const matches = [...stdout.matchAll(new RegExp(`^${label}: ([^\\r\\n]+)\\r?$`, 'gm'))];
+        expect(matches, label).toHaveLength(1);
+        const path = matches[0][1];
+        expect(isAbsolute(path), path).toBe(false);
+        expect(path.split(/[\\/]/), path).not.toContain('..');
+        expect(existsSync(resolve(root, path)), path).toBe(true);
+        const contained = relative(realpathSync(root), realpathSync(resolve(root, path)));
+        expect(isAbsolute(contained), path).toBe(false);
+        expect(contained, path).not.toBe('..');
+        expect(contained.startsWith(`..${sep}`), path).toBe(false);
+        return path;
+      };
+      return { mission: field('Mission'), plan: field('Plan'), evidence: field('Evidence skeleton') };
+    };
+    let records: ReturnType<typeof reportedPaths> | undefined;
+    let editedTree: ReturnType<typeof snapshotTree> | undefined;
     try {
+      if (directory) mkdirSync(root);
       writeFileSync(join(root, 'package.json'), '{"scripts":{"test":"node --version"}}\n');
       mkdirSync(join(root, 'src'));
       writeFileSync(join(root, 'src/index.js'), 'console.log("keep me")\n');
+      if (directory) writeFileSync(join(root, 'src/café 路径.bin'), Buffer.from([0, 1, 127, 128, 255]));
+      const projectBefore = directory ? snapshotTree() : undefined;
       const result = runOsc(root, ['first-run', '--non-interactive', '--slug', 'first-work-record', '--mission', 'Build a tiny service safely.', '--goal', 'Add the first reviewed change.']);
       expect(result.status, result.stderr).toBe(0);
       expect(result.stdout).toContain('Open Scaffold root: will initialize the minimum local scaffold here.');
@@ -147,10 +187,43 @@ describe('blueprint first-run and PR check surfaces', () => {
       expect(readFileSync(join(root, 'src/index.js'), 'utf8')).toBe('console.log("keep me")\n');
       expect(existsSync(join(root, '.osc/RULES.md'))).toBe(true);
       expect(existsSync(join(root, '.osc/plans/active/first-work-record.md'))).toBe(true);
+      if (projectBefore) {
+        const projectNames = new Set([...projectBefore.keys()].map((path) => path.split('/')[0]));
+        const projectAfter = new Map([...snapshotTree()].filter(([path]) => projectNames.has(path.split('/')[0])));
+        expect(projectAfter).toEqual(projectBefore);
+        records = reportedPaths(result.stdout);
+        expect(records.mission).toBe('MISSION.md');
+        expect(records.plan).toBe('.osc/plans/active/first-work-record.md');
+        expect(records.evidence).toMatch(/^\.osc\/releases\/[^/]+-first-work-record\.md$/);
+        const mission = readFileSync(join(root, records.mission), 'utf8');
+        const plan = readFileSync(join(root, records.plan), 'utf8');
+        const evidence = readFileSync(join(root, records.evidence), 'utf8');
+        expect(mission).toContain('Build a tiny service safely.');
+        expect(plan).toContain(`- \`${records.mission}\``);
+        expect(plan).toContain(`- \`${records.evidence}\``);
+        expect(evidence).toContain(`- Plan: \`${records.plan}\``);
+
+        // These records are synthetic, uncommitted fixture progress.
+        writeFileSync(join(root, records.mission), `${mission}\n## Synthetic fixture progress\n\nMission reviewed locally for the preservation probe.\n`);
+        const progressedPlan = plan.replace(/^- \[ \] (.+)$/m, (_, criterion: string) => `- [x] ${criterion} | Evidence: \`${records!.evidence}\``);
+        expect(progressedPlan).not.toBe(plan);
+        writeFileSync(join(root, records.plan), progressedPlan);
+        const progressedEvidence = evidence.replace(/^- Pending:.*$/m, '- Synthetic fixture progress: record preservation inspected locally; no project test or deployment claim.');
+        expect(progressedEvidence).not.toBe(evidence);
+        writeFileSync(join(root, records.evidence), progressedEvidence);
+        editedTree = snapshotTree();
+      }
       const validation = runOsc(root, ['plan', 'validate', 'first-work-record', '--strict']);
       expect(validation.status, validation.stdout + validation.stderr).toBe(0);
+      if (records) {
+        const repeated = runOsc(root, ['first-run', '--non-interactive', '--slug', 'first-work-record', '--mission', 'Different synthetic mission must not replace progress.', '--goal', 'Different synthetic goal must not replace progress.']);
+        expect(repeated.status, repeated.stdout + repeated.stderr).toBe(0);
+        expect(reportedPaths(repeated.stdout)).toEqual(records);
+        expect(readFileSync(join(root, records.evidence))).toEqual(editedTree!.get(records.evidence));
+        expect(snapshotTree()).toEqual(editedTree);
+      }
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(parent, { recursive: true, force: true });
     }
   });
 

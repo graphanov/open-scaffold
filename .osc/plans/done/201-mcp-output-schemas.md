@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -30,11 +30,11 @@ Advertised MCP read-tool output schemas describe their existing successful struc
 
 ## Acceptance criteria
 
-- [ ] Actual successful responses of all eleven registered read tools conform to their advertised top-level output contracts, including the eight affected tools and optional mission path/reason states, with all thirty-two existing metadata fields retained.
-- [ ] Existing required-only compatibility objects remain valid; unknown extra properties, missing required properties and wrong existing/new field types reject, while existing required arrays, closed guards and the three conforming schemas remain exact.
-- [ ] Genuine JSON-RPC baseline failures pass after the exact schema repair; text/structured content equality, read-only fixture/source preservation and existing MCP handler/refusal/resource behavior remain unchanged, without general client/runtime/privacy certification.
-- [ ] Only four admitted implementation paths change; measured readable growth stays within intent, metric roots/algorithm/baseline/filecap/shell comparison remain unchanged, and excluded source/docs/dependencies/workflows/frozen definitions/ownerdraft unknowns are respected.
-- [ ] Independent unchanged committed-head strict/build/full verification and fresh full-publication review/current CI precede authorized PR/merge/readback/release/factual closeout; prior200 metadata is included in publication review and parent184 stays active.
+- [x] Actual successful responses of all eleven registered read tools conform to their advertised top-level output contracts, including the eight affected tools and optional mission path/reason states, with all thirty-two existing metadata fields retained. | Evidence: .osc/releases/2026-10-09-201-mcp-output-schemas.md
+- [x] Existing required-only compatibility objects remain valid; unknown extra properties, missing required properties and wrong existing/new field types reject, while existing required arrays, closed guards and the three conforming schemas remain exact. | Evidence: .osc/releases/2026-10-09-201-mcp-output-schemas.md
+- [x] Genuine JSON-RPC baseline failures pass after the exact schema repair; text/structured content equality, read-only fixture/source preservation and existing MCP handler/refusal/resource behavior remain unchanged, without general client/runtime/privacy certification. | Evidence: .osc/releases/2026-10-09-201-mcp-output-schemas.md
+- [x] Only four admitted implementation paths change; measured readable growth stays within intent, metric roots/algorithm/baseline/filecap/shell comparison remain unchanged, and excluded source/docs/dependencies/workflows/frozen definitions/ownerdraft unknowns are respected. | Evidence: .osc/releases/2026-10-09-201-mcp-output-schemas.md
+- [x] Independent unchanged committed-head strict/build/full verification and fresh full-publication review/current CI precede authorized PR/merge/readback/release/factual closeout; prior200 metadata is included in publication review and parent184 stays active. | Evidence: .osc/releases/2026-10-09-201-mcp-output-schemas.md
 
 ## Verification steps
 
