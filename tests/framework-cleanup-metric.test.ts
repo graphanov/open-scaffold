@@ -47,7 +47,8 @@ const cleanupBaselineLoc = 20_890;
 // 200: reject contradictory run-plan identities and diagnose unverified conflicts (+26 readable lines; separator normalization preserves portable legacy identities).
 // 201: eight closed MCP read output schemas declare existing optional response metadata (+59 readable lines; no handler or nested-contract changes).
 // 203: complete first-run record preflight and reuse the existing init guard/writer (+43 readable lines; no new maintained module).
-const cleanupTargetLoc = 17_027;
+// 205: allow evidence-chain stdout to drain before natural exit (+1 readable maintained line).
+const cleanupTargetLoc = 17_028;
 const cleanupTargetFiles = 41;
 
 interface MaintainedSourceFile {
@@ -90,7 +91,7 @@ describe('framework cleanup maintained-source metric', () => {
     expect(files.map((file) => file.path)).toContain('src/cli.ts');
     expect(files.map((file) => file.path)).toContain('packages/runtime-omx/src/index.ts');
     expect(files.every((file) => maintainedRoots.some((root) => file.path === root || file.path.startsWith(`${root}/`)))).toBe(true);
-    expect(cleanupTargetLoc).toBe(17_027);
+    expect(cleanupTargetLoc).toBe(17_028);
     expect(totalLoc).toBeLessThanOrEqual(cleanupTargetLoc);
     expect(totalLoc).toBeLessThanOrEqual(cleanupBaselineLoc);
     expect(files.length).toBeLessThanOrEqual(cleanupTargetFiles);

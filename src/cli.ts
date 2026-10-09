@@ -530,7 +530,8 @@ function verifyCommand(args: string[]): void {
   if (has(args, '--evidence-chain')) {
     const report = verifyEvidenceChain(process.cwd(), { plan: value(args, '--plan'), onlineGithub: has(args, '--online-github') || has(args, '--github-online') });
     if (has(args, '--json')) console.log(JSON.stringify(report.plans, null, 2)); else process.stdout.write(formatEvidenceChainReport(report, { strict: has(args, '--strict') }));
-    process.exit(evidenceChainExitCode(report, { strict: has(args, '--strict') }));
+    process.exitCode = evidenceChainExitCode(report, { strict: has(args, '--strict') });
+    return;
   }
   const result = validateScaffold(process.cwd());
   console.log(result.failures.length === 0 ? 'Scaffold verification passed.' : result.failures.map((f) => f.message).join('\n'));
