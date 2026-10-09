@@ -237,6 +237,43 @@ function runShellNote(note: string, locale: string) {
 }
 
 describe('real shell release-note freshness predicate', () => {
+  it.each([
+    { heading: '## Verification', missing: false },
+    { heading: '## Verification commands and results', missing: false },
+    { heading: '## Verification ###', missing: false },
+    { heading: '## Verification commands and results ###', missing: false },
+    { heading: '##\tVerification commands and results\t###', missing: false, crlf: true },
+    { heading: '## Verification ###', missing: false, crlf: true },
+    { heading: '', missing: true },
+    { heading: '```markdown\n## Verification commands and results\n```', missing: true },
+    { heading: '~~~markdown\n## Verification\n~~~', missing: true },
+    { heading: '### Verification commands and results', missing: true },
+    { heading: '## My Verification', missing: true },
+    { heading: '## Verification commands and results extra', missing: true },
+    { heading: '## Verification: commands and results', missing: true },
+    { heading: '## verification commands and results', missing: true },
+  ])('matches only supported outside-fence H2 headings: $heading', ({ heading, missing, crlf }) => {
+    let note = pendingShellNote('pending.', 'issue #293 closed')
+      .replace('## Verification', heading).replace('## Traceability', '## Traceability chain');
+    if (crlf) note = note.replace(/\n/g, '\r\n');
+    const result = runShellNote(note, 'C');
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(result.stdout.includes('Release note 2026-10-08-fixture.md missing section: Verification')).toBe(missing);
+    expect(result.stdout).not.toContain('missing section: Traceability');
+    expect(result.stdout).toContain(pendingShellWarning);
+  });
+
+  it.each(['Verification', 'Verification commands and results'])('keeps $0 shell checks structural for empty and placeholder bodies', (heading) => {
+    for (const body of ['', 'TODO']) {
+      const note = pendingShellNote('Fixture.', 'Local checks only.')
+        .replace('## Verification', `## ${heading}`).replace('- Local fixture.', body);
+      const result = runShellNote(note, 'C');
+      expect(result.status).toBe(0);
+      expect(result.stdout).not.toContain('missing section: Verification');
+    }
+  });
+
   it.each(pendingCases)('$token with $evidence => warning $warns', ({ token, evidence, warns }) => {
     for (const locale of pendingLocales) {
       const result = runShellNote(pendingShellNote(token, evidence), locale);

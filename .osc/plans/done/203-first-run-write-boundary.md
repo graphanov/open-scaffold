@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -35,13 +35,13 @@ First-run refuses unsafe linked record destinations before reading record conten
 
 ## Acceptance criteria
 
-- [ ] Meaningful real CLI and direct-API regressions reproduce mission-final and releases-parent redirection on the pinned unchanged baseline, then refuse on the repaired source and rebuilt artifact.
-- [ ] Unsafe record destinations refuse before mission, plan, evidence or starter-guidance mutation with a useful repo-relative offending-path diagnostic and CLI nonzero/API error; exact repository and outside-target bytes, types, link targets and inventory stay unchanged.
-- [ ] Preflight covers linked .osc/plans/releases parents, final and dangling mission/plan/evidence destinations, other staged same-slug candidates and selected prior evidence; wrong-type components fail without content reads or partial writes.
-- [ ] Ordinary empty/brownfield targets, defined missions, selected existing root aliases, Unicode/space/apostrophe roots, prior staged plans/evidence and edited-record repeats preserve compatible outcomes; specifically observed initializer immediate-linked-parent refusal stays intact.
-- [ ] Refusal followed by deliberate fixture link repair and rerun succeeds; documentation and independent observed CLI/API outcomes agree without claiming transactions, race-free access, installed npm or all-Windows support.
-- [ ] The readable candidate stays within 17104 physical lines/41 files, with both metric bindings equal to the actual measured count and the original cleanup baseline/counting/POSIX cross-check preserved.
-- [ ] Fresh independent review, strict verification, build and full tests bind the unchanged committed candidate before public effects; live CI/review/protection and actual merge readback precede completion.
+- [x] Meaningful real CLI and direct-API regressions reproduce mission-final and releases-parent redirection on the pinned unchanged baseline, then refuse on the repaired source and rebuilt artifact. | Evidence: .osc/releases/2026-10-09-203-first-run-write-boundary.md
+- [x] Unsafe record destinations refuse before mission, plan, evidence or starter-guidance mutation with a useful repo-relative offending-path diagnostic and CLI nonzero/API error; exact repository and outside-target bytes, types, link targets and inventory stay unchanged. | Evidence: .osc/releases/2026-10-09-203-first-run-write-boundary.md
+- [x] Preflight covers linked .osc/plans/releases parents, final and dangling mission/plan/evidence destinations, other staged same-slug candidates and selected prior evidence; wrong-type components fail without content reads or partial writes. | Evidence: .osc/releases/2026-10-09-203-first-run-write-boundary.md
+- [x] Ordinary empty/brownfield targets, defined missions, selected existing root aliases, Unicode/space/apostrophe roots, prior staged plans/evidence and edited-record repeats preserve compatible outcomes; specifically observed initializer immediate-linked-parent refusal stays intact. | Evidence: .osc/releases/2026-10-09-203-first-run-write-boundary.md
+- [x] Refusal followed by deliberate fixture link repair and rerun succeeds; documentation and independent observed CLI/API outcomes agree without claiming transactions, race-free access, installed npm or all-Windows support. | Evidence: .osc/releases/2026-10-09-203-first-run-write-boundary.md
+- [x] The readable candidate stays within 17104 physical lines/41 files, with both metric bindings equal to the actual measured count and the original cleanup baseline/counting/POSIX cross-check preserved. | Evidence: .osc/releases/2026-10-09-203-first-run-write-boundary.md
+- [x] Fresh independent review, strict verification, build and full tests bind the unchanged committed candidate before public effects; live CI/review/protection and actual merge readback precede completion. | Evidence: .osc/releases/2026-10-09-203-first-run-write-boundary.md
 
 ## Verification steps
 

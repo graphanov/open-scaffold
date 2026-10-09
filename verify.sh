@@ -476,6 +476,11 @@ if [ "$TIER" = "--standard" ] || [ "$TIER" = "--strict" ]; then
             warn "Release note $basename missing section: $section"
             RELEASES_OK=false
           fi
+        elif [ "$section" = "Verification" ]; then
+          if ! has_exact_markdown_heading "$f" "Verification" && ! has_exact_markdown_heading "$f" "Verification commands and results"; then
+            warn "Release note $basename missing section: $section"
+            RELEASES_OK=false
+          fi
         elif ! has_exact_markdown_heading "$f" "$section"; then
           warn "Release note $basename missing section: $section"
           RELEASES_OK=false

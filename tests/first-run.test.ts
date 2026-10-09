@@ -13,6 +13,30 @@ vi.mock('node:fs', async (importOriginal) => {
 const options = { slug: 'first-task', mission: 'Keep a reliable local work record.', goal: 'Prepare one reviewable slice.' };
 
 describe('first-run record identity', () => {
+  it('creates canonical evidence and preserves an authored legacy note on repeat', () => {
+    const target = mkdtempSync(join(tmpdir(), 'osc-first-legacy-repeat-'));
+    try {
+      const first = runFirstRun(options, target);
+      const path = join(target, first.evidencePath);
+      const skeleton = readFileSync(path, 'utf8');
+      expect(skeleton).toContain('\n## Verification\n');
+      expect(skeleton).not.toContain('## Verification commands and results');
+      expect(skeleton).toContain('Pending: replace this line with real command output');
+      expect(skeleton).toContain('approval.status: blocked');
+      const authored = skeleton.replace('## Verification', '## Verification commands and results')
+        .replace('- Pending: replace this line with real command output before closing the plan.', '- Author result: bounded assertion passed; local fixture only.');
+      writeFileSync(path, authored);
+      writeFileSync(join(target, 'application.txt'), 'Unrelated authored bytes: café 路径\n');
+      const before = snapshotBoundaryTree(target);
+      const repeated = runFirstRun({ ...options, goal: 'Must preserve authored intent.' }, target);
+      expect(repeated.evidencePath).toBe(first.evidencePath);
+      expect(readFileSync(path, 'utf8')).toBe(authored);
+      expect(snapshotBoundaryTree(target)).toEqual(before);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+    }
+  });
+
   it('rejects invalid input before initializing a target', () => {
     const target = mkdtempSync(join(tmpdir(), 'osc-first-input-'));
     try {

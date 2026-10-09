@@ -74,6 +74,33 @@ function createRunPacket(root: string): string {
 }
 
 describe('blueprint first-run and PR check surfaces', () => {
+  it.skipIf(process.platform === 'win32')('recognizes recorded first-run results through the generated shell helper', () => {
+    const root = mkdtempSync(join(tmpdir(), 'osc-first-run-verification-'));
+    try {
+      const created = runOsc(root, ['first-run', '--non-interactive', '--slug', 'heading-record', '--mission', 'Keep a synthetic local record.', '--goal', 'Record one actual bounded check.']);
+      expect(created.status, created.stdout + created.stderr).toBe(0);
+      writeFileSync(join(root, 'application.txt'), 'alpha\n');
+      const check = spawnSync(process.execPath, ['-e', "require('node:assert/strict').equal(require('node:fs').readFileSync('application.txt', 'utf8'), 'alpha\\n'); console.log('application assertion passed');"], {
+        cwd: root, encoding: 'utf8', timeout: 10_000,
+      });
+      expect(check.status, check.stdout + check.stderr).toBe(0);
+      const name = readdirSync(join(root, '.osc/releases')).find((file) => file.endsWith('-heading-record.md'))!;
+      const path = join(root, '.osc/releases', name);
+      const skeleton = readFileSync(path, 'utf8');
+      expect(skeleton).toContain('approval.status: blocked');
+      expect(skeleton).toContain('Pending: replace this line with real command output');
+      writeFileSync(path, skeleton.replace('- Pending: replace this line with real command output before closing the plan.', `- Actual Node file-content assertion: exit ${check.status}; stdout: ${check.stdout.trim()}; stderr: ${check.stderr || '(empty)'}. Synthetic fixture only.`));
+      const shell = spawnSync('./verify.sh', ['--standard'], {
+        cwd: root, encoding: 'utf8', timeout: 10_000, env: { ...process.env, CI: '1', NO_COLOR: '1' },
+      });
+      expect(shell.status, shell.stdout + shell.stderr).toBe(0);
+      expect(shell.stdout, shell.stdout + shell.stderr).not.toContain(`Release note ${name} missing section: Verification`);
+      expect(readFileSync(path, 'utf8')).toContain('approval.status: blocked');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 20_000);
+
   it('creates one valid first work-record path in non-interactive mode', () => {
     const root = tempRepo('osc-first-run-');
     try {
