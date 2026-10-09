@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -38,16 +38,16 @@ First-run evidence notes with actual results are recognized consistently by the 
 
 ## Acceptance criteria
 
-- [ ] Preserve a failed-first regression for the emitted-note/actual generated-helper mismatch.
-- [ ] New first-run notes use canonical `## Verification`, consistent with `evidence new`.
-- [ ] Through the real source CLI, initialize an owned minimum project, record an actual bounded check in that section, and run the generated `./verify.sh --standard`; it emits no missing-Verification warning for that note. Inspect the direct Node validation result as well: no missing/empty-Verification warning for the filled note. Do not rely on the plain CLI's suppressed warnings.
-- [ ] An existing note with the exact older generated heading and real results is recognized by the actual shell helper and direct Node validator without a false missing/empty-Verification warning. Preserve a failed-first direct-API control separately from the observed plain CLI output.
-- [ ] Preserve the Node validator’s existing recognized empty/placeholder body semantics for canonical and exact legacy sections. A present empty canonical section must take precedence over a filled legacy section. This does not add a new rule treating every `Pending` line or arbitrary prose as semantic evidence failure.
-- [ ] A genuinely absent heading, a heading present only inside a fence, and arbitrary-prefix near misses still produce the shell missing-section warning; existing Traceability-chain compatibility, unrelated warnings and exit behavior remain unchanged.
-- [ ] New skeletons retain pending-results guidance and blocked approval before actual results; a heading fix establishes structure only.
-- [ ] Repeat `first-run` preserves author-edited existing notes, including older extended headings, and unrelated project/record bytes. No automatic note migration or overwrite.
-- [ ] The actual maintained TypeScript footprint remains **17,027 physical lines / 41 files**, with **net zero growth** and readable code. `tests/framework-cleanup-metric.test.ts` remains verification-only and unchanged; no line compression or cap relaxation. Report the actual shell delta separately. Any maintained TypeScript growth requires an explicit scope amendment and renewed review before continuation; actual code growth remains unobserved until implementation.
-- [ ] Record exact source/artifact identities, focused outcome evidence and independently reviewed final-head verification.
+- [x] Preserve a failed-first regression for the emitted-note/actual generated-helper mismatch. | Evidence: .osc/releases/2026-10-09-204-first-run-evidence-heading.md
+- [x] New first-run notes use canonical `## Verification`, consistent with `evidence new`. | Evidence: .osc/releases/2026-10-09-204-first-run-evidence-heading.md
+- [x] Through the real source CLI, initialize an owned minimum project, record an actual bounded check in that section, and run the generated `./verify.sh --standard`; it emits no missing-Verification warning for that note. Inspect the direct Node validation result as well: no missing/empty-Verification warning for the filled note. Do not rely on the plain CLI's suppressed warnings. | Evidence: .osc/releases/2026-10-09-204-first-run-evidence-heading.md
+- [x] An existing note with the exact older generated heading and real results is recognized by the actual shell helper and direct Node validator without a false missing/empty-Verification warning. Preserve a failed-first direct-API control separately from the observed plain CLI output. | Evidence: .osc/releases/2026-10-09-204-first-run-evidence-heading.md
+- [x] Preserve the Node validator’s existing recognized empty/placeholder body semantics for canonical and exact legacy sections. A present empty canonical section must take precedence over a filled legacy section. This does not add a new rule treating every `Pending` line or arbitrary prose as semantic evidence failure. | Evidence: .osc/releases/2026-10-09-204-first-run-evidence-heading.md
+- [x] A genuinely absent heading, a heading present only inside a fence, and arbitrary-prefix near misses still produce the shell missing-section warning; existing Traceability-chain compatibility, unrelated warnings and exit behavior remain unchanged. | Evidence: .osc/releases/2026-10-09-204-first-run-evidence-heading.md
+- [x] New skeletons retain pending-results guidance and blocked approval before actual results; a heading fix establishes structure only. | Evidence: .osc/releases/2026-10-09-204-first-run-evidence-heading.md
+- [x] Repeat `first-run` preserves author-edited existing notes, including older extended headings, and unrelated project/record bytes. No automatic note migration or overwrite. | Evidence: .osc/releases/2026-10-09-204-first-run-evidence-heading.md
+- [x] The actual maintained TypeScript footprint remains **17,027 physical lines / 41 files**, with **net zero growth** and readable code. `tests/framework-cleanup-metric.test.ts` remains verification-only and unchanged; no line compression or cap relaxation. Report the actual shell delta separately. Any maintained TypeScript growth requires an explicit scope amendment and renewed review before continuation; actual code growth remains unobserved until implementation. | Evidence: .osc/releases/2026-10-09-204-first-run-evidence-heading.md
+- [x] Record exact source/artifact identities, focused outcome evidence and independently reviewed final-head verification. | Evidence: .osc/releases/2026-10-09-204-first-run-evidence-heading.md
 
 ## Verification steps
 

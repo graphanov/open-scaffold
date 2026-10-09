@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { evidenceChainExitCode, formatEvidenceChainReport, verifyEvidenceChain } from '../src/evidence-chain.js';
@@ -354,6 +354,120 @@ approval:
     expect(report.summary.missing).toBe(0);
     expect(evidenceChainExitCode(report, { strict: true })).toBe(0);
   });
+
+  it.each([false, true])('delivers a complete large piped JSON report with broken link=%s', (broken) => {
+    const root = tempRepo('osc-evidence-chain-large-');
+    try {
+      writeFileSync(join(root, 'docs/evidence/proof.md'), '# Synthetic proof\n');
+      for (let index = 0; index < 48; index += 1) {
+        const slug = `${String(index + 1).padStart(3, '0')}-pipe`;
+        const criteria = Array.from({ length: 8 }, (_, criterion) => {
+          const reference = broken && index === 0 && criterion === 0
+            ? 'docs/evidence/absent.md'
+            : 'docs/evidence/proof.md';
+          return `- [x] AC${criterion + 1} synthetic link. Evidence: ${reference}`;
+        }).join('\n');
+        writePlan(root, slug, criteria);
+        writeEvidence(root, slug);
+        writeRun(root, slug);
+      }
+
+      const report = verifyEvidenceChain(root);
+      const expected = `${JSON.stringify(report.plans, null, 2)}\n`;
+      expect(Buffer.byteLength(expected)).toBeGreaterThan(65_536);
+      expect(Buffer.byteLength(expected)).toBeLessThan(4 * 1024 * 1024);
+      expect(report.plans).toHaveLength(48);
+      expect(report.summary.broken).toBe(broken ? 1 : 0);
+      expect(report.summary.missing).toBe(0);
+      const result = spawnSync(tsx, [cli, 'verify', '--evidence-chain', '--json', '--strict'], {
+        cwd: root,
+        encoding: 'utf8',
+        maxBuffer: 8 * 1024 * 1024,
+        timeout: 30_000,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.signal).toBeNull();
+      expect(result.status).toBe(evidenceChainExitCode(report, { strict: true }));
+      expect(result.status).toBe(broken ? 1 : 0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toBe(expected);
+      expect(JSON.parse(result.stdout)).toEqual(report.plans);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves ordinary JSON, text, strict missing-link status, and usage diagnostics', () => {
+    const root = tempRepo('osc-evidence-chain-output-');
+    try {
+      writeFileSync(join(root, 'docs/evidence/proof.md'), '# Synthetic proof\n');
+      writePlan(root, '005-output', '- [x] AC1 is backed. Evidence: docs/evidence/proof.md');
+      writeEvidence(root, '005-output');
+      writeRun(root, '005-output');
+      const invoke = (args: string[]) => spawnSync(tsx, [cli, 'verify', ...args], {
+        cwd: root,
+        encoding: 'utf8',
+        maxBuffer: 8 * 1024 * 1024,
+        timeout: 30_000,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      const report = verifyEvidenceChain(root, { plan: '005-output' });
+      const json = invoke(['--evidence-chain', '--plan', '005-output', '--json', '--strict']);
+      expect(json.error).toBeUndefined();
+      expect(json.signal).toBeNull();
+      expect(json.status).toBe(0);
+      expect(json.stderr).toBe('');
+      expect(json.stdout).toBe(`${JSON.stringify(report.plans, null, 2)}\n`);
+      const text = invoke(['--evidence-chain', '--plan', '005-output', '--strict']);
+      expect(text.error).toBeUndefined();
+      expect(text.signal).toBeNull();
+      expect(text.status).toBe(0);
+      expect(text.stderr).toBe('');
+      expect(text.stdout).toBe(formatEvidenceChainReport(report, { strict: true }));
+
+      writePlan(root, '005-output', '- [ ] AC1 still needs evidence.');
+      const missingReport = verifyEvidenceChain(root, { plan: '005-output' });
+      for (const strict of [false, true]) {
+        const result = invoke(['--evidence-chain', '--plan', '005-output', '--json', ...(strict ? ['--strict'] : [])]);
+        expect(result.error).toBeUndefined();
+        expect(result.signal).toBeNull();
+        expect(result.status).toBe(evidenceChainExitCode(missingReport, { strict }));
+        expect(result.status).toBe(strict ? 1 : 0);
+        expect(result.stderr).toBe('');
+        expect(result.stdout).toBe(`${JSON.stringify(missingReport.plans, null, 2)}\n`);
+        expect(JSON.parse(result.stdout)).toEqual(missingReport.plans);
+      }
+
+      writePlan(root, '005-output', '- [x] AC1 references absent proof. Evidence: docs/evidence/absent.md');
+      const brokenReport = verifyEvidenceChain(root, { plan: '005-output' });
+      expect(brokenReport.summary.broken).toBe(1);
+      for (const strict of [false, true]) {
+        const result = invoke(['--evidence-chain', '--plan', '005-output', '--json', ...(strict ? ['--strict'] : [])]);
+        expect(result.error).toBeUndefined();
+        expect(result.signal).toBeNull();
+        expect(result.status).toBe(1);
+        expect(result.stderr).toBe('');
+        expect(result.stdout).toBe(`${JSON.stringify(brokenReport.plans, null, 2)}\n`);
+      }
+
+      const usage = invoke(['--json']);
+      expect(usage.error).toBeUndefined();
+      expect(usage.signal).toBeNull();
+      expect(usage.status).toBe(2);
+      expect(usage.stdout).toBe('');
+      expect(usage.stderr).toContain('--json is only supported with --evidence-chain');
+      const absent = invoke(['--evidence-chain', '--plan', 'absent', '--json', '--strict']);
+      expect(absent.error).toBeUndefined();
+      expect(absent.signal).toBeNull();
+      expect(absent.status).toBe(1);
+      expect(absent.stdout).toBe('');
+      expect(absent.stderr).toContain('Plan not found in .osc/plans/done/');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 250_000);
 
   it('prints JSON findings and honors strict CLI exit behavior', () => {
     const root = tempRepo();
