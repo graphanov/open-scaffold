@@ -52,6 +52,7 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-10-09: closed 203-first-run-write-boundary — Static first-run record-boundary repair delivered in https://github.com/graphanov/open-scaffold/pull/319; recorded verified merge and scoped AI-maintainer close decision.
 - 2026-10-09: closed 202-first-run-unicode-preservation — Delivered Unicode first-run preservation regression in PR #307; recorded verified merge and bounded evidence.
 - 2026-10-09: Protect successful Unicode-root first-run and edited record preservation on repeat with a focused CLI regression, without changing production behavior. — see .osc/plans/done/202-first-run-unicode-preservation.md
 - 2026-10-09: closed 201-mcp-output-schemas — MCP read output schema repair delivered through PR306; verified merge and factual closeout recorded
