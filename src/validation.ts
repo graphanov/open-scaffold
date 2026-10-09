@@ -159,7 +159,7 @@ export function validateScaffold(root = process.cwd(), options: ValidationOption
       warnings.push({ level: 'warn', code: 'release_note.empty_outcome', message: 'Release note Outcome section is empty or a placeholder', path: rel });
     }
 
-    const verification = sections.get('Verification') ?? '';
+    const verification = sections.get('Verification') ?? sections.get('Verification commands and results') ?? '';
     if (hasHeading(sectionHeadings, 'Verification') && isEmptyOrPlaceholder(verification)) {
       warnings.push({ level: 'warn', code: 'release_note.empty_verification', message: 'Release note Verification section is empty or a placeholder', path: rel });
     }

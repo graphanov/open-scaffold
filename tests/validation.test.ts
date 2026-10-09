@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mkdtempSync, mkdirSync, utimesSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { validateScaffold } from '../src/validation.js';
@@ -52,6 +52,48 @@ Ship a thing.
 `;
 
 describe('scaffold validation', () => {
+  const verificationBodies = [
+    { body: '- node assertion: exit 0; stdout passed.', empty: false },
+    { body: 'Pending: record real results before closing.', empty: false },
+    { body: 'Arbitrary authored prose.', empty: false },
+    ...['', 'TODO', 'TBD', 'N/A', 'None', '...', '—', '-', '- TODO\n* TBD', '```\nTODO\n```'].map((body) => ({ body, empty: true })),
+  ];
+  it.each(['Verification', 'Verification commands and results'].flatMap((heading) => verificationBodies.map((entry) => ({ heading, ...entry }))))
+   ('retains Verification body diagnostics for $heading with $body', ({ heading, body, empty }) => {
+      const root = tempRepo();
+      try {
+        writeFileSync(join(root, '.osc/plans/done/001-sample.md'), plan.replace('active', 'done'));
+        const path = '.osc/releases/2026-10-09-verification.md';
+        writeFileSync(join(root, path), `# Evidence\n\n## Summary\n\nFixture.\n\n## Traceability chain\n\n- Plan: .osc/plans/done/001-sample.md\n- PR: #42\n\n## ${heading}\n\n${body}\n\n## Outcome\n\nTODO\n`);
+        const result = validateScaffold(root);
+        const codes = result.warnings.filter((issue) => issue.path === path).map((issue) => issue.code);
+        expect(result.ok).toBe(true);
+        expect(result.failures).toEqual([]);
+        expect(codes.includes('release_note.empty_verification')).toBe(empty);
+        expect(codes).not.toContain('release_note.missing_section');
+        expect(codes).not.toContain('release_note.traceability_missing_plan');
+        expect(codes).toContain('release_note.empty_outcome');
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+
+  it.each([false, true])('keeps empty canonical Verification authoritative with legacy-first=$0', (legacyFirst) => {
+    const root = tempRepo();
+    try {
+      writeFileSync(join(root, '.osc/plans/done/001-sample.md'), plan.replace('active', 'done'));
+      const canonical = '## Verification\n\n';
+      const legacy = '## Verification commands and results\n\n- Actual assertion passed.\n\n';
+      const path = '.osc/releases/2026-10-09-precedence.md';
+      writeFileSync(join(root, path), `# Evidence\n\n## Summary\n\nFixture.\n\n## Traceability\n\n- Plan: .osc/plans/done/001-sample.md\n- PR: #42\n\n${legacyFirst ? legacy + canonical : canonical + legacy}## Outcome\n\nLocal fixture.\n`);
+      const result = validateScaffold(root);
+      expect(result.ok).toBe(true);
+      expect(result.warnings.filter((issue) => issue.path === path).map((issue) => issue.code)).toContain('release_note.empty_verification');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('passes a repo with mission, plans, and releases directory', () => {
     const root = tempRepo();
     writeFileSync(join(root, '.osc/plans/active/001-sample.md'), plan);

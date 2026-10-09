@@ -209,7 +209,7 @@ function evidenceMarkdown(slug: string, planPath: string): string {
     '',
     `- Plan: \`${planPath}\``,
     '',
-    '## Verification commands and results',
+    '## Verification',
     '',
     '- Pending: replace this line with real command output before closing the plan.',
     '- Guidance: Evidence-chain checks are structural; they do not prove semantic correctness or production readiness. Record the commands, results, failing checks, and limitations of the actual project work.',
