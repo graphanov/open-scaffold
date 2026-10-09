@@ -149,6 +149,13 @@ describe('first-run documentation truth', () => {
     expect(read('docs/WORKFLOW.md')).toContain('Shell scripts remain the day-zero floor');
   });
 
+  it('documents first-run record refusal, deliberate recovery and bounded guarantees', () => {
+    const text = read('docs/START_HERE.md');
+    for (const phrase of ['symlinked record paths', 'dangling links', 'same-slug staged plans', 'selected evidence note', 'before reading record content or writing files', 'wrong-type record components', 'repository-relative path', 'regular local file or directory', 'rerun first-run', 'repository-root aliases', 'descendant record links', 'static checks', 'transactions or race-free access', 'arbitrary-ancestor', 'hardlink safety', 'Native Windows', 'separately published npm']) {
+      expect(text).toContain(phrase);
+    }
+  });
+
   it('exposes a package-name binary alias so npx open-scaffold runs the CLI', () => {
     const packageJson = JSON.parse(read('package.json')) as { bin?: Record<string, string> };
 
