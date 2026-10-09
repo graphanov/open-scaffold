@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -28,11 +28,11 @@ Add one meaningful successful Unicode-root first-run regression that protects or
 
 ## Acceptance criteria
 
-- [ ] The actual first-run CLI succeeds in a Unicode/spaces/apostrophe brownfield root while preserving original project files and reporting existing contained root-relative mission/plan/evidence paths with reciprocal links.
-- [ ] A repeat CLI call with different setup input preserves existing record identities and user-edited mission, plan and evidence bytes plus the fixture inventory; existing ASCII and unrelated tests remain intact.
-- [ ] The focused regression is nonduplicate and meaningful against the sourced prior coverage; healthy baseline passes honestly and any private mutation control is labeled, isolated and restored, with no fabricated current defect or shipped production behavior change.
-- [ ] Only the two admitted implementation files change and all maintained production source bytes, physical16,984/41 metric/caps/dependencies/README/workflows/frozen definitions and ownerdraft exclusions/unknowns remain preserved.
-- [ ] Independent unchanged committed-head strict/build/full verification and fresh complete publication review including prior201 metadata precede authorized publication/current-CI merge/readback/release/factual closeout; parent184 remains active and the six-day run is incomplete.
+- [x] The actual first-run CLI succeeds in a Unicode/spaces/apostrophe brownfield root while preserving original project files and reporting existing contained root-relative mission/plan/evidence paths with reciprocal links. | Evidence: .osc/releases/2026-10-09-202-first-run-unicode-preservation.md
+- [x] A repeat CLI call with different setup input preserves existing record identities and user-edited mission, plan and evidence bytes plus the fixture inventory; existing ASCII and unrelated tests remain intact. | Evidence: .osc/releases/2026-10-09-202-first-run-unicode-preservation.md
+- [x] The focused regression is nonduplicate and meaningful against the sourced prior coverage; healthy baseline passes honestly and any private mutation control is labeled, isolated and restored, with no fabricated current defect or shipped production behavior change. | Evidence: .osc/releases/2026-10-09-202-first-run-unicode-preservation.md
+- [x] Only the two admitted implementation files change and all maintained production source bytes, physical16,984/41 metric/caps/dependencies/README/workflows/frozen definitions and ownerdraft exclusions/unknowns remain preserved. | Evidence: .osc/releases/2026-10-09-202-first-run-unicode-preservation.md
+- [x] Independent unchanged committed-head strict/build/full verification and fresh complete publication review including prior201 metadata precede authorized publication/current-CI merge/readback/release/factual closeout; parent184 remains active and the six-day run is incomplete. | Evidence: .osc/releases/2026-10-09-202-first-run-unicode-preservation.md
 
 ## Verification steps
 
