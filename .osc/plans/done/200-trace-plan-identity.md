@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -31,11 +31,11 @@ Trace excludes run packets with conflicting object plan identities from local re
 
 ## Acceptance criteria
 
-- [ ] A run with conflicting supplied object plan.slug and plan.path is excluded from both plans' local run links and external-reference imports; ordinary consistent restore control recovers its original links.
-- [ ] Supported consistent legacy string/slug-only/path-only and previous-stage identities retain exact associations; unrelated/weak/unsafe inputs do not become local evidence, and requested unverified conflicts remain labeled with an honest diagnostic.
-- [ ] Real API/CLI conflict regressions fail on baseline and pass on candidate; normal failed-attempt/retry/competing-plan reconstruction, source/fixture byte preservation and existing safety/refusal/schema/formatting behavior remain supported.
-- [ ] Only admitted paths change, with measured readable growth within intent and unchanged metric roots/algorithm/baseline/filecap, excluded source/dependencies/README/workflows/frozen definitions and ownerdraft exclusions/unknowns.
-- [ ] Independent unchanged committed-head strict/build/full verification and fresh complete publication review/current CI precede authorized merge/readback/release/factual closeout.
+- [x] A run with conflicting supplied object plan.slug and plan.path is excluded from both plans' local run links and external-reference imports; ordinary consistent restore control recovers its original links. | Evidence: .osc/releases/2026-10-08-200-trace-plan-identity.md
+- [x] Supported consistent legacy string/slug-only/path-only and previous-stage identities retain exact associations; unrelated/weak/unsafe inputs do not become local evidence, and requested unverified conflicts remain labeled with an honest diagnostic. | Evidence: .osc/releases/2026-10-08-200-trace-plan-identity.md
+- [x] Real API/CLI conflict regressions fail on baseline and pass on candidate; normal failed-attempt/retry/competing-plan reconstruction, source/fixture byte preservation and existing safety/refusal/schema/formatting behavior remain supported. | Evidence: .osc/releases/2026-10-08-200-trace-plan-identity.md
+- [x] Only admitted paths change, with measured readable growth within intent and unchanged metric roots/algorithm/baseline/filecap, excluded source/dependencies/README/workflows/frozen definitions and ownerdraft exclusions/unknowns. | Evidence: .osc/releases/2026-10-08-200-trace-plan-identity.md
+- [x] Independent unchanged committed-head strict/build/full verification and fresh complete publication review/current CI precede authorized merge/readback/release/factual closeout. | Evidence: .osc/releases/2026-10-08-200-trace-plan-identity.md
 
 ## Verification steps
 

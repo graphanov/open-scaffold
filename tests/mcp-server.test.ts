@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Readable, Writable } from 'node:stream';
@@ -593,5 +594,218 @@ describe('Open Scaffold MCP JSON-RPC server', () => {
 
     expect(messages).toHaveLength(1);
     expect(messages[0]).toMatchObject({ id: 1, result: { serverInfo: { name: 'open-scaffold-mcp' } } });
+  });
+});
+
+// This checker covers every keyword currently advertised in read output schemas.
+// New keywords must gain checker support; silently ignoring them would hide regressions.
+type ContractSchema = Record<string, unknown>;
+type ContractRecord = Record<string, unknown>;
+
+function isContractRecord(value: unknown): value is ContractRecord {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function assertSupportedOutputSchema(schema: ContractSchema): void {
+  const keywords = new Set(['type', 'properties', 'required', 'additionalProperties']);
+  for (const keyword of Object.keys(schema)) {
+    if (!keywords.has(keyword)) throw new Error(`Unsupported output-schema keyword: ${keyword}`);
+  }
+  if (!['object', 'array', 'string', 'boolean'].includes(String(schema.type))) {
+    throw new Error(`Unsupported output-schema type: ${String(schema.type)}`);
+  }
+  if (schema.additionalProperties !== undefined && typeof schema.additionalProperties !== 'boolean') {
+    throw new Error('Unsupported additionalProperties schema');
+  }
+  if (schema.required !== undefined && (!Array.isArray(schema.required) || schema.required.some((key) => typeof key !== 'string'))) {
+    throw new Error('Unsupported required schema');
+  }
+  if (schema.properties !== undefined) {
+    if (!isContractRecord(schema.properties)) throw new Error('Unsupported properties schema');
+    for (const property of Object.values(schema.properties)) {
+      if (!isContractRecord(property)) throw new Error('Unsupported property schema');
+      assertSupportedOutputSchema(property);
+    }
+  }
+}
+
+function outputContractErrors(schema: ContractSchema, value: unknown, path = '$'): string[] {
+  assertSupportedOutputSchema(schema);
+  const matchesType = schema.type === 'object' ? isContractRecord(value)
+    : schema.type === 'array' ? Array.isArray(value)
+      : typeof value === schema.type;
+  if (!matchesType) return [`${path}: type ${String(schema.type)}`];
+  if (!isContractRecord(value)) return [];
+  const properties = (schema.properties ?? {}) as Record<string, ContractSchema>;
+  const errors: string[] = [];
+  for (const key of (schema.required ?? []) as string[]) {
+    if (!Object.hasOwn(value, key)) errors.push(`${path}.${key}: required`);
+  }
+  for (const [key, entry] of Object.entries(value)) {
+    if (Object.hasOwn(properties, key)) errors.push(...outputContractErrors(properties[key], entry, `${path}.${key}`));
+    else if (schema.additionalProperties === false) errors.push(`${path}.${key}: additionalProperties`);
+  }
+  return errors;
+}
+
+function treeSnapshot(root: string): Record<string, string> {
+  const entries: Record<string, string> = {};
+  const walk = (directory: string, prefix: string) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const path = join(directory, entry.name);
+      const key = `${prefix}${entry.name}`;
+      if (entry.isDirectory()) {
+        entries[`${key}/`] = 'directory';
+        walk(path, `${key}/`);
+      } else if (entry.isFile()) entries[key] = createHash('sha256').update(readFileSync(path)).digest('hex');
+      else throw new Error(`Unexpected non-regular fixture entry: ${key}`);
+    }
+  };
+  walk(root, '');
+  return entries;
+}
+
+function maintainedSourceSnapshot(): Record<string, Record<string, string>> {
+  return Object.fromEntries(['src', 'packages/runtime-omx/src'].map((root) => [root, treeSnapshot(join(repoRoot, root))]));
+}
+
+function withReadContractFixture(check: (context: { root: string; allowWrite: boolean }, loopDir: string) => void): void {
+  const { root, loopDirRelative } = loopFixture();
+  const fixtureBefore = treeSnapshot(root);
+  const sourceBefore = maintainedSourceSnapshot();
+  try {
+    check({ root, allowWrite: false }, loopDirRelative);
+  } finally {
+    try {
+      expect(treeSnapshot(root)).toEqual(fixtureBefore);
+      expect(maintainedSourceSnapshot()).toEqual(sourceBefore);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+}
+
+function serializedRpc(context: { root: string; allowWrite: boolean }, method: string, params: ContractRecord): ContractRecord {
+  const response = JSON.parse(JSON.stringify(handleMcpJsonRpcLine(JSON.stringify({ jsonrpc: '2.0', id: 201, method, params }), context))) as ContractRecord;
+  expect(response).toMatchObject({ jsonrpc: '2.0', id: 201 });
+  return response;
+}
+
+function advertisedReadSchemas(context: { root: string; allowWrite: boolean }): Map<string, ContractSchema> {
+  const response = serializedRpc(context, 'tools/list', {});
+  expect(response).not.toHaveProperty('error');
+  const result = response.result as { tools: Array<{ name: string; outputSchema?: ContractSchema }> };
+  return new Map(result.tools.filter((tool) => tool.outputSchema !== undefined).map((tool) => [tool.name, tool.outputSchema as ContractSchema]));
+}
+
+function serializedToolReply(context: { root: string; allowWrite: boolean }, name: string, args: ContractRecord): ContractRecord {
+  const response = serializedRpc(context, 'tools/call', { name, arguments: args });
+  expect(response, JSON.stringify(response)).not.toHaveProperty('error');
+  const result = response.result as { content: Array<{ type: string; text: string }>; structuredContent: ContractRecord };
+  expect(result.content).toHaveLength(1);
+  expect(result.content[0].type).toBe('text');
+  expect(JSON.parse(result.content[0].text)).toEqual(result.structuredContent);
+  return result.structuredContent;
+}
+
+const readContractCalls: Array<{ name: string; args: ContractRecord }> = [
+  { name: 'list_plans', args: {} },
+  { name: 'get_plan', args: { slug: '001-sample' } },
+  { name: 'get_mission', args: {} },
+  { name: 'list_evidence', args: { slug: '001-sample' } },
+  { name: 'get_evidence', args: { slug: '001-sample' } },
+  { name: 'get_status', args: {} },
+  { name: 'search_plans', args: { query: 'MCP' } },
+  { name: 'list_amendments', args: { slug: '001-sample' } },
+  { name: 'get_handoff', args: {} },
+  { name: 'analyze_loop', args: { loop_dir: '.osc/evolution/001-sample-loop' } },
+  { name: 'gate_loop', args: { loop_dir: '.osc/evolution/001-sample-loop' } },
+];
+
+describe('MCP read output contracts at the serialized JSON-RPC boundary', () => {
+  it.each(readContractCalls)('validates the actual $name reply', ({ name, args }) => {
+    withReadContractFixture((context) => {
+      const schemas = advertisedReadSchemas(context);
+      expect([...schemas.keys()].sort()).toEqual(readContractCalls.map((call) => call.name).sort());
+      const reply = serializedToolReply(context, name, args);
+      expect(outputContractErrors(schemas.get(name) as ContractSchema, reply), JSON.stringify({ name, reply })).toEqual([]);
+    });
+  });
+
+  it.each(readContractCalls)('preserves required-only $name compatibility and rejects boundary mutations', ({ name, args }) => {
+    withReadContractFixture((context) => {
+      const schema = advertisedReadSchemas(context).get(name) as ContractSchema;
+      const reply = serializedToolReply(context, name, args);
+      const required = schema.required as string[];
+      const legacy = Object.fromEntries(required.map((key) => [key, reply[key]]));
+      expect(outputContractErrors(schema, legacy)).toEqual([]);
+      expect(outputContractErrors(schema, { ...legacy, __unexpected_output: true })).toContain('$.__unexpected_output: additionalProperties');
+      for (const key of required) {
+        const missing = { ...legacy };
+        delete missing[key];
+        expect(outputContractErrors(schema, missing)).toContain(`$.${key}: required`);
+      }
+      for (const [key, property] of Object.entries(schema.properties as Record<string, ContractSchema>)) {
+        expect(outputContractErrors(schema, { ...legacy, [key]: null })).toContain(`$.${key}: type ${String(property.type)}`);
+      }
+    });
+  });
+
+  it.each(['missing', 'unset'])('validates the serialized mission %s state', (state) => {
+    withReadContractFixture((context) => {
+      const missionPath = join(context.root, 'MISSION.md');
+      const original = readFileSync(missionPath);
+      try {
+        if (state === 'missing') rmSync(missionPath);
+        else writeFileSync(missionPath, '# Mission\n\n<!-- mission:unset -->\n');
+        const reply = serializedToolReply(context, 'get_mission', {});
+        expect(reply.defined).toBe(false);
+        expect(typeof reply.reason).toBe('string');
+        if (state === 'unset') expect(reply.path).toBe('MISSION.md');
+        else expect(reply).not.toHaveProperty('path');
+        expect(outputContractErrors(advertisedReadSchemas(context).get('get_mission') as ContractSchema, reply), JSON.stringify({ state, reply })).toEqual([]);
+      } finally {
+        writeFileSync(missionPath, original);
+      }
+    });
+  });
+
+  it('validates a serialized judge-present checkpoint', () => {
+    withReadContractFixture((context, loopDir) => {
+      const reply = serializedToolReply(context, 'gate_loop', {
+        loop_dir: loopDir,
+        judge_action: 'stop_impossible',
+        judge_impossible_acs: ['AC2'],
+        judge_rationale: 'The recorded AC2 cannot pass.',
+      });
+      expect(reply.judge).toMatchObject({ present: true, action: 'stop_impossible', impossibleAcs: ['AC2'] });
+      expect(reply.retryAuthorized).toMatchObject({ allow: false });
+      expect(outputContractErrors(advertisedReadSchemas(context).get('gate_loop') as ContractSchema, reply), JSON.stringify(reply)).toEqual([]);
+    });
+  });
+
+  it('fails fast for unsupported schema keywords, including absent optional properties', () => {
+    expect(() => outputContractErrors({ type: 'string', minLength: 1 }, 'x')).toThrow('Unsupported output-schema keyword: minLength');
+    expect(() => outputContractErrors({ type: 'object', properties: { absent: { type: 'array', items: { type: 'string' } } } }, {})).toThrow('Unsupported output-schema keyword: items');
+    expect(outputContractErrors({ type: 'object' }, [])).toEqual(['$: type object']);
+    expect(outputContractErrors({ type: 'array' }, {})).toEqual(['$: type array']);
+  });
+
+  it('rejects sibling-prefix escapes through JSON-RPC and preserves the fixture and sibling', () => {
+    withReadContractFixture((context) => {
+      const sibling = `${context.root}-outside`;
+      mkdirSync(sibling);
+      writeFileSync(join(sibling, 'sentinel.txt'), 'unchanged sibling');
+      const before = treeSnapshot(sibling);
+      try {
+        for (const name of ['analyze_loop', 'gate_loop']) {
+          expect(serializedRpc(context, 'tools/call', { name, arguments: { loop_dir: sibling } })).toMatchObject({ error: { code: -32602 } });
+        }
+        expect(serializedRpc(context, 'tools/call', { name: 'get_evidence', arguments: { path: join(sibling, 'sentinel.txt') } })).toMatchObject({ error: { code: -32602 } });
+        expect(treeSnapshot(sibling)).toEqual(before);
+      } finally {
+        rmSync(sibling, { recursive: true, force: true });
+      }
+    });
   });
 });
