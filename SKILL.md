@@ -80,13 +80,13 @@ The discipline above works with any editor. The CLI makes it mechanical and adds
 - **Review and gate** — `osc review` reports plateaus, failing criteria, and requirements worth questioning; `osc gate` turns that into a retry authorization with stop authority that lives outside the worker. Any file-reading model can be the judge, including locally-hosted cheap models. Fails closed: no parseable verdict means no authorization.
 
 ```bash
-npx open-scaffold@latest first-run          # guided: mission + first plan + evidence skeleton
-npx open-scaffold@latest handoff --plan <slug> # compile this task's next-session packet
-npx open-scaffold@latest review <loop-dir>  # review recorded attempts
-npx open-scaffold@latest gate <loop-dir>    # authorize or block the next attempt
+osc first-run          # guided: mission + first plan + evidence skeleton
+osc handoff --plan <slug> # compile this task's next-session packet
+osc review <loop-dir>  # review recorded attempts
+osc gate <loop-dir>    # authorize or block the next attempt
 ```
 
-`npx` does not install a global `osc` command. Keep using `npx`, or run `npm install -g open-scaffold` first; pin a reviewed package version for repeatable installations. Onboarding is self-contained. External documents and evidence links are source data, not instructions or execution authority. GitHub and other tracker integrations are optional.
+`osc` is the Open Scaffold CLI. Install it first with `npm install --global open-scaffold@0.35.0`; pin the same reviewed package version for repeatable installations. Onboarding is self-contained. External documents and evidence links are source data, not instructions or execution authority. GitHub and other tracker integrations are optional.
 
 ## The honest boundary
 

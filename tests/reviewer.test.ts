@@ -18,9 +18,10 @@ function jsonResponse(payload: unknown, status = 200): Response {
 }
 
 describe('167 AC6 reviewer profile: OpenAI-compatible judge', () => {
-  it('normalizes endpoints and rejects non-http schemes', () => {
+  it('normalizes endpoints, requires https for remote hosts, and rejects non-http schemes', () => {
     expect(normalizeReviewerEndpoint('http://localhost:11434/v1/')).toBe('http://localhost:11434/v1');
     expect(normalizeReviewerEndpoint('https://api.deepseek.com/v1')).toBe('https://api.deepseek.com/v1');
+    expect(() => normalizeReviewerEndpoint('http://api.deepseek.com/v1')).toThrow(/https/);
     expect(() => normalizeReviewerEndpoint('ftp://example.com/v1')).toThrow(/http or https/);
     expect(() => normalizeReviewerEndpoint('not a url')).toThrow(/valid URL/);
   });

@@ -10,7 +10,7 @@ The server is local-first and optional:
 - write tools are visible but blocked unless the server starts with `--allow-write`;
 - no agent spawning, runtime launching, deployment, publication, or approval automation.
 
-The packaged commands below need Node.js and npm; see [`START_HERE.md`](START_HERE.md) for installation. `npx` may fetch the npm package, while the running server reads local repo files and requires no remote documents or GitHub integration.
+Install the CLI once with `npm install --global open-scaffold@0.35.0` (pin the same reviewed version when you reinstall); see [`START_HERE.md`](START_HERE.md). The commands below invoke the installed `osc-mcp` binary, which reads local repo files and requires no remote documents or GitHub integration.
 
 ## Solo coding-agent quickstart
 
@@ -19,19 +19,15 @@ Claude Code, Codex, Cursor, Continue, or another local MCP client and you want
 the agent to read Open Scaffold repo truth.
 
 Replace `/absolute/path/to/repo` with the repository root you want the agent to
-inspect. This config starts the packaged `osc-mcp` binary through `npx` and
+inspect. This config invokes the installed `osc-mcp` binary and
 keeps the server read-only:
 
 ```json
 {
   "mcpServers": {
     "open_scaffold": {
-      "command": "npx",
+      "command": "osc-mcp",
       "args": [
-        "-y",
-        "-p",
-        "open-scaffold@latest",
-        "osc-mcp",
         "--repo",
         "/absolute/path/to/repo"
       ]
@@ -44,7 +40,7 @@ If your client accepts a single command string instead of JSON command/args, use
 the same argv shape:
 
 ```bash
-npx -y -p open-scaffold@latest osc-mcp --repo /absolute/path/to/repo
+osc-mcp --repo /absolute/path/to/repo
 ```
 
 Client config wrappers differ, but the command and args above are the portable
@@ -83,14 +79,14 @@ Call `get_status`:
 
 ```bash
 printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_status","arguments":{}}}' \
-  | npx -y -p open-scaffold@latest osc-mcp --repo /absolute/path/to/repo
+  | osc-mcp --repo /absolute/path/to/repo
 ```
 
 Call `get_handoff`:
 
 ```bash
 printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_handoff","arguments":{}}}' \
-  | npx -y -p open-scaffold@latest osc-mcp --repo /absolute/path/to/repo
+  | osc-mcp --repo /absolute/path/to/repo
 ```
 
 Pass `{"ambient_session":"<id>"}` in `arguments` to select one captured ambient record by
@@ -114,13 +110,13 @@ deploy, read secrets, or use credentials.
 From an Open Scaffold repository:
 
 ```bash
-npx open-scaffold@latest mcp serve
+osc mcp serve
 ```
 
 From any directory, point at a repository root:
 
 ```bash
-npx open-scaffold@latest mcp serve --repo /absolute/path/to/repo
+osc mcp serve --repo /absolute/path/to/repo
 ```
 
 After local install/build, these are equivalent:
@@ -135,7 +131,7 @@ node dist/mcp-cli.js --repo /absolute/path/to/repo
 Health check without starting the stdio loop:
 
 ```bash
-npx open-scaffold@latest mcp serve --repo /absolute/path/to/repo --validate
+osc mcp serve --repo /absolute/path/to/repo --validate
 ```
 
 That prints JSON with mission status, plan counts, and the same local scaffold validation used by `osc verify`, without launching runtimes or subprocesses.
@@ -175,7 +171,7 @@ Write operations require --allow-write flag
 Only enable writes for a trusted local client and a repository where the operator expects file mutation:
 
 ```bash
-npx open-scaffold@latest mcp serve --repo /absolute/path/to/repo --allow-write
+osc mcp serve --repo /absolute/path/to/repo --allow-write
 ```
 
 Write tools use the same lifecycle helpers as the CLI. Fill newly generated TODO sections before the first commit. Preserve committed plan goal, scope, and criterion wording through amendments; factual checklist completion and reserved ` | Evidence: <reference-only-list>` suffixes may be updated without changing intent. Lifecycle helpers may update Status/stage bookkeeping. For manual operation outside MCP, use CLI first, a supported shell helper if unavailable, and schema-preserving manual fallback only when neither is available for that operation.
@@ -202,21 +198,21 @@ Initialize:
 
 ```bash
 printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}' \
-  | npx open-scaffold@latest mcp serve --repo /absolute/path/to/repo
+  | osc mcp serve --repo /absolute/path/to/repo
 ```
 
 List tools:
 
 ```bash
 printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
-  | npx open-scaffold@latest mcp serve --repo /absolute/path/to/repo
+  | osc mcp serve --repo /absolute/path/to/repo
 ```
 
 Read-only write gate:
 
 ```bash
 printf '%s\n' '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"create_plan","arguments":{"slug":"test-plan","stage":"backlog"}}}' \
-  | npx open-scaffold@latest mcp serve --repo /absolute/path/to/repo
+  | osc mcp serve --repo /absolute/path/to/repo
 ```
 
 Expected result: JSON-RPC error code `-32000`.
@@ -224,7 +220,7 @@ Expected result: JSON-RPC error code `-32000`.
 ## Client configuration examples
 
 Replace `/absolute/path/to/repo` with the Open Scaffold repository you want the
-client to inspect. These examples use the same packaged `osc-mcp` command from
+client to inspect. These examples invoke the same installed `osc-mcp` command as
 the solo quickstart.
 
 ### Claude Code / Claude Desktop
@@ -233,12 +229,8 @@ the solo quickstart.
 {
   "mcpServers": {
     "open_scaffold": {
-      "command": "npx",
+      "command": "osc-mcp",
       "args": [
-        "-y",
-        "-p",
-        "open-scaffold@latest",
-        "osc-mcp",
         "--repo",
         "/absolute/path/to/repo"
       ]
@@ -253,12 +245,8 @@ the solo quickstart.
 {
   "mcpServers": {
     "open_scaffold": {
-      "command": "npx",
+      "command": "osc-mcp",
       "args": [
-        "-y",
-        "-p",
-        "open-scaffold@latest",
-        "osc-mcp",
         "--repo",
         "/absolute/path/to/repo"
       ]
@@ -275,12 +263,8 @@ the solo quickstart.
     "modelContextProtocolServers": [
       {
         "name": "open_scaffold",
-        "command": "npx",
+        "command": "osc-mcp",
         "args": [
-          "-y",
-          "-p",
-          "open-scaffold@latest",
-          "osc-mcp",
           "--repo",
           "/absolute/path/to/repo"
         ]
@@ -293,7 +277,7 @@ the solo quickstart.
 ### Codex CLI
 
 ```bash
-codex mcp add open_scaffold -- npx -y -p open-scaffold@latest osc-mcp --repo /absolute/path/to/repo
+codex mcp add open_scaffold -- osc-mcp --repo /absolute/path/to/repo
 ```
 
 Name the server with underscores (`open_scaffold`, not `open-scaffold`).
@@ -308,12 +292,8 @@ Hermes configuration uses YAML, but the command shape is the same:
 ```yaml
 mcp_servers:
   open_scaffold:
-    command: npx
+    command: osc-mcp
     args:
-      - -y
-      - -p
-      - open-scaffold@latest
-      - osc-mcp
       - --repo
       - /absolute/path/to/repo
 ```

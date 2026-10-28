@@ -9,14 +9,14 @@ The claim: a 1.5 KB Open Scaffold resume capsule lets a model preserve decision 
 The receipts are committed in this repo. Validate and compare them without calling any model:
 
 ```bash
-git clone https://github.com/graphanov/open-scaffold
+git clone --branch v0.35.0 --depth 1 https://github.com/graphanov/open-scaffold
 cd open-scaffold
 
 # Validate the manifest against its committed receipts (no model, no network)
-npx open-scaffold@latest prove check examples/proof/codex-token-efficient-resume/manifest.json
+osc prove check examples/proof/codex-token-efficient-resume/manifest.json
 
 # Print the full comparison table from those same receipts
-npx open-scaffold@latest prove compare examples/proof/codex-token-efficient-resume/manifest.json --format markdown
+osc prove compare examples/proof/codex-token-efficient-resume/manifest.json --format markdown
 ```
 
 You will see the exact numbers — 419,233 bytes vs 1,557 bytes, 137,327 vs 31,715 median tokens, 6/6 decision quality tied — printed from JSON files you can open and read yourself:
@@ -36,6 +36,7 @@ The receipts live in the independent [harness-bench](https://github.com/graphano
 ```bash
 git clone https://github.com/graphanov/harness-bench
 cd harness-bench
+git checkout 7caa1e4044af642938ef391c06c43b3db09cf494   # commit pinned in docs/PROOF_HARNESS.md
 
 # The preregistration: hypotheses, answer keys, kill rules — committed before any model ran
 cat PREREGISTRATION.md

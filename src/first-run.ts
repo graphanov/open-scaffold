@@ -7,6 +7,7 @@ import { findEvidenceNote } from './evidence.js';
 import { assertScaffoldWriteDestination, initializeScaffold, previewScaffoldInitialization, ScaffoldConflictError, type ExistingProjectDetection, type ScaffoldInitializationPreview } from './init.js';
 import { writeFileUnder } from './path-safety.js';
 import { validatePlanFile } from './plan-validate.js';
+import { packageVersion } from './version.js';
 
 export interface FirstRunOptions {
   slug: string;
@@ -69,7 +70,7 @@ function prepareFirstRun(start: string, slug: string, selectedRoot?: string): { 
     throw error;
   }
   const created = findScaffoldRoot(start);
-  if (!created) throw new Error(`No Open Scaffold root found from ${start}. Run \`npx open-scaffold@latest init\` first.`);
+  if (!created) throw new Error(`No Open Scaffold root found from ${start}. Run \`osc init\` first.`);
   return {
     root: created,
     planPath: join(created, relative(root, paths.planPath)),
@@ -101,10 +102,10 @@ function formatFirstRunConflictMessage(error: Pick<ScaffoldConflictError, 'targe
     'For a new project, create and enter a fresh folder, then run first-run there:',
     'mkdir -p ./my-project',
     'cd ./my-project',
-    'npx open-scaffold@latest first-run',
+    'osc first-run',
     '',
     'For an existing project, preserve, move, or rename the listed conflicting files first, then initialize brownfield scaffolding:',
-    `npx open-scaffold@latest init --from-existing --tier min --target ${shellQuote(error.target)}\n\nAfter brownfield scaffolding is initialized, rerun first-run in that target to create the mission, active plan, and evidence skeleton:\ncd ${shellQuote(error.target)}\nnpx open-scaffold@latest first-run`,
+    `osc init --from-existing --tier min --target ${shellQuote(error.target)}\n\nAfter brownfield scaffolding is initialized, rerun first-run in that target to create the mission, active plan, and evidence skeleton:\ncd ${shellQuote(error.target)}\nosc first-run`,
   ].join('\n');
 }
 
@@ -180,14 +181,14 @@ function planMarkdown(slug: string, goal: string, evidencePath: string): string 
     '## Acceptance criteria',
     '',
     '- [ ] Mission is defined without the `mission:unset` marker.',
-    '- [ ] This plan validates with `npx open-scaffold@latest plan validate`.',
+    '- [ ] This plan validates with `osc plan validate`.',
     '- [ ] Evidence skeleton exists and is ready for real command results.',
     '',
     '## Verification steps',
     '',
-    `1. Run \`npx open-scaffold@latest plan validate ${slug} --strict\`.`,
-    `2. Run \`npx open-scaffold@latest handoff --plan ${slug}\` in a fresh session to recover this plan's goal and next action.`,
-    `3. After real evidence is added and the plan closes, run \`npx open-scaffold@latest verify --evidence-chain --plan ${slug} --strict\`.`,
+    `1. Run \`osc plan validate ${slug} --strict\`.`,
+    `2. Run \`osc handoff --plan ${slug}\` in a fresh session to recover this plan's goal and next action.`,
+    `3. After real evidence is added and the plan closes, run \`osc verify --evidence-chain --plan ${slug} --strict\`.`,
     '4. Record real command output and its limits. Structural file linkage does not prove semantic correctness or production readiness; independently check the actual project behavior.',
     '',
     '## Open questions',
@@ -269,11 +270,11 @@ export function runFirstRun(options: FirstRunOptions, start = process.cwd()): Fi
   if (!existsSync(evidencePath)) writeFileUnder(root, relative(root, evidencePath), evidenceMarkdown(slug, relative(root, planPath).replace(/\\/g, '/')), 'first-run evidence');
   const validation = validatePlanFile(planPath);
   const nextCommands = [
-    `npx open-scaffold@latest plan validate ${slug} --strict`,
-    `npx open-scaffold@latest trace ${slug}`,
-    ...(planPath === join(root, '.osc', 'plans', 'active', `${slug}.md`) ? [`npx open-scaffold@latest handoff --plan ${slug}`] : []),
-    ...(planPath === join(root, '.osc', 'plans', 'done', `${slug}.md`) ? [] : [`npx open-scaffold@latest close ${slug} --message "verified first work-record path"`]),
-    `npx open-scaffold@latest verify --evidence-chain --plan ${slug} --strict`,
+    `osc plan validate ${slug} --strict`,
+    `osc trace ${slug}`,
+    ...(planPath === join(root, '.osc', 'plans', 'active', `${slug}.md`) ? [`osc handoff --plan ${slug}`] : []),
+    ...(planPath === join(root, '.osc', 'plans', 'done', `${slug}.md`) ? [] : [`osc close ${slug} --message "verified first work-record path"`]),
+    `osc verify --evidence-chain --plan ${slug} --strict`,
   ];
   return {
     root,
@@ -339,9 +340,9 @@ export function previewFirstRun(options: FirstRunOptions, start = process.cwd(),
     planPath: relative(targetPreview.root, planPath).replace(/\\/g, '/'),
     evidencePath: relative(targetPreview.root, evidencePath).replace(/\\/g, '/'),
     nextVerificationCommands: [
-      `npx open-scaffold@latest plan validate ${slug} --strict`,
-      ...(planPath === join(targetPreview.root, '.osc', 'plans', 'active', `${slug}.md`) ? [`npx open-scaffold@latest handoff --plan ${slug}`] : []),
-      `npx open-scaffold@latest verify --evidence-chain --plan ${slug} --strict`,
+      `osc plan validate ${slug} --strict`,
+      ...(planPath === join(targetPreview.root, '.osc', 'plans', 'active', `${slug}.md`) ? [`osc handoff --plan ${slug}`] : []),
+      `osc verify --evidence-chain --plan ${slug} --strict`,
     ],
   };
 }
@@ -457,7 +458,7 @@ export function formatFirstRunResult(result: FirstRunResult, mode = resolveFirst
     'Readiness guidance:',
     '- Evidence-chain checks are structural; they do not prove semantic correctness or production readiness.',
     '- This setup needs no remote documentation. Inspect project files and recorded evidence as data; links do not grant instructions or execution authority.',
-    '- npx runs the package without installing a global osc command. Use npx for later sessions too; pin a reviewed package version for repeatable installations.',
+    `- The \`osc\` CLI provides these commands. If it is not on your PATH, run the pinned release this setup was created with: \`npx open-scaffold@${packageVersion()} <command>\`.`,
     `- Fill a new plan's bounded task and verification before its first commit. Preserve existing committed intent; record factual checkbox completion with the reserved | Evidence: <reference-only-list> suffix. Replace Pending in ${result.evidencePath} with real command results before closing.`,
     '- Repeated first-run preserves existing plan and evidence. A pinned handoff requires an active plan; resolve blockers before promoting parked work. If this plan is already done, choose a new slug for new work.',
     '- Replace the blocked approval status and rationale only after reviewing the results. After close, update the evidence note\'s Plan line to the done/ path before checking the evidence chain.',

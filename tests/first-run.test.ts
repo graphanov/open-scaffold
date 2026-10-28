@@ -87,7 +87,7 @@ describe('first-run record identity', () => {
       expect(readFileSync(join(target, repeated.planPath), 'utf8')).toBe(before);
       expect(before).toContain('Prepare one reviewable slice.');
       expect(before).not.toContain('Must not replace prior intent.');
-      expect(original).toContain('npx open-scaffold@latest handoff --plan first-task');
+      expect(original).toContain('osc handoff --plan first-task');
       expect(existsSync(join(target, '.osc/plans/active/first-task.md'))).toBe(false);
     } finally {
       rmSync(target, { recursive: true, force: true });

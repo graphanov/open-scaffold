@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { packageVersion } from './version.js';
 import { renderStartPrompt, parseStartRuntime, START_RUNTIMES } from './start.js';
 import { renderAuditManifest, validateAuditManifestFile, writeAuditManifest, type AuditArtifactInput } from './audit.js';
 import { createRunArtifacts, previewRunArtifacts, type ArtifactMode, type ExecutorLane, type RunArtifactOptions, type RuntimeWorkflow } from './artifacts.js';
@@ -30,18 +30,6 @@ import { renderSchemaDetail, renderSchemaList, schemaById, SCHEMA_REGISTRY } fro
 import { buildTrace, formatTraceReport, TraceUsageError } from './trace.js';
 import { validateScaffold } from './validation.js';
 import { formatPlanValidationIssues, hasBlockingIssues, resolvePlanValidationPath, validatePlanFile } from './plan-validate.js';
-
-function rootPackageVersion(): string {
-  try {
-    const here = dirname(fileURLToPath(import.meta.url));
-    const candidates = [join(here, '..', 'package.json'), join(process.cwd(), 'package.json')];
-    for (const path of candidates) {
-      const parsed = JSON.parse(readFileSync(path, 'utf8')) as { version?: string };
-      if (parsed.version) return parsed.version;
-    }
-  } catch {}
-  return '0.0.0';
-}
 
 function coreHelp(): string {
   return `osc — Open Scaffold CLI
@@ -714,7 +702,7 @@ async function evolveCommand(args: string[]): Promise<void> {
       judge = ruled.ruling;
       console.error(`External judge ${ruled.model} via ${ruled.endpoint}: action=${ruled.ruling.action}${ruled.usage.totalTokens !== null ? `, tokens=${ruled.usage.totalTokens}` : ''}`);
     }
-    const checkpoint = buildEvolutionJudgmentCheckpoint(analysis, judge);
+    const checkpoint = buildEvolutionJudgmentCheckpoint(analysis, judge, { judgeUntrusted: Boolean(judgeEndpoint && judgeModel) });
     const output = renderEvolutionJudgmentCheckpoint(checkpoint, format);
     const out = value(args, '--out') ?? value(args, '--output');
     if (out) { writeFileSync(resolve(out), output); console.log(`Wrote evolution checkpoint: ${resolve(out)}`); }
@@ -775,11 +763,9 @@ function resumeCommand(args: string[], commandName = 'resume'): void {
   }
   try {
     const root = findScaffoldRoot(process.cwd()) ?? process.cwd();
-    const commandPrefix = process.env.npm_command === 'exec'
-      ? `npx open-scaffold@${rootPackageVersion()}`
-      : ['run', 'run-script'].includes(process.env.npm_command ?? '') && process.env.npm_lifecycle_event === 'osc'
-        ? 'npm run osc --'
-        : undefined;
+    const commandPrefix = ['run', 'run-script'].includes(process.env.npm_command ?? '') && process.env.npm_lifecycle_event === 'osc'
+      ? 'npm run osc --'
+      : undefined;
     const result = compileResume(root, { planSlug: value(args, '--plan'), ambientSession: value(args, '--ambient-session'), maxChars, commandPrefix });
     if (has(args, '--json')) console.log(JSON.stringify(result.summary, null, 2));
     else process.stdout.write(result.packet);
@@ -1193,7 +1179,7 @@ async function main(): Promise<void> {
   try {
     switch (command) {
       case '-h': case '--help': case 'help': console.log(args.includes('--all') || args[0] === 'all' ? help() : coreHelp()); return;
-      case '-v': case '--version': case 'version': console.log(rootPackageVersion()); return;
+      case '-v': case '--version': case 'version': console.log(packageVersion()); return;
       case 'init': initCommand(args); return;
       case 'first-run': await firstRunCommand(args); return;
       case 'resume': resumeCommand(args); return;

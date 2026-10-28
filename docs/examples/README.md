@@ -33,23 +33,23 @@ Reading path:
 Loop in shell:
 
 ```bash
-npx open-scaffold@latest first-run --non-interactive \
+osc first-run --non-interactive \
   --slug "<slug>" --mission "<mission>" --goal "<goal>"
 # ... complete the first bounded task ...
-npx open-scaffold@latest plan validate <slug> --strict
+osc plan validate <slug> --strict
 # edit .osc/plans/active/<slug>.md: mark the acceptance criteria that actually passed;
 # preserve their wording and append | Evidence: .osc/releases/<date>-<slug>.md to each
 # edit .osc/releases/<date>-<slug>.md: replace Pending with real command output;
 # record the actual approval.status and approval.rationale after reviewing results
-npx open-scaffold@latest handoff --plan <slug> # the next session resumes this same task
-npx open-scaffold@latest close <slug> --message "verified" # move plan to done/
+osc handoff --plan <slug> # the next session resumes this same task
+osc close <slug> --message "verified" # move plan to done/
 # if the evidence note still points at active/, update its Plan line to .osc/plans/done/<slug>.md
-npx open-scaffold@latest verify --evidence-chain --plan <slug> --strict
+osc verify --evidence-chain --plan <slug> --strict
 ```
 
 What this mode does **not** require: a chat surface, a coordinator, a runtime harness, or any private deployment.
 
-`npx` does not install a global `osc` command. Use it throughout, or install the package globally before using bare `osc`. Fill generated plan prompts before the first commit; subsequent goal, scope, or criterion wording changes require an amendment. Prefer CLI record helpers, then supported shell helpers. Schema-preserving manual fallback applies only when neither is available.
+`osc` is the Open Scaffold CLI; install it once with `npm install --global open-scaffold@0.35.0` and pin the same reviewed version when you reinstall. Fill generated plan prompts before the first commit; subsequent goal, scope, or criterion wording changes require an amendment. Prefer CLI record helpers, then supported shell helpers. Schema-preserving manual fallback applies only when neither is available.
 
 ---
 

@@ -22,12 +22,12 @@ describe('tiered scaffold initialization', () => {
     expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('Amendments');
     expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).not.toContain('amend.sh');
     expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('Manual fallback is permitted only when neither');
-    expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('npx open-scaffold amend');
+    expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('osc amend');
     expect(readFileSync(join(target, '.osc/RULES.md'), 'utf8')).not.toContain('amend.sh');
     expect(readFileSync(join(target, '.osc/RULES.md'), 'utf8')).not.toContain('docs/WORKFLOW.md');
     expect(readFileSync(join(target, '.osc/RULES.md'), 'utf8')).toContain('.osc/plans/WORKFLOW.md');
     expect(readFileSync(join(target, '.osc/plans/handoff-template.md'), 'utf8')).not.toContain('amend.sh');
-    expect(readFileSync(join(target, '.osc/plans/handoff-template.md'), 'utf8')).toContain('npx open-scaffold amend');
+    expect(readFileSync(join(target, '.osc/plans/handoff-template.md'), 'utf8')).toContain('osc amend');
     expect(readFileSync(join(target, 'verify.sh'), 'utf8')).toContain('open-scaffold compliance checker');
     expect(result.summary).toContain('Generated min Open Scaffold');
     expect(result.summary).toContain('Next: edit MISSION.md');
@@ -86,7 +86,7 @@ describe('tiered scaffold initialization', () => {
       expect(agents.replace('# AGENTS.md', '# CLAUDE.md')).toBe(claude);
       expect(agents).toContain('Manual fallback is permitted only when neither');
       expect(agents).toContain('No remote documentation or GitHub account is required');
-      expect(agents).toContain('npx open-scaffold handoff --plan <slug>');
+      expect(agents).toContain('osc handoff --plan <slug>');
     }
   });
 
