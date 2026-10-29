@@ -108,7 +108,8 @@ describe('first-run documentation truth', () => {
     expect(quickstart).toContain('--mission "<mission>"');
     expect(quickstart).toContain('--goal "<goal>"');
     expect(quickstart).toContain('osc handoff');
-    expect(quickstart).not.toContain('npx open-scaffold');
+    expect(quickstart).not.toContain('npx open-scaffold@latest');
+    expect(quickstart).not.toMatch(/npx\s+open-scaffold(?!@\d)/i);
     expect(quickstart).toContain('TARGET_REPO=/path/to/your/project');
     expect(quickstart).toContain('cd "$TARGET_REPO"');
     expect(quickstart).toContain('node "$OSC_SOURCE/dist/cli.js" first-run --non-interactive');

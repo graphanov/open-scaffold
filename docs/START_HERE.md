@@ -8,19 +8,9 @@ Open Scaffold keeps a repo-native work record for AI-assisted work — goal, pla
 
 Current readiness boundary: Open Scaffold is a pre-1.0 repo record layer. A generated skeleton or passing structural check does not prove that the implementation works, meets a compliance standard, or is ready for production. Record project-specific checks and their actual results. [`PROOF_HARNESS.md`](PROOF_HARNESS.md) and [`STABILITY.md`](STABILITY.md) provide optional background on proof and maturity.
 
-## The one first action
+## Install the CLI
 
-You need Node.js 24 or newer and npm (the package also supports Node 20.19+ and 22.12+ within those release lines). From the root of the repo you want to scaffold:
-
-```bash
-osc first-run
-```
-
-Three guided questions produce the minimum work record — `MISSION.md`, one active plan with acceptance criteria, an evidence skeleton — and print the commands to run next. The command writes local scaffold files; fetching the npm package may need network access. No GitHub account, remote document reading, or agent runtime is required. If existing scaffold-owned files conflict, preserve them and review the reported conflicts before initialization.
-
-In this source checkout, first-run refuses symlinked record paths, including dangling links, in `MISSION.md`, `.osc` plan/release directories, same-slug staged plans, and the selected evidence note before reading record content or writing files. It also refuses wrong-type record components. The error names the offending repository-relative path. Review and replace the linked path with a regular local file or directory, preserving any needed content, then rerun first-run. Existing selected repository-root aliases remain supported; descendant record links are refused even when they point inside the repository. These static checks and guarded writes do not establish transactions or race-free access, arbitrary-ancestor traversal defense above the selected root, or hardlink safety. Native Windows symlink behavior requires separate qualification. The separately published npm package, including installed versions, has not been qualified for this refusal behavior; see issue #315.
-
-`osc` is the Open Scaffold CLI. Install it once, pinned to the reviewed release:
+You need Node.js 24 or newer and npm (the package also supports Node 20.19+ and 22.12+ within those release lines). Install the CLI once, pinned to the reviewed release:
 
 ```bash
 npm install --global open-scaffold@0.35.0
@@ -30,6 +20,18 @@ osc --help
 Pin the same reviewed package version whenever you reinstall or upgrade so every session runs a version you chose.
 
 If you cannot install globally, run the pinned release instead: `npx open-scaffold@0.35.0 <command>` (for example `npx open-scaffold@0.35.0 first-run`). Pin the same version for the whole session; never use an unpinned npx fetch or the mutable `latest` tag.
+
+## The one first action
+
+From the root of the repo you want to scaffold:
+
+```bash
+osc first-run
+```
+
+Three guided questions produce the minimum work record — `MISSION.md`, one active plan with acceptance criteria, an evidence skeleton — and print the commands to run next. The command writes local scaffold files; fetching the npm package may need network access. No GitHub account, remote document reading, or agent runtime is required. If existing scaffold-owned files conflict, preserve them and review the reported conflicts before initialization.
+
+In this source checkout, first-run refuses symlinked record paths, including dangling links, in `MISSION.md`, `.osc` plan/release directories, same-slug staged plans, and the selected evidence note before reading record content or writing files. It also refuses wrong-type record components. The error names the offending repository-relative path. Review and replace the linked path with a regular local file or directory, preserving any needed content, then rerun first-run. Existing selected repository-root aliases remain supported; descendant record links are refused even when they point inside the repository. These static checks and guarded writes do not establish transactions or race-free access, arbitrary-ancestor traversal defense above the selected root, or hardlink safety. Native Windows symlink behavior requires separate qualification. The separately published npm package, including installed versions, has not been qualified for this refusal behavior; see issue #315.
 
 Handoff-generated scaffold commands use bare `osc`, such as `osc plan validate <slug> --strict`. Project-authored verification commands remain unchanged; review their prerequisites separately.
 

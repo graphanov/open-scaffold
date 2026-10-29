@@ -12,6 +12,10 @@ The receipts are committed in this repo. Validate and compare them without calli
 git clone --branch v0.35.0 --depth 1 https://github.com/graphanov/open-scaffold
 cd open-scaffold
 
+# Provide the CLI at the same pinned release (global install, or prefix each
+# command below with `npx open-scaffold@0.35.0`)
+npm install --global open-scaffold@0.35.0
+
 # Validate the manifest against its committed receipts (no model, no network)
 osc prove check examples/proof/codex-token-efficient-resume/manifest.json
 

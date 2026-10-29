@@ -10,12 +10,14 @@ You open a repo you have not touched in a week. There is no chat context. The ag
 
 ## One command
 
+Install the CLI once (global, pinned: `npm install --global open-scaffold@0.35.0`; or prefix with `npx open-scaffold@0.35.0`), then from the fixture:
+
 ```bash
 cd examples/resume-demo
 osc handoff --plan demo-add-greeting
 ```
 
-If the CLI is installed globally with `npm install --global open-scaffold@0.35.0`, use `osc handoff --plan demo-add-greeting`. From a built source checkout, use `node ../../dist/cli.js handoff --plan demo-add-greeting`. `resume` remains an alias for the same command.
+From a built source checkout, use `node ../../dist/cli.js handoff --plan demo-add-greeting`. `resume` remains an alias for the same command.
 
 Packet excerpt (generic `osc` invocation shown):
 

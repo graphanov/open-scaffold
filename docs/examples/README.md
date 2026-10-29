@@ -30,6 +30,8 @@ Reading path:
 - [`downstream-walkthrough.md`](downstream-walkthrough.md) — the same loop on Tiny Notes, a small non-Open-Scaffold project with concrete commands, expected outputs, and a day-2 resume check that works without chat history.
 - [`examples/lifecycle-e2e-smoke/`](../../examples/lifecycle-e2e-smoke/README.md) — boring downstream fixture that proves the loop on a non-Open-Scaffold project. Run it with `npm run smoke:e2e`.
 
+Install the CLI once with `npm install --global open-scaffold@0.35.0` (or prefix each command with `npx open-scaffold@0.35.0`); pin the same reviewed version when you reinstall.
+
 Loop in shell:
 
 ```bash
@@ -49,7 +51,7 @@ osc verify --evidence-chain --plan <slug> --strict
 
 What this mode does **not** require: a chat surface, a coordinator, a runtime harness, or any private deployment.
 
-`osc` is the Open Scaffold CLI; install it once with `npm install --global open-scaffold@0.35.0` and pin the same reviewed version when you reinstall. Fill generated plan prompts before the first commit; subsequent goal, scope, or criterion wording changes require an amendment. Prefer CLI record helpers, then supported shell helpers. Schema-preserving manual fallback applies only when neither is available.
+Fill generated plan prompts before the first commit; subsequent goal, scope, or criterion wording changes require an amendment. Prefer CLI record helpers, then supported shell helpers. Schema-preserving manual fallback applies only when neither is available.
 
 ---
 
