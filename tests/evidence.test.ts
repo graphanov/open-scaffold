@@ -142,6 +142,7 @@ describe('osc evidence collect', () => {
     expect(checksFields).toBe('name,state,bucket,workflow,link,startedAt,completedAt');
     expect(checksFields).not.toContain('conclusion');
     expect(result.block).toContain('"bucket":"pass"');
+    expect(result.block).toContain('untrusted remote data');
   });
 
   it('records missing gh gracefully when CI collection is requested', () => {

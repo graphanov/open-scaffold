@@ -111,9 +111,9 @@ describe('blueprint first-run and PR check surfaces', () => {
       expect(result.stdout).toContain('.osc/plans/active/first-work-record.md');
       expect(result.stdout).toContain('Proof boundary: planned writes do not mean agents ran, tests passed, deployment happened, or production readiness was proven.');
       expect(result.stdout).toContain('Open Scaffold first-run complete');
-      expect(result.stdout).toContain('npx open-scaffold@latest trace first-work-record');
-      expect(result.stdout).toContain('npx open-scaffold@latest verify --evidence-chain --plan first-work-record --strict');
-      expect(result.stdout).toContain('npx open-scaffold@latest handoff --plan first-work-record');
+      expect(result.stdout).toContain('osc trace first-work-record');
+      expect(result.stdout).toContain('osc verify --evidence-chain --plan first-work-record --strict');
+      expect(result.stdout).toContain('osc handoff --plan first-work-record');
       expect(result.stdout).toContain('Readiness guidance:');
       expect(result.stdout).toContain('Evidence-chain checks are structural; they do not prove semantic correctness or production readiness.');
       expect(result.stdout).toContain('This setup needs no remote documentation');
@@ -129,7 +129,7 @@ describe('blueprint first-run and PR check surfaces', () => {
       expect(evidence).not.toContain('https://github.com/graphanov/open-scaffold/blob/main/');
       const plan = readFileSync(join(root, '.osc/plans/active/first-work-record.md'), 'utf8');
       expect(plan).not.toContain('https://github.com/graphanov/open-scaffold/blob/main/');
-      expect(plan).toContain('npx open-scaffold@latest handoff --plan first-work-record');
+      expect(plan).toContain('osc handoff --plan first-work-record');
       const validation = runOsc(root, ['plan', 'validate', 'first-work-record', '--strict']);
       expect(validation.status, validation.stdout + validation.stderr).toBe(0);
     } finally {
@@ -274,9 +274,9 @@ describe('blueprint first-run and PR check surfaces', () => {
       expect(result.stderr).toContain('No mission, active plan, or evidence skeleton was created.');
       expect(result.stderr).toContain('mkdir -p ./my-project');
       expect(result.stderr).toContain('cd ./my-project');
-      expect(result.stderr).toContain('npx open-scaffold@latest first-run');
+      expect(result.stderr).toContain('osc first-run');
       expect(result.stderr).toContain('preserve, move, or rename the listed conflicting files first');
-      expect(result.stderr).toContain(`npx open-scaffold@latest init --from-existing --tier min --target ${quotedTarget}`);
+      expect(result.stderr).toContain(`osc init --from-existing --tier min --target ${quotedTarget}`);
       expect(result.stderr).toContain(`After brownfield scaffolding is initialized, rerun first-run in that target to create the mission, active plan, and evidence skeleton:\ncd ${quotedTarget}`);
       expect(result.stderr).not.toContain('--force');
       expect(existsSync(join(root, 'MISSION.md'))).toBe(false);
@@ -489,7 +489,7 @@ describe.skipIf(process.platform === 'win32')('source CLI first-run record refus
       expect(repaired.status, repaired.stdout + repaired.stderr).toBe(0);
       expect(repaired.stdout).toContain('Open Scaffold first-run complete');
       expect(repaired.stdout).toContain('.osc/plans/active/first-task.md');
-      expect(repaired.stdout).toContain('npx open-scaffold@latest plan validate first-task --strict');
+      expect(repaired.stdout).toContain('osc plan validate first-task --strict');
       expect(snapshotFirstRunBoundary(outside)).toEqual(siblingBefore);
       const repeatBefore = snapshotFirstRunBoundary(owned);
       expect(runOsc(root, args, { NO_COLOR: '1' }).status).toBe(0);

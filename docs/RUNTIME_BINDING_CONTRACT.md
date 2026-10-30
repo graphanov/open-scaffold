@@ -207,7 +207,7 @@ A no-spawn conformance adapter must refuse packets when required fields are miss
 
 For the fake/local conformance fixture specifically, success means: packet consumed, `spawning: false` enforced, dispatch receipt written, evidence written, and no runtime, network, credentials, commit, push, merge, or publish authority used.
 
-For the OMX/Codex track, [`packages/runtime-omx/`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx) is the first explicit agentic runtime package in the GitHub source tree. It consumes a run packet, validates the `$ralplan` lane/workflow (`runtimeSelection.runtime=codex` for the broad user-facing preset or `omx` for the explicit harness-name preset, `runtimeSelection.workflow=plan`, `executor.lane=omx-codex`, `executor.harnessSkill=$ralplan`, `executor.spawning=false`), writes deterministic receipt/evidence artifacts by default without spawning, and can launch only behind its package-level `--allow-spawn` gate after branch/worktree/version checks. It is not shipped in the root npm tarball today; package publication for runtime packages remains a separate gate.
+For the OMX/Codex track, [`packages/runtime-omx/`](../packages/runtime-omx/README.md) is the first explicit agentic runtime package in the repository source tree. It consumes a run packet, validates the `$ralplan` lane/workflow (`runtimeSelection.runtime=codex` for the broad user-facing preset or `omx` for the explicit harness-name preset, `runtimeSelection.workflow=plan`, `executor.lane=omx-codex`, `executor.harnessSkill=$ralplan`, `executor.spawning=false`), writes deterministic receipt/evidence artifacts by default without spawning, and can launch only behind its package-level `--allow-spawn` gate after branch/worktree/version checks. It is not shipped in the root npm tarball today; package publication for runtime packages remains a separate gate.
 
 ## Binding responsibilities
 
@@ -478,7 +478,7 @@ The first concrete executable track is Codex-through-OMX rather than runtime-gen
 
 ## Dry-run and conformance examples
 
-For concrete, credential-free consumers of this contract, see [`docs/examples/runtime-binding-dry-run.mjs`](examples/runtime-binding-dry-run.mjs), [`docs/examples/runtime-binding-conformance/fake-local-adapter.mjs`](examples/runtime-binding-conformance/fake-local-adapter.mjs), [`packages/runtime-omx/README.md`](https://github.com/graphanov/open-scaffold/tree/main/packages/runtime-omx#readme), and [`docs/examples/README.md`](examples/README.md). For the current runtime-selection surface, see [`docs/ADAPTERS.md`](ADAPTERS.md).
+For concrete, credential-free consumers of this contract, see [`docs/examples/runtime-binding-dry-run.mjs`](examples/runtime-binding-dry-run.mjs), [`docs/examples/runtime-binding-conformance/fake-local-adapter.mjs`](examples/runtime-binding-conformance/fake-local-adapter.mjs), [`packages/runtime-omx/README.md`](../packages/runtime-omx/README.md), and [`docs/examples/README.md`](examples/README.md). For the current runtime-selection surface, see [`docs/ADAPTERS.md`](ADAPTERS.md).
 
 The dry-run example reads a generated `.osc/runs/<run_id>/run.json`, validates the executable-package and `spawning: false` boundary, prints the handoff summary an external binding would use, and exits without launching any runtime.
 

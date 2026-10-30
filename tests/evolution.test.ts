@@ -6,11 +6,13 @@ import {
   EVOLUTION_LOOP_SCHEMA,
   EVOLUTION_NEXT_ACTION_PACKET_SCHEMA,
   analyzeEvolutionLoop,
+  buildEvolutionJudgmentCheckpoint,
   compareEvolutionLoop,
   loadEvolutionSource,
   recordEvolutionAttempt,
   renderEvolutionAnalysis,
   renderEvolutionComparison,
+  renderEvolutionJudgmentCheckpoint,
   renderEvolutionLoopFiles,
   validateEvolutionLoopDir,
   writeEvolutionLoop,
@@ -912,6 +914,25 @@ describe('evolution analysis', () => {
     ]);
     expect(analysis.nextActionPacket.handoffChecklist.join('\n')).toContain('frontier score is not acceptance approval');
     expect(analysis.nextActionPacket.boundaryNotes.join('\n')).toContain('does not spawn runtimes');
+  });
+
+  it('marks an external judge rationale as untrusted and renders the caveat', () => {
+    const root = tempRepo();
+    const planPath = writePlan(root);
+    const runPath = writeRunPacket(root, 'attempt-a');
+    const evalPath = writeEvaluation(root, 'attempt-a');
+    const outDir = join(root, '.osc/evolution/judge-loop');
+    writeEvolutionLoop(planPath, outDir, root, { now: new Date('2026-06-03T08:00:00.000Z'), strategy: 'greedy' });
+    recordEvolutionAttempt(outDir, { runPath, evaluationPath: evalPath, decision: 'promote', score: 1, rationale: 'Frontier.', now: new Date('2026-06-03T08:10:00.000Z') }, root);
+    const analysis = analyzeEvolutionLoop(outDir, {}, root);
+
+    const external = buildEvolutionJudgmentCheckpoint(analysis, { action: 'continue', rationale: 'Remote model says retry.' }, { judgeUntrusted: true });
+    expect(external.judge).toMatchObject({ present: true, action: 'continue', rationale: 'Remote model says retry.', untrusted: true });
+    expect(renderEvolutionJudgmentCheckpoint(external, 'markdown')).toContain('untrusted external text');
+
+    const manual = buildEvolutionJudgmentCheckpoint(analysis, { action: 'continue', rationale: 'Human ruling.' });
+    expect(manual.judge.untrusted).toBe(false);
+    expect(renderEvolutionJudgmentCheckpoint(manual, 'markdown')).not.toContain('untrusted external text');
   });
 
   it('routes no-op retry attempts away from blind continuation even when score still moved', () => {

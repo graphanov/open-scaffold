@@ -13,7 +13,7 @@ describe('MCP quickstart documentation', () => {
     const docs = read('docs/MCP.md');
 
     expect(docs.indexOf('## Solo coding-agent quickstart')).toBeLessThan(docs.indexOf('## Start the server'));
-    expect(docs).toContain('npx -y -p open-scaffold@latest osc-mcp --repo /absolute/path/to/repo');
+    expect(docs).toContain('osc-mcp --repo /absolute/path/to/repo');
     expect(docs).toContain('"open_scaffold"');
     expect(docs).toContain('"mcpServers"');
     expect(docs).toContain('"osc-mcp"');

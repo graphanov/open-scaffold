@@ -29,6 +29,10 @@ describe('devcontainer profile', () => {
     const dockerfile = read('.devcontainer/Dockerfile');
 
     expect(dockerfile).toContain('FROM node:22');
+    expect(dockerfile).toContain('FROM node:22.23.4@sha256:');
+    expect(dockerfile).not.toMatch(/FROM node:\d+\s*$/m);
+    expect(dockerfile).toContain('ARG OPEN_SCAFFOLD_VERSION=0.35.0');
+    expect(dockerfile).not.toContain('OPEN_SCAFFOLD_VERSION=latest');
     expect(dockerfile).toContain('apt-get install -y --no-install-recommends git');
     expect(dockerfile).toContain('npm install -g "open-scaffold@${OPEN_SCAFFOLD_VERSION}"');
     expect(dockerfile).not.toContain('Claude');

@@ -1,7 +1,7 @@
 # Plan: <slug>
 
 <!--
-Prefer `npx open-scaffold plan new <slug> --stage active` for each task or feature slice.
+Prefer `osc plan new <slug> --stage active` for each task or feature slice.
 Copy this template to `.osc/plans/active/<slug>.md` only under the documented manual fallback.
 The required schema is `Status` plus seven content headings: `Context`,
 `Goal`, `Constraints / Out of scope`, `Files to touch`, `Acceptance criteria`,
@@ -12,7 +12,7 @@ Fill every required section. Keep each section tight — a reader with no prior 
 should be able to act on the plan after reading it once.
 
 Fill generated TODOs before committing. Committed intent is IMMUTABLE.
-Changed goals, scope, or criterion wording require `npx open-scaffold amend <slug>`.
+Changed goals, scope, or criterion wording require `osc amend <slug>`.
 Use a supported shell helper next; manual fallback is permitted only when neither
 is available, preserving the schema and changelog linkage in `.osc/plans/README.md`.
 Factual checkbox completion, the reserved | Evidence: reference-only suffix on criteria,

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
 import { findScaffoldRoot } from './scaffold.js';
+import { packageVersion } from './version.js';
 
 export const COCKPIT_EVENT_TYPES = [
   'nudge',
@@ -146,19 +146,6 @@ const DISCORD_FOOTER_SOFT_LIMIT = 512;
 const DISCORD_FIELD_VALUE_SOFT_LIMIT = 600;
 const WEBHOOK_TIMEOUT_MS = 10_000;
 
-function packageRoot(): string {
-  return resolve(dirname(fileURLToPath(import.meta.url)), '..');
-}
-
-function packageVersion(): string {
-  try {
-    const parsed = JSON.parse(readFileSync(join(packageRoot(), 'package.json'), 'utf8')) as { version?: unknown };
-    return typeof parsed.version === 'string' ? parsed.version : 'unknown';
-  } catch {
-    return 'unknown';
-  }
-}
-
 function resolveRoot(start = process.cwd()): string {
   return findScaffoldRoot(start) ?? resolve(start);
 }
@@ -183,6 +170,20 @@ export function maskWebhookUrl(url: string): string {
   return `${url.slice(0, 20)}...`;
 }
 
+function isSafeWebhookUrl(value: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol === 'https:') return true;
+  if (parsed.protocol !== 'http:') return false;
+  // Plain http is allowed only for loopback; a remote webhook must be https.
+  const host = parsed.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  return host === 'localhost' || host.endsWith('.localhost') || host === '127.0.0.1' || host === '::1';
+}
+
 function validateTarget(raw: unknown, index: number): CockpitTarget {
   if (!isObject(raw)) throw new CockpitConfigError(`cockpit target ${index + 1} must be an object`);
   const platform = raw.platform;
@@ -191,6 +192,9 @@ function validateTarget(raw: unknown, index: number): CockpitTarget {
   }
   if (typeof raw.webhookUrl !== 'string' || raw.webhookUrl.trim() === '') {
     throw new CockpitConfigError(`cockpit target ${index + 1} must include webhookUrl`);
+  }
+  if (!isSafeWebhookUrl(raw.webhookUrl.trim())) {
+    throw new CockpitConfigError(`cockpit target ${index + 1} webhookUrl must use https (plain http is allowed only for localhost).`);
   }
   if (!Array.isArray(raw.events)) {
     throw new CockpitConfigError(`cockpit target ${index + 1} must include events as an array`);
@@ -290,8 +294,8 @@ function refsToSlackFields(refs: Record<string, string>): Array<{ type: 'mrkdwn'
   return Object.entries(refs).map(([name, value]) => ({ type: 'mrkdwn', text: `*${name}*\n\`${truncate(value, 1900)}\`` }));
 }
 
-function footerText(root: string): string {
-  return `osc cockpit v${packageVersion()} • repo: ${root}`;
+function footerText(): string {
+  return `osc cockpit v${packageVersion()}`;
 }
 
 function truncate(value: string, max: number): string {
@@ -312,7 +316,7 @@ export function buildDiscordPayload(options: CockpitPostOptions, root = resolveR
   const envelope = buildCockpitEnvelope(options, root);
   const title = truncate(envelope.title, DISCORD_TITLE_LIMIT);
   const fields = refsToDiscordFields(envelope.refs);
-  const footer = truncate(footerText(root), DISCORD_FOOTER_SOFT_LIMIT);
+  const footer = truncate(footerText(), DISCORD_FOOTER_SOFT_LIMIT);
   const description = fitDiscordDescription(envelope.body, title, fields, footer);
   return {
     username: 'Open Scaffold',
@@ -338,7 +342,7 @@ export function buildSlackPayload(options: CockpitPostOptions, root = resolveRoo
     { type: 'section', text: { type: 'mrkdwn', text: body } },
   ];
   if (fields.length > 0) blocks.push({ type: 'section', fields });
-  blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: footerText(root) }] });
+  blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: footerText() }] });
   return { text: truncate(`${envelope.title}: ${body}`, 3000), blocks };
 }
 

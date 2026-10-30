@@ -8,6 +8,11 @@ import { compileResume, type ResumeResult } from '../src/resume.js';
 import { createRunArtifacts, type RunArtifacts } from '../src/artifacts.js';
 import { parsePlanFile } from '../src/scaffold.js';
 
+// `commandPrefix` values passed to compileResume below are caller-supplied inputs
+// that exercise the compiler's passthrough: a wrapper, adapter, or future entry
+// point can choose how the next session invokes the CLI. The CLI itself emits bare
+// `osc` for generated next-actions, so the `npx open-scaffold@<version>` cases here
+// assert the compiler honors a pinned caller prefix, not the CLI's own output.
 const repoRoot = resolve(import.meta.dirname, '..');
 const fixtureRoot = join(repoRoot, 'examples', 'resume-demo');
 const ambientRecordFixtures = join(repoRoot, 'tests', 'fixtures', 'capture', 'records');
@@ -1300,7 +1305,7 @@ describe('osc resume packet compiler', () => {
 
     expect(summary.status).toBe('no scaffold detected');
     expect(summary.next_bounded_action).toContain('first-run');
-    expect(packet).toContain('npx open-scaffold@latest first-run');
+    expect(packet).toContain('osc first-run');
   });
 
   it('blocks on an undefined mission before plan work', () => {

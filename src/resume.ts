@@ -364,8 +364,7 @@ function deriveNextAction(input: {
 }): NextAction {
   const command = input.commandPrefix;
   if (!input.scaffoldPresent) {
-    const bootstrap = command === 'osc' ? 'npx open-scaffold@latest' : command;
-    return nextAction(`Run ${bootstrap} first-run to create the minimum work record.`, `${bootstrap} first-run`);
+    return nextAction(`Run ${command} first-run to create the minimum work record.`, `${command} first-run`);
   }
   if (!input.missionDefined) {
     return nextAction(
