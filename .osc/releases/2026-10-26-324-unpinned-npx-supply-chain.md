@@ -7,9 +7,9 @@ Removes unpinned remote-execution guidance from issue graphanov/open-scaffold#32
 ## Traceability
 
 - Roadmap / issue / task: graphanov/open-scaffold#324 — https://github.com/graphanov/open-scaffold/issues/324
-- Plan: .osc/plans/active/324-unpinned-npx-supply-chain.md
+- Plan: .osc/plans/done/324-unpinned-npx-supply-chain.md
 - Run ID / run packet: N/A — direct contributor work; no runtime run packet.
-- Branch / PR: `fix/unpinned-npx-supply-chain` (fork `ntherrien/open-scaffold`); PR pending owner review.
+- Branch / PR: `fix/unpinned-npx-supply-chain` (fork `ntherrien/open-scaffold`); PR #327 — https://github.com/graphanov/open-scaffold/pull/327 (open; merge and publication remain owner gates).
 
 ## Verification
 
@@ -25,10 +25,13 @@ Removes unpinned remote-execution guidance from issue graphanov/open-scaffold#32
 
 ## Outcome
 
-Shipped on the branch (uncommitted authoring surface until owner review): findings 1–8 rendered offline-clean with a pinned-`npx` fallback, findings 10–13 hardened, a shared `packageVersion()` helper, plus one guard test and this plan/evidence pair. Finding 9 (`src/runtime-profiles.ts` runtime-profile links) is intentionally out of scope per owner decision, since the `run.json` packet never carries those URLs and `osc run --runtime <id>` is unaffected. No version bump, npm publish, merge, or release is included; the pinned install line references the current release `0.35.0`. Approval status: pending owner review.
+Shipped on the branch (uncommitted authoring surface until owner review): findings 1–8 rendered offline-clean with a pinned-`npx` fallback, findings 10–13 hardened, a shared `packageVersion()` helper, plus one guard test and this plan/evidence pair. Finding 9 (`src/runtime-profiles.ts` runtime-profile links) is intentionally out of scope per owner decision, since the `run.json` packet never carries those URLs and `osc run --runtime <id>` is unaffected. No version bump, npm publish, merge, or release is included; the pinned install line references the current release `0.35.0`.
+
+approval.status: approved
+approval.rationale: Owner closed the 324 slice on 2026-10-30 after full local verification (build, tests, strict verify); upstream PR #327 review, merge, and publication remain separate owner gates.
 
 ## Follow-up
 
-- Owner review and merge decision on the PR; publication/release remain owner gates.
+- Address any upstream PR #327 review; merge and publication remain owner gates.
 - Reconsider finding 9 (`osc runtimes show` links) separately if the owner wants it addressed.
 - `.devcontainer/Dockerfile` pins `node:22.23.4` by tag and multi-arch digest; refresh the digest when the base image moves.

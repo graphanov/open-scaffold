@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -49,20 +49,20 @@ Remove unpinned remote-execution guidance and close the listed supply-chain gaps
 
 ## Acceptance criteria
 
-- [x] Finding 1: files generated into a downstream repo (`AGENTS.md`, `CLAUDE.md`, README, START_HERE, `.osc/RULES.md`, `.osc/plans/README.md`, handoff-template) use bare `osc`, add a pinned `npx open-scaffold@<version>` fallback, and contain no unpinned npx, no `open-scaffold@latest`, no registry install, and no `github.com` URL.
-- [x] Finding 2: generated first-run plan/evidence steps, the conflict message, and the handoff packet's next-action use bare `osc` only.
-- [x] Finding 3: `docs/MCP.md` configures the MCP server with `osc-mcp` (global install) and contains no `npx -y -p open-scaffold@latest`.
-- [x] Finding 4: shipped `.osc/**` templates and `docs/WORKFLOW.md` use bare `osc`, and mutable `github.com/.../tree/main` links in shipped docs are replaced with repo-relative references.
-- [x] Finding 5: `.devcontainer/Dockerfile` pins the package version to `0.35.0` and pins the base image beyond the floating `node:22` tag.
-- [x] Finding 6: `LLM_QUICKSTART.md` and `REPRODUCE.md` no longer instruct an unpinned `git clone` + run at a floating commit.
-- [x] Finding 7: `README.md`, `docs/START_HERE.md`, `docs/RESUME_WALKTHROUGH.md`, `docs/examples/README.md`, and `SKILL.md` use bare `osc`; the global install is pinned to `0.35.0`, with a documented pinned-`npx` fallback for users who cannot install globally.
-- [x] Finding 8: agent-facing `npx --yes open-scaffold@latest` guidance is removed from the generated surfaces; the parked `blocked/116` plan is left unchanged (immutable committed intent) and flagged for the owner.
-- [x] Finding 10: `src/reviewer.ts` rejects a plain-`http` remote reviewer endpoint (accepts `https` or localhost), and recorded remote rationale is marked untrusted.
-- [x] Finding 11: `src/cockpit.ts` rejects a non-`https`/non-localhost webhook URL, and outbound messages no longer include the absolute local repository path.
-- [x] Finding 12: `src/evidence.ts` marks `gh`-sourced PR/CI text as untrusted remote output in the `--ci` collected block.
-- [x] Finding 13: `src/capture-setup.ts` no longer resolves the ambient hook from a replaceable npx-cache path.
-- [x] A regression test fails if a generated scaffold template contains an unpinned `npx open-scaffold`, `open-scaffold@latest`, an `open-scaffold` registry install, or a `github.com` URL (pinned `npx open-scaffold@<version>` is allowed).
-- [x] `./verify.sh --strict`, `npm test`, and `npm run build` pass on the final head.
+- [x] Finding 1: files generated into a downstream repo (`AGENTS.md`, `CLAUDE.md`, README, START_HERE, `.osc/RULES.md`, `.osc/plans/README.md`, handoff-template) use bare `osc`, add a pinned `npx open-scaffold@<version>` fallback, and contain no unpinned npx, no `open-scaffold@latest`, no registry install, and no `github.com` URL. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] Finding 2: generated first-run plan/evidence steps, the conflict message, and the handoff packet's next-action use bare `osc` only. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] Finding 3: `docs/MCP.md` configures the MCP server with `osc-mcp` (global install) and contains no `npx -y -p open-scaffold@latest`. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] Finding 4: shipped `.osc/**` templates and `docs/WORKFLOW.md` use bare `osc`, and mutable `github.com/.../tree/main` links in shipped docs are replaced with repo-relative references. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] Finding 5: `.devcontainer/Dockerfile` pins the package version to `0.35.0` and pins the base image beyond the floating `node:22` tag. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] Finding 6: `LLM_QUICKSTART.md` and `REPRODUCE.md` no longer instruct an unpinned `git clone` + run at a floating commit. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] Finding 7: `README.md`, `docs/START_HERE.md`, `docs/RESUME_WALKTHROUGH.md`, `docs/examples/README.md`, and `SKILL.md` use bare `osc`; the global install is pinned to `0.35.0`, with a documented pinned-`npx` fallback for users who cannot install globally. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] Finding 8: agent-facing `npx --yes open-scaffold@latest` guidance is removed from the generated surfaces; the parked `blocked/116` plan is left unchanged (immutable committed intent) and flagged for the owner. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] Finding 10: `src/reviewer.ts` rejects a plain-`http` remote reviewer endpoint (accepts `https` or localhost), and recorded remote rationale is marked untrusted. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] Finding 11: `src/cockpit.ts` rejects a non-`https`/non-localhost webhook URL, and outbound messages no longer include the absolute local repository path. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] Finding 12: `src/evidence.ts` marks `gh`-sourced PR/CI text as untrusted remote output in the `--ci` collected block. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] Finding 13: `src/capture-setup.ts` no longer resolves the ambient hook from a replaceable npx-cache path. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] A regression test fails if a generated scaffold template contains an unpinned `npx open-scaffold`, `open-scaffold@latest`, an `open-scaffold` registry install, or a `github.com` URL (pinned `npx open-scaffold@<version>` is allowed). | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
+- [x] `./verify.sh --strict`, `npm test`, and `npm run build` pass on the final head. | Evidence: .osc/releases/2026-10-26-324-unpinned-npx-supply-chain.md
 
 ## Verification steps
 
