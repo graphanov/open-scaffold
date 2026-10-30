@@ -194,7 +194,7 @@ function validateTarget(raw: unknown, index: number): CockpitTarget {
     throw new CockpitConfigError(`cockpit target ${index + 1} must include webhookUrl`);
   }
   if (!isSafeWebhookUrl(raw.webhookUrl.trim())) {
-    throw new CockpitConfigError(`cockpit target ${index + 1} webhookUrl must use https (plain http is allowed only for localhost): ${raw.webhookUrl}`);
+    throw new CockpitConfigError(`cockpit target ${index + 1} webhookUrl must use https (plain http is allowed only for localhost).`);
   }
   if (!Array.isArray(raw.events)) {
     throw new CockpitConfigError(`cockpit target ${index + 1} must include events as an array`);
