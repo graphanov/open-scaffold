@@ -19,7 +19,17 @@ osc --help
 
 Pin the same reviewed package version whenever you reinstall or upgrade so every session runs a version you chose.
 
-If you cannot install globally, run the pinned release instead: `npx open-scaffold@0.35.0 <command>` (for example `npx open-scaffold@0.35.0 first-run`). Pin the same version for the whole session; never use an unpinned npx fetch or the mutable `latest` tag.
+On macOS or Linux, you can install OSC just for your account. Choose a folder where your account can install and run programs. Add its `bin` directory to your shell path.
+
+```sh
+npm install --global --prefix "$HOME/.local" open-scaffold@0.35.0
+export PATH="$HOME/.local/bin:$PATH"
+osc --version
+```
+
+Add the `export` line to your shell profile to keep it for future sessions. For an offline install, use a reviewed package file in place of the package name and add `--offline`. Both `osc` and `osc-mcp` run from that same installation.
+
+You can also run `npx open-scaffold@0.35.0 <command>`. Use that same prefix wherever the instructions say `osc`. The first use needs access to the package if it is missing from the npm cache.
 
 ## The one first action
 

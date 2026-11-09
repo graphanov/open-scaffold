@@ -10,7 +10,7 @@ The server is local-first and optional:
 - write tools are visible but blocked unless the server starts with `--allow-write`;
 - no agent spawning, runtime launching, deployment, publication, or approval automation.
 
-Install the CLI once with `npm install --global open-scaffold@0.35.0` (pin the same reviewed version when you reinstall); see [`START_HERE.md`](START_HERE.md). The commands below invoke the installed `osc-mcp` binary, which reads local repo files and requires no remote documents or GitHub integration.
+Install the CLI once with `npm install --global open-scaffold@0.35.0` or use the [per-user installation](START_HERE.md#install-the-cli). The examples below run the installed `osc-mcp` binary. If your desktop client has its own search path, set `command` to the full path of that binary.
 
 ## Solo coding-agent quickstart
 

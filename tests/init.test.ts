@@ -113,7 +113,10 @@ describe('tiered scaffold initialization', () => {
     expect(maxTaskRunModel).not.toContain('`osc review`, and `osc ultrareview` generate `run.json`');
     expect(maxTaskRunModel).toContain('HARNESS_ARCHITECTURE.md');
     expect(maxTaskRunModel).toContain('ADAPTERS.md#runtime-dispatch-pattern');
-    expect(existsSync(join(target, 'docs/ADAPTERS.md'))).toBe(true);
+    const bindingGuide = readFileSync(join(target, 'docs/RUNTIME_BINDING_CONTRACT.md'), 'utf8');
+    expect(bindingGuide).toContain('](ADAPTERS.md#packages)');
+    expect(bindingGuide).not.toContain('](../packages/runtime-omx/README.md)');
+    expect(readFileSync(join(target, 'docs/ADAPTERS.md'), 'utf8')).toContain('## Packages');
     expect(existsSync(join(target, 'docs/HARNESS_ARCHITECTURE.md'))).toBe(true);
     expect(readFileSync(join(target, '.osc/runs/.gitkeep'), 'utf8')).toBe('');
   });

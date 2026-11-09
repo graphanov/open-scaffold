@@ -44,6 +44,9 @@ describe('npm package payload', () => {
     expect(paths).toContain('dist/cli.js');
     expect(paths).toContain('dist/mcp-cli.js');
     expect(paths).toContain('README.md');
+    expect(paths.filter((path) => path.startsWith('packages/runtime-omx/'))).toEqual([
+      'packages/runtime-omx/README.md',
+    ]);
 
     const forbidden = paths.filter((path) =>
       path.startsWith('.osc/plans/active/') ||

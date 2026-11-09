@@ -8,7 +8,7 @@ Open Scaffold core should **not** implement real autonomous runtime spawning yet
 
 The 2026-05-28 control-loop decision sharpens the boundary: Open Scaffold should eventually own the `osc work` run-lifecycle controller, ledger, gates, receipts, evidence, verification wiring, and postflight record. It should not own provider authentication, process spawning, sandbox translation, worker execution, or runtime-local sessions.
 
-Open Scaffold should become executable through explicit agentic runtime packages that sit outside core behavior, starting in-repo with [`packages/runtime-omx/`](../packages/runtime-omx/README.md). The first proof is `$ralplan`-first: validate the run packet, write receipt/evidence by default without spawning, and launch OMX only through an explicit package-level `--allow-spawn` gate after branch/worktree/version checks. This is a GitHub source path for now; it is not included in the root `open-scaffold` npm payload.
+Open Scaffold should become executable through explicit agentic runtime packages that sit outside core behavior, starting in-repo with [`packages/runtime-omx/`](../packages/runtime-omx/README.md). The first proof is `$ralplan`-first: validate the run packet, write receipt/evidence by default without spawning, and launch OMX only through an explicit package-level `--allow-spawn` gate after branch/worktree/version checks. The root `open-scaffold` package includes the adapter’s guide. Its executable is built from the source checkout.
 
 Core should first define the adapter/runtime boundary, dispatch receipt (handoff proof), authority vocabulary (permission words), and evidence expectations. Real spawning belongs in runtime-specific packages/adapters or a future explicitly governed runtime product.
 
