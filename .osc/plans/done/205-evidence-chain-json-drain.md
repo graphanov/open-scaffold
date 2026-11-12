@@ -2,7 +2,7 @@
 
 ## Status
 
-active
+done
 
 ## Context
 
@@ -33,13 +33,13 @@ Deliver the complete evidence-chain JSON array through real CLI child pipes whil
 
 ## Acceptance criteria
 
-- [ ] For the same owned synthetic records, the real source CLI child pipe emits one complete JSON array byte-equal to JSON.stringify(verifyEvidenceChain(root).plans, null, 2) plus the existing trailing newline; every array row survives.
-- [ ] The successful large strict report remains complete and exits 0.
-- [ ] The failing large strict report remains complete and exits 1 without stdout diagnostic contamination.
-- [ ] Ordinary-size JSON and text retain the existing output meaning and bytes.
-- [ ] Existing missing-link strict policy and error-channel/status contracts remain unchanged.
-- [ ] Root-cause evidence remains bound to the exact source/inputs/producers; the candidate fixes report transport only.
-- [ ] Maintain a readable, explicitly accepted source budget and the repository verification floor.
+- [x] For the same owned synthetic records, the real source CLI child pipe emits one complete JSON array byte-equal to JSON.stringify(verifyEvidenceChain(root).plans, null, 2) plus the existing trailing newline; every array row survives. | Evidence: .osc/releases/2026-10-09-205-evidence-chain-json-drain.md
+- [x] The successful large strict report remains complete and exits 0. | Evidence: .osc/releases/2026-10-09-205-evidence-chain-json-drain.md
+- [x] The failing large strict report remains complete and exits 1 without stdout diagnostic contamination. | Evidence: .osc/releases/2026-10-09-205-evidence-chain-json-drain.md
+- [x] Ordinary-size JSON and text retain the existing output meaning and bytes. | Evidence: .osc/releases/2026-10-09-205-evidence-chain-json-drain.md
+- [x] Existing missing-link strict policy and error-channel/status contracts remain unchanged. | Evidence: .osc/releases/2026-10-09-205-evidence-chain-json-drain.md
+- [x] Root-cause evidence remains bound to the exact source/inputs/producers; the candidate fixes report transport only. | Evidence: .osc/releases/2026-10-09-205-evidence-chain-json-drain.md
+- [x] Maintain a readable, explicitly accepted source budget and the repository verification floor. | Evidence: .osc/releases/2026-10-09-205-evidence-chain-json-drain.md
 
 ## Verification steps
 
