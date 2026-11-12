@@ -52,6 +52,7 @@ Historical entries below preserve the wording used at the time, including supers
 One-line dated entries for every scope pivot. Format: `YYYY-MM-DD: <one-line pivot description + link to amendment file if applicable>`. Append entries in chronological order. Never rewrite history here.
 
 <!-- append YYYY-MM-DD entries below this line -->
+- 2026-11-12: closed 213-november-bot-follow-up — Reconciled the October work records, verified the Node 20 dependency candidates and fixed the hostname check on PR #327.
 - 2026-10-09: closed 205-evidence-chain-json-drain — Evidence-chain JSON drain delivered in https://github.com/graphanov/open-scaffold/pull/322; recorded verified merge and scoped AI-maintainer close decision.
 - 2026-10-09: Record conditional scope for one scalar outer timeout and factual note205 chronology; preserve all other bytes and require fresh Source admission and verification. — see .osc/plans/done/205-evidence-chain-json-drain-amendment-2.md
 - 2026-10-09: Record conditional future Source scope for one linked issue-320 closure sentence in note204, preserve history and failed-v1 evidence, and require fresh whole-head verification. — see .osc/plans/done/205-evidence-chain-json-drain-amendment-1.md
