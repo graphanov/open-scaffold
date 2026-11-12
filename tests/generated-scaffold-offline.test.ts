@@ -9,10 +9,21 @@ import { packageVersion } from '../src/version.js';
 // remote, unpinned, or otherwise live resource. Commands must be bare `osc`.
 const TIERS = ['min', 'standard', 'max'] as const;
 
-// RFC 2606 / RFC 6761 reserved hosts and loopback are documentation-only
-// placeholders, not live online resources, so they are allowed.
-const RESERVED_URL =
-  /https?:\/\/(?:localhost|127\.0\.0\.1|[A-Za-z0-9.-]*\.(?:invalid|example|test)|example\.(?:com|org|net))(?::\d+)?(?:[/?#][^\s)"'`]*)?/gi;
+const RESERVED_HOSTNAME =
+  /^(?:localhost|127\.0\.0\.1|example\.(?:com|org|net)|(?:[a-z0-9-]+\.)+(?:invalid|example|test))$/i;
+
+function unexpectedUrlAuthorities(content: string): string[] {
+  const authorities = content.match(/https?:\/\/[^\s/?#<>"'`]*/gi) ?? [];
+  return authorities.filter((authority) => {
+    try {
+      // A Markdown link can end immediately after the hostname.
+      const { hostname } = new URL(authority.replace(/\)+$/, ''));
+      return !RESERVED_HOSTNAME.test(hostname);
+    } catch {
+      return true;
+    }
+  });
+}
 
 function walk(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -22,6 +33,17 @@ function walk(dir: string): string[] {
 }
 
 describe('generated scaffold is offline-clean (#324)', () => {
+  it('checks whole hostnames and flags an incomplete URL', () => {
+    const examples = [
+      '[guide](https://EXAMPLE.org)',
+      'http://localhost:8080/status',
+      'https://hooks.invalid/path',
+      'http://localhost-backup/status',
+      'http://',
+    ];
+    expect(unexpectedUrlAuthorities(examples.join('\n'))).toEqual(['http://localhost-backup', 'http://']);
+  });
+
   for (const tier of TIERS) {
     it(`${tier} tier: no unpinned npx, registry install, github, or live URL in generated files`, () => {
       const target = mkdtempSync(join(tmpdir(), `osc-offline-${tier}-`));
@@ -37,8 +59,7 @@ describe('generated scaffold is offline-clean (#324)', () => {
           expect(content, where).not.toMatch(/open-scaffold@latest/i);
           expect(content, where).not.toMatch(/npm\s+(?:i|install)\s+(?:-g|--global)\s+open-scaffold(?!@\d)/i);
           expect(content, where).not.toMatch(/github\.com/i);
-          const liveUrls = content.replace(RESERVED_URL, '');
-          expect(liveUrls, where).not.toMatch(/https?:\/\//i);
+          expect(unexpectedUrlAuthorities(content), where).toEqual([]);
         }
       } finally {
         rmSync(target, { recursive: true, force: true });
