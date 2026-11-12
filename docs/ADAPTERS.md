@@ -46,6 +46,9 @@ Use these labels when public docs mention concrete tools:
 
 ## Packages
 
-`packages/runtime-omx/` remains a runtime-specific package with its own explicit
-boundary and tests. It is not a reason to reintroduce core spawning or the
-retired root adapter commands.
+The optional OMX adapter reads a `run.json` made with the `codex` or `omx` preset.
+By default it writes a dispatch receipt. Launching OMX requires `--allow-spawn`.
+
+The full usage guide is `packages/runtime-omx/README.md` in both an Open Scaffold
+source checkout and an installed npm package. The adapter executable is built
+from the source checkout.

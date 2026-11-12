@@ -22,12 +22,12 @@ describe('tiered scaffold initialization', () => {
     expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('Amendments');
     expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).not.toContain('amend.sh');
     expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('Manual fallback is permitted only when neither');
-    expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('npx open-scaffold amend');
+    expect(readFileSync(join(target, '.osc/plans/README.md'), 'utf8')).toContain('osc amend');
     expect(readFileSync(join(target, '.osc/RULES.md'), 'utf8')).not.toContain('amend.sh');
     expect(readFileSync(join(target, '.osc/RULES.md'), 'utf8')).not.toContain('docs/WORKFLOW.md');
     expect(readFileSync(join(target, '.osc/RULES.md'), 'utf8')).toContain('.osc/plans/WORKFLOW.md');
     expect(readFileSync(join(target, '.osc/plans/handoff-template.md'), 'utf8')).not.toContain('amend.sh');
-    expect(readFileSync(join(target, '.osc/plans/handoff-template.md'), 'utf8')).toContain('npx open-scaffold amend');
+    expect(readFileSync(join(target, '.osc/plans/handoff-template.md'), 'utf8')).toContain('osc amend');
     expect(readFileSync(join(target, 'verify.sh'), 'utf8')).toContain('open-scaffold compliance checker');
     expect(result.summary).toContain('Generated min Open Scaffold');
     expect(result.summary).toContain('Next: edit MISSION.md');
@@ -86,7 +86,7 @@ describe('tiered scaffold initialization', () => {
       expect(agents.replace('# AGENTS.md', '# CLAUDE.md')).toBe(claude);
       expect(agents).toContain('Manual fallback is permitted only when neither');
       expect(agents).toContain('No remote documentation or GitHub account is required');
-      expect(agents).toContain('npx open-scaffold handoff --plan <slug>');
+      expect(agents).toContain('osc handoff --plan <slug>');
     }
   });
 
@@ -113,7 +113,10 @@ describe('tiered scaffold initialization', () => {
     expect(maxTaskRunModel).not.toContain('`osc review`, and `osc ultrareview` generate `run.json`');
     expect(maxTaskRunModel).toContain('HARNESS_ARCHITECTURE.md');
     expect(maxTaskRunModel).toContain('ADAPTERS.md#runtime-dispatch-pattern');
-    expect(existsSync(join(target, 'docs/ADAPTERS.md'))).toBe(true);
+    const bindingGuide = readFileSync(join(target, 'docs/RUNTIME_BINDING_CONTRACT.md'), 'utf8');
+    expect(bindingGuide).toContain('](ADAPTERS.md#packages)');
+    expect(bindingGuide).not.toContain('](../packages/runtime-omx/README.md)');
+    expect(readFileSync(join(target, 'docs/ADAPTERS.md'), 'utf8')).toContain('## Packages');
     expect(existsSync(join(target, 'docs/HARNESS_ARCHITECTURE.md'))).toBe(true);
     expect(readFileSync(join(target, '.osc/runs/.gitkeep'), 'utf8')).toBe('');
   });

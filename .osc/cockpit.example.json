@@ -4,13 +4,13 @@
     {
       "name": "public-build-stream",
       "platform": "discord",
-      "webhookUrl": "https://discord.com/api/webhooks/000000000000000000/replace-with-secret",
+      "webhookUrl": "https://discord.invalid/api/webhooks/000000000000000000/replace-with-secret",
       "events": ["status", "completion_report"]
     },
     {
       "name": "review-room",
       "platform": "slack",
-      "webhookUrl": "https://hooks.slack.com/services/T00000000/B00000000/replace-with-secret",
+      "webhookUrl": "https://slack.invalid/services/T00000000/B00000000/replace-with-secret",
       "events": ["blocker", "approval_request"]
     }
   ]

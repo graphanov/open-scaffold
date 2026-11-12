@@ -1,8 +1,8 @@
-import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Readable, Writable } from 'node:stream';
 import { callMcpTool, listMcpTools, McpJsonRpcError, type McpToolContext } from './mcp-tools.js';
 import { listMcpResources, readMcpResource } from './mcp-resources.js';
+import { packageVersion } from './version.js';
 
 export interface McpJsonRpcRequest {
   jsonrpc?: string;
@@ -318,13 +318,4 @@ function isValidId(value: unknown): value is string | number {
 
 function extractId(value: unknown): string | number | null {
   return isRecord(value) ? normalizeId(value.id) : null;
-}
-
-function packageVersion(): string {
-  try {
-    const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version?: unknown };
-    return typeof pkg.version === 'string' && pkg.version.trim() ? pkg.version : '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
 }

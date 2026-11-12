@@ -182,10 +182,17 @@ if [ ! -f "$MISSION" ] || grep -Eq 'mission:unset|TODO: define mission' "$MISSIO
 fi
 
 MOVED_FILES=("$SLUG.md")
+AMENDMENTS=()
 for f in "$PARENT_DIR/$SLUG"-amendment-*.md; do
   [ -f "$f" ] || continue
-  MOVED_FILES+=("$(basename "$f")")
+  AMENDMENTS+=("$(basename "$f")")
 done
+# Byte-order the amendment list so the reported sequence is stable across locales.
+if [ ${#AMENDMENTS[@]} -gt 0 ]; then
+  while IFS= read -r name; do
+    MOVED_FILES+=("$name")
+  done < <(printf '%s\n' "${AMENDMENTS[@]}" | LC_ALL=C sort)
+fi
 for f in "${MOVED_FILES[@]}"; do
   if [ -e "$DONE_DIR/$f" ] || [ -L "$DONE_DIR/$f" ]; then
     printf 'Error: refusing to overwrite existing done plan file: %s\n' "$f" >&2

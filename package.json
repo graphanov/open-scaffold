@@ -57,6 +57,7 @@
     "examples/proof",
     "examples/resume-demo",
     "docs",
+    "packages/runtime-omx/README.md",
     "python",
     "README.md",
     "SECURITY.md",

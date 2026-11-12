@@ -490,7 +490,7 @@ if [ "$TIER" = "--standard" ] || [ "$TIER" = "--strict" ]; then
         warn "Release note $basename still says pending while citing merged/closed/released evidence"
         RELEASES_OK=false
       fi
-      if grep -Eq '[0-9]{8}T[0-9]{6}Z-[a-z0-9-]+' "$f" && ! grep -Eqi '(PR #[0-9]+|Pull Request|github.com/.*/pull/[0-9]+)' "$f"; then
+      if grep -Eq '[0-9]{8}T[0-9]{6}Z-[a-z0-9-]+' "$f" && ! grep -Eqi '(PR #[0-9]+|Pull Request|/pull/[0-9]+)' "$f"; then
         warn "Release note $basename cites a run id but no PR reference"
         RELEASES_OK=false
       fi

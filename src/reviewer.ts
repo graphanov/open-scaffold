@@ -41,7 +41,17 @@ export function normalizeReviewerEndpoint(value: string): string {
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
     throw new Error(`Reviewer endpoint must use http or https: ${value}`);
   }
+  // Plain http would let an API key and the ruling travel unencrypted. Allow it
+  // only for loopback (a locally-hosted judge); require https for any remote host.
+  if (parsed.protocol === 'http:' && !isLoopbackHost(parsed.hostname)) {
+    throw new Error(`Reviewer endpoint must use https; plain http is allowed only for localhost: ${value}`);
+  }
   return trimmed;
+}
+
+function isLoopbackHost(hostname: string): boolean {
+  const host = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  return host === 'localhost' || host.endsWith('.localhost') || host === '127.0.0.1' || host === '::1';
 }
 
 export function buildJudgeMessages(analysisMarkdown: string): Array<{ role: 'system' | 'user'; content: string }> {

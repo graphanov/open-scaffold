@@ -80,6 +80,16 @@ describe('osc cockpit webhooks', () => {
     expect(cliConfig.stdout).not.toContain('/secret');
   }, 20_000);
 
+  it('rejects a plain-http remote webhook URL and accepts loopback http', () => {
+    const remote = tempScaffold();
+    writeConfig(remote, 'http://hooks.slack.com/services/T000/B000/secret');
+    expect(() => loadCockpitConfig(remote)).toThrow(/https/);
+
+    const loopback = tempScaffold();
+    writeConfig(loopback, 'http://127.0.0.1:9999/discord-webhook');
+    expect(loadCockpitConfig(loopback).targets).toHaveLength(2);
+  });
+
   it('builds structured Discord embeds and Slack blocks with refs and footer', () => {
     const root = tempScaffold();
     const options = {
@@ -97,10 +107,11 @@ describe('osc cockpit webhooks', () => {
     expect(discord.embeds[0].title).toBe('Completion report');
     expect(discord.embeds[0].color).toBe(0x2ecc71);
     expect(discord.embeds[0].fields).toContainEqual({ name: 'run_id', value: '20260518T120000Z-062', inline: true });
-    expect(discord.embeds[0].footer).toEqual({ text: expect.stringContaining(`repo: ${root}`) });
+    expect(discord.embeds[0].footer).toEqual({ text: expect.stringContaining('osc cockpit v') });
+    expect(JSON.stringify(discord)).not.toContain(root);
     expect(slack.blocks[0]).toMatchObject({ type: 'header', text: { type: 'plain_text', text: 'Completion report', emoji: true } });
     expect(JSON.stringify(slack.blocks)).toContain('*plan_slug*');
-    expect(JSON.stringify(slack.blocks)).toContain(`repo: ${root}`);
+    expect(JSON.stringify(slack.blocks)).not.toContain(root);
   });
 
   it('truncates Slack section text to the Block Kit limit', () => {

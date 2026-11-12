@@ -237,11 +237,21 @@ function preflightConfig(configPath: string, hookPath: string, label: string): P
       message: `${label} hook target not found: ${hookPath}. Run setup from an installed open-scaffold package or a checkout that includes examples/hooks.`,
     };
   }
+  const cacheMessage = npxCacheHookMessage(hookPath, label);
+  if (cacheMessage) return { status: 'blocked', changed: false, message: cacheMessage };
   const symlinkMessage = finalSymlinkMessage(configPath, `${label} config`);
   if (symlinkMessage) return { status: 'blocked', changed: false, message: symlinkMessage };
   const parentSymlinkMessage = parentPathMessage(configPath, `${label} config`);
   if (parentSymlinkMessage) return { status: 'blocked', changed: false, message: parentSymlinkMessage };
   return null;
+}
+
+// A hook that resolves inside the npx cache can be replaced or removed by a later
+// `npx open-scaffold@latest`, silently breaking capture. Refuse instead of
+// installing a fragile path.
+function npxCacheHookMessage(hookPath: string, label: string): string | null {
+  if (!hookPath.split(/[\\/]+/).includes('_npx')) return null;
+  return `${label} hook resolves inside the npx cache (${hookPath}), which a later \`npx ...@latest\` can replace. Install the CLI globally (npm install --global open-scaffold@<version>) or pass an explicit hook path pointing to a stable copy, then rerun capture setup.`;
 }
 
 function mergeClaudeSettings(settings: JsonObject, command: string): { settings?: JsonObject; changed?: boolean; blocked?: string } {

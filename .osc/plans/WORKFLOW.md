@@ -13,7 +13,7 @@ Plans move between stage folders. The folder IS the status. File numbering (NNN-
 
 ## Rules
 
-1. **New plans land in `active/` for immediate work or `backlog/` for future work.** Prefer `npx open-scaffold plan new <slug> --stage active|backlog|blocked`. Fill generated TODOs before committing. Use supported shell helpers next; manual fallback is permitted only when neither is available, following `.osc/plans/README.md` and validating the schema and linkage.
+1. **New plans land in `active/` for immediate work or `backlog/` for future work.** Prefer `osc plan new <slug> --stage active|backlog|blocked`. Fill generated TODOs before committing. Use supported shell helpers next; manual fallback is permitted only when neither is available, following `.osc/plans/README.md` and validating the schema and linkage.
 2. **Backlog is for future work.** When an agent identifies follow-up tasks or next steps, create a plan in `backlog/`. Do not start work on backlog items without moving them to `active/` first. Use `osc plan move <slug> --to active` for that promotion.
 3. **One focus at a time.** Prefer at most 2–3 plans in `active/` simultaneously. If `active/` is full, finish or park existing work before pulling from `backlog/`.
 4. **Moving to `done/`** requires:

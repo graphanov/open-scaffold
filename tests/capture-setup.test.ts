@@ -499,4 +499,20 @@ describe('capture setup planning', () => {
     expect(result.message).toContain('hook target not found');
     expect(result.message).toContain('examples/hooks');
   });
+
+  it('blocks a hook path inside the npx cache that a later npx run could replace', () => {
+    const dir = tempDir();
+    const cacheHook = join(dir, '.npm/_npx/abc123/node_modules/open-scaffold/examples/hooks/ambient-hook.mjs');
+    mkdirSync(join(dir, '.npm/_npx/abc123/node_modules/open-scaffold/examples/hooks'), { recursive: true });
+    writeFileSync(cacheHook, '');
+    const settings = join(dir, '.claude/settings.local.json');
+
+    const [dryRun] = runCaptureSetup('claude-code', { claudeSettingsPath: settings, claudeHookPath: cacheHook });
+    const [write] = runCaptureSetup('claude-code', { write: true, claudeSettingsPath: settings, claudeHookPath: cacheHook });
+
+    expect(dryRun.status).toBe('blocked');
+    expect(write.status).toBe('blocked');
+    expect(write.message).toContain('npx cache');
+    expect(existsSync(settings)).toBe(false);
+  });
 });

@@ -10,12 +10,14 @@ You open a repo you have not touched in a week. There is no chat context. The ag
 
 ## One command
 
+Install the CLI once (global, pinned: `npm install --global open-scaffold@0.35.0`; or prefix with `npx open-scaffold@0.35.0`), then from the fixture:
+
 ```bash
 cd examples/resume-demo
-npx open-scaffold@latest handoff --plan demo-add-greeting
+osc handoff --plan demo-add-greeting
 ```
 
-If the CLI is installed globally with `npm install --global open-scaffold@latest`, use `osc handoff --plan demo-add-greeting`. From a built source checkout, use `node ../../dist/cli.js handoff --plan demo-add-greeting`. `resume` remains an alias for the same command. A prior `npx` invocation does not install the bare `osc` command.
+From a built source checkout, use `node ../../dist/cli.js handoff --plan demo-add-greeting`. `resume` remains an alias for the same command.
 
 Packet excerpt (generic `osc` invocation shown):
 
@@ -50,7 +52,7 @@ Boundary: read-only packet compiled from repo truth. It is not approval and gran
 
 A fresh agent now has the recorded goal, checklist state, open work, next bounded action, and verification commands without recovering the old conversation. Read the referenced amendments and evidence before acting on details or accepting completion claims.
 
-The CLI preserves its invocation context for generated scaffold commands: through `npx`, the command above is printed with the running package's exact version; through `npm run osc --`, it uses that source runner. Programmatic and MCP calls retain the generic `osc` form. Verification commands supplied by the plan stay verbatim.
+Generated scaffold commands use the bare `osc` form; through `npm run osc --`, the source-checkout runner is printed instead. Programmatic and MCP calls also use the generic `osc` form. Verification commands supplied by the plan stay verbatim.
 
 ## What the packet contains
 
@@ -65,7 +67,7 @@ The CLI preserves its invocation context for generated scaffold commands: throug
 ## Machine-readable form
 
 ```bash
-npx open-scaffold@latest handoff --plan demo-add-greeting --json
+osc handoff --plan demo-add-greeting --json
 ```
 
 Emits the `open-scaffold.resume.v1` summary, including additive `ambient_capture` with normalized records when available. The fixture's expected output is committed at [`examples/resume-demo/expected-resume-summary.json`](../examples/resume-demo/expected-resume-summary.json) and locked by the resume test suite.

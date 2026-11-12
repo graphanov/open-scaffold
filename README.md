@@ -43,26 +43,36 @@ Audit every receipt, zero spend: [`REPRODUCE.md`](REPRODUCE.md).
 
 ## Start in 60 seconds
 
+Install the CLI once, pinned to the reviewed release:
+
+```bash
+npm install --global open-scaffold@0.35.0
+```
+
+Then scaffold a project folder:
+
 ```bash
 mkdir -p ./my-project
 cd ./my-project
-npx open-scaffold@latest first-run
+osc first-run
 ```
 
 Run `first-run` inside the project folder where Open Scaffold should write `AGENTS.md`, `MISSION.md`, and `.osc/`. Three questions produce `MISSION.md`, an active plan with acceptance criteria, and an evidence skeleton. Use your generated plan's slug in place of `first-slice` below.
 
-`npx` does not install a global `osc` command. Continue using `npx open-scaffold@latest <command>`, and pin the same explicit package version across sessions when you need repeatable installations. Alternatively, `npm install --global open-scaffold@latest` provides the shorter `osc plan new`, `osc evidence new`, `osc amend`, and `osc close` commands.
+`osc` provides `osc plan new`, `osc evidence new`, `osc amend`, and `osc close`. Pin the same reviewed package version whenever you reinstall or upgrade so every session runs a version you chose.
+
+If you cannot install globally, run the pinned release instead: `npx open-scaffold@0.35.0 <command>` (for example `npx open-scaffold@0.35.0 first-run`). Pin the same version for the whole session; never use an unpinned npx fetch or the mutable `latest` tag.
 
 Do one bounded piece of work, run the project's own checks, and fill the generated evidence note with actual results, remaining work, and the next action. A generated skeleton or passing structural check does not prove the work is finished. Preserve the record in git, then start the next session in the same project folder:
 
 ```bash
-npx open-scaffold@latest verify
-npx open-scaffold@latest handoff --plan first-slice
+osc verify
+osc handoff --plan first-slice
 ```
 
-Scope changed? `npx open-scaffold@latest amend first-slice --message "what changed"` — committed intent changes through amendments. More plans: `npx open-scaffold@latest plan new <slug> --stage active`.
+Scope changed? `osc amend first-slice --message "what changed"` — committed intent changes through amendments. More plans: `osc plan new <slug> --stage active`.
 
-Close only after the acceptance criteria are complete, real verification results are linked, and the review decision is recorded: `npx open-scaffold@latest close first-slice --message "verified first slice"`. Keep a plan active while work remains. The full [first session-to-session walkthrough](docs/START_HERE.md#your-first-session-to-session-handoff) explains evidence annotations and closure checks.
+Close only after the acceptance criteria are complete, real verification results are linked, and the review decision is recorded: `osc close first-slice --message "verified first slice"`. Keep a plan active while work remains. The full [first session-to-session walkthrough](docs/START_HERE.md#your-first-session-to-session-handoff) explains evidence annotations and closure checks.
 
 Want the discipline without the CLI? [`SKILL.md`](SKILL.md) — the methodology works with plain files.
 

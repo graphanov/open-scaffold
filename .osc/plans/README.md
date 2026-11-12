@@ -1,10 +1,10 @@
 # Plans — Amendment Protocol
 
-Fill generated TODOs before committing. Plans in this directory and its stage subfolders (`active/`, `backlog/`, `done/`, `blocked/`) preserve **immutable committed intent**. Changed goals, constraints, or acceptance-criterion wording require `osc amend <plan-slug> --message "<what changed>"` (or `npx open-scaffold amend <plan-slug> --message "<what changed>"`). Factual checkbox completion and the reserved ` | Evidence: <reference-only-list>` suffix on criteria may record results without changing the requirement. Valid `## Status` stage values may track lifecycle movement; other plan content stays immutable.
+Fill generated TODOs before committing. Plans in this directory and its stage subfolders (`active/`, `backlog/`, `done/`, `blocked/`) preserve **immutable committed intent**. Changed goals, constraints, or acceptance-criterion wording require `osc amend <plan-slug> --message "<what changed>"`. Factual checkbox completion and the reserved ` | Evidence: <reference-only-list>` suffix on criteria may record results without changing the requirement. Valid `## Status` stage values may track lifecycle movement; other plan content stays immutable.
 
-Prefer CLI helpers for record structure. Use supported shell helpers when the CLI is unavailable. Manual fallback is permitted only when neither is available; preserve the documented schemas and changelog linkage, then validate. To move non-done work between stages, run `osc plan move <plan-slug> --to active|backlog|blocked`. To close completed work, run `osc close <plan-slug> --message "<what shipped>"` (or `npx open-scaffold close <plan-slug> --message "<what shipped>"`); it moves the plan and amendments to `done/` and stamps MISSION.md's changelog. Shell fallbacks are `./amend.sh` and `./close.sh` when present. The minimum tier omits the shell amendment helper; the CLI amendment command works in every tier. See `.osc/plans/WORKFLOW.md` for stage rules.
+Prefer CLI helpers for record structure. Use supported shell helpers when the CLI is unavailable. Manual fallback is permitted only when neither is available; preserve the documented schemas and changelog linkage, then validate. To move non-done work between stages, run `osc plan move <plan-slug> --to active|backlog|blocked`. To close completed work, run `osc close <plan-slug> --message "<what shipped>"`; it moves the plan and amendments to `done/` and stamps MISSION.md's changelog. Shell fallbacks are `./amend.sh` and `./close.sh` when present. The minimum tier omits the shell amendment helper; the CLI amendment command works in every tier. See `.osc/plans/WORKFLOW.md` for stage rules.
 
-`npx` does not install a global `osc` binary. Keep using `npx open-scaffold`, or run `npm install -g open-scaffold` before using bare `osc`.
+Use the `osc` command from an installed Open Scaffold CLI; ask the project owner how it is installed and which version is approved.
 
 For completion annotations, append the literal separator outside inline code: `- [x] Requirement unchanged. | Evidence: .osc/releases/proof.md, tests/example.test.ts`. The whole suffix must contain references only, separated by commas; put explanatory prose in the evidence note. An ordinary `Evidence:` phrase remains part of the immutable requirement.
 
@@ -58,7 +58,7 @@ Only when neither CLI nor a supported shell helper is available, follow the manu
 1. For a new plan, copy `.osc/plans/handoff-template.md` into the appropriate stage folder and fill every required section before committing.
 2. For an amendment, create `<plan-slug>-amendment-<n>.md` beside the parent using sequential numbering and the schema above, then append a dated `MISSION.md` changelog entry containing its basename. Do not rewrite parent intent.
 3. For evidence, use the schema in `.osc/releases/README.md` and real results. Close only after verification: move the parent and amendments together to `done/` and append a dated mission changelog entry.
-4. Validate with `npx open-scaffold plan validate <plan-slug> --strict` and `./verify.sh --strict` when execution is available. Without execution, review the same schema, numbering, and linkage directly and record that mechanical verification remains pending.
+4. Validate with `osc plan validate <plan-slug> --strict` and `./verify.sh --strict` when execution is available. Without execution, review the same schema, numbering, and linkage directly and record that mechanical verification remains pending.
 
 `verify.sh` Checks 3 and 4 enforce sequential numbering and changelog coverage either way.
 

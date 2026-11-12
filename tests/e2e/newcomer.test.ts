@@ -61,13 +61,21 @@ describe('npm-only newcomer handoff', () => {
       registry = local.process;
       Object.assign(env, { npm_config_registry: local.url, NPM_CONFIG_REGISTRY: local.url });
       const osc = (args: string[]) => runNpm(['exec', '--yes', '--package', `open-scaffold@${pkg.version}`, '--', 'open-scaffold', ...args], project);
+      // Handoff now suggests bare `osc` commands, which assume the CLI is on PATH.
+      // Install the packed artifact globally into an isolated prefix so the later
+      // sessions can run the suggested `osc ...` command offline.
+      const globalPrefix = join(work, 'global-prefix');
+      runNpm(['install', '-g', '--prefix', globalPrefix, `open-scaffold@${pkg.version}`], project);
+      const globalBin = join(globalPrefix, process.platform === 'win32' ? '' : 'bin');
       const slug = 'first-record';
       const onboarding = osc(['first-run', '--non-interactive', '--slug', slug, '--mission', 'Retain useful evidence between sessions.', '--goal', 'Create a verifiable first local record.']);
-      expect(onboarding).toContain(`npx open-scaffold@latest handoff --plan ${slug}`);
+      expect(onboarding).toContain(`osc handoff --plan ${slug}`);
       expect(onboarding).not.toContain('https://github.com/graphanov/open-scaffold/blob/main/');
-      expect(onboarding).toContain('npx runs the package without installing a global osc command');
-      // Later sessions have only their previously populated npm cache. There is
-      // no registry, global osc, project node_modules, or source runner available.
+      expect(onboarding).not.toContain('npx open-scaffold@latest');
+      expect(onboarding).not.toMatch(/npx\s+open-scaffold(?!@\d)/i);
+      // Later sessions have only their previously populated npm cache and the
+      // isolated global install. There is no registry, project node_modules, or
+      // source runner available.
       registry.kill();
       registry = undefined;
       Object.assign(env, { npm_config_offline: 'true', NPM_CONFIG_OFFLINE: 'true' });
@@ -91,10 +99,10 @@ describe('npm-only newcomer handoff', () => {
       expect(resumed.other_active_plans).toContain('other-task');
       expect(resumed.next_bounded_action).toBeTruthy();
       const suggested = resumed.next_commands[0];
-      expect(suggested).toBe(`npx open-scaffold@${pkg.version} plan validate ${slug} --strict`);
-      const [executable, ...suggestedArgs] = suggested.split(/\s+/);
-      expect(executable).toBe('npx');
-      const suggestedOutput = execFileSync(npx, suggestedArgs, {
+      expect(suggested).toBe(`osc plan validate ${slug} --strict`);
+      const [, ...suggestedArgs] = suggested.split(/\s+/);
+      const globalOsc = join(globalBin, process.platform === 'win32' ? 'osc.cmd' : 'osc');
+      const suggestedOutput = execFileSync(globalOsc, suggestedArgs, {
         cwd: project, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
         ...(process.platform === 'win32' ? { shell: true } : {}),
       });
