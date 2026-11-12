@@ -7,7 +7,7 @@ Prepared the owner-delegated six-day native Codex maintainer run. Private author
 ## Traceability
 
 - Roadmap / issue / task: owner six-day maintenance instruction, 2026-10-08.
-- Plan: `.osc/plans/active/184-john-six-day-maintainer.md`.
+- Plan: `.osc/plans/blocked/184-john-six-day-maintainer.md`. See the [November status note](2026-11-12-184-john-six-day-maintainer.md).
 - Run ID / run packet: `john-open-scaffold-six-day-20261008`; operational state held privately outside public source.
 - Branch / PR: `codex/john-six-day-run`; publication pending verification.
 
